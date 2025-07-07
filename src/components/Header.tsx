@@ -39,7 +39,7 @@ const Header = () => {
           <img 
             src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
             alt="RestroWizard" 
-            className="h-8 w-auto"
+            className="h-12 w-auto"
           />
         </div>
         
