@@ -502,8 +502,11 @@ const Dashboard = () => {
             {/* Sidebar de Navegación */}
             <aside className="w-64 bg-card p-4 flex-shrink-0 shadow-lg border-r">
                 <div className="flex items-center mb-8">
-                    <span className="text-3xl mr-2">✨</span>
-                    <h1 className="text-2xl font-headline font-bold text-primary">RestroWizard</h1>
+                    <img 
+                        src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
+                        alt="RestroWizard" 
+                        className="h-10 w-auto"
+                    />
                 </div>
                 <nav className="flex-1">
                     <ul>

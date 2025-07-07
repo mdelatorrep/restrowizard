@@ -37,13 +37,10 @@ const Header = () => {
       <nav className="container mx-auto px-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <img 
-            src={restroWizardLogo} 
+            src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
             alt="RestroWizard" 
-            className="h-8 w-8"
+            className="h-8 w-auto"
           />
-          <div className="text-2xl font-logo text-purple-intense">
-            RestroWizard
-          </div>
         </div>
         
         <div className="hidden lg:flex items-center space-x-6">
