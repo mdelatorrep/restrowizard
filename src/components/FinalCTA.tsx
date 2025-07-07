@@ -1,6 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const FinalCTA = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   return (
     <section id="cta-final" className="py-20 bg-purple-intense text-off-white">
       <div className="container mx-auto px-6 text-center">
@@ -13,11 +17,10 @@ const FinalCTA = () => {
         </p>
         <button 
           onClick={() => {
-            const user = null; // This will be replaced by proper auth check
             if (user) {
-              window.location.href = '/diagnosis';
+              navigate('/diagnosis');
             } else {
-              window.location.href = '/auth';
+              navigate('/auth');
             }
           }}
           className="bg-card text-primary font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block"

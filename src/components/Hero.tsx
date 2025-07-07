@@ -1,6 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -25,11 +30,10 @@ const Hero = () => {
         </p>
         <button 
           onClick={() => {
-            const user = null; // This will be replaced by proper auth check
             if (user) {
-              window.location.href = '/diagnosis';
+              navigate('/diagnosis');
             } else {
-              window.location.href = '/auth';
+              navigate('/auth');
             }
           }}
           className="bg-primary text-primary-foreground font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block border-2 border-accent"
