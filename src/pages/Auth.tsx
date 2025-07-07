@@ -31,6 +31,10 @@ const Auth = () => {
         } else {
           navigate('/diagnosis');
         }
+      }).catch((error) => {
+        console.error('Error checking diagnosis:', error);
+        // Fallback to diagnosis page if check fails
+        navigate('/diagnosis');
       });
     }
   }, [user, navigate, checkUserDiagnosis]);
