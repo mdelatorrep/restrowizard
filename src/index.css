@@ -122,13 +122,56 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Lato', sans-serif;
+    font-weight: 400; /* Lato Regular como base */
   }
 }
 
 @layer utilities {
-  /* RestroWizard Custom Utilities */
+  /* RestroWizard Typography System */
+  .font-logo {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Helvetica', sans-serif;
+    font-weight: 700; /* Bold para logo */
+  }
+  
   .font-headline {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Helvetica', sans-serif;
+    font-weight: 700; /* Helvetica Bold equivalente */
+  }
+  
+  .font-body {
+    font-family: 'Lato', sans-serif;
+  }
+  
+  /* Pesos específicos de Lato según brand guidelines */
+  .font-lato-light {
+    font-family: 'Lato', sans-serif;
+    font-weight: 300; /* Lato Light */
+  }
+  
+  .font-lato-regular {
+    font-family: 'Lato', sans-serif;
+    font-weight: 400; /* Lato Regular */
+  }
+  
+  .font-lato-medium {
+    font-family: 'Lato', sans-serif;
+    font-weight: 500; /* Lato Medium */
+  }
+  
+  .font-lato-medium-italic {
+    font-family: 'Lato', sans-serif;
+    font-weight: 500; /* Lato Medium */
+    font-style: italic;
+  }
+  
+  .font-lato-bold {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700; /* Lato Bold */
+  }
+  
+  .font-lato-black {
+    font-family: 'Lato', sans-serif;
+    font-weight: 900; /* Lato Black */
   }
   
   .text-shadow {

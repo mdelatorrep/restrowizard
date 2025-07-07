@@ -73,8 +73,17 @@ export default {
 				}
 			},
 			fontFamily: {
-				'headline': ['Inter', 'sans-serif'],
+				'logo': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Helvetica', 'sans-serif'],
+				'headline': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Helvetica', 'sans-serif'],
 				'body': ['Lato', 'sans-serif'],
+				'lato': ['Lato', 'sans-serif'],
+			},
+			fontWeight: {
+				'light': '300',      // Lato Light
+				'normal': '400',     // Lato Regular
+				'medium': '500',     // Lato Medium
+				'bold': '700',       // Lato Bold
+				'black': '900',      // Lato Black
 			},
 			backgroundImage: {
 				'gradient-hero': 'var(--gradient-hero)',

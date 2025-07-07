@@ -16,20 +16,20 @@ const Hero = () => {
       }}
     >
       <div className="container mx-auto px-6 text-center">
-        <h1 className="text-4xl md:text-6xl font-headline font-bold mb-4 text-shadow-lg">
+        <h1 className="text-4xl md:text-6xl font-headline mb-4 text-shadow-lg">
           La Magia de la IA para tu Restaurante.
         </h1>
-        <p className="text-lg md:text-2xl font-light max-w-3xl mx-auto mb-8 text-shadow">
+        <p className="text-lg md:text-2xl font-lato-light max-w-3xl mx-auto mb-8 text-shadow">
           Deja de adivinar. Transforma tus datos en decisiones rentables con tu copiloto inteligente. 
           Descubre el verdadero potencial de tu negocio hoy.
         </p>
         <button 
           onClick={() => scrollToSection('cta-final')}
-          className="bg-purple-intense text-off-white font-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block border-2 border-lavender-light"
+          className="bg-purple-intense text-off-white font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block border-2 border-lavender-light"
         >
           Realizar mi Diagnóstico Gratis
         </button>
-        <p className="mt-4 text-sm font-light italic">
+        <p className="mt-4 text-sm font-lato-light italic">
           Sin tarjeta de crédito. Recibe tu primer reporte en minutos.
         </p>
       </div>

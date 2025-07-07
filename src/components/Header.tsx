@@ -36,7 +36,7 @@ const Header = () => {
             alt="RestroWizard" 
             className="h-8 w-8"
           />
-          <div className="text-2xl font-headline font-bold text-purple-intense">
+          <div className="text-2xl font-logo text-purple-intense">
             RestroWizard
           </div>
         </div>
@@ -44,31 +44,31 @@ const Header = () => {
         <div className="hidden lg:flex items-center space-x-6">
           <button 
             onClick={() => scrollToSection('solucion')} 
-            className="hover:text-purple-medium transition-colors"
+            className="font-lato-regular hover:text-purple-medium transition-colors"
           >
             Diagnóstico
           </button>
           <button 
             onClick={() => scrollToSection('ecosistema')} 
-            className="hover:text-purple-medium transition-colors"
+            className="font-lato-regular hover:text-purple-medium transition-colors"
           >
             Ecosistema
           </button>
-          <a href="#" className="hover:text-purple-medium transition-colors">Precios</a>
-          <a href="#" className="hover:text-purple-medium transition-colors">Blog</a>
-          <a href="#" className="hover:text-purple-medium transition-colors">Contacto</a>
+          <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Precios</a>
+          <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Blog</a>
+          <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Contacto</a>
         </div>
 
         <div className="hidden lg:flex items-center space-x-4">
           <a 
             href="#" 
-            className="px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
+            className="px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
           >
             Iniciar Sesión
           </a>
           <button 
             onClick={() => scrollToSection('cta-final')}
-            className="px-4 py-2 rounded-lg bg-purple-intense text-off-white font-bold hover:opacity-90 shadow-lg transform hover:scale-105 transition-smooth"
+            className="px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 shadow-lg transform hover:scale-105 transition-smooth"
           >
             Iniciar Diagnóstico Gratis
           </button>
@@ -92,7 +92,7 @@ const Header = () => {
               scrollToSection('solucion');
               setIsMenuOpen(false);
             }} 
-            className="block w-full text-left py-2 px-4 text-sm hover:bg-lavender-light"
+            className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
           >
             Diagnóstico
           </button>
@@ -101,18 +101,18 @@ const Header = () => {
               scrollToSection('ecosistema');
               setIsMenuOpen(false);
             }} 
-            className="block w-full text-left py-2 px-4 text-sm hover:bg-lavender-light"
+            className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
           >
             Ecosistema
           </button>
-          <a href="#" className="block py-2 px-4 text-sm hover:bg-lavender-light">Precios</a>
-          <a href="#" className="block py-2 px-4 text-sm hover:bg-lavender-light">Blog</a>
-          <a href="#" className="block py-2 px-4 text-sm hover:bg-lavender-light">Contacto</a>
+          <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Precios</a>
+          <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Blog</a>
+          <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Contacto</a>
           
           <div className="p-4 border-t border-lavender-light space-y-2">
             <a 
               href="#" 
-              className="block w-full text-center px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
+              className="block w-full text-center px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
             >
               Iniciar Sesión
             </a>
@@ -121,7 +121,7 @@ const Header = () => {
                 scrollToSection('cta-final');
                 setIsMenuOpen(false);
               }}
-              className="block w-full text-center px-4 py-2 rounded-lg bg-purple-intense text-off-white font-bold hover:opacity-90 transition-smooth"
+              className="block w-full text-center px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 transition-smooth"
             >
               Iniciar Diagnóstico Gratis
             </button>

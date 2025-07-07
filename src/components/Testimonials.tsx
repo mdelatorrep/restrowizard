@@ -5,14 +5,14 @@ const Testimonials = () => {
     <section className="py-20 bg-off-white">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-headline font-bold text-purple-intense">
+          <h2 className="text-3xl md:text-4xl font-headline text-purple-intense">
             La Transformación es Real
           </h2>
         </div>
         
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-white p-8 rounded-xl shadow-lg">
-            <p className="text-soft-black font-light italic mb-6">
+            <p className="text-soft-black font-lato-medium-italic mb-6">
               "Estaba ahogado en hojas de cálculo y no entendía por qué no ganaba más. 
               RestroWizard me dio un diagnóstico claro y un plan. En 3 meses, mi rentabilidad 
               subió un 15%. Es magia de verdad."
@@ -24,14 +24,14 @@ const Testimonials = () => {
                 className="w-14 h-14 rounded-full mr-4 border-2 border-lavender-light"
               />
               <div>
-                <p className="font-bold text-purple-intense">Carlos Valderrama</p>
-                <p className="text-sm text-dark-gray">Dueño de "La Sazón del Abuelo"</p>
+                <p className="font-lato-bold text-purple-intense">Carlos Valderrama</p>
+                <p className="text-sm text-dark-gray font-lato-regular">Dueño de "La Sazón del Abuelo"</p>
               </div>
             </div>
           </div>
           
           <div className="bg-white p-8 rounded-xl shadow-lg">
-            <p className="text-soft-black font-light italic mb-6">
+            <p className="text-soft-black font-lato-medium-italic mb-6">
               "Gestionar el personal era mi mayor dolor de cabeza. Con RestroTalent, no solo 
               contratamos mejor, sino que la formación de RestroLearn ha hecho que mi equipo 
               se sienta valorado y se quede."
@@ -43,8 +43,8 @@ const Testimonials = () => {
                 className="w-14 h-14 rounded-full mr-4 border-2 border-lavender-light"
               />
               <div>
-                <p className="font-bold text-purple-intense">Sofía Mendoza</p>
-                <p className="text-sm text-dark-gray">Gerente de "Urbano Grill"</p>
+                <p className="font-lato-bold text-purple-intense">Sofía Mendoza</p>
+                <p className="text-sm text-dark-gray font-lato-regular">Gerente de "Urbano Grill"</p>
               </div>
             </div>
           </div>

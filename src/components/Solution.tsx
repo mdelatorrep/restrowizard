@@ -11,10 +11,10 @@ const Solution = () => {
     >
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-headline font-bold text-purple-intense mb-4">
+          <h2 className="text-3xl md:text-4xl font-headline text-purple-intense mb-4">
             Nuestra Magia: Un Plan Claro para la Rentabilidad
           </h2>
-          <p className="max-w-3xl mx-auto text-lg text-soft-black font-light">
+          <p className="max-w-3xl mx-auto text-lg text-soft-black font-lato-regular">
             RestroWizard no es otro software, es tu socio estratégico. Usamos IA para darte una 
             hoja de ruta clara hacia el éxito en 3 simples pasos.
           </p>
@@ -29,11 +29,11 @@ const Solution = () => {
               <div className="bg-purple-medium text-white w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 border-4 border-white shadow-lg">
                 <FontAwesomeIcon icon={faWandMagicSparkles} />
               </div>
-              <h3 className="text-xl font-bold font-headline mb-2 text-purple-intense">
+              <h3 className="text-xl font-headline text-purple-intense mb-2">
                 Paso 1: Diagnóstico Inteligente
               </h3>
-              <p className="text-soft-black font-light">
-                Nuestro <span className="font-bold">Modelo de Madurez RestroWizard™</span> patentado 
+              <p className="text-soft-black font-lato-regular">
+                Nuestro <span className="font-lato-bold">Modelo de Madurez RestroWizard™</span> patentado 
                 analiza con IA tus finanzas, operaciones y talento para revelarte el estado real de tu negocio.
               </p>
             </div>
@@ -42,10 +42,10 @@ const Solution = () => {
               <div className="bg-purple-medium text-white w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 border-4 border-white shadow-lg">
                 <FontAwesomeIcon icon={faMapLocationDot} />
               </div>
-              <h3 className="text-xl font-bold font-headline mb-2 text-purple-intense">
+              <h3 className="text-xl font-headline text-purple-intense mb-2">
                 Paso 2: Plan de Acción Personalizado
               </h3>
-              <p className="text-soft-black font-light">
+              <p className="text-soft-black font-lato-regular">
                 La IA genera un plan de acción específico para ti, con acciones claras y priorizadas 
                 para cerrar brechas y llevar tu restaurante al siguiente nivel.
               </p>
@@ -55,11 +55,11 @@ const Solution = () => {
               <div className="bg-purple-medium text-white w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 border-4 border-white shadow-lg">
                 <FontAwesomeIcon icon={faRocket} />
               </div>
-              <h3 className="text-xl font-bold font-headline mb-2 text-purple-intense">
+              <h3 className="text-xl font-headline text-purple-intense mb-2">
                 Paso 3: Activación de Copilotos IA
               </h3>
-              <p className="text-soft-black font-light">
-                Habilitamos los <span className="font-bold">Copilotos IA</span> que necesitas para 
+              <p className="text-soft-black font-lato-regular">
+                Habilitamos los <span className="font-lato-bold">Copilotos IA</span> que necesitas para 
                 ejecutar tu plan, automatizando la mejora continua y liberándote para enfocarte en la gastronomía.
               </p>
             </div>
