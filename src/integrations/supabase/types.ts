@@ -84,6 +84,66 @@ export type Database = {
         }
         Relationships: []
       }
+      maturity_diagnoses: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          overall_level: string
+          overall_score: number
+          pillar_scores: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          overall_level: string
+          overall_score: number
+          pillar_scores: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          overall_level?: string
+          overall_score?: number
+          pillar_scores?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          restaurant_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          restaurant_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          restaurant_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           amount: number | null

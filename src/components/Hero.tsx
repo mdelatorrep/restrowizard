@@ -24,8 +24,15 @@ const Hero = () => {
           Descubre el verdadero potencial de tu negocio hoy.
         </p>
         <button 
-          onClick={() => scrollToSection('cta-final')}
-          className="bg-purple-intense text-off-white font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block border-2 border-lavender-light"
+          onClick={() => {
+            const user = null; // This will be replaced by proper auth check
+            if (user) {
+              window.location.href = '/diagnosis';
+            } else {
+              window.location.href = '/auth';
+            }
+          }}
+          className="bg-primary text-primary-foreground font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block border-2 border-accent"
         >
           Realizar mi Diagnóstico Gratis
         </button>

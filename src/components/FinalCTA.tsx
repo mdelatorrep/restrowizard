@@ -11,12 +11,19 @@ const FinalCTA = () => {
           La magia no está en trabajar más duro, sino en trabajar de forma más inteligente. 
           Deja que RestroWizard sea tu guía.
         </p>
-        <a 
-          href="#" 
-          className="bg-off-white text-purple-intense font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block"
+        <button 
+          onClick={() => {
+            const user = null; // This will be replaced by proper auth check
+            if (user) {
+              window.location.href = '/diagnosis';
+            } else {
+              window.location.href = '/auth';
+            }
+          }}
+          className="bg-card text-primary font-lato-bold text-xl px-8 py-4 rounded-lg shadow-xl transform hover:scale-105 transition-smooth inline-block"
         >
           Iniciar mi Transformación Ahora
-        </a>
+        </button>
       </div>
     </section>
   );

@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 import restroWizardLogo from '../assets/restrowizard-logo.png';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,18 +65,39 @@ const Header = () => {
         </div>
 
         <div className="hidden lg:flex items-center space-x-4">
-          <a 
-            href="#" 
-            className="px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
-          >
-            Iniciar Sesión
-          </a>
-          <button 
-            onClick={() => scrollToSection('cta-final')}
-            className="px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 shadow-lg transform hover:scale-105 transition-smooth"
-          >
-            Iniciar Diagnóstico Gratis
-          </button>
+          {user ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/diagnosis')}
+                className="font-lato-medium"
+              >
+                Diagnóstico
+              </Button>
+              <Button 
+                onClick={signOut}
+                className="font-lato-bold"
+              >
+                Cerrar Sesión
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/auth')}
+                className="font-lato-medium"
+              >
+                Iniciar Sesión
+              </Button>
+              <Button 
+                onClick={() => navigate('/auth')}
+                className="font-lato-bold"
+              >
+                Comenzar Gratis
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="lg:hidden">
