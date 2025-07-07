@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboard } from '@/hooks/useDashboard';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,13 +19,21 @@ const Auth = () => {
   });
   
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { checkUserDiagnosis } = useDashboard();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      navigate('/diagnosis');
+      // Check if user has completed diagnosis to redirect appropriately
+      checkUserDiagnosis(user.id).then((hasDiagnosis) => {
+        if (hasDiagnosis) {
+          navigate('/dashboard');
+        } else {
+          navigate('/diagnosis');
+        }
+      });
     }
-  }, [user, navigate]);
+  }, [user, navigate, checkUserDiagnosis]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
