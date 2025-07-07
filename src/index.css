@@ -2,87 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* RestroWizard Design System - All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* RestroWizard Brand Colors */
+    --purple-intense: 271 68% 22%;     /* #3E1064 */
+    --purple-medium: 296 49% 40%;      /* #93339E */
+    --lavender-light: 304 34% 72%;     /* #D4A5DB */
+    --off-white: 296 29% 92%;          /* #EFE2F2 */
+    --dark-gray: 295 4% 33%;           /* #555056 */
+    --soft-black: 0 0% 10%;            /* #1A1A1A */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Semantic tokens mapped to RestroWizard colors */
+    --background: 296 29% 92%;         /* off-white */
+    --foreground: 0 0% 10%;            /* soft-black */
+
+    --card: 0 0% 100%;                 /* pure white */
+    --card-foreground: 0 0% 10%;       /* soft-black */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 271 68% 22%;            /* purple-intense */
+    --primary-foreground: 296 29% 92%; /* off-white */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 296 49% 40%;          /* purple-medium */
+    --secondary-foreground: 296 29% 92%; /* off-white */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 304 34% 72%;              /* lavender-light */
+    --muted-foreground: 295 4% 33%;    /* dark-gray */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 304 34% 72%;             /* lavender-light */
+    --accent-foreground: 271 68% 22%;  /* purple-intense */
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 296 29% 92%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 304 34% 85%;
+    --input: 304 34% 85%;
+    --ring: 271 68% 22%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(271 68% 22% / 0.7), hsl(0 0% 10% / 0.7));
+    --gradient-section: linear-gradient(180deg, hsl(296 29% 92%), hsl(296 29% 95%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(271 68% 22% / 0.3);
+    --shadow-glow: 0 0 40px hsl(304 34% 72% / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* RestroWizard mantiene los mismos colores en modo oscuro */
+    --purple-intense: 271 68% 22%;
+    --purple-medium: 296 49% 40%;
+    --lavender-light: 304 34% 72%;
+    --off-white: 296 29% 92%;
+    --dark-gray: 295 4% 33%;
+    --soft-black: 0 0% 10%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --background: 0 0% 10%;            /* soft-black */
+    --foreground: 296 29% 92%;         /* off-white */
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --card: 295 4% 15%;               /* darker gray */
+    --card-foreground: 296 29% 92%;   /* off-white */
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --popover: 295 4% 15%;
+    --popover-foreground: 296 29% 92%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --primary: 296 49% 40%;           /* purple-medium */
+    --primary-foreground: 296 29% 92%; /* off-white */
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --secondary: 271 68% 22%;         /* purple-intense */
+    --secondary-foreground: 296 29% 92%; /* off-white */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 295 4% 25%;              /* muted gray */
+    --muted-foreground: 304 34% 72%;  /* lavender-light */
+
+    --accent: 304 34% 72%;            /* lavender-light */
+    --accent-foreground: 0 0% 10%;    /* soft-black */
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 296 29% 92%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 295 4% 25%;
+    --input: 295 4% 25%;
+    --ring: 304 34% 72%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -101,5 +121,47 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Lato', sans-serif;
+  }
+}
+
+@layer utilities {
+  /* RestroWizard Custom Utilities */
+  .font-headline {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+  }
+
+  .hologram-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .hologram-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--lavender-light) / 0.2), transparent);
+    transform: skewX(-25deg);
+    animation: hologram-shine 8s infinite;
+  }
+  
+  @keyframes hologram-shine {
+    0% { left: -100%; }
+    50%, 100% { left: 150%; }
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
   }
 }

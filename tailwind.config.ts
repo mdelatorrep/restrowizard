@@ -19,6 +19,15 @@ export default {
 		},
 		extend: {
 			colors: {
+				/* RestroWizard Brand Colors */
+				'purple-intense': 'hsl(var(--purple-intense))',
+				'purple-medium': 'hsl(var(--purple-medium))',
+				'lavender-light': 'hsl(var(--lavender-light))',
+				'off-white': 'hsl(var(--off-white))',
+				'dark-gray': 'hsl(var(--dark-gray))',
+				'soft-black': 'hsl(var(--soft-black))',
+				
+				/* Semantic design system colors */
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -62,6 +71,18 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			fontFamily: {
+				'headline': ['Inter', 'sans-serif'],
+				'body': ['Lato', 'sans-serif'],
+			},
+			backgroundImage: {
+				'gradient-hero': 'var(--gradient-hero)',
+				'gradient-section': 'var(--gradient-section)',
+			},
+			boxShadow: {
+				'elegant': 'var(--shadow-elegant)',
+				'glow': 'var(--shadow-glow)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
