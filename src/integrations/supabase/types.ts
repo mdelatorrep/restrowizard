@@ -14,6 +14,347 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_accounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      agent_conversations: {
+        Row: {
+          conversation_data: Json | null
+          created_at: string
+          document_token_id: string | null
+          id: string
+          openai_agent_id: string | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_session_id: string | null
+        }
+        Insert: {
+          conversation_data?: Json | null
+          created_at?: string
+          document_token_id?: string | null
+          id?: string
+          openai_agent_id?: string | null
+          status?: string
+          thread_id: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Update: {
+          conversation_data?: Json | null
+          created_at?: string
+          document_token_id?: string | null
+          id?: string
+          openai_agent_id?: string | null
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_document_token_id_fkey"
+            columns: ["document_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_openai_agent_id_fkey"
+            columns: ["openai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["openai_agent_id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_openai_agent_id_fkey"
+            columns: ["openai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_drafts: {
+        Row: {
+          ai_results: Json | null
+          created_at: string
+          doc_cat: string | null
+          doc_desc: string | null
+          doc_name: string | null
+          doc_template: string | null
+          draft_name: string
+          id: string
+          initial_prompt: string | null
+          lawyer_id: string
+          lawyer_suggested_price: string | null
+          sla_enabled: boolean | null
+          sla_hours: number | null
+          step_completed: number
+          target_audience: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_results?: Json | null
+          created_at?: string
+          doc_cat?: string | null
+          doc_desc?: string | null
+          doc_name?: string | null
+          doc_template?: string | null
+          draft_name: string
+          id?: string
+          initial_prompt?: string | null
+          lawyer_id: string
+          lawyer_suggested_price?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          step_completed?: number
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_results?: Json | null
+          created_at?: string
+          doc_cat?: string | null
+          doc_desc?: string | null
+          doc_name?: string | null
+          doc_template?: string | null
+          draft_name?: string
+          id?: string
+          initial_prompt?: string | null
+          lawyer_id?: string
+          lawyer_suggested_price?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          step_completed?: number
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_drafts_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_workflows: {
+        Row: {
+          agents_config: Json
+          created_at: string
+          description: string | null
+          execution_steps: Json
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          workflow_type: string
+        }
+        Insert: {
+          agents_config?: Json
+          created_at?: string
+          description?: string | null
+          execution_steps?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          workflow_type: string
+        }
+        Update: {
+          agents_config?: Json
+          created_at?: string
+          description?: string | null
+          execution_steps?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          workflow_type?: string
+        }
+        Relationships: []
+      }
+      blog_posts: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          published_at: string | null
+          reading_time: number | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          views_count: number | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          reading_time?: number | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          reading_time?: number | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_messages: {
+        Row: {
+          admin_notes: string | null
+          consultation_type: string
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          message: string
+          name: string
+          phone: string | null
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          consultation_type?: string
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          message: string
+          name: string
+          phone?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          consultation_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          name?: string
+          phone?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_categories: {
+        Row: {
+          category_type: string | null
+          color_class: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category_type?: string | null
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category_type?: string | null
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_tokens: {
         Row: {
           created_at: string
@@ -21,6 +362,9 @@ export type Database = {
           document_type: string
           id: string
           price: number
+          sla_deadline: string | null
+          sla_hours: number | null
+          sla_status: string | null
           status: Database["public"]["Enums"]["document_status"]
           token: string
           updated_at: string
@@ -35,6 +379,9 @@ export type Database = {
           document_type: string
           id?: string
           price: number
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          sla_status?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           token: string
           updated_at?: string
@@ -49,6 +396,9 @@ export type Database = {
           document_type?: string
           id?: string
           price?: number
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          sla_status?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           token?: string
           updated_at?: string
@@ -59,66 +409,930 @@ export type Database = {
         }
         Relationships: []
       }
-      lawyer_accounts: {
+      event_bookings: {
         Row: {
-          access_token: string
-          active: boolean
+          booking_date: string
+          budget_max: number | null
+          budget_min: number | null
+          client_user_id: string
+          confirmed_at: string | null
+          created_at: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_guests: number
+          id: string
+          location_preference: string | null
+          special_requirements: string | null
+          start_time: string
+          status: string
+          total_cost: number | null
+          updated_at: string
+          venue_space_id: string | null
+        }
+        Insert: {
+          booking_date?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          client_user_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_guests: number
+          id?: string
+          location_preference?: string | null
+          special_requirements?: string | null
+          start_time: string
+          status?: string
+          total_cost?: number | null
+          updated_at?: string
+          venue_space_id?: string | null
+        }
+        Update: {
+          booking_date?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          client_user_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          end_time?: string
+          event_date?: string
+          event_name?: string
+          event_type?: string
+          expected_guests?: number
+          id?: string
+          location_preference?: string | null
+          special_requirements?: string | null
+          start_time?: string
+          status?: string
+          total_cost?: number | null
+          updated_at?: string
+          venue_space_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_bookings_venue_space_id_fkey"
+            columns: ["venue_space_id"]
+            isOneToOne: false
+            referencedRelation: "venue_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_categories: {
+        Row: {
+          color_class: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      event_reviews: {
+        Row: {
+          created_at: string
+          event_booking_id: string | null
+          id: string
+          is_verified: boolean | null
+          rating: number
+          review_date: string
+          review_text: string | null
+          reviewee_id: string
+          reviewee_type: string
+          reviewer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_booking_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          rating: number
+          review_date?: string
+          review_text?: string | null
+          reviewee_id: string
+          reviewee_type: string
+          reviewer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_booking_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          rating?: number
+          review_date?: string
+          review_text?: string | null
+          reviewee_id?: string
+          reviewee_type?: string
+          reviewer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reviews_event_booking_id_fkey"
+            columns: ["event_booking_id"]
+            isOneToOne: false
+            referencedRelation: "event_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_service_bookings: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          event_booking_id: string
+          final_price: number | null
+          id: string
+          provider_id: string
+          provider_notes: string | null
+          quoted_price: number | null
+          requested_at: string
+          service_id: string
+          service_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_booking_id: string
+          final_price?: number | null
+          id?: string
+          provider_id: string
+          provider_notes?: string | null
+          quoted_price?: number | null
+          requested_at?: string
+          service_id: string
+          service_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_booking_id?: string
+          final_price?: number | null
+          id?: string
+          provider_id?: string
+          provider_notes?: string | null
+          quoted_price?: number | null
+          requested_at?: string
+          service_id?: string
+          service_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_service_bookings_event_booking_id_fkey"
+            columns: ["event_booking_id"]
+            isOneToOne: false
+            referencedRelation: "event_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_service_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_service_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "event_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_services: {
+        Row: {
+          availability_schedule: Json
+          base_price: number
+          category: string
+          created_at: string
+          description: string | null
+          equipment_included: Json | null
+          id: string
+          images: Json | null
+          is_active: boolean
+          min_duration_hours: number | null
+          name: string
+          price_type: string
+          provider_id: string
+          service_area_cities: Json
+          subcategory: string | null
+          updated_at: string
+        }
+        Insert: {
+          availability_schedule?: Json
+          base_price: number
+          category: string
+          created_at?: string
+          description?: string | null
+          equipment_included?: Json | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          min_duration_hours?: number | null
+          name: string
+          price_type: string
+          provider_id: string
+          service_area_cities?: Json
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Update: {
+          availability_schedule?: Json
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          equipment_included?: Json | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          min_duration_hours?: number | null
+          name?: string
+          price_type?: string
+          provider_id?: string
+          service_area_cities?: Json
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_services_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_base_urls: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          last_verified: string | null
+          priority: number | null
+          tags: string[] | null
+          updated_at: string
+          url: string
+          verification_status: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_verified?: string | null
+          priority?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          url: string
+          verification_status?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_verified?: string | null
+          priority?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          url?: string
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
+      lawyer_certificates: {
+        Row: {
+          certificate_code: string
+          certificate_name: string
+          certificate_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          issued_date: string
+          lawyer_id: string
+          linkedin_share_url: string | null
+          updated_at: string
+          verification_url: string | null
+        }
+        Insert: {
+          certificate_code: string
+          certificate_name?: string
+          certificate_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          issued_date?: string
+          lawyer_id: string
+          linkedin_share_url?: string | null
+          updated_at?: string
+          verification_url?: string | null
+        }
+        Update: {
+          certificate_code?: string
+          certificate_name?: string
+          certificate_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          issued_date?: string
+          lawyer_id?: string
+          linkedin_share_url?: string | null
+          updated_at?: string
+          verification_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_certificates_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_profiles: {
+        Row: {
+          can_create_agents: boolean | null
+          can_create_blogs: boolean | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          can_create_agents?: boolean | null
+          can_create_blogs?: boolean | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          can_create_agents?: boolean | null
+          can_create_blogs?: boolean | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lawyer_token_requests: {
+        Row: {
           created_at: string
           email: string
           full_name: string
           id: string
+          law_firm: string | null
+          phone_number: string | null
+          reason_for_request: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specialization: string | null
+          status: string
+          updated_at: string
+          years_of_experience: number | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Relationships: []
+      }
+      lawyer_tokens: {
+        Row: {
+          access_token: string
+          active: boolean
+          can_create_agents: boolean
+          can_create_blogs: boolean
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          last_login_at: string | null
+          lawyer_id: string
+          phone_number: string | null
+          request_id: string | null
           updated_at: string
         }
         Insert: {
           access_token: string
           active?: boolean
+          can_create_agents?: boolean
+          can_create_blogs?: boolean
           created_at?: string
+          created_by?: string | null
           email: string
           full_name: string
           id?: string
+          last_login_at?: string | null
+          lawyer_id: string
+          phone_number?: string | null
+          request_id?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string
           active?: boolean
+          can_create_agents?: boolean
+          can_create_blogs?: boolean
           created_at?: string
+          created_by?: string | null
           email?: string
           full_name?: string
           id?: string
+          last_login_at?: string | null
+          lawyer_id?: string
+          phone_number?: string | null
+          request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_tokens_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_token_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_training_progress: {
+        Row: {
+          certificate_id: string | null
+          completed_at: string | null
+          completion_percentage: number
+          course_name: string
+          created_at: string
+          current_module_id: string | null
+          id: string
+          is_certified: boolean
+          last_validation_score: number | null
+          lawyer_id: string
+          modules_completed: Json
+          started_at: string
+          total_modules: number
+          updated_at: string
+          validation_attempts: number | null
+          validation_history: Json | null
+        }
+        Insert: {
+          certificate_id?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          course_name?: string
+          created_at?: string
+          current_module_id?: string | null
+          id?: string
+          is_certified?: boolean
+          last_validation_score?: number | null
+          lawyer_id: string
+          modules_completed?: Json
+          started_at?: string
+          total_modules?: number
+          updated_at?: string
+          validation_attempts?: number | null
+          validation_history?: Json | null
+        }
+        Update: {
+          certificate_id?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          course_name?: string
+          created_at?: string
+          current_module_id?: string | null
+          id?: string
+          is_certified?: boolean
+          last_validation_score?: number | null
+          lawyer_id?: string
+          modules_completed?: Json
+          started_at?: string
+          total_modules?: number
+          updated_at?: string
+          validation_attempts?: number | null
+          validation_history?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_training_progress_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_advisor_agents: {
+        Row: {
+          created_at: string
+          id: string
+          instructions: string
+          legal_sources: Json | null
+          model: string
+          name: string
+          openai_agent_id: string
+          search_keywords: Json | null
+          specialization: string
+          status: string
+          target_audience: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructions: string
+          legal_sources?: Json | null
+          model?: string
+          name: string
+          openai_agent_id: string
+          search_keywords?: Json | null
+          specialization: string
+          status?: string
+          target_audience: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructions?: string
+          legal_sources?: Json | null
+          model?: string
+          name?: string
+          openai_agent_id?: string
+          search_keywords?: Json | null
+          specialization?: string
+          status?: string
+          target_audience?: string
           updated_at?: string
         }
         Relationships: []
       }
-      maturity_diagnoses: {
+      legal_agents: {
         Row: {
-          answers: Json
+          ai_prompt: string
+          button_cta: string | null
+          category: string
           created_at: string
+          created_by: string | null
+          description: string
+          document_description: string | null
+          document_name: string | null
+          final_price: number | null
+          frontend_icon: string | null
           id: string
-          overall_level: string
-          overall_score: number
-          pillar_scores: Json
+          last_openai_activity: string | null
+          name: string
+          openai_conversations_count: number | null
+          openai_enabled: boolean | null
+          openai_success_rate: number | null
+          placeholder_fields: Json
+          price_justification: string | null
+          sla_enabled: boolean | null
+          sla_hours: number | null
+          status: string
+          suggested_price: number
+          target_audience: string | null
+          template_content: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          answers: Json
+          ai_prompt: string
+          button_cta?: string | null
+          category: string
           created_at?: string
+          created_by?: string | null
+          description: string
+          document_description?: string | null
+          document_name?: string | null
+          final_price?: number | null
+          frontend_icon?: string | null
           id?: string
-          overall_level: string
-          overall_score: number
-          pillar_scores: Json
+          last_openai_activity?: string | null
+          name: string
+          openai_conversations_count?: number | null
+          openai_enabled?: boolean | null
+          openai_success_rate?: number | null
+          placeholder_fields?: Json
+          price_justification?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          status?: string
+          suggested_price: number
+          target_audience?: string | null
+          template_content: string
           updated_at?: string
-          user_id: string
         }
         Update: {
-          answers?: Json
+          ai_prompt?: string
+          button_cta?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          document_description?: string | null
+          document_name?: string | null
+          final_price?: number | null
+          frontend_icon?: string | null
+          id?: string
+          last_openai_activity?: string | null
+          name?: string
+          openai_conversations_count?: number | null
+          openai_enabled?: boolean | null
+          openai_success_rate?: number | null
+          placeholder_fields?: Json
+          price_justification?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          status?: string
+          suggested_price?: number
+          target_audience?: string | null
+          template_content?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_agents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_consultations: {
+        Row: {
+          advisor_agent_id: string | null
+          consultation_data: Json | null
+          consultation_topic: string | null
+          created_at: string
+          id: string
+          legal_area: string | null
+          sources_consulted: Json | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_session_id: string | null
+        }
+        Insert: {
+          advisor_agent_id?: string | null
+          consultation_data?: Json | null
+          consultation_topic?: string | null
           created_at?: string
           id?: string
-          overall_level?: string
-          overall_score?: number
-          pillar_scores?: Json
+          legal_area?: string | null
+          sources_consulted?: Json | null
+          status?: string
+          thread_id: string
           updated_at?: string
-          user_id?: string
+          user_session_id?: string | null
+        }
+        Update: {
+          advisor_agent_id?: string | null
+          consultation_data?: Json | null
+          consultation_topic?: string | null
+          created_at?: string
+          id?: string
+          legal_area?: string | null
+          sources_consulted?: Json | null
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_consultations_advisor_agent_id_fkey"
+            columns: ["advisor_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_advisor_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      openai_agent_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          legal_agent_id: string
+          retry_count: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          legal_agent_id: string
+          retry_count?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          legal_agent_id?: string
+          retry_count?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "openai_agent_jobs_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openai_agent_jobs_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
+        ]
+      }
+      openai_agents: {
+        Row: {
+          created_at: string
+          id: string
+          instructions: string
+          legal_agent_id: string | null
+          metadata: Json | null
+          model: string
+          name: string
+          openai_agent_id: string
+          status: string
+          tool_resources: Json | null
+          tools: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructions: string
+          legal_agent_id?: string | null
+          metadata?: Json | null
+          model?: string
+          name: string
+          openai_agent_id: string
+          status?: string
+          tool_resources?: Json | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructions?: string
+          legal_agent_id?: string | null
+          metadata?: Json | null
+          model?: string
+          name?: string
+          openai_agent_id?: string
+          status?: string
+          tool_resources?: Json | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "openai_agents_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openai_agents_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
+        ]
+      }
+      pricing_analytics: {
+        Row: {
+          clicked_at: string
+          created_at: string
+          id: string
+          plan_id: string
+          plan_name: string
+          plan_type: string
+          user_agent: string | null
+          user_ip: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          plan_name: string
+          plan_type: string
+          user_agent?: string | null
+          user_ip?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          plan_name?: string
+          plan_type?: string
+          user_agent?: string | null
+          user_ip?: string | null
         }
         Relationships: []
       }
@@ -149,56 +1363,368 @@ export type Database = {
         }
         Relationships: []
       }
-      webhook_logs: {
+      service_providers: {
         Row: {
-          amount: number | null
+          business_name: string
+          contact_name: string
           created_at: string
-          document_id: string | null
-          event_type: string
+          description: string | null
+          email: string
           id: string
-          order_reference: string | null
-          payment_id: string | null
-          raw_payload: Json | null
-          status: string | null
+          is_active: boolean
+          is_verified: boolean | null
+          location_cities: Json
+          phone: string | null
+          portfolio_images: Json | null
+          rating: number | null
+          service_categories: Json
+          social_media: Json | null
+          total_reviews: number | null
           updated_at: string
-          webhook_type: string
+          user_id: string
+          website_url: string | null
         }
         Insert: {
-          amount?: number | null
+          business_name: string
+          contact_name: string
           created_at?: string
-          document_id?: string | null
-          event_type: string
+          description?: string | null
+          email: string
           id?: string
-          order_reference?: string | null
-          payment_id?: string | null
-          raw_payload?: Json | null
-          status?: string | null
+          is_active?: boolean
+          is_verified?: boolean | null
+          location_cities?: Json
+          phone?: string | null
+          portfolio_images?: Json | null
+          rating?: number | null
+          service_categories?: Json
+          social_media?: Json | null
+          total_reviews?: number | null
           updated_at?: string
-          webhook_type: string
+          user_id: string
+          website_url?: string | null
         }
         Update: {
-          amount?: number | null
+          business_name?: string
+          contact_name?: string
           created_at?: string
-          document_id?: string | null
-          event_type?: string
+          description?: string | null
+          email?: string
           id?: string
-          order_reference?: string | null
-          payment_id?: string | null
-          raw_payload?: Json | null
-          status?: string | null
+          is_active?: boolean
+          is_verified?: boolean | null
+          location_cities?: Json
+          phone?: string | null
+          portfolio_images?: Json | null
+          rating?: number | null
+          service_categories?: Json
+          social_media?: Json | null
+          total_reviews?: number | null
           updated_at?: string
-          webhook_type?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      service_status: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_checked: string | null
+          response_time_ms: number | null
+          service_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_checked?: string | null
+          response_time_ms?: number | null
+          service_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_checked?: string | null
+          response_time_ms?: number | null
+          service_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string | null
+          description: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      training_validations: {
+        Row: {
+          ai_evaluation: Json
+          answers: Json
+          created_at: string
+          id: string
+          lawyer_id: string
+          max_score: number
+          module_id: string
+          module_title: string
+          passed: boolean
+          questions: Json
+          score: number
+          updated_at: string
+          validated_at: string
+        }
+        Insert: {
+          ai_evaluation?: Json
+          answers?: Json
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          max_score?: number
+          module_id: string
+          module_title: string
+          passed?: boolean
+          questions?: Json
+          score?: number
+          updated_at?: string
+          validated_at?: string
+        }
+        Update: {
+          ai_evaluation?: Json
+          answers?: Json
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          max_score?: number
+          module_id?: string
+          module_title?: string
+          passed?: boolean
+          questions?: Json
+          score?: number
+          updated_at?: string
+          validated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      venue_spaces: {
+        Row: {
+          amenities: Json | null
+          area_m2: number | null
+          availability_schedule: Json
+          capacity: number
+          created_at: string
+          description: string | null
+          id: string
+          images: Json | null
+          is_active: boolean
+          latitude: number | null
+          location_address: string
+          location_city: string
+          location_zone: string
+          longitude: number | null
+          max_hours: number | null
+          min_hours: number | null
+          name: string
+          price_per_hour: number
+          space_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amenities?: Json | null
+          area_m2?: number | null
+          availability_schedule?: Json
+          capacity: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          latitude?: number | null
+          location_address: string
+          location_city: string
+          location_zone: string
+          longitude?: number | null
+          max_hours?: number | null
+          min_hours?: number | null
+          name: string
+          price_per_hour: number
+          space_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amenities?: Json | null
+          area_m2?: number | null
+          availability_schedule?: Json
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          latitude?: number | null
+          location_address?: string
+          location_city?: string
+          location_zone?: string
+          longitude?: number | null
+          max_hours?: number | null
+          min_hours?: number | null
+          name?: string
+          price_per_hour?: number
+          space_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number | null
+          document_token_id: string | null
+          error_message: string | null
+          execution_data: Json | null
+          id: string
+          started_at: string | null
+          status: string
+          workflow_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          document_token_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          document_token_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_document_token_id_fkey"
+            columns: ["document_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "agent_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      openai_agent_analytics: {
+        Row: {
+          agent_name: string | null
+          calculated_success_rate: number | null
+          document_name: string | null
+          jobs_completed: number | null
+          jobs_failed: number | null
+          jobs_pending: number | null
+          last_openai_activity: string | null
+          legal_agent_id: string | null
+          openai_agent_id: string | null
+          openai_conversations_count: number | null
+          openai_created_at: string | null
+          openai_enabled: boolean | null
+          openai_external_id: string | null
+          openai_status: string | null
+          openai_success_rate: number | null
+          successful_documents: number | null
+          target_audience: string | null
+          total_conversations: number | null
         }
         Relationships: []
       }
     }
-    Views: {
-      [_ in never]: never
-    }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "lawyer" | "super_admin"
       document_status:
         | "solicitado"
         | "en_revision_abogado"
@@ -333,6 +1859,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "lawyer", "super_admin"],
       document_status: [
         "solicitado",
         "en_revision_abogado",
