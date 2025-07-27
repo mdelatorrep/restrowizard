@@ -187,7 +187,7 @@ const Jobs = () => {
                     <SelectValue placeholder="Categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las categorías</SelectItem>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
                     <SelectItem value="kitchen">Cocina</SelectItem>
                     <SelectItem value="service">Servicio</SelectItem>
                     <SelectItem value="management">Gestión</SelectItem>
