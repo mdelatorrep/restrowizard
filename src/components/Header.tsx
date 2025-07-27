@@ -56,6 +56,12 @@ const Header = () => {
           >
             Ecosistema
           </button>
+          <button
+            onClick={() => navigate('/jobs')}
+            className="font-lato-regular hover:text-purple-medium transition-colors"
+          >
+            Restro Jobs
+          </button>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Precios</a>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Blog</a>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Contacto</a>
@@ -127,6 +133,15 @@ const Header = () => {
             className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
           >
             Ecosistema
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/jobs');
+              setIsMenuOpen(false);
+            }} 
+            className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
+          >
+            Restro Jobs
           </button>
           <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Precios</a>
           <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Blog</a>

@@ -14,6 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
+      applicant_profiles: {
+        Row: {
+          availability_status: string | null
+          bio: string | null
+          certifications: string[] | null
+          created_at: string | null
+          currency: string | null
+          desired_salary_max: number | null
+          desired_salary_min: number | null
+          experience_years: number | null
+          headline: string | null
+          id: string
+          is_open_to_remote: boolean | null
+          languages: string[] | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          preferred_categories:
+            | Database["public"]["Enums"]["job_category"][]
+            | null
+          preferred_job_types: Database["public"]["Enums"]["job_type"][] | null
+          preferred_locations: string[] | null
+          resume_url: string | null
+          skills: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          availability_status?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string
+          is_open_to_remote?: boolean | null
+          languages?: string[] | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          preferred_categories?:
+            | Database["public"]["Enums"]["job_category"][]
+            | null
+          preferred_job_types?: Database["public"]["Enums"]["job_type"][] | null
+          preferred_locations?: string[] | null
+          resume_url?: string | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          availability_status?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          experience_years?: number | null
+          headline?: string | null
+          id?: string
+          is_open_to_remote?: boolean | null
+          languages?: string[] | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          preferred_categories?:
+            | Database["public"]["Enums"]["job_category"][]
+            | null
+          preferred_job_types?: Database["public"]["Enums"]["job_type"][] | null
+          preferred_locations?: string[] | null
+          resume_url?: string | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applicant_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_enrollments: {
+        Row: {
+          amount_paid: number | null
+          certificate_url: string | null
+          completion_date: string | null
+          course_id: string
+          enrollment_date: string | null
+          final_grade: number | null
+          id: string
+          payment_status: string | null
+          progress_percentage: number | null
+          status: Database["public"]["Enums"]["enrollment_status"] | null
+          student_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          certificate_url?: string | null
+          completion_date?: string | null
+          course_id: string
+          enrollment_date?: string | null
+          final_grade?: number | null
+          id?: string
+          payment_status?: string | null
+          progress_percentage?: number | null
+          status?: Database["public"]["Enums"]["enrollment_status"] | null
+          student_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          certificate_url?: string | null
+          completion_date?: string | null
+          course_id?: string
+          enrollment_date?: string | null
+          final_grade?: number | null
+          id?: string
+          payment_status?: string | null
+          progress_percentage?: number | null
+          status?: Database["public"]["Enums"]["enrollment_status"] | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_reviews: {
+        Row: {
+          comment: string | null
+          course_id: string
+          created_at: string | null
+          enrollment_id: string
+          id: string
+          rating: number
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          course_id: string
+          created_at?: string | null
+          enrollment_id: string
+          id?: string
+          rating: number
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          course_id?: string
+          created_at?: string | null
+          enrollment_id?: string
+          id?: string
+          rating?: number
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_reviews_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           budget_max: number | null
@@ -64,6 +259,149 @@ export type Database = {
           {
             foreignKeyName: "events_organizer_id_fkey"
             columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_applications: {
+        Row: {
+          applicant_id: string
+          applied_at: string | null
+          cover_letter: string | null
+          id: string
+          interview_date: string | null
+          job_id: string
+          notes: string | null
+          resume_url: string | null
+          reviewed_at: string | null
+          status: Database["public"]["Enums"]["application_status"] | null
+        }
+        Insert: {
+          applicant_id: string
+          applied_at?: string | null
+          cover_letter?: string | null
+          id?: string
+          interview_date?: string | null
+          job_id: string
+          notes?: string | null
+          resume_url?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+        }
+        Update: {
+          applicant_id?: string
+          applied_at?: string | null
+          cover_letter?: string | null
+          id?: string
+          interview_date?: string | null
+          job_id?: string
+          notes?: string | null
+          resume_url?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          application_deadline: string | null
+          applications_count: number | null
+          benefits: string[] | null
+          created_at: string | null
+          currency: string | null
+          description: string
+          employer_id: string
+          experience_level: Database["public"]["Enums"]["experience_level"]
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          job_category: Database["public"]["Enums"]["job_category"]
+          job_type: Database["public"]["Enums"]["job_type"]
+          location: string
+          requirements: string | null
+          responsibilities: string | null
+          restaurant_name: string
+          salary_max: number | null
+          salary_min: number | null
+          skills_required: string[] | null
+          start_date: string | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          applications_count?: number | null
+          benefits?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          employer_id: string
+          experience_level: Database["public"]["Enums"]["experience_level"]
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          job_category: Database["public"]["Enums"]["job_category"]
+          job_type: Database["public"]["Enums"]["job_type"]
+          location: string
+          requirements?: string | null
+          responsibilities?: string | null
+          restaurant_name: string
+          salary_max?: number | null
+          salary_min?: number | null
+          skills_required?: string[] | null
+          start_date?: string | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          application_deadline?: string | null
+          applications_count?: number | null
+          benefits?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          employer_id?: string
+          experience_level?: Database["public"]["Enums"]["experience_level"]
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          job_category?: Database["public"]["Enums"]["job_category"]
+          job_type?: Database["public"]["Enums"]["job_type"]
+          location?: string
+          requirements?: string | null
+          responsibilities?: string | null
+          restaurant_name?: string
+          salary_max?: number | null
+          salary_min?: number | null
+          skills_required?: string[] | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_employer_id_fkey"
+            columns: ["employer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -351,6 +689,89 @@ export type Database = {
           },
         ]
       }
+      training_courses: {
+        Row: {
+          certification_provided: boolean | null
+          content_outline: string | null
+          course_image: string | null
+          course_level: Database["public"]["Enums"]["course_level"]
+          created_at: string | null
+          currency: string | null
+          description: string
+          duration_hours: number
+          id: string
+          instructor_id: string
+          is_featured: boolean | null
+          job_category: Database["public"]["Enums"]["job_category"]
+          max_participants: number | null
+          objectives: string | null
+          prerequisites: string | null
+          price: number
+          rating: number | null
+          skills_covered: string[] | null
+          status: Database["public"]["Enums"]["course_status"] | null
+          title: string
+          total_enrollments: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          certification_provided?: boolean | null
+          content_outline?: string | null
+          course_image?: string | null
+          course_level: Database["public"]["Enums"]["course_level"]
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          duration_hours: number
+          id?: string
+          instructor_id: string
+          is_featured?: boolean | null
+          job_category: Database["public"]["Enums"]["job_category"]
+          max_participants?: number | null
+          objectives?: string | null
+          prerequisites?: string | null
+          price: number
+          rating?: number | null
+          skills_covered?: string[] | null
+          status?: Database["public"]["Enums"]["course_status"] | null
+          title: string
+          total_enrollments?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          certification_provided?: boolean | null
+          content_outline?: string | null
+          course_image?: string | null
+          course_level?: Database["public"]["Enums"]["course_level"]
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          duration_hours?: number
+          id?: string
+          instructor_id?: string
+          is_featured?: boolean | null
+          job_category?: Database["public"]["Enums"]["job_category"]
+          max_participants?: number | null
+          objectives?: string | null
+          prerequisites?: string | null
+          price?: number
+          rating?: number | null
+          skills_covered?: string[] | null
+          status?: Database["public"]["Enums"]["course_status"] | null
+          title?: string
+          total_enrollments?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_courses_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -527,11 +948,39 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_job_views: {
+        Args: { job_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff" | "user"
+      application_status:
+        | "pending"
+        | "reviewed"
+        | "interview"
+        | "accepted"
+        | "rejected"
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
+      course_level: "beginner" | "intermediate" | "advanced" | "expert"
+      course_status: "draft" | "published" | "archived"
+      enrollment_status: "enrolled" | "completed" | "dropped" | "certified"
       event_status: "draft" | "published" | "cancelled" | "completed"
+      experience_level: "entry" | "junior" | "mid" | "senior" | "lead"
+      job_category:
+        | "kitchen"
+        | "service"
+        | "management"
+        | "administration"
+        | "marketing"
+        | "finance"
+        | "maintenance"
+      job_type:
+        | "full_time"
+        | "part_time"
+        | "contract"
+        | "internship"
+        | "freelance"
       maturity_level:
         | "inicial"
         | "basico"
@@ -683,8 +1132,35 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "staff", "user"],
+      application_status: [
+        "pending",
+        "reviewed",
+        "interview",
+        "accepted",
+        "rejected",
+      ],
       booking_status: ["pending", "confirmed", "cancelled", "completed"],
+      course_level: ["beginner", "intermediate", "advanced", "expert"],
+      course_status: ["draft", "published", "archived"],
+      enrollment_status: ["enrolled", "completed", "dropped", "certified"],
       event_status: ["draft", "published", "cancelled", "completed"],
+      experience_level: ["entry", "junior", "mid", "senior", "lead"],
+      job_category: [
+        "kitchen",
+        "service",
+        "management",
+        "administration",
+        "marketing",
+        "finance",
+        "maintenance",
+      ],
+      job_type: [
+        "full_time",
+        "part_time",
+        "contract",
+        "internship",
+        "freelance",
+      ],
       maturity_level: [
         "inicial",
         "basico",

@@ -58,6 +58,17 @@ export const useDiagnosis = () => {
     try {
       const result = calculateScores(answers);
       
+      // Map the level name to database enum value
+      const levelMapping: Record<string, string> = {
+        'INICIAL': 'inicial',
+        'BÁSICO': 'basico', 
+        'INTERMEDIO': 'intermedio',
+        'AVANZADO': 'avanzado',
+        'EXPERTO': 'experto'
+      };
+      
+      const dbLevel = levelMapping[result.overallLevel] || 'inicial';
+      
       const { error } = await supabase
         .from('maturity_diagnoses')
         .insert({
@@ -65,7 +76,7 @@ export const useDiagnosis = () => {
           answers,
           pillar_scores: result.pillarScores,
           overall_score: result.overallScore,
-          overall_level: result.overallLevel
+          overall_level: dbLevel as 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto'
         });
 
       if (error) throw error;

@@ -18,10 +18,11 @@ import {
     LayoutDashboard, BarChart2, MessageSquare, UtensilsCrossed, Sparkles, 
     BookOpen, Warehouse, CalendarDays, Users, DollarSign, ShoppingCart, 
     Star, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock,
-    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut
+    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import JobsManagement from '@/components/JobsManagement';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler
@@ -482,6 +483,7 @@ const Dashboard = () => {
         { id: 'inventory', label: 'Gestión de Inventario', icon: <Warehouse size={20} /> },
         { id: 'shifts', label: 'Optimización de Turnos', icon: <CalendarDays size={20} /> },
         { id: 'training', label: 'Formación (RestroLearn)', icon: <BookOpen size={20} /> },
+        { id: 'jobs', label: 'Gestión de Empleos', icon: <Briefcase size={20} /> },
     ];
 
     const renderContent = () => {
@@ -493,6 +495,7 @@ const Dashboard = () => {
             case 'inventory': return <InventoryModule />;
             case 'shifts': return <ShiftsModule />;
             case 'training': return <TrainingModule />;
+            case 'jobs': return <JobsManagement />;
             default: return <DashboardHome />;
         }
     };
