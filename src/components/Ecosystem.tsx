@@ -6,10 +6,10 @@ const Ecosystem = () => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-headline mb-4">
-            4 Copilotos IA Especializados: Tu Equipo de Gestión Automatizado
+            4 Módulos Especializados: Tu Equipo de Gestión Automatizado
           </h2>
           <p className="max-w-4xl mx-auto text-lg font-lato-light">
-            Cada copiloto domina su área con inteligencia artificial avanzada. 
+            Cada módulo está diseñado para resolver problemas específicos de tu restaurante. 
             <span className="font-lato-bold">Trabajan unidos para maximizar tu rentabilidad</span> mientras tú te enfocas en la pasión: la gastronomía.
           </p>
         </div>
@@ -18,38 +18,38 @@ const Ecosystem = () => {
           <div className="bg-soft-black p-8 rounded-xl border border-purple-medium/50 shadow-lg flex flex-col">
             <div className="flex items-center mb-4">
               <div className="text-3xl mr-3">💰</div>
-              <h3 className="text-2xl font-headline text-lavender-light">
-                Copiloto Finanzas IA
+               <h3 className="text-2xl font-headline text-lavender-light">
+                Control Financiero Inteligente
               </h3>
             </div>
             <p className="font-lato-light flex-grow mb-4">
-              <span className="font-lato-bold">Rentabilidad Predictiva:</span> Predice si serás rentable el próximo mes. 
-              <span className="font-lato-bold">Detección de Anomalías:</span> Alerta sobre costos descontrolados. 
-              <span className="font-lato-bold">Precios Dinámicos:</span> Optimiza precios en tiempo real según demanda.
+              <span className="font-lato-bold">Predice tu Rentabilidad:</span> Sabrás si serás rentable el próximo mes antes de que termine este. 
+              <span className="font-lato-bold">Detecta Fugas de Dinero:</span> Te alerta cuando algo está costando más de lo normal. 
+              <span className="font-lato-bold">Precios Inteligentes:</span> Te sugiere cuándo subir o bajar precios para vender más.
             </p>
             <div className="text-sm text-lavender-light/80">
-              ✓ Análisis predictivo de rentabilidad<br/>
-              ✓ Monitoreo automático de costos<br/>
-              ✓ Simulaciones de flujo de caja
+              ✓ Proyecciones de rentabilidad confiables<br/>
+              ✓ Alertas automáticas de costos elevados<br/>
+              ✓ Simulaciones de escenarios financieros
             </div>
           </div>
           
           <div className="bg-soft-black p-8 rounded-xl border border-purple-medium/50 shadow-lg flex flex-col">
             <div className="flex items-center mb-4">
               <div className="text-3xl mr-3">👥</div>
-              <h3 className="text-2xl font-headline text-lavender-light">
-                Copiloto Talento IA
+               <h3 className="text-2xl font-headline text-lavender-light">
+                Gestión de Personal Eficiente
               </h3>
             </div>
             <p className="font-lato-light flex-grow mb-4">
-              <span className="font-lato-bold">Horarios Predictivos:</span> Optimiza personal según tráfico previsto. 
-              <span className="font-lato-bold">Reclutamiento Inteligente:</span> Conecta candidatos ideales por IA. 
-              <span className="font-lato-bold">Capacitación Adaptativa:</span> Planes personalizados por empleado.
+              <span className="font-lato-bold">Horarios Optimizados:</span> Programa al personal perfecto para cada momento de alta demanda. 
+              <span className="font-lato-bold">Encuentra Talento:</span> Te conecta con candidatos que realmente funcionarán en tu equipo. 
+              <span className="font-lato-bold">Capacitación Personalizada:</span> Planes de entrenamiento únicos para cada empleado.
             </p>
             <div className="text-sm text-lavender-light/80">
-              ✓ Planificación automática de horarios<br/>
-              ✓ Matching inteligente de candidatos<br/>
-              ✓ Capacitación personalizada por IA
+              ✓ Horarios basados en demanda real<br/>
+              ✓ Conexión con candidatos ideales<br/>
+              ✓ Programas de capacitación efectivos
             </div>
           </div>
         </div>
@@ -58,38 +58,38 @@ const Ecosystem = () => {
           <div className="bg-soft-black p-8 rounded-xl border border-purple-medium/50 shadow-lg flex flex-col">
             <div className="flex items-center mb-4">
               <div className="text-3xl mr-3">📊</div>
-              <h3 className="text-2xl font-headline text-lavender-light">
-                Copiloto Operaciones IA
+               <h3 className="text-2xl font-headline text-lavender-light">
+                Análisis de Operaciones Avanzado
               </h3>
             </div>
             <p className="font-lato-light flex-grow mb-4">
-              <span className="font-lato-bold">BI Aumentado:</span> Transforma datos en recomendaciones. 
-              <span className="font-lato-bold">Hiper-Personalización:</span> Ofertas únicas por cliente. 
-              <span className="font-lato-bold">Marketing Predictivo:</span> Anticipa comportamiento de clientes.
+              <span className="font-lato-bold">Datos que Hablan:</span> Convierte tus ventas en recomendaciones claras de qué hacer. 
+              <span className="font-lato-bold">Clientes Felices:</span> Ofertas personalizadas que hacen que regresen una y otra vez. 
+              <span className="font-lato-bold">Marketing Automático:</span> Identifica quién puede dejar de venir y los recupera.
             </p>
             <div className="text-sm text-lavender-light/80">
-              ✓ Business Intelligence automatizado<br/>
-              ✓ Programas de lealtad personalizados<br/>
-              ✓ Campañas de retención predictivas
+              ✓ Reportes que te dicen exactamente qué hacer<br/>
+              ✓ Programas de lealtad que realmente funcionan<br/>
+              ✓ Recuperación automática de clientes perdidos
             </div>
           </div>
           
           <div className="bg-soft-black p-8 rounded-xl border border-purple-medium/50 shadow-lg flex flex-col">
             <div className="flex items-center mb-4">
               <div className="text-3xl mr-3">🍽️</div>
-              <h3 className="text-2xl font-headline text-lavender-light">
-                Copiloto Menú IA
+               <h3 className="text-2xl font-headline text-lavender-light">
+                Optimización de Menú e Inventario
               </h3>
             </div>
             <p className="font-lato-light flex-grow mb-4">
-              <span className="font-lato-bold">Ingeniería de Menú:</span> Simula impacto financiero de cambios. 
-              <span className="font-lato-bold">Inventario Predictivo:</span> Previene escasez automáticamente. 
-              <span className="font-lato-bold">Optimización Delivery:</span> Mejora calidad en entregas.
+              <span className="font-lato-bold">Menús Rentables:</span> Te dice exactamente cuánto ganarás antes de cambiar cualquier plato. 
+              <span className="font-lato-bold">Nunca te Quedas Sin Stock:</span> Predice qué necesitarás y cuándo pedirlo. 
+              <span className="font-lato-bold">Delivery Perfecto:</span> Garantiza que tu comida llegue como recién salida de la cocina.
             </p>
             <div className="text-sm text-lavender-light/80">
-              ✓ Simulación de rentabilidad por plato<br/>
-              ✓ Pronósticos de demanda por ingrediente<br/>
-              ✓ Recomendaciones de empaque inteligente
+              ✓ Simulador de rentabilidad por cada plato<br/>
+              ✓ Predicciones precisas de inventario<br/>
+              ✓ Empaques optimizados para delivery
             </div>
           </div>
         </div>

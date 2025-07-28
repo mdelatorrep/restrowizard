@@ -22,11 +22,11 @@ const Hero = () => {
     >
       <div className="container mx-auto px-6 text-center">
         <h1 className="text-4xl md:text-6xl font-headline mb-4 text-shadow-lg">
-          4 Copilotos IA que Revolucionarán tu Restaurante
+          Transforma tu Restaurante en una Máquina de Rentabilidad
         </h1>
         <p className="text-lg md:text-2xl font-lato-light max-w-4xl mx-auto mb-8 text-shadow">
-          Finanzas predictivas, talento optimizado, operaciones inteligentes y menús rentables. 
-          <span className="font-lato-bold">Todo automatizado por IA</span> para que tú te enfoques en la gastronomía.
+          Controla tus finanzas, optimiza tu equipo, atrae más clientes y maximiza tus ventas. 
+          <span className="font-lato-bold">Todo automatizado</span> para que tú te enfoques en crear experiencias gastronómicas increíbles.
         </p>
         <button 
           onClick={() => {

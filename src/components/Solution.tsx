@@ -12,11 +12,11 @@ const Solution = () => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-headline text-purple-intense mb-4">
-            4 Copilotos IA que Transforman Todo en 3 Pasos
+            Tu Restaurante Funcionando Como Relojería en 3 Pasos
           </h2>
           <p className="max-w-4xl mx-auto text-lg text-soft-black font-lato-regular">
-            No más adivinar. <span className="font-lato-bold">Cada uno de los 4 enemigos tiene su copiloto IA especializado</span> 
-            que automatiza la solución mientras tú te enfocas en la gastronomía. 
+            No más adivinar ni improvisar. <span className="font-lato-bold">RestroWizard automatiza las 4 áreas críticas</span> 
+            de tu negocio para que funcione sin tu presencia constante. 
             <span className="font-lato-bold">Resultados medibles desde el primer mes.</span>
           </p>
         </div>
@@ -31,12 +31,12 @@ const Solution = () => {
                 <FontAwesomeIcon icon={faWandMagicSparkles} />
               </div>
               <h3 className="text-xl font-headline text-purple-intense mb-2">
-                Paso 1: Diagnóstico 360° con IA
+                Paso 1: Diagnóstico Completo de tu Negocio
               </h3>
               <p className="text-soft-black font-lato-regular">
                 Nuestro <span className="font-lato-bold">Modelo de Madurez RestroWizard™</span> evalúa tus 4 áreas críticas: 
-                finanzas, talento, operaciones y menú/inventario. <span className="font-lato-bold">En 15 minutos conoces tu estado real</span> 
-                y el potencial de crecimiento exacto.
+                finanzas, personal, operaciones y menú. <span className="font-lato-bold">En 15 minutos conoces tu estado real</span> 
+                y las oportunidades exactas de crecimiento.
               </p>
             </div>
             
@@ -45,12 +45,12 @@ const Solution = () => {
                 <FontAwesomeIcon icon={faMapLocationDot} />
               </div>
               <h3 className="text-xl font-headline text-purple-intense mb-2">
-                Paso 2: Activación de Copilotos IA
+                Paso 2: Activación de Sistemas Inteligentes
               </h3>
               <p className="text-soft-black font-lato-regular">
-                Basado en tu diagnóstico, activamos los copilotos que necesitas: 
-                <span className="font-lato-bold">Finanzas IA, Talento IA, Operaciones IA y Menú IA</span>. 
-                Cada uno automatiza su área específica con recomendaciones precisas.
+                Basado en tu diagnóstico, activamos los módulos que necesitas: 
+                <span className="font-lato-bold">Control Financiero, Gestión de Personal, Análisis de Operaciones y Optimización de Menú</span>. 
+                Cada uno automatiza decisiones clave con recomendaciones precisas.
               </p>
             </div>
             
@@ -62,8 +62,8 @@ const Solution = () => {
                 Paso 3: Transformación Automatizada
               </h3>
               <p className="text-soft-black font-lato-regular">
-                Los copilotos trabajan 24/7: predicen rentabilidad, optimizan horarios, personalizan marketing, 
-                y gestionan inventario. <span className="font-lato-bold">Tú ves los resultados, no el trabajo.</span> 
+                RestroWizard trabaja 24/7: predice tu rentabilidad, optimiza horarios de personal, atrae clientes ideales, 
+                y gestiona tu inventario automáticamente. <span className="font-lato-bold">Tú ves los resultados, no el trabajo.</span> 
                 Libertad total para crear experiencias gastronómicas increíbles.
               </p>
             </div>
