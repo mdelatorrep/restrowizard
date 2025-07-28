@@ -23,28 +23,32 @@ const Auth = () => {
   const { checkUserDiagnosis } = useDashboard();
   const navigate = useNavigate();
 
-  // Manejar redirección automática cuando el usuario se autentica
-  useEffect(() => {
-    if (user) {
-      const handleRedirect = async () => {
-        try {
-          const hasDiagnosis = await checkUserDiagnosis(user.id);
-          navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
-        } catch (error) {
-          console.error('Error during navigation:', error);
-          navigate('/diagnosis', { replace: true });
-        }
-      };
-      
-      handleRedirect();
-    }
-  }, [user, checkUserDiagnosis, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signIn(loginForm.email, loginForm.password);
+    const result = await signIn(loginForm.email, loginForm.password);
+    
+    if (!result.error) {
+      // Esperar un momento para que el estado se actualice y luego navegar
+      setTimeout(async () => {
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 100);
+    }
     
     setIsLoading(false);
   };
@@ -53,19 +57,58 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signUp(
+    const result = await signUp(
       signupForm.email, 
       signupForm.password, 
       signupForm.fullName,
       signupForm.restaurantName
     );
     
+    if (!result.error) {
+      setTimeout(async () => {
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 100);
+    }
+    
     setIsLoading(false);
   };
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
-    await signInWithGoogle();
+    const result = await signInWithGoogle();
+    
+    if (!result.error) {
+      setTimeout(async () => {
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) throw error;
+          
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 100);
+    }
+    
     setIsLoading(false);
   };
 
