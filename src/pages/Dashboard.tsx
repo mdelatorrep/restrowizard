@@ -23,6 +23,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import JobsManagement from '@/components/JobsManagement';
+import FinancesAIModule from '@/components/FinancesAIModule';
+import TalentAIModule from '@/components/TalentAIModule';
+import OperationsAIModule from '@/components/OperationsAIModule';
+import MenuInventoryAIModule from '@/components/MenuInventoryAIModule';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler
@@ -477,9 +481,12 @@ const Dashboard = () => {
 
     const navItems = [
         { id: 'home', label: 'Mando de Control', icon: <LayoutDashboard size={20} /> },
-        { id: 'menu', label: 'Ingeniería de Menú', icon: <UtensilsCrossed size={20} /> },
-        { id: 'social', label: 'Redes Sociales', icon: <Sparkles size={20} /> },
-        { id: 'sentiment', label: 'Análisis de Sentimientos', icon: <MessageSquare size={20} /> },
+        { id: 'finances', label: 'Finanzas e IA', icon: <DollarSign size={20} /> },
+        { id: 'talent', label: 'Talento e IA', icon: <Users size={20} /> },
+        { id: 'operations', label: 'Operaciones e IA', icon: <Sparkles size={20} /> },
+        { id: 'menu', label: 'Menú e Inventario IA', icon: <UtensilsCrossed size={20} /> },
+        { id: 'social', label: 'Redes Sociales', icon: <MessageSquare size={20} /> },
+        { id: 'sentiment', label: 'Análisis de Sentimientos', icon: <BarChart2 size={20} /> },
         { id: 'inventory', label: 'Gestión de Inventario', icon: <Warehouse size={20} /> },
         { id: 'shifts', label: 'Optimización de Turnos', icon: <CalendarDays size={20} /> },
         { id: 'training', label: 'Formación (RestroLearn)', icon: <BookOpen size={20} /> },
@@ -489,7 +496,10 @@ const Dashboard = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'home': return <DashboardHome />;
-            case 'menu': return <MenuEngineeringModule />;
+            case 'finances': return <FinancesAIModule />;
+            case 'talent': return <TalentAIModule />;
+            case 'operations': return <OperationsAIModule />;
+            case 'menu': return <MenuInventoryAIModule />;
             case 'social': return <SocialMediaModule />;
             case 'sentiment': return <SentimentAnalysisModule />;
             case 'inventory': return <InventoryModule />;
