@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -23,32 +23,28 @@ const Auth = () => {
   const { checkUserDiagnosis } = useDashboard();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    const result = await signIn(loginForm.email, loginForm.password);
-    
-    if (!result.error) {
-      // Obtener el usuario directamente de Supabase después del login
-      setTimeout(async () => {
+  // Manejar redirección automática cuando el usuario se autentica
+  useEffect(() => {
+    if (user) {
+      const handleRedirect = async () => {
         try {
-          const { data: { user }, error } = await supabase.auth.getUser();
-          
-          if (error) throw error;
-          
-          if (user) {
-            const hasDiagnosis = await checkUserDiagnosis(user.id);
-            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
-          } else {
-            navigate('/diagnosis', { replace: true });
-          }
+          const hasDiagnosis = await checkUserDiagnosis(user.id);
+          navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
         } catch (error) {
           console.error('Error during navigation:', error);
           navigate('/diagnosis', { replace: true });
         }
-      }, 500);
+      };
+      
+      handleRedirect();
     }
+  }, [user, checkUserDiagnosis, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    await signIn(loginForm.email, loginForm.password);
     
     setIsLoading(false);
   };
@@ -57,60 +53,19 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const result = await signUp(
+    await signUp(
       signupForm.email, 
       signupForm.password, 
       signupForm.fullName,
       signupForm.restaurantName
     );
     
-    if (!result.error) {
-      setTimeout(async () => {
-        try {
-          const { data: { user }, error } = await supabase.auth.getUser();
-          
-          if (error) throw error;
-          
-          if (user) {
-            const hasDiagnosis = await checkUserDiagnosis(user.id);
-            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
-          } else {
-            navigate('/diagnosis', { replace: true });
-          }
-        } catch (error) {
-          console.error('Error during navigation:', error);
-          navigate('/diagnosis', { replace: true });
-        }
-      }, 500);
-    }
-    
     setIsLoading(false);
   };
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
-    const result = await signInWithGoogle();
-    
-    if (!result.error) {
-      setTimeout(async () => {
-        try {
-          const { data: { user }, error } = await supabase.auth.getUser();
-          
-          if (error) throw error;
-          
-          if (user) {
-            const hasDiagnosis = await checkUserDiagnosis(user.id);
-            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
-          } else {
-            navigate('/diagnosis', { replace: true });
-          }
-        } catch (error) {
-          console.error('Error during navigation:', error);
-          navigate('/diagnosis', { replace: true });
-        }
-      }, 500);
-    }
-    
+    await signInWithGoogle();
     setIsLoading(false);
   };
 
