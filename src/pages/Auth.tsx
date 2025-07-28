@@ -23,20 +23,28 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      // Check if user has completed diagnosis to redirect appropriately
-      checkUserDiagnosis(user.id).then((hasDiagnosis) => {
-        if (hasDiagnosis) {
-          navigate('/dashboard');
-        } else {
+    const handleRedirection = async () => {
+      if (user) {
+        console.log('User logged in:', user.email);
+        try {
+          const hasDiagnosis = await checkUserDiagnosis(user.id);
+          console.log('Has diagnosis:', hasDiagnosis);
+          
+          if (hasDiagnosis) {
+            console.log('Redirecting to dashboard');
+            navigate('/dashboard');
+          } else {
+            console.log('Redirecting to diagnosis');
+            navigate('/diagnosis');
+          }
+        } catch (error) {
+          console.error('Error checking diagnosis:', error);
           navigate('/diagnosis');
         }
-      }).catch((error) => {
-        console.error('Error checking diagnosis:', error);
-        // Fallback to diagnosis page if check fails
-        navigate('/diagnosis');
-      });
-    }
+      }
+    };
+
+    handleRedirection();
   }, [user, navigate, checkUserDiagnosis]);
 
   const handleLogin = async (e: React.FormEvent) => {
