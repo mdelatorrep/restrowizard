@@ -10,6 +10,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ 
     email: '', 
@@ -18,34 +19,38 @@ const Auth = () => {
     restaurantName: '' 
   });
   
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuth();
   const { checkUserDiagnosis } = useDashboard();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleRedirection = async () => {
-      if (user) {
-        console.log('User logged in:', user.email);
+    // Only navigate if user is authenticated, not currently navigating, and auth is not loading
+    if (user && !isNavigating && !authLoading) {
+      const handleRedirection = async () => {
+        setIsNavigating(true);
+        
         try {
           const hasDiagnosis = await checkUserDiagnosis(user.id);
-          console.log('Has diagnosis:', hasDiagnosis);
           
-          if (hasDiagnosis) {
-            console.log('Redirecting to dashboard');
-            navigate('/dashboard');
-          } else {
-            console.log('Redirecting to diagnosis');
-            navigate('/diagnosis');
-          }
+          // Small delay to prevent flash
+          setTimeout(() => {
+            if (hasDiagnosis) {
+              navigate('/dashboard', { replace: true });
+            } else {
+              navigate('/diagnosis', { replace: true });
+            }
+          }, 100);
         } catch (error) {
           console.error('Error checking diagnosis:', error);
-          navigate('/diagnosis');
+          setTimeout(() => {
+            navigate('/diagnosis', { replace: true });
+          }, 100);
         }
-      }
-    };
+      };
 
-    handleRedirection();
-  }, [user, navigate, checkUserDiagnosis]);
+      handleRedirection();
+    }
+  }, [user, isNavigating, authLoading, navigate, checkUserDiagnosis]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
