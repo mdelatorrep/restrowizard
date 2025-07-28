@@ -18,14 +18,34 @@ const Auth = () => {
     restaurantName: '' 
   });
   
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { checkUserDiagnosis } = useDashboard();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signIn(loginForm.email, loginForm.password);
+    const result = await signIn(loginForm.email, loginForm.password);
+    
+    if (!result.error) {
+      // Esperar un momento para que el estado de autenticación se actualice
+      setTimeout(async () => {
+        try {
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            // Si el usuario aún no está disponible, navegar a diagnosis por defecto
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 500);
+    }
+    
     setIsLoading(false);
   };
 
@@ -33,18 +53,52 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signUp(
+    const result = await signUp(
       signupForm.email, 
       signupForm.password, 
       signupForm.fullName,
       signupForm.restaurantName
     );
+    
+    if (!result.error) {
+      setTimeout(async () => {
+        try {
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 500);
+    }
+    
     setIsLoading(false);
   };
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
-    await signInWithGoogle();
+    const result = await signInWithGoogle();
+    
+    if (!result.error) {
+      setTimeout(async () => {
+        try {
+          if (user) {
+            const hasDiagnosis = await checkUserDiagnosis(user.id);
+            navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error during navigation:', error);
+          navigate('/diagnosis', { replace: true });
+        }
+      }, 500);
+    }
+    
     setIsLoading(false);
   };
 
