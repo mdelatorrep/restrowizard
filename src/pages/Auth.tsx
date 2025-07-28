@@ -32,25 +32,20 @@ const Auth = () => {
         try {
           const hasDiagnosis = await checkUserDiagnosis(user.id);
           
-          // Small delay to prevent flash
-          setTimeout(() => {
-            if (hasDiagnosis) {
-              navigate('/dashboard', { replace: true });
-            } else {
-              navigate('/diagnosis', { replace: true });
-            }
-          }, 100);
+          if (hasDiagnosis) {
+            navigate('/dashboard', { replace: true });
+          } else {
+            navigate('/diagnosis', { replace: true });
+          }
         } catch (error) {
           console.error('Error checking diagnosis:', error);
-          setTimeout(() => {
-            navigate('/diagnosis', { replace: true });
-          }, 100);
+          navigate('/diagnosis', { replace: true });
         }
       };
 
       handleRedirection();
     }
-  }, [user, isNavigating, authLoading, navigate, checkUserDiagnosis]);
+  }, [user, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
