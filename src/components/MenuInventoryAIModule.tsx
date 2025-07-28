@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2';
 import { 
     Brain, UtensilsCrossed, Package, TrendingUp, Zap, AlertTriangle,
     Calculator, ShoppingCart, Truck, Leaf, Star, DollarSign,
-    BarChart3, PieChart, Activity, Target
+    BarChart3, PieChart, Activity, Target, RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data para el módulo de menú e inventario
 const mockMenuInventoryData = {
@@ -112,6 +114,41 @@ const MenuMetric: React.FC<MenuMetricProps> = ({ icon, title, value, trend, desc
 
 const MenuInventoryAIModule: React.FC = () => {
     const [selectedSimulation, setSelectedSimulation] = useState(0);
+    const [aiInsights, setAiInsights] = useState<string>('');
+    const [realTimeData, setRealTimeData] = useState(mockMenuInventoryData);
+    const { loading, analyzeMenu, predictInventory } = useAIAgent();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        // Simulate real-time data updates
+        const interval = setInterval(() => {
+            setRealTimeData(prev => ({
+                ...prev,
+                inventoryPredictive: {
+                    ...prev.inventoryPredictive,
+                    shortage: Math.max(0, prev.inventoryPredictive.shortage + (Math.random() - 0.5) * 2)
+                }
+            }));
+        }, 45000); // Update every 45 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const runAIAnalysis = async () => {
+        const analysis = await analyzeMenu({
+            menuItems: realTimeData.menuEngineering.dishPerformance,
+            inventory: realTimeData.inventoryPredictive.predictions,
+            deliveryData: realTimeData.deliveryOptimization
+        });
+        
+        if (analysis) {
+            setAiInsights(analysis);
+            toast({
+                title: "Análisis IA completado",
+                description: "Se han generado nuevos insights de menú e inventario",
+            });
+        }
+    };
 
     const dishPerformanceChart = {
         datasets: [{
@@ -179,9 +216,20 @@ const MenuInventoryAIModule: React.FC = () => {
                         Optimizando la oferta actual y desbloqueando nuevos canales de crecimiento
                     </p>
                 </div>
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    IA Activa
-                </Badge>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={runAIAnalysis} 
+                        disabled={loading}
+                        className="bg-primary hover:bg-primary/90"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Análisis IA
+                    </Button>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        <Activity className="w-4 h-4 mr-1" />
+                        Activo
+                    </Badge>
+                </div>
             </div>
 
             {/* KPIs principales */}
@@ -197,7 +245,7 @@ const MenuInventoryAIModule: React.FC = () => {
                 <MenuMetric
                     icon={<Package />}
                     title="Reducción Escasez"
-                    value={`${mockMenuInventoryData.inventoryPredictive.shortage}%`}
+                    value={`${realTimeData.inventoryPredictive.shortage.toFixed(0)}%`}
                     trend="up"
                     description="vs. gestión manual"
                     colorClass="bg-green-100 text-green-600"
@@ -551,6 +599,23 @@ const MenuInventoryAIModule: React.FC = () => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* AI Insights Panel */}
+            {aiInsights && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <Brain className="mr-2 text-primary" />
+                            Insights del Agente IA
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="p-4 bg-primary/5 rounded-lg">
+                            <p className="text-sm whitespace-pre-wrap">{aiInsights}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };
