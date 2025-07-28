@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { 
     TrendingUp, TrendingDown, AlertTriangle, DollarSign, 
     Calculator, Brain, Zap, Target, PieChart, BarChart3,
-    Activity, Gauge
+    Activity, Gauge, RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data para el módulo de finanzas
 const mockFinancesData = {
@@ -75,15 +77,52 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon, title, value, trend, desc
     </Card>
 );
 
-const FinancesAIModule: React.FC = () => {
+const FinancesAIModule = () => {
     const [selectedScenario, setSelectedScenario] = useState('Realista');
+    const [aiInsights, setAiInsights] = useState<string>('');
+    const [realTimeData, setRealTimeData] = useState(mockFinancesData);
+    const { loading, analyzeFinances, detectCostAnomalies, optimizePricing } = useAIAgent();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        // Simulate real-time data updates
+        const interval = setInterval(() => {
+            setRealTimeData(prev => ({
+                ...prev,
+                profitabilityPrediction: {
+                    ...prev.profitabilityPrediction,
+                    current: Math.max(0, prev.profitabilityPrediction.current + (Math.random() - 0.5) * 0.5),
+                    predicted: Math.max(0, prev.profitabilityPrediction.predicted + (Math.random() - 0.5) * 0.3),
+                }
+            }));
+        }, 30000); // Update every 30 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const runAIAnalysis = async () => {
+        const analysis = await analyzeFinances({
+            currentProfitability: realTimeData.profitabilityPrediction.current,
+            costs: realTimeData.costAnomalies,
+            revenue: realTimeData.revenueOptimization,
+            cashFlow: realTimeData.cashFlowSimulation
+        });
+        
+        if (analysis) {
+            setAiInsights(analysis);
+            toast({
+                title: "Análisis IA completado",
+                description: "Se han generado nuevos insights financieros",
+            });
+        }
+    };
 
     const profitabilityChart = {
         labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
         datasets: [
             {
                 label: 'Rentabilidad Real',
-                data: [12.5, 14.2, 13.8, 15.1, 16.2, 15.8, 17.1, 16.5, 15.2, 0, 0, 0],
+                data: [12.5, 14.2, 13.8, 15.1, 16.2, 15.8, 17.1, 16.5, realTimeData.profitabilityPrediction.current, 0, 0, 0],
                 borderColor: 'hsl(var(--primary))',
                 backgroundColor: 'hsl(var(--primary) / 0.1)',
                 fill: true,
@@ -91,7 +130,7 @@ const FinancesAIModule: React.FC = () => {
             },
             {
                 label: 'Predicción IA',
-                data: [0, 0, 0, 0, 0, 0, 0, 0, 15.2, 16.8, 18.2, 18.5],
+                data: [0, 0, 0, 0, 0, 0, 0, 0, realTimeData.profitabilityPrediction.current, 16.8, 18.2, realTimeData.profitabilityPrediction.predicted],
                 borderColor: 'hsl(var(--secondary))',
                 backgroundColor: 'hsl(var(--secondary) / 0.1)',
                 borderDash: [5, 5],
@@ -102,16 +141,16 @@ const FinancesAIModule: React.FC = () => {
     };
 
     const revenueOptimizationChart = {
-        labels: mockFinancesData.revenueOptimization.map(d => d.hour),
+        labels: realTimeData.revenueOptimization.map(d => d.hour),
         datasets: [
             {
                 label: 'Ingresos Actuales',
-                data: mockFinancesData.revenueOptimization.map(d => d.currentRevenue),
+                data: realTimeData.revenueOptimization.map(d => d.currentRevenue),
                 backgroundColor: 'hsl(var(--muted))'
             },
             {
                 label: 'Ingresos Optimizados IA',
-                data: mockFinancesData.revenueOptimization.map(d => d.optimizedRevenue),
+                data: realTimeData.revenueOptimization.map(d => d.optimizedRevenue),
                 backgroundColor: 'hsl(var(--primary))'
             }
         ]
@@ -120,35 +159,46 @@ const FinancesAIModule: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header del módulo */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-lato-bold text-foreground flex items-center">
-                        <Brain className="mr-3 text-primary" size={32} />
-                        Finanzas y Control de Rentabilidad IA
-                    </h1>
-                    <p className="text-muted-foreground font-lato-light mt-2">
-                        Transformando la gestión financiera de reactiva a predictiva con inteligencia artificial
-                    </p>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-lato-bold text-foreground">Finanzas y Control de Rentabilidad</h2>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={runAIAnalysis} 
+                        disabled={loading}
+                        className="bg-primary hover:bg-primary/90"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Análisis IA
+                    </Button>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        <Activity className="w-4 h-4 mr-1" />
+                        Activo
+                    </Badge>
                 </div>
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    IA Activa
-                </Badge>
             </div>
 
             {/* KPIs principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
-                    icon={<Target />}
-                    title="Rentabilidad Predictiva"
-                    value={`${mockFinancesData.profitabilityPrediction.predicted}%`}
+                    icon={<TrendingUp />}
+                    title="Rentabilidad Actual"
+                    value={`${realTimeData.profitabilityPrediction.current.toFixed(1)}%`}
                     trend="up"
-                    description={`Confianza: ${mockFinancesData.profitabilityPrediction.confidence}%`}
+                    description="Margen neto operativo"
                     colorClass="bg-green-100 text-green-600"
+                />
+                <MetricCard
+                    icon={<Target />}
+                    title="Predicción IA"
+                    value={`${realTimeData.profitabilityPrediction.predicted.toFixed(1)}%`}
+                    trend="up"
+                    description={`Confianza: ${realTimeData.profitabilityPrediction.confidence}%`}
+                    colorClass="bg-blue-100 text-blue-600"
                 />
                 <MetricCard
                     icon={<AlertTriangle />}
                     title="Anomalías Detectadas"
-                    value={mockFinancesData.costAnomalies.length.toString()}
+                    value={realTimeData.costAnomalies.length.toString()}
                     trend="down"
                     description="Requieren atención inmediata"
                     colorClass="bg-red-100 text-red-600"
@@ -156,17 +206,9 @@ const FinancesAIModule: React.FC = () => {
                 <MetricCard
                     icon={<Zap />}
                     title="Precios Dinámicos"
-                    value={mockFinancesData.dynamicPricing.recommendations.length.toString()}
+                    value={realTimeData.dynamicPricing.recommendations.length.toString()}
                     trend="up"
                     description="Recomendaciones activas"
-                    colorClass="bg-blue-100 text-blue-600"
-                />
-                <MetricCard
-                    icon={<Calculator />}
-                    title="Optimización Ingresos"
-                    value="+18%"
-                    trend="up"
-                    description="Potencial de mejora promedio"
                     colorClass="bg-purple-100 text-purple-600"
                 />
             </div>
@@ -207,7 +249,7 @@ const FinancesAIModule: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {mockFinancesData.costAnomalies.map((anomaly, i) => (
+                            {realTimeData.costAnomalies.map((anomaly, i) => (
                                 <div key={i} className={`p-3 rounded-lg border-l-4 ${
                                     anomaly.severity === 'critical' ? 'bg-red-50 border-red-500' :
                                     anomaly.severity === 'high' ? 'bg-orange-50 border-orange-500' :
@@ -224,8 +266,8 @@ const FinancesAIModule: React.FC = () => {
                                         </Badge>
                                     </div>
                                     <p className="text-xs text-muted-foreground font-lato-light mt-1">
-                                        ${new Intl.NumberFormat().format(anomaly.currentPrice)} 
-                                        (normal: ${new Intl.NumberFormat().format(anomaly.normalPrice)})
+                                        ${new Intl.NumberFormat().format(anomaly.currentPrice || anomaly.currentCost)} 
+                                        (normal: ${new Intl.NumberFormat().format(anomaly.normalPrice || anomaly.normalCost)})
                                     </p>
                                 </div>
                             ))}
@@ -244,7 +286,7 @@ const FinancesAIModule: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {mockFinancesData.dynamicPricing.recommendations.map((rec, i) => (
+                        {realTimeData.dynamicPricing.recommendations.map((rec, i) => (
                             <div key={i} className="p-4 bg-muted rounded-lg">
                                 <div className="flex items-center justify-between mb-2">
                                     <h4 className="font-lato-bold">{rec.dish}</h4>
@@ -307,7 +349,7 @@ const FinancesAIModule: React.FC = () => {
                     <CardContent>
                         <div className="space-y-4">
                             <div className="flex space-x-2">
-                                {mockFinancesData.cashFlowSimulation.scenarios.map((scenario) => (
+                                {realTimeData.cashFlowSimulation.scenarios.map((scenario) => (
                                     <Button
                                         key={scenario.name}
                                         variant={selectedScenario === scenario.name ? "default" : "outline"}
@@ -320,7 +362,7 @@ const FinancesAIModule: React.FC = () => {
                                 ))}
                             </div>
                             
-                            {mockFinancesData.cashFlowSimulation.scenarios
+                            {realTimeData.cashFlowSimulation.scenarios
                                 .filter(s => s.name === selectedScenario)
                                 .map((scenario) => (
                                 <div key={scenario.name} className="space-y-3">
@@ -353,6 +395,23 @@ const FinancesAIModule: React.FC = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* AI Insights Panel */}
+            {aiInsights && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <Brain className="mr-2 text-primary" />
+                            Insights del Agente IA
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="p-4 bg-primary/5 rounded-lg">
+                            <p className="text-sm whitespace-pre-wrap">{aiInsights}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };
