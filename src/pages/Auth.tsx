@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import { useDashboard } from '@/hooks/useDashboard';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ 
     email: '', 
@@ -19,33 +18,8 @@ const Auth = () => {
     restaurantName: '' 
   });
   
-  const { user, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuth();
-  const { checkUserDiagnosis } = useDashboard();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Only navigate if user is authenticated, not currently navigating, and auth is not loading
-    if (user && !isNavigating && !authLoading) {
-      const handleRedirection = async () => {
-        setIsNavigating(true);
-        
-        try {
-          const hasDiagnosis = await checkUserDiagnosis(user.id);
-          
-          if (hasDiagnosis) {
-            navigate('/dashboard', { replace: true });
-          } else {
-            navigate('/diagnosis', { replace: true });
-          }
-        } catch (error) {
-          console.error('Error checking diagnosis:', error);
-          navigate('/diagnosis', { replace: true });
-        }
-      };
-
-      handleRedirection();
-    }
-  }, [user, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
