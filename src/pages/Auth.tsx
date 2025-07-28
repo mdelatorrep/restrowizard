@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,14 +30,17 @@ const Auth = () => {
     const result = await signIn(loginForm.email, loginForm.password);
     
     if (!result.error) {
-      // Esperar un momento para que el estado de autenticación se actualice
+      // Obtener el usuario directamente de Supabase después del login
       setTimeout(async () => {
         try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          
+          if (error) throw error;
+          
           if (user) {
             const hasDiagnosis = await checkUserDiagnosis(user.id);
             navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
           } else {
-            // Si el usuario aún no está disponible, navegar a diagnosis por defecto
             navigate('/diagnosis', { replace: true });
           }
         } catch (error) {
@@ -63,6 +67,10 @@ const Auth = () => {
     if (!result.error) {
       setTimeout(async () => {
         try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          
+          if (error) throw error;
+          
           if (user) {
             const hasDiagnosis = await checkUserDiagnosis(user.id);
             navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
@@ -86,6 +94,10 @@ const Auth = () => {
     if (!result.error) {
       setTimeout(async () => {
         try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          
+          if (error) throw error;
+          
           if (user) {
             const hasDiagnosis = await checkUserDiagnosis(user.id);
             navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
