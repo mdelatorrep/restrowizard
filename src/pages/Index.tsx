@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import Problem from '../components/Problem';
 import Solution from '../components/Solution';
 import Ecosystem from '../components/Ecosystem';
+import EventsJobsSection from '../components/EventsJobsSection';
 import Testimonials from '../components/Testimonials';
 import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
@@ -17,6 +18,7 @@ const Index = () => {
         <Problem />
         <Solution />
         <Ecosystem />
+        <EventsJobsSection />
         <Testimonials />
         <FinalCTA />
       </main>
