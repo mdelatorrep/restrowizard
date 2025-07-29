@@ -22,9 +22,20 @@ const Header = () => {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    // If not on homepage, navigate to homepage first
+    if (window.location.pathname !== '/') {
+      navigate('/', { replace: true });
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -35,7 +46,10 @@ const Header = () => {
       }`}
     >
       <nav className="container mx-auto px-6 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
+        <div 
+          className="flex items-center space-x-2 cursor-pointer"
+          onClick={() => navigate('/')}
+        >
           <img 
             src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
             alt="RestroWizard" 
@@ -55,6 +69,12 @@ const Header = () => {
             className="font-lato-regular hover:text-purple-medium transition-colors"
           >
             Ecosistema
+          </button>
+          <button
+            onClick={() => navigate('/events')}
+            className="font-lato-regular hover:text-purple-medium transition-colors"
+          >
+            Eventos
           </button>
           <button
             onClick={() => navigate('/jobs')}
@@ -136,6 +156,15 @@ const Header = () => {
           </button>
           <button 
             onClick={() => {
+              navigate('/events');
+              setIsMenuOpen(false);
+            }} 
+            className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
+          >
+            Eventos
+          </button>
+          <button 
+            onClick={() => {
               navigate('/jobs');
               setIsMenuOpen(false);
             }} 
@@ -148,21 +177,49 @@ const Header = () => {
           <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Contacto</a>
           
           <div className="p-4 border-t border-lavender-light space-y-2">
-            <a 
-              href="#" 
-              className="block w-full text-center px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
-            >
-              Iniciar Sesión
-            </a>
-            <button 
-              onClick={() => {
-                scrollToSection('cta-final');
-                setIsMenuOpen(false);
-              }}
-              className="block w-full text-center px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 transition-smooth"
-            >
-              Iniciar Diagnóstico Gratis
-            </button>
+            {user ? (
+              <>
+                <button 
+                  onClick={() => {
+                    navigate('/diagnosis');
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-center px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
+                >
+                  Diagnóstico
+                </button>
+                <button 
+                  onClick={() => {
+                    signOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-center px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 transition-smooth"
+                >
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-center px-4 py-2 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-off-white transition-smooth"
+                >
+                  Iniciar Sesión
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMenuOpen(false);
+                  }}
+                  className="block w-full text-center px-4 py-2 rounded-lg bg-purple-intense text-off-white font-lato-bold hover:opacity-90 transition-smooth"
+                >
+                  Comenzar Gratis
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
