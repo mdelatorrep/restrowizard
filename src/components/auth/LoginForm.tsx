@@ -20,22 +20,17 @@ export const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading) return; // Prevenir doble submit
+    if (isLoading) return;
     
+    console.log('🔄 Form submitted with:', { email: formData.email });
     setIsLoading(true);
     
     try {
       const result = await signIn(formData.email, formData.password);
-      // No resetear loading inmediatamente - dejar que la navegación ocurra
-      console.log('Login attempt completed:', result);
-      
-      // Resetear después de un pequeño delay para permitir navegación
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
+      console.log('📝 LoginForm: signIn result:', result);
     } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false); // Solo resetear inmediatamente en caso de error
+      console.error('💥 LoginForm: Login error:', error);
+      setIsLoading(false);
     }
   };
 

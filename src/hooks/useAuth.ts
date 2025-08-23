@@ -62,14 +62,22 @@ export const useAuth = () => {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 Starting signIn process:', { email });
+    
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      console.log('📡 Supabase signIn response:', { error });
       
+      if (error) {
+        console.error('❌ Supabase auth error:', error);
+        throw error;
+      }
+      
+      console.log('✅ signIn successful, showing toast');
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
@@ -77,6 +85,7 @@ export const useAuth = () => {
       
       return { error: null };
     } catch (error: any) {
+      console.error('💥 signIn catch block:', error);
       toast({
         title: "Error al iniciar sesión",
         description: error.message,
