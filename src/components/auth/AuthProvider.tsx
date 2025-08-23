@@ -32,18 +32,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   
   const navigate = useNavigate();
   const location = useLocation();
   const { checkUserDiagnosis } = useDashboard();
 
-  const handleAuthStateChange = async (session: Session | null) => {
-    setSession(session);
-    setUser(session?.user ?? null);
-    
-    // Solo redirigir después de la carga inicial y si estamos en la página de auth
-    if (!initialLoad && location.pathname === '/auth' && session?.user) {
+  const handleSuccessfulLogin = async (session: Session) => {
+    // Solo navegar si estamos en la página de auth y hay una sesión activa
+    if (location.pathname === '/auth' && session?.user) {
       try {
         const hasDiagnosis = await checkUserDiagnosis(session.user.id);
         navigate(hasDiagnosis ? '/dashboard' : '/diagnosis', { replace: true });
@@ -52,8 +48,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         navigate('/diagnosis', { replace: true });
       }
     }
-    
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -62,24 +56,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      setInitialLoad(false);
     });
 
     // Configurar listener de cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await handleAuthStateChange(session);
-        } else if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setLoading(false);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        // Solo navegar en eventos de login activo, no en carga inicial
+        if (event === 'SIGNED_IN' && session) {
+          await handleSuccessfulLogin(session);
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, []); // Sin dependencias para evitar reinicializaciones
 
   const value = {
     user,
