@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,28 +8,49 @@ import { useAuth } from '@/hooks/useAuth';
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, user } = useAuth();
+
+  // Resetear loading state cuando el usuario se autentica
+  useEffect(() => {
+    if (user && isLoading) {
+      console.log('User authenticated, resetting loading state');
+      setIsLoading(false);
+    }
+  }, [user, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevenir doble submit
+    
     setIsLoading(true);
     
     try {
-      await signIn(formData.email, formData.password);
+      const result = await signIn(formData.email, formData.password);
+      // No resetear loading inmediatamente - dejar que la navegación ocurra
+      console.log('Login attempt completed:', result);
+      
+      // Resetear después de un pequeño delay para permitir navegación
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
     } catch (error) {
       console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Solo resetear inmediatamente en caso de error
     }
   };
 
   const handleGoogleAuth = async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      console.log('Google auth completed:', result);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
     } catch (error) {
       console.error('Google auth error:', error);
-    } finally {
       setIsLoading(false);
     }
   };
