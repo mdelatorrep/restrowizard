@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, Line, Doughnut, Scatter } from 'react-chartjs-2';
+import { useDashboard } from '@/hooks/useDashboard';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -471,13 +472,29 @@ const TrainingModule = () => (
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('home');
     const { user, signOut } = useAuth();
+    const { hasDiagnosis, loading: diagnosisLoading, checkUserDiagnosis } = useDashboard();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (!user) {
             navigate('/auth');
+            return;
         }
-    }, [user, navigate]);
+
+        // Verificar si el usuario ha completado el diagnóstico
+        const checkDiagnosis = async () => {
+            console.log('🔍 Dashboard: Checking user diagnosis...');
+            const hasDiag = await checkUserDiagnosis(user.id);
+            console.log('📊 Dashboard: User has diagnosis:', hasDiag);
+            
+            if (!hasDiag) {
+                console.log('🎯 Dashboard: Redirecting to diagnosis...');
+                navigate('/diagnosis', { replace: true });
+            }
+        };
+
+        checkDiagnosis();
+    }, [user, navigate, checkUserDiagnosis]);
 
     const navItems = [
         { id: 'home', label: 'Mando de Control', icon: <LayoutDashboard size={20} /> },
