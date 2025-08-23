@@ -11,6 +11,8 @@ import Diagnosis from "./pages/Diagnosis";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import Jobs from "./pages/Jobs";
+import Menus from "./pages/Menus";
+import PublicMenu from "./pages/PublicMenu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/menus" element={<Menus />} />
+            <Route path="/menu/:slug" element={<PublicMenu />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -449,6 +449,107 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          allergens: string[] | null
+          category: Database["public"]["Enums"]["menu_category_type"]
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          is_gluten_free: boolean | null
+          is_vegan: boolean | null
+          is_vegetarian: boolean | null
+          menu_id: string
+          name: string
+          price: number | null
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          allergens?: string[] | null
+          category: Database["public"]["Enums"]["menu_category_type"]
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          is_gluten_free?: boolean | null
+          is_vegan?: boolean | null
+          is_vegetarian?: boolean | null
+          menu_id: string
+          name: string
+          price?: number | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allergens?: string[] | null
+          category?: Database["public"]["Enums"]["menu_category_type"]
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          is_gluten_free?: boolean | null
+          is_vegan?: boolean | null
+          is_vegetarian?: boolean | null
+          menu_id?: string
+          name?: string
+          price?: number | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_templates: {
+        Row: {
+          categories: Json
+          created_at: string
+          cuisine_type: Database["public"]["Enums"]["cuisine_type"]
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          structure: Json
+          updated_at: string
+        }
+        Insert: {
+          categories?: Json
+          created_at?: string
+          cuisine_type: Database["public"]["Enums"]["cuisine_type"]
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          structure?: Json
+          updated_at?: string
+        }
+        Update: {
+          categories?: Json
+          created_at?: string
+          cuisine_type?: Database["public"]["Enums"]["cuisine_type"]
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          structure?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -490,6 +591,65 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      restaurant_menus: {
+        Row: {
+          brand_colors: Json | null
+          created_at: string
+          cuisine_type: Database["public"]["Enums"]["cuisine_type"]
+          description: string | null
+          id: string
+          logo_url: string | null
+          menu_data: Json
+          name: string
+          public_url_slug: string | null
+          qr_code_url: string | null
+          restaurant_id: string
+          status: Database["public"]["Enums"]["menu_status"]
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_colors?: Json | null
+          created_at?: string
+          cuisine_type: Database["public"]["Enums"]["cuisine_type"]
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          menu_data?: Json
+          name: string
+          public_url_slug?: string | null
+          qr_code_url?: string | null
+          restaurant_id: string
+          status?: Database["public"]["Enums"]["menu_status"]
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_colors?: Json | null
+          created_at?: string
+          cuisine_type?: Database["public"]["Enums"]["cuisine_type"]
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          menu_data?: Json
+          name?: string
+          public_url_slug?: string | null
+          qr_code_url?: string | null
+          restaurant_id?: string
+          status?: Database["public"]["Enums"]["menu_status"]
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_menus_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "menu_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -941,10 +1101,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_menu_slug: {
+        Args: { restaurant_name: string }
+        Returns: string
+      }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -964,6 +1128,26 @@ export type Database = {
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
       course_level: "beginner" | "intermediate" | "advanced" | "expert"
       course_status: "draft" | "published" | "archived"
+      cuisine_type:
+        | "italian"
+        | "mexican"
+        | "chinese"
+        | "japanese"
+        | "indian"
+        | "french"
+        | "spanish"
+        | "american"
+        | "mediterranean"
+        | "thai"
+        | "korean"
+        | "vietnamese"
+        | "greek"
+        | "middle_eastern"
+        | "fusion"
+        | "seafood"
+        | "steakhouse"
+        | "vegetarian"
+        | "vegan"
       enrollment_status: "enrolled" | "completed" | "dropped" | "certified"
       event_status: "draft" | "published" | "cancelled" | "completed"
       experience_level: "entry" | "junior" | "mid" | "senior" | "lead"
@@ -987,6 +1171,24 @@ export type Database = {
         | "intermedio"
         | "avanzado"
         | "experto"
+      menu_category_type:
+        | "appetizers"
+        | "salads"
+        | "soups"
+        | "main_courses"
+        | "pasta"
+        | "pizza"
+        | "seafood"
+        | "meat"
+        | "poultry"
+        | "vegetarian"
+        | "desserts"
+        | "beverages"
+        | "wine"
+        | "cocktails"
+        | "kids"
+        | "specials"
+      menu_status: "draft" | "published" | "archived"
       service_category:
         | "catering"
         | "event_planning"
@@ -1142,6 +1344,27 @@ export const Constants = {
       booking_status: ["pending", "confirmed", "cancelled", "completed"],
       course_level: ["beginner", "intermediate", "advanced", "expert"],
       course_status: ["draft", "published", "archived"],
+      cuisine_type: [
+        "italian",
+        "mexican",
+        "chinese",
+        "japanese",
+        "indian",
+        "french",
+        "spanish",
+        "american",
+        "mediterranean",
+        "thai",
+        "korean",
+        "vietnamese",
+        "greek",
+        "middle_eastern",
+        "fusion",
+        "seafood",
+        "steakhouse",
+        "vegetarian",
+        "vegan",
+      ],
       enrollment_status: ["enrolled", "completed", "dropped", "certified"],
       event_status: ["draft", "published", "cancelled", "completed"],
       experience_level: ["entry", "junior", "mid", "senior", "lead"],
@@ -1168,6 +1391,25 @@ export const Constants = {
         "avanzado",
         "experto",
       ],
+      menu_category_type: [
+        "appetizers",
+        "salads",
+        "soups",
+        "main_courses",
+        "pasta",
+        "pizza",
+        "seafood",
+        "meat",
+        "poultry",
+        "vegetarian",
+        "desserts",
+        "beverages",
+        "wine",
+        "cocktails",
+        "kids",
+        "specials",
+      ],
+      menu_status: ["draft", "published", "archived"],
       service_category: [
         "catering",
         "event_planning",
