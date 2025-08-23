@@ -43,9 +43,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       currentPath: location.pathname 
     });
     
-    // Solo navegar si estamos en la página de auth y hay una sesión activa
-    if (location.pathname === '/auth' && session?.user) {
-      console.log('📍 Conditions met, checking user diagnosis...');
+    // Navegar después del login si no estamos ya en dashboard o diagnosis
+    const isInProtectedRoute = ['/dashboard', '/diagnosis'].includes(location.pathname);
+    
+    if (session?.user && !isInProtectedRoute) {
+      console.log('📍 Checking user diagnosis for navigation...');
       
       try {
         const hasDiagnosis = await checkUserDiagnosis(session.user.id);
@@ -61,9 +63,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         navigate('/diagnosis', { replace: true });
       }
     } else {
-      console.log('❌ Navigation conditions not met:', {
+      console.log('❌ Navigation skipped:', {
         currentPath: location.pathname,
-        hasUser: !!session?.user
+        hasUser: !!session?.user,
+        isInProtectedRoute
       });
     }
   };
