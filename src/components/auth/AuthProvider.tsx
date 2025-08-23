@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📍 Checking user diagnosis for navigation...');
       
       try {
+        console.log('🔍 About to call checkUserDiagnosis with userId:', session.user.id);
         const hasDiagnosis = await checkUserDiagnosis(session.user.id);
         console.log('🔍 User diagnosis check result:', hasDiagnosis);
         

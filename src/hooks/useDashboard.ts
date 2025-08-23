@@ -6,8 +6,11 @@ export const useDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const checkUserDiagnosis = async (userId: string) => {
+    console.log('🔬 checkUserDiagnosis called with userId:', userId);
+    
     try {
       setLoading(true);
+      console.log('🔍 Querying maturity_diagnoses table...');
       
       const { data, error } = await supabase
         .from('maturity_diagnoses')
@@ -15,20 +18,25 @@ export const useDashboard = () => {
         .eq('user_id', userId)
         .maybeSingle();
 
+      console.log('📊 Supabase query result:', { data, error });
+
       if (error) {
-        console.error('Error checking diagnosis:', error);
+        console.error('❌ Error checking diagnosis:', error);
         setHasDiagnosis(false);
         return false;
       }
 
       const hasCompletedDiagnosis = !!data;
+      console.log('✅ Diagnosis check completed:', hasCompletedDiagnosis);
+      
       setHasDiagnosis(hasCompletedDiagnosis);
       return hasCompletedDiagnosis;
     } catch (error) {
-      console.error('Error in checkUserDiagnosis:', error);
+      console.error('💥 Error in checkUserDiagnosis:', error);
       setHasDiagnosis(false);
       return false;
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
