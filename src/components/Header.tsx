@@ -82,6 +82,12 @@ const Header = () => {
           >
             Restro Jobs
           </button>
+          <button
+            onClick={() => navigate('/menus')}
+            className="font-lato-regular hover:text-purple-medium transition-colors"
+          >
+            Menús
+          </button>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Precios</a>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Blog</a>
           <a href="#" className="font-lato-regular hover:text-purple-medium transition-colors">Contacto</a>
@@ -171,6 +177,15 @@ const Header = () => {
             className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
           >
             Restro Jobs
+          </button>
+          <button 
+            onClick={() => {
+              navigate('/menus');
+              setIsMenuOpen(false);
+            }} 
+            className="block w-full text-left py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light"
+          >
+            Menús
           </button>
           <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Precios</a>
           <a href="#" className="block py-2 px-4 text-sm font-lato-regular hover:bg-lavender-light">Blog</a>
