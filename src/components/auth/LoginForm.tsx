@@ -10,13 +10,7 @@ export const LoginForm = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const { signIn, signInWithGoogle, user } = useAuth();
 
-  // Resetear loading state cuando el usuario se autentica
-  useEffect(() => {
-    if (user && isLoading) {
-      console.log('User authenticated, resetting loading state');
-      setIsLoading(false);
-    }
-  }, [user, isLoading]);
+  // Let AuthProvider handle navigation, just manage loading state here
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +22,12 @@ export const LoginForm = () => {
     try {
       const result = await signIn(formData.email, formData.password);
       console.log('📝 LoginForm: signIn result:', result);
+      
+      // Only reset loading if there was an error
+      if (result.error) {
+        setIsLoading(false);
+      }
+      // If successful, AuthProvider will handle navigation
     } catch (error) {
       console.error('💥 LoginForm: Login error:', error);
       setIsLoading(false);
