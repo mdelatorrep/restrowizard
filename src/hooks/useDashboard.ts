@@ -12,11 +12,18 @@ export const useDashboard = () => {
       setLoading(true);
       console.log('🔍 Querying maturity_diagnoses table...');
       
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const queryPromise = supabase
         .from('maturity_diagnoses')
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
+      );
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       console.log('📊 Supabase query result:', { data, error });
 
