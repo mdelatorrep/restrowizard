@@ -53,16 +53,21 @@ const Diagnosis = () => {
   const finishDiagnosis = async () => {
     if (!user) return;
     
+    console.log('🚀 Starting finish diagnosis process');
     setCurrentStep('loading');
     
-    // Simulate loading
+    // Simulate loading with better error handling
     setTimeout(async () => {
       try {
+        console.log('⏳ Saving diagnosis...');
         const result = await saveDiagnosis(userAnswers, user.id);
+        console.log('✅ Diagnosis saved, setting results:', result);
         setResults(result);
         setCurrentStep('results');
       } catch (error) {
-        console.error('Error saving diagnosis:', error);
+        console.error('❌ Error saving diagnosis:', error);
+        // Reset to questions on error so user can try again
+        setCurrentStep('questions');
       }
     }, 2500);
   };

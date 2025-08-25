@@ -53,10 +53,13 @@ export const useDiagnosis = () => {
   };
 
   const saveDiagnosis = async (answers: Record<number, number>, userId: string) => {
+    console.log('🔍 Starting saveDiagnosis with:', { userId, answersCount: Object.keys(answers).length });
     setLoading(true);
     
     try {
+      console.log('📊 Calculating scores...');
       const result = calculateScores(answers);
+      console.log('✅ Scores calculated:', result);
       
       // Map the level name to database enum value
       const levelMapping: Record<string, string> = {
@@ -68,8 +71,10 @@ export const useDiagnosis = () => {
       };
       
       const dbLevel = levelMapping[result.overallLevel] || 'inicial';
+      console.log('🏷️ Mapped level:', { original: result.overallLevel, mapped: dbLevel });
       
-      const { error } = await supabase
+      console.log('💾 Inserting into database...');
+      const { data, error } = await supabase
         .from('maturity_diagnoses')
         .insert({
           user_id: userId,
@@ -77,10 +82,17 @@ export const useDiagnosis = () => {
           pillar_scores: result.pillarScores,
           overall_score: result.overallScore,
           overall_level: dbLevel as 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto'
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
 
+      console.log('✅ Diagnosis saved successfully:', data);
+      
       toast({
         title: "¡Diagnóstico guardado!",
         description: "Tu evaluación ha sido guardada correctamente.",
@@ -88,13 +100,15 @@ export const useDiagnosis = () => {
 
       return result;
     } catch (error: any) {
+      console.error('💥 Error in saveDiagnosis:', error);
       toast({
         title: "Error al guardar",
-        description: error.message,
+        description: error.message || 'Error desconocido',
         variant: "destructive",
       });
       throw error;
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
@@ -107,12 +121,13 @@ export const useDiagnosis = () => {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       return data;
     } catch (error: any) {
+      console.error('Error loading diagnosis:', error);
       toast({
         title: "Error al cargar diagnóstico",
         description: error.message,
