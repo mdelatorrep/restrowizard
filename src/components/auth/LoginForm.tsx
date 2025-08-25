@@ -23,11 +23,8 @@ export const LoginForm = () => {
       const result = await signIn(formData.email, formData.password);
       console.log('📝 LoginForm: signIn result:', result);
       
-      // Only reset loading if there was an error
-      if (result.error) {
-        setIsLoading(false);
-      }
-      // If successful, AuthProvider will handle navigation
+      // Always reset loading after sign in attempt
+      setIsLoading(false);
     } catch (error) {
       console.error('💥 LoginForm: Login error:', error);
       setIsLoading(false);
