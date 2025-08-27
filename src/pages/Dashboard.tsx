@@ -18,7 +18,7 @@ import {
     LayoutDashboard, BarChart2, MessageSquare, UtensilsCrossed, Sparkles, 
     BookOpen, Warehouse, CalendarDays, Users, DollarSign, ShoppingCart, 
     Star, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock,
-    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase
+    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase, Bell
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,8 @@ import FinancesAIModule from '@/components/FinancesAIModule';
 import TalentAIModule from '@/components/TalentAIModule';
 import OperationsAIModule from '@/components/OperationsAIModule';
 import MenuInventoryAIModule from '@/components/MenuInventoryAIModule';
+import NotificationSettings from '@/components/NotificationSettings';
+import { useAIAlerts } from '@/hooks/useAIAlerts';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler
@@ -472,6 +474,9 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState('home');
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
+    
+    // Initialize AI alerts system
+    useAIAlerts();
 
     useEffect(() => {
         if (!user) {
@@ -490,6 +495,7 @@ const Dashboard = () => {
         { id: 'inventory', label: 'Gestión de Inventario', icon: <Warehouse size={20} /> },
         { id: 'shifts', label: 'Optimización de Turnos', icon: <CalendarDays size={20} /> },
         { id: 'training', label: 'Formación (RestroLearn)', icon: <BookOpen size={20} /> },
+        { id: 'notifications', label: 'Notificaciones', icon: <Bell size={20} /> },
         { id: 'jobs', label: 'Gestión de Empleos', icon: <Briefcase size={20} /> },
     ];
 
@@ -505,6 +511,7 @@ const Dashboard = () => {
             case 'inventory': return <InventoryModule />;
             case 'shifts': return <ShiftsModule />;
             case 'training': return <TrainingModule />;
+            case 'notifications': return <NotificationSettings />;
             case 'jobs': return <JobsManagement />;
             default: return <DashboardHome />;
         }

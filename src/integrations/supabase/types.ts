@@ -550,6 +550,87 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          ai_alerts: boolean | null
+          created_at: string
+          id: string
+          kpi_alerts: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          system_updates: boolean | null
+          training_reminders: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_alerts?: boolean | null
+          created_at?: string
+          id?: string
+          kpi_alerts?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          system_updates?: boolean | null
+          training_reminders?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_alerts?: boolean | null
+          created_at?: string
+          id?: string
+          kpi_alerts?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          system_updates?: boolean | null
+          training_reminders?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications_log: {
+        Row: {
+          action_url: string | null
+          body: string
+          clicked_at: string | null
+          data: Json | null
+          delivery_status: string | null
+          icon: string | null
+          id: string
+          notification_type: string | null
+          sent_at: string
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          clicked_at?: string | null
+          data?: Json | null
+          delivery_status?: string | null
+          icon?: string | null
+          id?: string
+          notification_type?: string | null
+          sent_at?: string
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          clicked_at?: string | null
+          data?: Json | null
+          delivery_status?: string | null
+          icon?: string | null
+          id?: string
+          notification_type?: string | null
+          sent_at?: string
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -589,6 +670,45 @@ export type Database = {
           phone?: string | null
           restaurant_name?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          device_type: string | null
+          endpoint: string
+          id: string
+          is_active: boolean
+          p256dh_key: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          device_type?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          p256dh_key: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          device_type?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          p256dh_key?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1103,6 +1223,10 @@ export type Database = {
     Functions: {
       generate_menu_slug: {
         Args: { restaurant_name: string }
+        Returns: string
+      }
+      get_vapid_public_key: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       has_role: {
