@@ -1,0 +1,65 @@
+{
+  "name": "RestroWizard - La Magia de la IA para tu Restaurante",
+  "short_name": "RestroWizard",
+  "description": "Transforma tu restaurante con IA. Diagnóstico gratuito, copilotos inteligentes y un ecosistema completo para la rentabilidad de tu negocio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EFE2F2",
+  "theme_color": "#3E1064",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["business", "productivity", "food"],
+  "icons": [
+    {
+      "src": "/assets/restrowizard-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/restrowizard-logo.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Accede rápidamente a tu dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/assets/restrowizard-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Diagnóstico",
+      "short_name": "Diagnóstico",
+      "description": "Realiza un diagnóstico de madurez",
+      "url": "/diagnosis",
+      "icons": [
+        {
+          "src": "/assets/restrowizard-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Menús",
+      "short_name": "Menús",
+      "description": "Gestiona tus menús",
+      "url": "/menus",
+      "icons": [
+        {
+          "src": "/assets/restrowizard-logo.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

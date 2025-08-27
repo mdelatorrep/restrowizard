@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import InactivityManager from "./components/InactivityManager";
+import InstallPWAPrompt from "./components/InstallPWAPrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Diagnosis from "./pages/Diagnosis";
@@ -23,6 +24,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <InactivityManager />
+      <InstallPWAPrompt />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
