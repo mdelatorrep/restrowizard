@@ -336,7 +336,8 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
           </Card>
         </div>
     </div>
-);
+  );
+};
 
 const MenuEngineeringModule = () => {
     const data = {
@@ -577,9 +578,10 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             sendAIAlert({
-                type: 'kpi_alert',
+                type: 'inventory_low',
                 title: 'Alerta de Inventario',
                 message: 'El stock de ingredientes principales está bajo. Se recomienda realizar pedido.',
+                severity: 'medium',
                 data: { inventory_level: 15, threshold: 20 }
             });
         }, 3000);
