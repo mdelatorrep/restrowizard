@@ -18,10 +18,16 @@ import {
     LayoutDashboard, BarChart2, MessageSquare, UtensilsCrossed, Sparkles, 
     BookOpen, Warehouse, CalendarDays, Users, DollarSign, ShoppingCart, 
     Star, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock,
-    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase, Bell
+    Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase, Bell,
+    Menu, FileText, Calendar, Activity
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboard } from '@/hooks/useDashboard';
+import { useMenus } from '@/hooks/useMenus';
+import { useJobs } from '@/hooks/useJobs';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import JobsManagement from '@/components/JobsManagement';
 import FinancesAIModule from '@/components/FinancesAIModule';
 import TalentAIModule from '@/components/TalentAIModule';
@@ -144,102 +150,190 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children, className = '' }
 );
 
 // --- Módulos del Dashboard ---
-const DashboardHome = () => (
+const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => {
+  const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
     <div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <KPI_Card 
-                icon={<DollarSign />} 
-                label="Ventas del Día" 
-                value={new Intl.NumberFormat('es-CO').format(mockData.kpis.ventasHoy)} 
-                unit=" COP" 
-                colorClass="bg-green-100 text-green-600" 
-            />
-            <KPI_Card 
-                icon={<ShoppingCart />} 
-                label="Costo Alimentos" 
-                value={mockData.kpis.costoAlimentos.toFixed(1)} 
-                unit="%" 
-                colorClass="bg-red-100 text-red-600"
-            />
-            <KPI_Card 
-                icon={<TrendingUp />} 
-                label="Margen Utilidad" 
-                value={mockData.kpis.margenUtilidad.toFixed(1)} 
-                unit="%" 
-                colorClass="bg-blue-100 text-blue-600"
-            />
-            <KPI_Card 
-                icon={<Star />} 
-                label="Satisfacción Cliente" 
-                value={mockData.kpis.satisfaccionCliente.toFixed(1)} 
-                unit="/5" 
-                colorClass="bg-yellow-100 text-yellow-600"
-            />
-            <KPI_Card 
-                icon={<Users />} 
-                label="Rotación Personal" 
-                value={mockData.kpis.rotacionPersonal.toFixed(1)} 
-                unit="%" 
-                colorClass="bg-purple-100 text-purple-600"
-            />
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            ¡Bienvenido, {userProfile?.full_name || 'Usuario'}!
+          </h1>
+          <p className="text-muted-foreground">
+            Restaurante: {userProfile?.restaurant_name || 'Mi Restaurante'}
+          </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-                <ChartCard title="Ventas de la Semana">
-                    <Line 
-                        data={{
-                            labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                            datasets: [{
-                                label: 'Ventas', 
-                                data: mockData.ventasSemana, 
-                                borderColor: 'hsl(var(--primary))',
-                                backgroundColor: 'hsl(var(--primary) / 0.1)', 
-                                fill: true, 
-                                tension: 0.4
-                            }],
-                        }} 
-                        options={{ 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { legend: { display: false } }, 
-                            scales: { 
-                                y: { 
-                                    ticks: { 
-                                        callback: (value) => `${((value as number) / 1000000).toFixed(1)}M` 
-                                    } 
-                                } 
-                            } 
-                        }} 
-                    />
-                </ChartCard>
-            </div>
-            <div className="bg-card p-6 rounded-xl shadow-md">
-                <h3 className="text-lg font-lato-bold text-foreground mb-4 flex items-center">
-                    <AlertTriangle className="text-primary mr-2" /> Copiloto IA
-                </h3>
-                <div className="space-y-3">
-                    {mockData.alertasCopiloto.map(alerta => (
-                        <div 
-                            key={alerta.id} 
-                            className={`p-3 rounded-lg border-l-4 ${
-                                alerta.tipo === 'alerta' 
-                                    ? 'bg-destructive/10 border-destructive' 
-                                    : alerta.tipo === 'oportunidad' 
-                                    ? 'bg-green-50 border-green-400' 
-                                    : 'bg-yellow-50 border-yellow-400'
-                            }`}
-                        >
-                            <div className="flex items-start">
-                                <div className="flex-shrink-0 pt-1">{alerta.icono}</div>
-                                <div className="ml-3">
-                                    <p className="text-sm font-lato-bold text-foreground">{alerta.texto}</p>
-                                    <p className="text-xs text-muted-foreground font-lato-light mt-1">{alerta.sugerencia}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/menus')}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Menús</p>
+                  <p className="text-2xl font-bold">{stats?.totalMenus || 0}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.publishedMenus || 0} publicados
+                  </p>
                 </div>
-            </div>
+                <Menu className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/jobs')}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Empleos</p>
+                  <p className="text-2xl font-bold">{stats?.totalJobs || 0}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.activeJobs || 0} activos
+                  </p>
+                </div>
+                <Briefcase className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/events')}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Eventos</p>
+                  <p className="text-2xl font-bold">{stats?.totalEvents || 0}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.upcomingEvents || 0} próximos
+                  </p>
+                </div>
+                <Calendar className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Notificaciones</p>
+                  <p className="text-2xl font-bold">{stats?.totalNotifications || 0}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.unreadNotifications || 0} sin leer
+                  </p>
+                </div>
+                <Bell className="h-8 w-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Recent Activity and Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Activity className="mr-2 h-5 w-5" />
+                Actividad Reciente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentActivity.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No hay actividad reciente
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        {activity.type === 'menu' && <Menu className="h-5 w-5 text-blue-500" />}
+                        {activity.type === 'job' && <Briefcase className="h-5 w-5 text-green-500" />}
+                        {activity.type === 'event' && <Calendar className="h-5 w-5 text-purple-500" />}
+                        {activity.type === 'notification' && <Bell className="h-5 w-5 text-orange-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(activity.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {activity.status && (
+                        <Badge variant={
+                          activity.status === 'published' || activity.status === 'active' 
+                            ? 'default' 
+                            : 'secondary'
+                        }>
+                          {activity.status === 'published' ? 'Publicado' : 
+                           activity.status === 'active' ? 'Activo' : 
+                           activity.status === 'draft' ? 'Borrador' : activity.status}
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Acciones Rápidas</CardTitle>
+              <CardDescription>
+                Accede rápidamente a las funciones principales
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  onClick={() => navigate('/menus')} 
+                  className="h-20 flex flex-col items-center justify-center"
+                  variant="outline"
+                >
+                  <Menu className="h-6 w-6 mb-2" />
+                  <span className="text-sm">Crear Menú</span>
+                </Button>
+                <Button 
+                  onClick={() => navigate('/jobs')} 
+                  className="h-20 flex flex-col items-center justify-center"
+                  variant="outline"
+                >
+                  <Briefcase className="h-6 w-6 mb-2" />
+                  <span className="text-sm">Publicar Empleo</span>
+                </Button>
+                <Button 
+                  onClick={() => navigate('/events')} 
+                  className="h-20 flex flex-col items-center justify-center"
+                  variant="outline"
+                >
+                  <Calendar className="h-6 w-6 mb-2" />
+                  <span className="text-sm">Crear Evento</span>
+                </Button>
+                <Button 
+                  onClick={() => navigate('/diagnosis')} 
+                  className="h-20 flex flex-col items-center justify-center"
+                  variant="outline"
+                >
+                  <BarChart2 className="h-6 w-6 mb-2" />
+                  <span className="text-sm">Diagnóstico</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
     </div>
 );
@@ -469,94 +563,99 @@ const TrainingModule = () => (
     </div>
 );
 
-// --- Componente Principal del Dashboard ---
-const Dashboard = () => {
-    const [activeTab, setActiveTab] = useState('home');
-    const { user, signOut } = useAuth();
+const PersonalModule = () => <ShiftsModule />;
+const FormacionModule = () => <TrainingModule />;
+
+const Dashboard: React.FC = () => {
+    const [activeSection, setActiveSection] = useState('inicio');
+    const { signOut } = useAuth();
     const navigate = useNavigate();
-    
-    // Initialize AI alerts system
-    useAIAlerts();
+    const { sendAIAlert } = useAIAlerts();
+    const { stats, recentActivity, userProfile, loading, hasDiagnosis, loadDashboardData } = useDashboard();
 
+    // Demo AI alert on component mount
     useEffect(() => {
-        if (!user) {
-            navigate('/auth');
-        }
-    }, [user, navigate]);
+        const timer = setTimeout(() => {
+            sendAIAlert({
+                type: 'kpi_alert',
+                title: 'Alerta de Inventario',
+                message: 'El stock de ingredientes principales está bajo. Se recomienda realizar pedido.',
+                data: { inventory_level: 15, threshold: 20 }
+            });
+        }, 3000);
 
-    const navItems = [
-        { id: 'home', label: 'Mando de Control', icon: <LayoutDashboard size={20} /> },
-        { id: 'finances', label: 'Finanzas e IA', icon: <DollarSign size={20} /> },
-        { id: 'talent', label: 'Talento e IA', icon: <Users size={20} /> },
-        { id: 'operations', label: 'Operaciones e IA', icon: <Sparkles size={20} /> },
-        { id: 'menu', label: 'Menú e Inventario IA', icon: <UtensilsCrossed size={20} /> },
-        { id: 'social', label: 'Redes Sociales', icon: <MessageSquare size={20} /> },
-        { id: 'sentiment', label: 'Análisis de Sentimientos', icon: <BarChart2 size={20} /> },
-        { id: 'inventory', label: 'Gestión de Inventario', icon: <Warehouse size={20} /> },
-        { id: 'shifts', label: 'Optimización de Turnos', icon: <CalendarDays size={20} /> },
-        { id: 'training', label: 'Formación (RestroLearn)', icon: <BookOpen size={20} /> },
-        { id: 'notifications', label: 'Notificaciones', icon: <Bell size={20} /> },
-        { id: 'jobs', label: 'Gestión de Empleos', icon: <Briefcase size={20} /> },
-    ];
+        return () => clearTimeout(timer);
+    }, [sendAIAlert]);
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'home': return <DashboardHome />;
-            case 'finances': return <FinancesAIModule />;
-            case 'talent': return <TalentAIModule />;
-            case 'operations': return <OperationsAIModule />;
-            case 'menu': return <MenuInventoryAIModule />;
-            case 'social': return <SocialMediaModule />;
-            case 'sentiment': return <SentimentAnalysisModule />;
-            case 'inventory': return <InventoryModule />;
-            case 'shifts': return <ShiftsModule />;
-            case 'training': return <TrainingModule />;
-            case 'notifications': return <NotificationSettings />;
-            case 'jobs': return <JobsManagement />;
-            default: return <DashboardHome />;
-        }
-    };
+    if (!hasDiagnosis && activeSection === 'inicio') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+                <div className="max-w-md mx-auto p-8 bg-card rounded-lg shadow-lg text-center">
+                    <AlertTriangle className="mx-auto text-warning mb-4" size={48} />
+                    <h2 className="text-2xl font-bold mb-4">Completa tu Diagnóstico</h2>
+                    <p className="mb-6">Para personalizar tu experiencia en RestroWizard, necesitas completar el diagnóstico de madurez de tu restaurante.</p>
+                    <Button onClick={() => navigate('/diagnosis')} className="w-full">
+                        Realizar Diagnóstico
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex min-h-screen bg-background font-lato-regular">
-            {/* Sidebar de Navegación */}
-            <aside className="w-64 bg-card p-4 flex-shrink-0 shadow-lg border-r">
-                <div className="flex items-center mb-8">
+        <div className="flex min-h-screen bg-background">
+            {/* Sidebar */}
+            <aside className="w-64 bg-card shadow-lg border-r">
+                <div className="p-6">
                     <img 
                         src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
                         alt="RestroWizard" 
-                        className="h-10 w-auto"
+                        className="h-10 w-auto mb-8"
                     />
+                    <nav>
+                        <ul className="space-y-1">
+                            <NavItem icon={<LayoutDashboard />} label="Inicio" active={activeSection === 'inicio'} onClick={() => setActiveSection('inicio')} />
+                            <NavItem icon={<BarChart2 />} label="Menu Engineering" active={activeSection === 'menu-engineering'} onClick={() => setActiveSection('menu-engineering')} />
+                            <NavItem icon={<MessageSquare />} label="Redes Sociales" active={activeSection === 'redes-sociales'} onClick={() => setActiveSection('redes-sociales')} />
+                            <NavItem icon={<Star />} label="Análisis de Sentimiento" active={activeSection === 'analisis-sentimiento'} onClick={() => setActiveSection('analisis-sentimiento')} />
+                            <NavItem icon={<Warehouse />} label="Inventario" active={activeSection === 'inventario'} onClick={() => setActiveSection('inventario')} />
+                            <NavItem icon={<Users />} label="Personal" active={activeSection === 'personal'} onClick={() => setActiveSection('personal')} />
+                            <NavItem icon={<BookOpen />} label="Formación" active={activeSection === 'formacion'} onClick={() => setActiveSection('formacion')} />
+                            <NavItem icon={<Briefcase />} label="Gestión de Empleos" active={activeSection === 'empleos'} onClick={() => setActiveSection('empleos')} />
+                            <NavItem icon={<DollarSign />} label="Finanzas IA" active={activeSection === 'finanzas'} onClick={() => setActiveSection('finanzas')} />
+                            <NavItem icon={<Sparkles />} label="Talento IA" active={activeSection === 'talento'} onClick={() => setActiveSection('talento')} />
+                            <NavItem icon={<UtensilsCrossed />} label="Operaciones IA" active={activeSection === 'operaciones'} onClick={() => setActiveSection('operaciones')} />
+                            <NavItem icon={<Warehouse />} label="Menú/Inventario IA" active={activeSection === 'menu-inventario'} onClick={() => setActiveSection('menu-inventario')} />
+                            <NavItem icon={<Bell />} label="Notificaciones" active={activeSection === 'notificaciones'} onClick={() => setActiveSection('notificaciones')} />
+                        </ul>
+                    </nav>
                 </div>
-                <nav className="flex-1">
-                    <ul>
-                        {navItems.map(item => (
-                            <NavItem 
-                                key={item.id}
-                                icon={item.icon}
-                                label={item.label}
-                                active={activeTab === item.id}
-                                onClick={() => setActiveTab(item.id)}
-                            />
-                        ))}
-                    </ul>
-                </nav>
-                <div className="mt-8 pt-4 border-t">
-                    <Button
-                        variant="outline"
-                        onClick={signOut}
-                        className="w-full justify-start font-lato-medium"
-                    >
-                        <LogOut size={20} className="mr-2" />
+                <div className="absolute bottom-4 left-4 right-4">
+                    <Button variant="outline" onClick={signOut} className="w-full">
+                        <LogOut className="mr-2 h-4 w-4" />
                         Cerrar Sesión
                     </Button>
                 </div>
             </aside>
 
-            {/* Contenido Principal */}
-            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-                {renderContent()}
-            </main>
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col">
+                <main className="flex-1 p-8 overflow-y-auto">
+                    {activeSection === 'inicio' && <DashboardHome stats={stats} recentActivity={recentActivity} userProfile={userProfile} loading={loading} />}
+                    {activeSection === 'menu-engineering' && <MenuEngineeringModule />}
+                    {activeSection === 'redes-sociales' && <SocialMediaModule />}
+                    {activeSection === 'analisis-sentimiento' && <SentimentAnalysisModule />}
+                    {activeSection === 'inventario' && <InventoryModule />}
+                    {activeSection === 'personal' && <PersonalModule />}
+                    {activeSection === 'formacion' && <FormacionModule />}
+                    {activeSection === 'empleos' && <JobsManagement />}
+                    {activeSection === 'finanzas' && <FinancesAIModule />}
+                    {activeSection === 'talento' && <TalentAIModule />}
+                    {activeSection === 'operaciones' && <OperationsAIModule />}
+                    {activeSection === 'menu-inventario' && <MenuInventoryAIModule />}
+                    {activeSection === 'notificaciones' && <NotificationSettings />}
+                </main>
+            </div>
         </div>
     );
 };
