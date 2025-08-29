@@ -569,10 +569,55 @@ const FormacionModule = () => <TrainingModule />;
 
 const Dashboard: React.FC = () => {
     const [activeSection, setActiveSection] = useState('inicio');
-    const { signOut } = useAuth();
     const navigate = useNavigate();
+    const { user, loading: authLoading, signOut } = useAuth();
     const { sendAIAlert } = useAIAlerts();
-    const { stats, recentActivity, userProfile, loading, hasDiagnosis, loadDashboardData } = useDashboard();
+    const { stats, recentActivity, userProfile, loading: dashboardLoading, hasDiagnosis, loadDashboardData } = useDashboard();
+
+    // Logs para diagnosticar problemas de carga
+    console.log('🔍 Dashboard Debug:', {
+        user: !!user,
+        userId: user?.id,
+        authLoading,
+        dashboardLoading,
+        hasDiagnosis,
+        stats: !!stats,
+        userProfile: !!userProfile,
+        activeSection
+    });
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        console.log('🔐 Auth Effect:', { authLoading, user: !!user });
+        if (!authLoading && !user) {
+            console.log('❌ No user, redirecting to /auth');
+            navigate('/auth');
+            return;
+        }
+    }, [user, authLoading, navigate]);
+
+    // Loading state
+    if (authLoading || dashboardLoading) {
+        console.log('⏳ Loading Dashboard:', { authLoading, dashboardLoading });
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Cargando dashboard...</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        Auth: {authLoading ? 'Cargando...' : 'Listo'} | 
+                        Data: {dashboardLoading ? 'Cargando...' : 'Listo'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+        console.log('❌ No authenticated user found');
+        return null;
+    }
 
     // Demo AI alert on component mount
     useEffect(() => {
@@ -590,6 +635,7 @@ const Dashboard: React.FC = () => {
     }, [sendAIAlert]);
 
     if (!hasDiagnosis && activeSection === 'inicio') {
+        console.log('⚠️ No diagnosis found, showing diagnosis prompt');
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background">
                 <div className="max-w-md mx-auto p-8 bg-card rounded-lg shadow-lg text-center">
@@ -643,7 +689,7 @@ const Dashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
                 <main className="flex-1 p-8 overflow-y-auto">
-                    {activeSection === 'inicio' && <DashboardHome stats={stats} recentActivity={recentActivity} userProfile={userProfile} loading={loading} />}
+                    {activeSection === 'inicio' && <DashboardHome stats={stats} recentActivity={recentActivity} userProfile={userProfile} loading={dashboardLoading} />}
                     {activeSection === 'menu-engineering' && <MenuEngineeringModule />}
                     {activeSection === 'redes-sociales' && <SocialMediaModule />}
                     {activeSection === 'analisis-sentimiento' && <SentimentAnalysisModule />}
