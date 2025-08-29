@@ -19,7 +19,7 @@ import {
     BookOpen, Warehouse, CalendarDays, Users, DollarSign, ShoppingCart, 
     Star, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock,
     Instagram, Facebook, Twitter, ThumbsUp, ThumbsDown, Meh, LogOut, Briefcase, Bell,
-    Menu, FileText, Calendar, Activity
+    Menu, FileText, Calendar, Activity, Lightbulb
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -161,6 +161,14 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
     );
   }
 
+  // Check if user is new (no data)
+  const isNewUser = !stats || (
+    !stats.totalMenus && 
+    !stats.totalJobs && 
+    !stats.totalEvents && 
+    !recentActivity?.length
+  );
+
   return (
     <div>
         {/* Welcome Section */}
@@ -171,6 +179,16 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
           <p className="text-muted-foreground">
             Restaurante: {userProfile?.restaurant_name || 'Mi Restaurante'}
           </p>
+          {isNewUser && (
+            <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm text-primary font-medium mb-2">
+                🎉 ¡Acabas de unirte a RestroWizard!
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Comienza creando tu primer menú digital o publicando una oferta de empleo para darle vida a tu dashboard.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -247,9 +265,19 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
             </CardHeader>
             <CardContent>
               {recentActivity.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No hay actividad reciente
-                </p>
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    {isNewUser ? "¡Tu actividad aparecerá aquí!" : "No hay actividad reciente"}
+                  </p>
+                  {isNewUser && (
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>• Crea tu primer menú digital</p>
+                      <p>• Publica una oferta de empleo</p>
+                      <p>• Organiza un evento</p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-4">
                   {recentActivity.map((activity, index) => (
@@ -292,9 +320,14 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Acciones Rápidas</CardTitle>
+              <CardTitle>
+                {isNewUser ? "¡Comienza Aquí!" : "Acciones Rápidas"}
+              </CardTitle>
               <CardDescription>
-                Accede rápidamente a las funciones principales
+                {isNewUser 
+                  ? "Estas son las primeras acciones que puedes realizar para comenzar"
+                  : "Accede rápidamente a las funciones principales"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -302,10 +335,11 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
                 <Button 
                   onClick={() => navigate('/menus')} 
                   className="h-20 flex flex-col items-center justify-center"
-                  variant="outline"
+                  variant={isNewUser ? "default" : "outline"}
                 >
                   <Menu className="h-6 w-6 mb-2" />
                   <span className="text-sm">Crear Menú</span>
+                  {isNewUser && <span className="text-xs opacity-75">¡Recomendado!</span>}
                 </Button>
                 <Button 
                   onClick={() => navigate('/jobs')} 
@@ -329,9 +363,21 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
                   variant="outline"
                 >
                   <BarChart2 className="h-6 w-6 mb-2" />
-                  <span className="text-sm">Diagnóstico</span>
+                  <span className="text-sm">Ver Diagnóstico</span>
                 </Button>
               </div>
+              {isNewUser && (
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center">
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                    Consejo para Empezar
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Te recomendamos comenzar creando tu primer menú digital. 
+                    Es rápido, fácil y podrás compartirlo inmediatamente con tus clientes.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -574,23 +620,9 @@ const Dashboard: React.FC = () => {
     const { sendAIAlert } = useAIAlerts();
     const { stats, recentActivity, userProfile, loading: dashboardLoading, hasDiagnosis, loadDashboardData } = useDashboard();
 
-    // Logs para diagnosticar problemas de carga
-    console.log('🔍 Dashboard Debug:', {
-        user: !!user,
-        userId: user?.id,
-        authLoading,
-        dashboardLoading,
-        hasDiagnosis,
-        stats: !!stats,
-        userProfile: !!userProfile,
-        activeSection
-    });
-
     // Redirect to login if not authenticated
     useEffect(() => {
-        console.log('🔐 Auth Effect:', { authLoading, user: !!user });
         if (!authLoading && !user) {
-            console.log('❌ No user, redirecting to /auth');
             navigate('/auth');
             return;
         }
@@ -598,16 +630,11 @@ const Dashboard: React.FC = () => {
 
     // Loading state
     if (authLoading || dashboardLoading) {
-        console.log('⏳ Loading Dashboard:', { authLoading, dashboardLoading });
         return (
             <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                     <p className="text-muted-foreground">Cargando dashboard...</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        Auth: {authLoading ? 'Cargando...' : 'Listo'} | 
-                        Data: {dashboardLoading ? 'Cargando...' : 'Listo'}
-                    </p>
                 </div>
             </div>
         );
@@ -615,7 +642,6 @@ const Dashboard: React.FC = () => {
 
     // Check if user is authenticated
     if (!user) {
-        console.log('❌ No authenticated user found');
         return null;
     }
 
@@ -635,14 +661,19 @@ const Dashboard: React.FC = () => {
     }, [sendAIAlert]);
 
     if (!hasDiagnosis && activeSection === 'inicio') {
-        console.log('⚠️ No diagnosis found, showing diagnosis prompt');
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background">
                 <div className="max-w-md mx-auto p-8 bg-card rounded-lg shadow-lg text-center">
-                    <AlertTriangle className="mx-auto text-warning mb-4" size={48} />
-                    <h2 className="text-2xl font-bold mb-4">Completa tu Diagnóstico</h2>
-                    <p className="mb-6">Para personalizar tu experiencia en RestroWizard, necesitas completar el diagnóstico de madurez de tu restaurante.</p>
-                    <Button onClick={() => navigate('/diagnosis')} className="w-full">
+                    <h2 className="text-2xl font-bold mb-4">¡Bienvenido a RestroWizard!</h2>
+                    <p className="text-muted-foreground mb-6">
+                        Para comenzar, necesitamos conocer mejor tu restaurante. 
+                        Completa nuestro diagnóstico para obtener recomendaciones personalizadas.
+                    </p>
+                    <Button 
+                        onClick={() => navigate('/diagnosis')}
+                        className="w-full"
+                        size="lg"
+                    >
                         Realizar Diagnóstico
                     </Button>
                 </div>
