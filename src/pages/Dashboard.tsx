@@ -161,12 +161,12 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
     );
   }
 
-  // Check if user is new (no data)
+  // Check if user is new (no data) - with proper null checks
   const isNewUser = !stats || (
-    !stats.totalMenus && 
-    !stats.totalJobs && 
-    !stats.totalEvents && 
-    !recentActivity?.length
+    (stats.totalMenus === 0 || !stats.totalMenus) && 
+    (stats.totalJobs === 0 || !stats.totalJobs) && 
+    (stats.totalEvents === 0 || !stats.totalEvents) && 
+    (!recentActivity || recentActivity.length === 0)
   );
 
   return (
@@ -264,7 +264,7 @@ const DashboardHome = ({ stats, recentActivity, userProfile, loading }: any) => 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentActivity.length === 0 ? (
+              {!recentActivity || recentActivity.length === 0 ? (
                 <div className="text-center py-8">
                   <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">
