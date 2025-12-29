@@ -60,8 +60,8 @@ export const useDashboard = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (error) throw error;
       setUserProfile(data);
@@ -76,7 +76,7 @@ export const useDashboard = () => {
       const { data: menusData } = await supabase
         .from('restaurant_menus')
         .select('id, status')
-        .eq('restaurant_id', userId);
+        .eq('user_id', userId);
 
       // Get jobs stats
       const { data: jobsData } = await supabase
@@ -93,7 +93,7 @@ export const useDashboard = () => {
       // Get notifications stats
       const { data: notificationsData } = await supabase
         .from('notifications_log')
-        .select('id, clicked_at')
+        .select('id, is_read')
         .eq('user_id', userId);
 
       const totalMenus = menusData?.length || 0;
@@ -105,7 +105,7 @@ export const useDashboard = () => {
         new Date(e.event_date) > new Date() && e.status !== 'cancelled'
       ).length || 0;
       const totalNotifications = notificationsData?.length || 0;
-      const unreadNotifications = notificationsData?.filter(n => !n.clicked_at).length || 0;
+      const unreadNotifications = notificationsData?.filter(n => !n.is_read).length || 0;
 
       setStats({
         totalMenus,
@@ -135,7 +135,7 @@ export const useDashboard = () => {
       const { data: recentMenus } = await supabase
         .from('restaurant_menus')
         .select('name, status, updated_at')
-        .eq('restaurant_id', userId)
+        .eq('user_id', userId)
         .order('updated_at', { ascending: false })
         .limit(3);
 

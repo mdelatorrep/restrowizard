@@ -1,33 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
-export interface Job {
-  id: string;
-  employer_id: string;
-  title: string;
-  description: string;
-  requirements?: string;
-  responsibilities?: string;
-  job_type: 'full_time' | 'part_time' | 'contract' | 'internship' | 'freelance';
-  job_category: 'kitchen' | 'service' | 'management' | 'administration' | 'marketing' | 'finance' | 'maintenance';
-  experience_level: 'entry' | 'junior' | 'mid' | 'senior' | 'lead';
-  location: string;
-  salary_min?: number;
-  salary_max?: number;
-  currency: string;
-  benefits?: string[];
-  skills_required?: string[];
-  restaurant_name: string;
-  application_deadline?: string;
-  start_date?: string;
-  is_active: boolean;
-  is_featured: boolean;
-  views_count: number;
-  applications_count: number;
-  created_at: string;
-  updated_at: string;
-}
+export type Job = Tables<'jobs'>;
+export type JobInsert = TablesInsert<'jobs'>;
+export type JobUpdate = TablesUpdate<'jobs'>;
 
 export interface JobFilters {
   search?: string;
@@ -55,7 +33,7 @@ export const useJobs = () => {
 
       // Apply filters
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,restaurant_name.ilike.%${filters.search}%`);
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
       
       if (filters?.location) {
@@ -63,15 +41,15 @@ export const useJobs = () => {
       }
       
       if (filters?.category) {
-        query = query.eq('job_category', filters.category as any);
+        query = query.eq('category', filters.category as Job['category']);
       }
       
       if (filters?.job_type) {
-        query = query.eq('job_type', filters.job_type as any);
+        query = query.eq('job_type', filters.job_type as Job['job_type']);
       }
       
       if (filters?.experience_level) {
-        query = query.eq('experience_level', filters.experience_level as any);
+        query = query.eq('experience_level', filters.experience_level as Job['experience_level']);
       }
       
       if (filters?.salary_min) {
@@ -86,7 +64,7 @@ export const useJobs = () => {
 
       if (error) throw error;
       
-      return data as Job[];
+      return data || [];
     } catch (error: any) {
       toast({
         title: "Error al cargar empleos",
@@ -114,7 +92,7 @@ export const useJobs = () => {
 
       if (error) throw error;
       
-      return data as Job;
+      return data;
     } catch (error: any) {
       toast({
         title: "Error al cargar empleo",
@@ -127,7 +105,7 @@ export const useJobs = () => {
     }
   };
 
-  const createJob = async (jobData: Omit<Job, 'id' | 'views_count' | 'applications_count' | 'created_at' | 'updated_at'>) => {
+  const createJob = async (jobData: Omit<JobInsert, 'id' | 'views_count' | 'applications_count' | 'created_at' | 'updated_at'>) => {
     try {
       setLoading(true);
       
@@ -144,7 +122,7 @@ export const useJobs = () => {
         description: "Tu oferta de empleo ha sido publicada exitosamente.",
       });
 
-      return data as Job;
+      return data;
     } catch (error: any) {
       toast({
         title: "Error al publicar empleo",
@@ -157,7 +135,7 @@ export const useJobs = () => {
     }
   };
 
-  const updateJob = async (jobId: string, updates: Partial<Job>) => {
+  const updateJob = async (jobId: string, updates: JobUpdate) => {
     try {
       setLoading(true);
       
@@ -175,7 +153,7 @@ export const useJobs = () => {
         description: "La oferta de empleo ha sido actualizada correctamente.",
       });
 
-      return data as Job;
+      return data;
     } catch (error: any) {
       toast({
         title: "Error al actualizar empleo",
@@ -229,7 +207,7 @@ export const useJobs = () => {
 
       if (error) throw error;
       
-      return data as Job[];
+      return data || [];
     } catch (error: any) {
       toast({
         title: "Error al cargar mis empleos",

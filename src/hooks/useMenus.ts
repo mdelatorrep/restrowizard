@@ -48,7 +48,7 @@ export const useMenus = () => {
       const { data, error } = await supabase
         .from('restaurant_menus')
         .select('*')
-        .eq('restaurant_id', user.id)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -66,7 +66,7 @@ export const useMenus = () => {
   };
 
   // Create new menu
-  const createMenu = async (menuData: Omit<RestaurantMenuInsert, 'restaurant_id' | 'public_url_slug'> & { name: string; cuisine_type: string }) => {
+  const createMenu = async (menuData: Omit<RestaurantMenuInsert, 'user_id' | 'public_url_slug'> & { name: string; cuisine_type: string }) => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,12 +75,12 @@ export const useMenus = () => {
 
       // Generate URL slug
       const { data: slugData } = await supabase.rpc('generate_menu_slug', {
-        restaurant_name: menuData.name || 'menu'
+        menu_name: menuData.name || 'menu'
       });
 
       const newMenu: RestaurantMenuInsert = {
         ...menuData,
-        restaurant_id: user.id,
+        user_id: user.id,
         public_url_slug: slugData,
       };
 
@@ -114,7 +114,7 @@ export const useMenus = () => {
   };
 
   // Update menu
-  const updateMenu = async (id: string, updates: Partial<RestaurantMenu>) => {
+  const updateMenu = async (id: string, updates: TablesUpdate<'restaurant_menus'>) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
