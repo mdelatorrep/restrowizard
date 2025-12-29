@@ -34,15 +34,8 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
     { value: 'american', label: 'Americana' },
     { value: 'mediterranean', label: 'Mediterránea' },
     { value: 'thai', label: 'Tailandesa' },
-    { value: 'korean', label: 'Coreana' },
-    { value: 'vietnamese', label: 'Vietnamita' },
-    { value: 'greek', label: 'Griega' },
-    { value: 'middle_eastern', label: 'Medio Oriente' },
     { value: 'fusion', label: 'Fusión' },
-    { value: 'seafood', label: 'Mariscos' },
-    { value: 'steakhouse', label: 'Parrilla' },
-    { value: 'vegetarian', label: 'Vegetariana' },
-    { value: 'vegan', label: 'Vegana' }
+    { value: 'other', label: 'Otra' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +48,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
     const menuData = {
       name: formData.name,
       description: formData.description,
-      cuisine_type: formData.cuisine_type as any,
+      cuisine_type: formData.cuisine_type,
       template_id: selectedTemplate || undefined,
     };
 
@@ -70,10 +63,10 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = templates.find(t => t.id === templateId);
-    if (template) {
+    if (template && template.cuisine_type) {
       setFormData(prev => ({
         ...prev,
-        cuisine_type: template.cuisine_type
+        cuisine_type: template.cuisine_type || ''
       }));
     }
   };
@@ -149,7 +142,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
                         {template.name}
                       </CardTitle>
                       <Badge variant="outline" className="w-fit text-xs">
-                        {cuisineTypes.find(c => c.value === template.cuisine_type)?.label}
+                        {cuisineTypes.find(c => c.value === template.cuisine_type)?.label || template.cuisine_type}
                       </Badge>
                     </CardHeader>
                     <CardContent className="pt-0">

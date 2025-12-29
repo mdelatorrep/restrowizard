@@ -27,9 +27,7 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
     description: '',
     price: '',
     category: '',
-    is_vegetarian: false,
-    is_vegan: false,
-    is_gluten_free: false,
+    dietary_tags: [] as string[],
   });
 
   const categories = [
@@ -51,6 +49,12 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
     { value: 'specials', label: 'Especiales' }
   ];
 
+  const dietaryOptions = [
+    { value: 'vegetarian', label: 'Vegetariano' },
+    { value: 'vegan', label: 'Vegano' },
+    { value: 'gluten_free', label: 'Sin Gluten' },
+  ];
+
   useEffect(() => {
     const currentMenu = menus.find(m => m.id === menuId);
     if (currentMenu) {
@@ -62,6 +66,15 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
   const loadItems = async () => {
     const menuItems = await getMenuItems(menuId);
     setItems(menuItems);
+  };
+
+  const toggleDietaryTag = (tag: string) => {
+    setNewItem(prev => ({
+      ...prev,
+      dietary_tags: prev.dietary_tags.includes(tag)
+        ? prev.dietary_tags.filter(t => t !== tag)
+        : [...prev.dietary_tags, tag]
+    }));
   };
 
   const handleAddItem = async () => {
@@ -77,11 +90,9 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
     const itemData = {
       name: newItem.name,
       description: newItem.description,
-      price: newItem.price ? parseFloat(newItem.price) : undefined,
-      category: newItem.category as any,
-      is_vegetarian: newItem.is_vegetarian,
-      is_vegan: newItem.is_vegan,
-      is_gluten_free: newItem.is_gluten_free,
+      price: newItem.price ? parseFloat(newItem.price) : 0,
+      category: newItem.category,
+      dietary_tags: newItem.dietary_tags,
       sort_order: items.length,
     };
 
@@ -93,9 +104,7 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
         description: '',
         price: '',
         category: '',
-        is_vegetarian: false,
-        is_vegan: false,
-        is_gluten_free: false,
+        dietary_tags: [],
       });
     }
   };
@@ -207,30 +216,16 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
               />
             </div>
             <div className="mt-4 flex space-x-6">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="vegetarian"
-                  checked={newItem.is_vegetarian}
-                  onCheckedChange={(checked) => setNewItem(prev => ({ ...prev, is_vegetarian: !!checked }))}
-                />
-                <Label htmlFor="vegetarian">Vegetariano</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="vegan"
-                  checked={newItem.is_vegan}
-                  onCheckedChange={(checked) => setNewItem(prev => ({ ...prev, is_vegan: !!checked }))}
-                />
-                <Label htmlFor="vegan">Vegano</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="gluten_free"
-                  checked={newItem.is_gluten_free}
-                  onCheckedChange={(checked) => setNewItem(prev => ({ ...prev, is_gluten_free: !!checked }))}
-                />
-                <Label htmlFor="gluten_free">Sin Gluten</Label>
-              </div>
+              {dietaryOptions.map((option) => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={option.value}
+                    checked={newItem.dietary_tags.includes(option.value)}
+                    onCheckedChange={() => toggleDietaryTag(option.value)}
+                  />
+                  <Label htmlFor={option.value}>{option.label}</Label>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -261,9 +256,9 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
                           <p className="text-slate-medium text-sm mb-2">{item.description}</p>
                         )}
                         <div className="flex space-x-2">
-                          {item.is_vegetarian && <Badge variant="outline" className="text-xs">Vegetariano</Badge>}
-                          {item.is_vegan && <Badge variant="outline" className="text-xs">Vegano</Badge>}
-                          {item.is_gluten_free && <Badge variant="outline" className="text-xs">Sin Gluten</Badge>}
+                          {item.dietary_tags?.includes('vegetarian') && <Badge variant="outline" className="text-xs">Vegetariano</Badge>}
+                          {item.dietary_tags?.includes('vegan') && <Badge variant="outline" className="text-xs">Vegano</Badge>}
+                          {item.dietary_tags?.includes('gluten_free') && <Badge variant="outline" className="text-xs">Sin Gluten</Badge>}
                         </div>
                       </div>
                       <div className="flex space-x-2">

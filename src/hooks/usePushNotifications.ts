@@ -2,25 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/components/ui/use-toast';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type NotificationPermission = 'default' | 'granted' | 'denied';
-
-interface PushSubscription {
-  id: string;
-  endpoint: string;
-  is_active: boolean;
-  device_type: string;
-  created_at: string;
-}
-
-interface NotificationPreferences {
-  ai_alerts: boolean;
-  kpi_alerts: boolean;
-  training_reminders: boolean;
-  system_updates: boolean;
-  quiet_hours_start: string;
-  quiet_hours_end: string;
-}
+export type PushSubscriptionDB = Tables<'push_subscriptions'>;
+export type NotificationPreferencesDB = Tables<'notification_preferences'>;
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
@@ -29,8 +15,8 @@ export const usePushNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [subscriptions, setSubscriptions] = useState<PushSubscription[]>([]);
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [subscriptions, setSubscriptions] = useState<PushSubscriptionDB[]>([]);
+  const [preferences, setPreferences] = useState<NotificationPreferencesDB | null>(null);
 
   useEffect(() => {
     checkNotificationSupport();
@@ -62,8 +48,7 @@ export const usePushNotifications = () => {
       const { data, error } = await supabase
         .from('push_subscriptions')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -82,11 +67,9 @@ export const usePushNotifications = () => {
         .from('notification_preferences')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
-        throw error;
-      }
+      if (error) throw error;
 
       setPreferences(data);
     } catch (error) {
@@ -132,8 +115,9 @@ export const usePushNotifications = () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       
-      // Get VAPID public key from Supabase function
-      const { data: vapidKey } = await supabase.rpc('get_vapid_public_key');
+      // For now, we'll use a placeholder VAPID key since the function doesn't exist yet
+      // In production, you'd call an edge function to get the VAPID key
+      const vapidKey = 'placeholder-vapid-key';
       
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -144,12 +128,10 @@ export const usePushNotifications = () => {
 
       // Save subscription to Supabase
       const { error } = await supabase.from('push_subscriptions').insert({
-        user_id: user.id,
+        user_id: user!.id,
         endpoint: subscriptionData.endpoint!,
-        p256dh_key: subscriptionData.keys!.p256dh!,
-        auth_key: subscriptionData.keys!.auth!,
-        user_agent: navigator.userAgent,
-        device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+        p256dh: subscriptionData.keys!.p256dh!,
+        auth: subscriptionData.keys!.auth!,
       });
 
       if (error) throw error;
@@ -185,7 +167,7 @@ export const usePushNotifications = () => {
         // Unsubscribe specific subscription
         const { error } = await supabase
           .from('push_subscriptions')
-          .update({ is_active: false })
+          .delete()
           .eq('id', subscriptionId)
           .eq('user_id', user.id);
 
@@ -194,7 +176,7 @@ export const usePushNotifications = () => {
         // Unsubscribe all user subscriptions
         const { error } = await supabase
           .from('push_subscriptions')
-          .update({ is_active: false })
+          .delete()
           .eq('user_id', user.id);
 
         if (error) throw error;
@@ -228,7 +210,7 @@ export const usePushNotifications = () => {
     }
   };
 
-  const updatePreferences = async (newPreferences: Partial<NotificationPreferences>): Promise<boolean> => {
+  const updatePreferences = async (newPreferences: TablesUpdate<'notification_preferences'>): Promise<boolean> => {
     if (!user) return false;
 
     try {
