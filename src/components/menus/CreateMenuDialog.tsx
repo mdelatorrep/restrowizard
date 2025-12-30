@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMenus } from '@/hooks/useMenus';
+import { Database } from '@/integrations/supabase/types';
+
+type CuisineType = Database['public']['Enums']['cuisine_type'];
 
 interface CreateMenuDialogProps {
   open: boolean;
@@ -20,7 +23,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    cuisine_type: '',
+    cuisine_type: '' as CuisineType | '',
   });
 
   const cuisineTypes = [
@@ -48,14 +51,14 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
     const menuData = {
       name: formData.name,
       description: formData.description,
-      cuisine_type: formData.cuisine_type,
+      cuisine_type: formData.cuisine_type as CuisineType,
       template_id: selectedTemplate || undefined,
     };
 
     const result = await createMenu(menuData);
     if (result) {
       onOpenChange(false);
-      setFormData({ name: '', description: '', cuisine_type: '' });
+      setFormData({ name: '', description: '', cuisine_type: '' as CuisineType | '' });
       setSelectedTemplate('');
     }
   };
@@ -66,7 +69,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
     if (template && template.cuisine_type) {
       setFormData(prev => ({
         ...prev,
-        cuisine_type: template.cuisine_type || ''
+        cuisine_type: (template.cuisine_type || '') as CuisineType | ''
       }));
     }
   };
@@ -107,7 +110,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
                 <Label htmlFor="cuisine_type">Tipo de Cocina *</Label>
                 <Select 
                   value={formData.cuisine_type} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, cuisine_type: value }))}
+                  onValueChange={(value: CuisineType) => setFormData(prev => ({ ...prev, cuisine_type: value }))}
                   required
                 >
                   <SelectTrigger>

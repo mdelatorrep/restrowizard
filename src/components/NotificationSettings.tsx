@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Bell, BellOff, TestTube, Smartphone, Monitor, Clock } from 'lucide-react';
+import { Bell, BellOff, TestTube, Monitor, Clock } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const NotificationSettings = () => {
@@ -50,7 +50,7 @@ const NotificationSettings = () => {
     }
   };
 
-  const handlePreferenceChange = (key: keyof typeof preferences, value: boolean) => {
+  const handlePreferenceChange = (key: 'push_notifications' | 'email_notifications' | 'job_alerts' | 'event_reminders' | 'marketing', value: boolean) => {
     if (!preferences) return;
     updatePreferences({ [key]: value });
   };
@@ -144,13 +144,9 @@ const NotificationSettings = () => {
               {subscriptions.map((subscription) => (
                 <div key={subscription.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    {subscription.device_type === 'mobile' ? (
-                      <Smartphone className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <Monitor className="h-5 w-5 text-muted-foreground" />
-                    )}
+                    <Monitor className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="font-lato-medium">{subscription.device_type === 'mobile' ? 'Móvil' : 'Escritorio'}</p>
+                      <p className="font-lato-medium">Dispositivo</p>
                       <p className="text-sm text-muted-foreground">
                         Activado: {new Date(subscription.created_at).toLocaleDateString()}
                       </p>
@@ -180,7 +176,7 @@ const NotificationSettings = () => {
               Preferencias de Notificación
             </CardTitle>
             <CardDescription>
-              Personaliza qué tipo de alertas deseas recibir de tu copiloto IA.
+              Personaliza qué tipo de alertas deseas recibir.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -188,14 +184,14 @@ const NotificationSettings = () => {
               <>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="font-lato-medium">Alertas del Copiloto IA</Label>
+                    <Label className="font-lato-medium">Notificaciones Push</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recibir notificaciones sobre costos, inventario y oportunidades
+                      Recibir notificaciones push en este dispositivo
                     </p>
                   </div>
                   <Switch
-                    checked={preferences.ai_alerts}
-                    onCheckedChange={(checked) => handlePreferenceChange('ai_alerts', checked)}
+                    checked={preferences.push_notifications}
+                    onCheckedChange={(checked) => handlePreferenceChange('push_notifications', checked)}
                   />
                 </div>
 
@@ -203,14 +199,14 @@ const NotificationSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="font-lato-medium">Alertas de KPIs Críticos</Label>
+                    <Label className="font-lato-medium">Notificaciones por Email</Label>
                     <p className="text-sm text-muted-foreground">
-                      Notificaciones cuando los KPIs están fuera de rango normal
+                      Recibir notificaciones por correo electrónico
                     </p>
                   </div>
                   <Switch
-                    checked={preferences.kpi_alerts}
-                    onCheckedChange={(checked) => handlePreferenceChange('kpi_alerts', checked)}
+                    checked={preferences.email_notifications}
+                    onCheckedChange={(checked) => handlePreferenceChange('email_notifications', checked)}
                   />
                 </div>
 
@@ -218,14 +214,14 @@ const NotificationSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="font-lato-medium">Recordatorios de Formación</Label>
+                    <Label className="font-lato-medium">Alertas de Empleos</Label>
                     <p className="text-sm text-muted-foreground">
-                      Recordatorios sobre cursos pendientes y capacitación del personal
+                      Recibir alertas sobre nuevos empleos y aplicaciones
                     </p>
                   </div>
                   <Switch
-                    checked={preferences.training_reminders}
-                    onCheckedChange={(checked) => handlePreferenceChange('training_reminders', checked)}
+                    checked={preferences.job_alerts}
+                    onCheckedChange={(checked) => handlePreferenceChange('job_alerts', checked)}
                   />
                 </div>
 
@@ -233,28 +229,30 @@ const NotificationSettings = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="font-lato-medium">Actualizaciones del Sistema</Label>
+                    <Label className="font-lato-medium">Recordatorios de Eventos</Label>
                     <p className="text-sm text-muted-foreground">
-                      Notificaciones sobre nuevas funcionalidades y actualizaciones
+                      Recordatorios sobre eventos próximos y reservas
                     </p>
                   </div>
                   <Switch
-                    checked={preferences.system_updates}
-                    onCheckedChange={(checked) => handlePreferenceChange('system_updates', checked)}
+                    checked={preferences.event_reminders}
+                    onCheckedChange={(checked) => handlePreferenceChange('event_reminders', checked)}
                   />
                 </div>
 
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label className="font-lato-medium">Horario de Silencio</Label>
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="font-lato-medium">Marketing</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Recibir ofertas y novedades de la plataforma
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    No recibir notificaciones entre: {preferences.quiet_hours_start} - {preferences.quiet_hours_end}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Puedes configurar horarios específicos contactando a soporte
-                  </p>
+                  <Switch
+                    checked={preferences.marketing}
+                    onCheckedChange={(checked) => handlePreferenceChange('marketing', checked)}
+                  />
                 </div>
               </>
             )}

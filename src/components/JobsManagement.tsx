@@ -10,31 +10,31 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useJobs, Job } from '@/hooks/useJobs';
 import { useAuth } from '@/hooks/useAuth';
+import { Database } from '@/integrations/supabase/types';
+
+type JobType = Database['public']['Enums']['job_type'];
+type JobCategory = Database['public']['Enums']['job_category'];
+type ExperienceLevel = Database['public']['Enums']['experience_level'];
 
 const JobsManagement = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { getMyJobs, createJob, updateJob, deleteJob } = useJobs();
+  const { getMyJobs, createJob } = useJobs();
   const { user } = useAuth();
 
-  // Form state
+  // Form state - aligned with database schema
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     requirements: '',
-    responsibilities: '',
-    job_type: 'full_time' as const,
-    job_category: 'kitchen' as const,
-    experience_level: 'mid' as const,
+    benefits: '',
+    job_type: 'full_time' as JobType,
+    category: 'kitchen' as JobCategory,
+    experience_level: 'mid' as ExperienceLevel,
     location: '',
     salary_min: '',
     salary_max: '',
-    restaurant_name: '',
-    benefits: [] as string[],
-    skills_required: [] as string[],
-    application_deadline: '',
-    start_date: ''
   });
 
   useEffect(() => {
@@ -55,13 +55,19 @@ const JobsManagement = () => {
     if (!user?.id) return;
 
     const jobData = {
-      ...formData,
-      employer_id: user.id,
+      title: formData.title,
+      description: formData.description,
+      requirements: formData.requirements || undefined,
+      benefits: formData.benefits || undefined,
+      job_type: formData.job_type,
+      category: formData.category,
+      experience_level: formData.experience_level,
+      location: formData.location,
       salary_min: formData.salary_min ? parseFloat(formData.salary_min) : undefined,
       salary_max: formData.salary_max ? parseFloat(formData.salary_max) : undefined,
-      currency: 'EUR',
       is_active: true,
-      is_featured: false
+      is_salary_visible: true,
+      employer_id: user.id,
     };
 
     const newJob = await createJob(jobData);
@@ -77,18 +83,13 @@ const JobsManagement = () => {
       title: '',
       description: '',
       requirements: '',
-      responsibilities: '',
+      benefits: '',
       job_type: 'full_time',
-      job_category: 'kitchen',
+      category: 'kitchen',
       experience_level: 'mid',
       location: '',
       salary_min: '',
       salary_max: '',
-      restaurant_name: '',
-      benefits: [],
-      skills_required: [],
-      application_deadline: '',
-      start_date: ''
     });
   };
 
@@ -97,8 +98,8 @@ const JobsManagement = () => {
       full_time: 'Tiempo completo',
       part_time: 'Tiempo parcial',
       contract: 'Contrato',
+      temporary: 'Temporal',
       internship: 'Prácticas',
-      freelance: 'Freelance'
     };
     return types[type] || type;
   };
@@ -108,10 +109,10 @@ const JobsManagement = () => {
       kitchen: 'Cocina',
       service: 'Servicio',
       management: 'Gestión',
-      administration: 'Administración',
-      marketing: 'Marketing',
-      finance: 'Finanzas',
-      maintenance: 'Mantenimiento'
+      bartender: 'Bartender',
+      cleaning: 'Limpieza',
+      delivery: 'Delivery',
+      other: 'Otro',
     };
     return categories[category] || category;
   };
@@ -122,7 +123,7 @@ const JobsManagement = () => {
       junior: 'Junior',
       mid: 'Intermedio',
       senior: 'Senior',
-      lead: 'Líder'
+      executive: 'Ejecutivo',
     };
     return levels[level] || level;
   };
@@ -150,25 +151,14 @@ const JobsManagement = () => {
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Título del Puesto *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="Ej: Chef de Cocina"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="restaurant_name">Nombre del Restaurante *</Label>
-                  <Input
-                    id="restaurant_name"
-                    value={formData.restaurant_name}
-                    onChange={(e) => setFormData({...formData, restaurant_name: e.target.value})}
-                    placeholder="Nombre de tu restaurante"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="title">Título del Puesto *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  placeholder="Ej: Chef de Cocina"
+                />
               </div>
 
               <div>
@@ -185,7 +175,7 @@ const JobsManagement = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="job_type">Tipo de Empleo</Label>
-                  <Select value={formData.job_type} onValueChange={(value: any) => setFormData({...formData, job_type: value})}>
+                  <Select value={formData.job_type} onValueChange={(value: JobType) => setFormData({...formData, job_type: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -193,14 +183,14 @@ const JobsManagement = () => {
                       <SelectItem value="full_time">Tiempo completo</SelectItem>
                       <SelectItem value="part_time">Tiempo parcial</SelectItem>
                       <SelectItem value="contract">Contrato</SelectItem>
+                      <SelectItem value="temporary">Temporal</SelectItem>
                       <SelectItem value="internship">Prácticas</SelectItem>
-                      <SelectItem value="freelance">Freelance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="job_category">Categoría</Label>
-                  <Select value={formData.job_category} onValueChange={(value: any) => setFormData({...formData, job_category: value})}>
+                  <Label htmlFor="category">Categoría</Label>
+                  <Select value={formData.category} onValueChange={(value: JobCategory) => setFormData({...formData, category: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -208,16 +198,16 @@ const JobsManagement = () => {
                       <SelectItem value="kitchen">Cocina</SelectItem>
                       <SelectItem value="service">Servicio</SelectItem>
                       <SelectItem value="management">Gestión</SelectItem>
-                      <SelectItem value="administration">Administración</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="finance">Finanzas</SelectItem>
-                      <SelectItem value="maintenance">Mantenimiento</SelectItem>
+                      <SelectItem value="bartender">Bartender</SelectItem>
+                      <SelectItem value="cleaning">Limpieza</SelectItem>
+                      <SelectItem value="delivery">Delivery</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="experience_level">Nivel de Experiencia</Label>
-                  <Select value={formData.experience_level} onValueChange={(value: any) => setFormData({...formData, experience_level: value})}>
+                  <Select value={formData.experience_level} onValueChange={(value: ExperienceLevel) => setFormData({...formData, experience_level: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -226,7 +216,7 @@ const JobsManagement = () => {
                       <SelectItem value="junior">Junior</SelectItem>
                       <SelectItem value="mid">Intermedio</SelectItem>
                       <SelectItem value="senior">Senior</SelectItem>
-                      <SelectItem value="lead">Líder</SelectItem>
+                      <SelectItem value="executive">Ejecutivo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -277,12 +267,12 @@ const JobsManagement = () => {
               </div>
 
               <div>
-                <Label htmlFor="responsibilities">Responsabilidades</Label>
+                <Label htmlFor="benefits">Beneficios</Label>
                 <Textarea
-                  id="responsibilities"
-                  value={formData.responsibilities}
-                  onChange={(e) => setFormData({...formData, responsibilities: e.target.value})}
-                  placeholder="Describe las principales responsabilidades..."
+                  id="benefits"
+                  value={formData.benefits}
+                  onChange={(e) => setFormData({...formData, benefits: e.target.value})}
+                  placeholder="Describe los beneficios del puesto..."
                   rows={3}
                 />
               </div>
@@ -292,7 +282,7 @@ const JobsManagement = () => {
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateJob}>
+              <Button onClick={handleCreateJob} disabled={!formData.title || !formData.description || !formData.location}>
                 Publicar Empleo
               </Button>
             </div>
@@ -366,11 +356,8 @@ const JobsManagement = () => {
                       {!job.is_active && (
                         <Badge variant="secondary">Inactivo</Badge>
                       )}
-                      {job.is_featured && (
-                        <Badge variant="default">Destacado</Badge>
-                      )}
                     </CardTitle>
-                    <CardDescription>{job.restaurant_name}</CardDescription>
+                    <CardDescription>{job.location}</CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
@@ -392,7 +379,7 @@ const JobsManagement = () => {
                     {formatJobType(job.job_type)}
                   </Badge>
                   <Badge variant="outline">
-                    {formatCategory(job.job_category)}
+                    {formatCategory(job.category)}
                   </Badge>
                   <Badge variant="outline">
                     {formatLevel(job.experience_level)}
