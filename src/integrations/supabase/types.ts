@@ -14,6 +14,121 @@ export type Database = {
   }
   public: {
     Tables: {
+      aggregator_integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          brand_id: string | null
+          commission_percent: number | null
+          config: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          platform: Database["public"]["Enums"]["delivery_platform"]
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          brand_id?: string | null
+          commission_percent?: number | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform: Database["public"]["Enums"]["delivery_platform"]
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          brand_id?: string | null
+          commission_percent?: number | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          platform?: Database["public"]["Enums"]["delivery_platform"]
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aggregator_integrations_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aggregator_orders: {
+        Row: {
+          brand_id: string | null
+          commission: number | null
+          completed_at: string | null
+          created_at: string
+          customer_name: string | null
+          delivery_address: string | null
+          estimated_delivery: string | null
+          external_order_id: string | null
+          id: string
+          items: Json
+          net_total: number | null
+          order_status: string | null
+          platform: Database["public"]["Enums"]["delivery_platform"]
+          subtotal: number | null
+          user_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          commission?: number | null
+          completed_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          delivery_address?: string | null
+          estimated_delivery?: string | null
+          external_order_id?: string | null
+          id?: string
+          items?: Json
+          net_total?: number | null
+          order_status?: string | null
+          platform: Database["public"]["Enums"]["delivery_platform"]
+          subtotal?: number | null
+          user_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          commission?: number | null
+          completed_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          delivery_address?: string | null
+          estimated_delivery?: string | null
+          external_order_id?: string | null
+          id?: string
+          items?: Json
+          net_total?: number | null
+          order_status?: string | null
+          platform?: Database["public"]["Enums"]["delivery_platform"]
+          subtotal?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aggregator_orders_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applicant_profiles: {
         Row: {
           bio: string | null
@@ -65,6 +180,675 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_menus: {
+        Row: {
+          brand_id: string
+          category: string | null
+          cost: number | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          item_name: string
+          preparation_time: number | null
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          brand_id: string
+          category?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          item_name: string
+          preparation_time?: number | null
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          brand_id?: string
+          category?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          item_name?: string
+          preparation_time?: number | null
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_menus_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carbon_footprint_items: {
+        Row: {
+          category: string
+          co2_per_kg: number
+          created_at: string
+          distance_km: number | null
+          id: string
+          is_local: boolean | null
+          item_name: string
+          notes: string | null
+          supplier_name: string | null
+          updated_at: string
+          user_id: string
+          water_usage_liters: number | null
+        }
+        Insert: {
+          category?: string
+          co2_per_kg?: number
+          created_at?: string
+          distance_km?: number | null
+          id?: string
+          is_local?: boolean | null
+          item_name: string
+          notes?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          user_id: string
+          water_usage_liters?: number | null
+        }
+        Update: {
+          category?: string
+          co2_per_kg?: number
+          created_at?: string
+          distance_km?: number | null
+          id?: string
+          is_local?: boolean | null
+          item_name?: string
+          notes?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          user_id?: string
+          water_usage_liters?: number | null
+        }
+        Relationships: []
+      }
+      chain_locations: {
+        Row: {
+          address: string
+          chain_id: string
+          city: string
+          country: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          latitude: number | null
+          local_user_id: string | null
+          location_name: string
+          location_type:
+            | Database["public"]["Enums"]["chain_location_type"]
+            | null
+          longitude: number | null
+          manager_email: string | null
+          manager_name: string | null
+          opening_date: string | null
+          phone: string | null
+          seating_capacity: number | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          chain_id: string
+          city: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          local_user_id?: string | null
+          location_name: string
+          location_type?:
+            | Database["public"]["Enums"]["chain_location_type"]
+            | null
+          longitude?: number | null
+          manager_email?: string | null
+          manager_name?: string | null
+          opening_date?: string | null
+          phone?: string | null
+          seating_capacity?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          chain_id?: string
+          city?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          local_user_id?: string | null
+          location_name?: string
+          location_type?:
+            | Database["public"]["Enums"]["chain_location_type"]
+            | null
+          longitude?: number | null
+          manager_email?: string | null
+          manager_name?: string | null
+          opening_date?: string | null
+          phone?: string | null
+          seating_capacity?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chain_locations_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chain_master_menus: {
+        Row: {
+          allergens: string[] | null
+          allow_local_pricing: boolean | null
+          allow_local_removal: boolean | null
+          base_price: number
+          category: string | null
+          chain_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_core_item: boolean | null
+          item_name: string
+          nutritional_info: Json | null
+          updated_at: string
+        }
+        Insert: {
+          allergens?: string[] | null
+          allow_local_pricing?: boolean | null
+          allow_local_removal?: boolean | null
+          base_price: number
+          category?: string | null
+          chain_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_core_item?: boolean | null
+          item_name: string
+          nutritional_info?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          allergens?: string[] | null
+          allow_local_pricing?: boolean | null
+          allow_local_removal?: boolean | null
+          base_price?: number
+          category?: string | null
+          chain_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_core_item?: boolean | null
+          item_name?: string
+          nutritional_info?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chain_master_menus_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_checklists: {
+        Row: {
+          category: string | null
+          chain_id: string
+          checklist_name: string
+          created_at: string
+          frequency: string | null
+          id: string
+          is_mandatory: boolean | null
+          items: Json
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          chain_id: string
+          checklist_name: string
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          items?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          chain_id?: string
+          checklist_name?: string
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          items?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_checklists_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_records: {
+        Row: {
+          checklist_id: string
+          completed_by: string | null
+          completion_date: string
+          created_at: string
+          id: string
+          location_id: string
+          notes: string | null
+          responses: Json
+          score: number | null
+        }
+        Insert: {
+          checklist_id: string
+          completed_by?: string | null
+          completion_date?: string
+          created_at?: string
+          id?: string
+          location_id: string
+          notes?: string | null
+          responses?: Json
+          score?: number | null
+        }
+        Update: {
+          checklist_id?: string
+          completed_by?: string | null
+          completion_date?: string
+          created_at?: string
+          id?: string
+          location_id?: string
+          notes?: string | null
+          responses?: Json
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_records_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_records_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "chain_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultant_clients: {
+        Row: {
+          client_user_id: string
+          consultant_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          monthly_fee: number | null
+          notes: string | null
+          services_included: string[] | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["consultant_client_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          client_user_id: string
+          consultant_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          monthly_fee?: number | null
+          notes?: string | null
+          services_included?: string[] | null
+          start_date?: string | null
+          status?:
+            | Database["public"]["Enums"]["consultant_client_status"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          client_user_id?: string
+          consultant_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          monthly_fee?: number | null
+          notes?: string | null
+          services_included?: string[] | null
+          start_date?: string | null
+          status?:
+            | Database["public"]["Enums"]["consultant_client_status"]
+            | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultant_clients_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultant_profiles: {
+        Row: {
+          bio: string | null
+          brand_colors: Json | null
+          certifications: string[] | null
+          company_name: string | null
+          consultant_type: Database["public"]["Enums"]["consultant_type"] | null
+          created_at: string
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          linkedin_url: string | null
+          logo_url: string | null
+          specializations: string[] | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          brand_colors?: Json | null
+          certifications?: string[] | null
+          company_name?: string | null
+          consultant_type?:
+            | Database["public"]["Enums"]["consultant_type"]
+            | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          specializations?: string[] | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          brand_colors?: Json | null
+          certifications?: string[] | null
+          company_name?: string | null
+          consultant_type?:
+            | Database["public"]["Enums"]["consultant_type"]
+            | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          specializations?: string[] | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      consultant_reports: {
+        Row: {
+          client_id: string | null
+          consultant_id: string
+          content: Json | null
+          created_at: string
+          id: string
+          is_shared_with_client: boolean | null
+          recommendations: Json | null
+          report_title: string
+          report_type: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          consultant_id: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_shared_with_client?: boolean | null
+          recommendations?: Json | null
+          report_title: string
+          report_type?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          consultant_id?: string
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_shared_with_client?: boolean | null
+          recommendations?: Json | null
+          report_title?: string
+          report_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultant_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultant_reports_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consulting_invoices: {
+        Row: {
+          amount: number
+          client_id: string
+          consultant_id: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          consultant_id: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          consultant_id?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulting_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consulting_invoices_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_alerts: {
+        Row: {
+          action_url: string | null
+          alert_type: string
+          created_at: string
+          data: Json | null
+          id: string
+          is_dismissed: boolean | null
+          is_read: boolean | null
+          message: string
+          priority: Database["public"]["Enums"]["copilot_alert_priority"] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          alert_type: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message: string
+          priority?:
+            | Database["public"]["Enums"]["copilot_alert_priority"]
+            | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          alert_type?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          priority?:
+            | Database["public"]["Enums"]["copilot_alert_priority"]
+            | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      copilot_conversations: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_message_at: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      copilot_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           completed_at: string | null
@@ -102,6 +886,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_briefings: {
+        Row: {
+          alerts_count: number | null
+          briefing_date: string
+          content: Json
+          created_at: string
+          highlights: string[] | null
+          id: string
+          is_read: boolean | null
+          recommendations: string[] | null
+          user_id: string
+        }
+        Insert: {
+          alerts_count?: number | null
+          briefing_date?: string
+          content?: Json
+          created_at?: string
+          highlights?: string[] | null
+          id?: string
+          is_read?: boolean | null
+          recommendations?: string[] | null
+          user_id: string
+        }
+        Update: {
+          alerts_count?: number | null
+          briefing_date?: string
+          content?: Json
+          created_at?: string
+          highlights?: string[] | null
+          id?: string
+          is_read?: boolean | null
+          recommendations?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
       }
       event_categories: {
         Row: {
@@ -198,6 +1018,115 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      food_waste_logs: {
+        Row: {
+          category: Database["public"]["Enums"]["waste_category"]
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          item_name: string
+          preventable: boolean | null
+          quantity_kg: number
+          reason: string | null
+          user_id: string
+          waste_date: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["waste_category"]
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_name: string
+          preventable?: boolean | null
+          quantity_kg?: number
+          reason?: string | null
+          user_id: string
+          waste_date?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["waste_category"]
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_name?: string
+          preventable?: boolean | null
+          quantity_kg?: number
+          reason?: string | null
+          user_id?: string
+          waste_date?: string
+        }
+        Relationships: []
+      }
+      inventory_transfers: {
+        Row: {
+          approved_by: string | null
+          chain_id: string
+          created_at: string
+          from_location_id: string
+          id: string
+          items: Json
+          notes: string | null
+          received_at: string | null
+          requested_by: string | null
+          shipped_at: string | null
+          status: string | null
+          to_location_id: string
+          total_value: number | null
+        }
+        Insert: {
+          approved_by?: string | null
+          chain_id: string
+          created_at?: string
+          from_location_id: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          received_at?: string | null
+          requested_by?: string | null
+          shipped_at?: string | null
+          status?: string | null
+          to_location_id: string
+          total_value?: number | null
+        }
+        Update: {
+          approved_by?: string | null
+          chain_id?: string
+          created_at?: string
+          from_location_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          received_at?: string | null
+          requested_by?: string | null
+          shipped_at?: string | null
+          status?: string | null
+          to_location_id?: string
+          total_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transfers_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "chain_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "chain_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -311,6 +1240,69 @@ export type Database = {
           views_count?: number
         }
         Relationships: []
+      }
+      kitchen_production_queue: {
+        Row: {
+          assigned_to: string | null
+          brand_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          item_name: string
+          order_id: string | null
+          priority: number | null
+          quantity: number | null
+          started_at: string | null
+          station: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          brand_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          item_name: string
+          order_id?: string | null
+          priority?: number | null
+          quantity?: number | null
+          started_at?: string | null
+          station?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          brand_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          order_id?: string | null
+          priority?: number | null
+          quantity?: number | null
+          started_at?: string | null
+          station?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_production_queue_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kitchen_production_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "aggregator_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maturity_diagnoses: {
         Row: {
@@ -563,6 +1555,51 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_chains: {
+        Row: {
+          chain_name: string
+          created_at: string
+          description: string | null
+          founded_year: number | null
+          headquarters_city: string | null
+          headquarters_country: string | null
+          id: string
+          is_franchise: boolean | null
+          logo_url: string | null
+          owner_id: string
+          total_locations: number | null
+          updated_at: string
+        }
+        Insert: {
+          chain_name: string
+          created_at?: string
+          description?: string | null
+          founded_year?: number | null
+          headquarters_city?: string | null
+          headquarters_country?: string | null
+          id?: string
+          is_franchise?: boolean | null
+          logo_url?: string | null
+          owner_id: string
+          total_locations?: number | null
+          updated_at?: string
+        }
+        Update: {
+          chain_name?: string
+          created_at?: string
+          description?: string | null
+          founded_year?: number | null
+          headquarters_city?: string | null
+          headquarters_country?: string | null
+          id?: string
+          is_franchise?: boolean | null
+          logo_url?: string | null
+          owner_id?: string
+          total_locations?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       restaurant_menus: {
         Row: {
           config: Json
@@ -794,6 +1831,90 @@ export type Database = {
         }
         Relationships: []
       }
+      sustainability_goals: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          end_date: string | null
+          goal_type: string
+          id: string
+          is_achieved: boolean | null
+          start_date: string
+          target_value: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          end_date?: string | null
+          goal_type: string
+          id?: string
+          is_achieved?: boolean | null
+          start_date?: string
+          target_value: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          end_date?: string | null
+          goal_type?: string
+          id?: string
+          is_achieved?: boolean | null
+          start_date?: string
+          target_value?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sustainability_reports: {
+        Row: {
+          cost_savings: number | null
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          recommendations: Json | null
+          report_data: Json | null
+          report_type: string
+          total_co2_kg: number | null
+          total_waste_kg: number | null
+          user_id: string
+        }
+        Insert: {
+          cost_savings?: number | null
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          recommendations?: Json | null
+          report_data?: Json | null
+          report_type?: string
+          total_co2_kg?: number | null
+          total_waste_kg?: number | null
+          user_id: string
+        }
+        Update: {
+          cost_savings?: number | null
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          recommendations?: Json | null
+          report_data?: Json | null
+          report_type?: string
+          total_co2_kg?: number | null
+          total_waste_kg?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_courses: {
         Row: {
           average_rating: number | null
@@ -1010,6 +2131,57 @@ export type Database = {
         }
         Relationships: []
       }
+      virtual_brands: {
+        Row: {
+          avg_preparation_time: number | null
+          brand_logo: string | null
+          brand_name: string
+          created_at: string
+          cuisine_type: Database["public"]["Enums"]["cuisine_type"] | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          primary_platform:
+            | Database["public"]["Enums"]["delivery_platform"]
+            | null
+          status: Database["public"]["Enums"]["brand_status"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_preparation_time?: number | null
+          brand_logo?: string | null
+          brand_name: string
+          created_at?: string
+          cuisine_type?: Database["public"]["Enums"]["cuisine_type"] | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          primary_platform?:
+            | Database["public"]["Enums"]["delivery_platform"]
+            | null
+          status?: Database["public"]["Enums"]["brand_status"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_preparation_time?: number | null
+          brand_logo?: string | null
+          brand_name?: string
+          created_at?: string
+          cuisine_type?: Database["public"]["Enums"]["cuisine_type"] | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          primary_platform?:
+            | Database["public"]["Enums"]["delivery_platform"]
+            | null
+          status?: Database["public"]["Enums"]["brand_status"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1035,6 +2207,20 @@ export type Database = {
         | "hired"
         | "rejected"
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
+      brand_status: "active" | "paused" | "archived"
+      chain_location_type:
+        | "flagship"
+        | "standard"
+        | "express"
+        | "ghost_kitchen"
+        | "franchise"
+      consultant_client_status: "active" | "paused" | "completed" | "prospect"
+      consultant_type:
+        | "independent"
+        | "agency"
+        | "franchise_advisor"
+        | "chain_consultant"
+      copilot_alert_priority: "low" | "medium" | "high" | "critical"
       cuisine_type:
         | "mexican"
         | "italian"
@@ -1047,6 +2233,14 @@ export type Database = {
         | "thai"
         | "mediterranean"
         | "fusion"
+        | "other"
+      delivery_platform:
+        | "rappi"
+        | "uber_eats"
+        | "didi_food"
+        | "doordash"
+        | "grubhub"
+        | "direct"
         | "other"
       event_status: "draft" | "published" | "cancelled" | "completed"
       experience_level: "entry" | "junior" | "mid" | "senior" | "executive"
@@ -1088,6 +2282,13 @@ export type Database = {
         | "garden"
         | "beach"
         | "hotel"
+        | "other"
+      waste_category:
+        | "preparation"
+        | "overproduction"
+        | "spoilage"
+        | "plate_waste"
+        | "storage"
         | "other"
     }
     CompositeTypes: {
@@ -1226,6 +2427,22 @@ export const Constants = {
         "rejected",
       ],
       booking_status: ["pending", "confirmed", "cancelled", "completed"],
+      brand_status: ["active", "paused", "archived"],
+      chain_location_type: [
+        "flagship",
+        "standard",
+        "express",
+        "ghost_kitchen",
+        "franchise",
+      ],
+      consultant_client_status: ["active", "paused", "completed", "prospect"],
+      consultant_type: [
+        "independent",
+        "agency",
+        "franchise_advisor",
+        "chain_consultant",
+      ],
+      copilot_alert_priority: ["low", "medium", "high", "critical"],
       cuisine_type: [
         "mexican",
         "italian",
@@ -1238,6 +2455,15 @@ export const Constants = {
         "thai",
         "mediterranean",
         "fusion",
+        "other",
+      ],
+      delivery_platform: [
+        "rappi",
+        "uber_eats",
+        "didi_food",
+        "doordash",
+        "grubhub",
+        "direct",
         "other",
       ],
       event_status: ["draft", "published", "cancelled", "completed"],
@@ -1284,6 +2510,14 @@ export const Constants = {
         "garden",
         "beach",
         "hotel",
+        "other",
+      ],
+      waste_category: [
+        "preparation",
+        "overproduction",
+        "spoilage",
+        "plate_waste",
+        "storage",
         "other",
       ],
     },
