@@ -1505,6 +1505,7 @@ export type Database = {
           restaurant_name: string | null
           updated_at: string
           user_id: string
+          user_type: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1515,6 +1516,7 @@ export type Database = {
           restaurant_name?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1525,6 +1527,7 @@ export type Database = {
           restaurant_name?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string | null
         }
         Relationships: []
       }
@@ -1552,6 +1555,60 @@ export type Database = {
           id?: string
           p256dh?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      restaurant_businesses: {
+        Row: {
+          address: string | null
+          business_type: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          cuisine_type: string | null
+          employee_count: number | null
+          id: string
+          monthly_revenue_range: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          state: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          employee_count?: number | null
+          id?: string
+          monthly_revenue_range?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          employee_count?: number | null
+          id?: string
+          monthly_revenue_range?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -2198,7 +2255,7 @@ export type Database = {
       increment_job_views: { Args: { job_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "manager" | "staff" | "user"
+      app_role: "admin" | "manager" | "staff" | "user" | "consultant"
       application_status:
         | "pending"
         | "reviewing"
@@ -2417,7 +2474,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "staff", "user"],
+      app_role: ["admin", "manager", "staff", "user", "consultant"],
       application_status: [
         "pending",
         "reviewing",
