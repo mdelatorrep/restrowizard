@@ -56,14 +56,30 @@
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Restaurant sidebar - Purple theme */
+    --sidebar-background: 271 68% 22%;
+    --sidebar-foreground: 296 29% 92%;
+    --sidebar-primary: 296 49% 40%;
+    --sidebar-primary-foreground: 296 29% 92%;
+    --sidebar-accent: 271 68% 28%;
+    --sidebar-accent-foreground: 296 29% 92%;
+    --sidebar-border: 271 68% 30%;
+    --sidebar-ring: 304 34% 72%;
+
+    /* Consultant sidebar - Corporate Blue theme */
+    --sidebar-consultant-background: 222 47% 11%;
+    --sidebar-consultant-foreground: 210 40% 98%;
+    --sidebar-consultant-primary: 217 91% 60%;
+    --sidebar-consultant-accent: 222 47% 18%;
+    --sidebar-consultant-border: 222 47% 20%;
+
+    /* Success/Warning/Info */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
   }
 
   .dark {
