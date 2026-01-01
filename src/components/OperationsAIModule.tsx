@@ -3,11 +3,13 @@ import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2';
 import { 
     Brain, Target, Heart, TrendingUp, Zap, Eye, MessageSquare,
     Clock, Star, ChefHat, Smartphone, BarChart3, Users,
-    Activity, Gauge, Gift, Mail
+    Activity, Gauge, Gift, Mail, RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data para el módulo de operaciones
 const mockOperationsData = {
@@ -100,6 +102,26 @@ const OperationsMetric: React.FC<OperationsMetricProps> = ({ icon, title, value,
 
 const OperationsAIModule: React.FC = () => {
     const [selectedTimeframe, setSelectedTimeframe] = useState('week');
+    const [aiInsights, setAiInsights] = useState<string>('');
+    const { loading, analyzeOperations } = useAIAgent();
+    const { toast } = useToast();
+
+    const runAIAnalysis = async () => {
+        const analysis = await analyzeOperations({
+            businessIntelligence: mockOperationsData.businessIntelligence,
+            loyaltyProgram: mockOperationsData.loyaltyProgram,
+            predictiveMarketing: mockOperationsData.predictiveMarketing,
+            customerExperience: mockOperationsData.customerExperience
+        });
+        
+        if (analysis) {
+            setAiInsights(analysis);
+            toast({
+                title: "Análisis IA completado",
+                description: "Se han generado nuevos insights de operaciones",
+            });
+        }
+    };
 
     const satisfactionChart = {
         labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7'],
@@ -156,10 +178,37 @@ const OperationsAIModule: React.FC = () => {
                         Usando tecnología para operar con máxima eficiencia y entregar valor excepcional
                     </p>
                 </div>
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    IA Activa
-                </Badge>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={runAIAnalysis} 
+                        disabled={loading}
+                        className="bg-primary hover:bg-primary/90"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Análisis IA
+                    </Button>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        IA Activa
+                    </Badge>
+                </div>
             </div>
+
+            {/* AI Insights Panel */}
+            {aiInsights && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-primary">
+                            <Brain className="mr-2" size={20} />
+                            Insights IA - Operaciones
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                            {aiInsights}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* KPIs principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

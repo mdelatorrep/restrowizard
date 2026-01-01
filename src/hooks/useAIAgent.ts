@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AIAgentRequest {
-  module: 'finances' | 'talent' | 'operations' | 'menu-inventory';
+  module: 'finances' | 'talent' | 'operations' | 'menu-inventory' | 'sustainability';
   action: string;
   data: any;
 }
@@ -46,6 +46,7 @@ export const useAIAgent = () => {
     }
   };
 
+  // Finance module functions
   const analyzeFinances = async (financialData: any) => {
     return await callAIAgent({
       module: 'finances',
@@ -70,6 +71,7 @@ export const useAIAgent = () => {
     });
   };
 
+  // Talent module functions
   const optimizeStaff = async (staffData: any) => {
     return await callAIAgent({
       module: 'talent',
@@ -86,6 +88,7 @@ export const useAIAgent = () => {
     });
   };
 
+  // Operations module functions
   const getCustomerInsights = async (customerData: any) => {
     return await callAIAgent({
       module: 'operations',
@@ -94,6 +97,15 @@ export const useAIAgent = () => {
     });
   };
 
+  const analyzeOperations = async (operationsData: any) => {
+    return await callAIAgent({
+      module: 'operations',
+      action: 'customer_insights',
+      data: operationsData
+    });
+  };
+
+  // Menu & Inventory module functions
   const analyzeMenu = async (menuData: any) => {
     return await callAIAgent({
       module: 'menu-inventory',
@@ -110,16 +122,32 @@ export const useAIAgent = () => {
     });
   };
 
+  // Sustainability module functions
+  const analyzeSustainability = async (sustainabilityData: any) => {
+    return await callAIAgent({
+      module: 'sustainability',
+      action: 'sustainability_analysis',
+      data: sustainabilityData
+    });
+  };
+
   return {
     loading,
     callAIAgent,
+    // Finance
     analyzeFinances,
     detectCostAnomalies,
     optimizePricing,
+    // Talent
     optimizeStaff,
     analyzeCandidates,
+    // Operations
     getCustomerInsights,
+    analyzeOperations,
+    // Menu & Inventory
     analyzeMenu,
-    predictInventory
+    predictInventory,
+    // Sustainability
+    analyzeSustainability
   };
 };
