@@ -15,8 +15,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import ActionPlan from '@/components/ActionPlan';
 
 interface KPIData {
   label: string;
@@ -154,6 +156,15 @@ const RestaurantDashboard: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Tabs for Dashboard vs Action Plan */}
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="action-plan">Plan de Acción</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6 mt-6">
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -296,6 +307,12 @@ const RestaurantDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="action-plan" className="mt-6">
+          <ActionPlan />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
