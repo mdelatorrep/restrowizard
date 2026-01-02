@@ -2,12 +2,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 
+export type UserType = 'restaurant_owner' | 'consultant';
+
 export const useAuth = () => {
   // Use AuthProvider context instead of managing own state
   const { user, session, loading } = useAuthContext();
   const { toast } = useToast();
 
-  const signUp = async (email: string, password: string, fullName: string, restaurantName?: string) => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    fullName: string, 
+    userType: UserType = 'restaurant_owner',
+    restaurantName?: string
+  ) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -16,7 +24,8 @@ export const useAuth = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
-            restaurant_name: restaurantName
+            restaurant_name: restaurantName,
+            user_type: userType
           }
         }
       });
@@ -25,7 +34,9 @@ export const useAuth = () => {
       
       toast({
         title: "¡Registro exitoso!",
-        description: "Revisa tu email para confirmar tu cuenta.",
+        description: userType === 'consultant' 
+          ? "Bienvenido consultor. Completa tu perfil para comenzar."
+          : "Revisa tu email para confirmar tu cuenta.",
       });
       
       return { error: null };
