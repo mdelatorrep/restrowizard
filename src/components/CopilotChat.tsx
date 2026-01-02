@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { useUserType } from '@/hooks/useUserType';
 import {
   MessageCircle,
   Send,
@@ -20,7 +21,8 @@ import {
   Sun,
   AlertTriangle,
   TrendingUp,
-  ChefHat
+  ChefHat,
+  Briefcase
 } from 'lucide-react';
 
 interface Message {
@@ -38,6 +40,7 @@ interface DailyBriefing {
 
 const CopilotChat = () => {
   const { user } = useAuthContext();
+  const { userType, isConsultant } = useUserType();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -76,15 +79,19 @@ const CopilotChat = () => {
   useEffect(() => {
     // Add welcome message when opening
     if (isOpen && messages.length === 0) {
+      const welcomeContent = isConsultant 
+        ? '¡Hola! Soy tu copiloto de RestroWizard 🚀\n\nComo consultor, puedo ayudarte con:\n• Análisis de tu portafolio de clientes\n• Comparativas entre restaurantes\n• Alertas consolidadas\n• Generación de reportes\n• Insights para recomendaciones\n\n¿En qué puedo ayudarte hoy?'
+        : '¡Hola! Soy tu copiloto de RestroWizard 🚀\n\nPuedo ayudarte con:\n• Análisis de ventas y finanzas\n• Gestión de inventario\n• Optimización de personal\n• Insights de clientes\n• Reportes y métricas\n\n¿En qué puedo ayudarte hoy?';
+      
       const welcomeMessage: Message = {
         id: '1',
         role: 'assistant',
-        content: '¡Hola! Soy tu copiloto de RestroWizard 🚀\n\nPuedo ayudarte con:\n• Análisis de ventas y finanzas\n• Gestión de inventario\n• Optimización de personal\n• Insights de clientes\n• Reportes y métricas\n\n¿En qué puedo ayudarte hoy?',
+        content: welcomeContent,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen]);
+  }, [isOpen, isConsultant]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -132,7 +139,12 @@ const CopilotChat = () => {
     }
   };
 
-  const quickActions = [
+  const quickActions = isConsultant ? [
+    { label: '📊 Estado portafolio', action: '¿Cuál es el estado de mi portafolio de clientes?' },
+    { label: '⚠️ Alertas críticas', action: '¿Cuáles clientes tienen alertas críticas?' },
+    { label: '📈 Comparativa', action: 'Compara el rendimiento de mis clientes' },
+    { label: '💡 Recomendaciones', action: 'Dame recomendaciones para mis clientes' }
+  ] : [
     { label: '📊 Resumen de hoy', action: '¿Cuál es el resumen de ventas de hoy?' },
     { label: '📦 Inventario bajo', action: '¿Qué productos tienen inventario bajo?' },
     { label: '👥 Personal activo', action: '¿Quién está trabajando hoy?' },

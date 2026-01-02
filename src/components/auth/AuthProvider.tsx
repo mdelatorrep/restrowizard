@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useDashboard } from '@/hooks/useDashboard';
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +34,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { checkUserDiagnosis } = useDashboard();
 
   const handleSuccessfulLogin = async (session: Session) => {
     console.log('🚀 handleSuccessfulLogin called:', { 
@@ -43,25 +41,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       currentPath: location.pathname 
     });
     
-    // Navegar después del login si no estamos ya en dashboard o diagnosis
-    const isInProtectedRoute = ['/dashboard', '/diagnosis'].includes(location.pathname);
+    // Skip if already in protected routes
+    const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
+    const isInProtectedRoute = protectedPrefixes.some(prefix => location.pathname.startsWith(prefix));
     
     if (session?.user && !isInProtectedRoute) {
-      console.log('📍 Checking user diagnosis for navigation...');
+      console.log('📍 Checking user type for navigation...');
       
       try {
-        console.log('🔍 About to call checkUserDiagnosis with userId:', session.user.id);
-        const hasDiagnosis = await checkUserDiagnosis(session.user.id);
-        console.log('🔍 User diagnosis check result:', hasDiagnosis);
-        
-        const targetRoute = hasDiagnosis ? '/dashboard' : '/diagnosis';
-        console.log('🎯 Navigating to:', targetRoute);
-        
-        navigate(targetRoute, { replace: true });
+        // Get user profile to determine type
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('user_id', session.user.id)
+          .single();
+
+        console.log('🔍 User profile:', profile, 'Error:', error);
+
+        if (error || !profile?.user_type) {
+          // No profile yet, go to type selection onboarding
+          console.log('🎯 No user type, navigating to /onboarding');
+          navigate('/onboarding', { replace: true });
+          return;
+        }
+
+        const userType = profile.user_type;
+
+        // Check if user has completed type-specific onboarding
+        if (userType === 'consultant') {
+          const { data: consultantProfile } = await supabase
+            .from('consultant_profiles')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (!consultantProfile) {
+            console.log('🎯 Consultant without profile, navigating to /c/onboarding');
+            navigate('/c/onboarding', { replace: true });
+          } else {
+            console.log('🎯 Consultant with profile, navigating to /c/dashboard');
+            navigate('/c/dashboard', { replace: true });
+          }
+        } else {
+          // Restaurant owner - check for diagnosis
+          const { data: diagnosis } = await supabase
+            .from('maturity_diagnoses')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .limit(1)
+            .single();
+
+          // Check for business profile (restaurant onboarding)
+          const { data: business } = await supabase
+            .from('restaurant_businesses')
+            .select('id')
+            .eq('owner_id', session.user.id)
+            .limit(1)
+            .single();
+
+          if (!business) {
+            console.log('🎯 Restaurant owner without business, navigating to /r/onboarding');
+            navigate('/r/onboarding', { replace: true });
+          } else if (!diagnosis) {
+            console.log('🎯 Restaurant owner without diagnosis, navigating to /diagnosis');
+            navigate('/diagnosis', { replace: true });
+          } else {
+            console.log('🎯 Restaurant owner with diagnosis, navigating to /r/dashboard');
+            navigate('/r/dashboard', { replace: true });
+          }
+        }
       } catch (error) {
         console.error('💥 Error during navigation:', error);
-        console.log('🔄 Fallback navigation to /diagnosis');
-        navigate('/diagnosis', { replace: true });
+        navigate('/onboarding', { replace: true });
       }
     } else {
       console.log('❌ Navigation skipped:', {
@@ -102,7 +153,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     return () => subscription.unsubscribe();
-  }, []); // Sin dependencias para evitar reinicializaciones
+  }, []);
 
   const value = {
     user,
