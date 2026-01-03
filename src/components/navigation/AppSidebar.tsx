@@ -23,14 +23,13 @@ import {
   Utensils,
   Leaf,
   ChefHat,
-  Building2,
-  FileText,
   CreditCard,
-  Bell,
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Briefcase,
 } from 'lucide-react';
+import { ClientSelector } from '@/components/consultant/ClientSelector';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
@@ -45,11 +44,18 @@ const restaurantMenuItems = [
   { title: 'Sostenibilidad', icon: Leaf, path: '/r/sustainability' },
 ];
 
-const consultantMenuItems = [
-  { title: 'Dashboard', icon: LayoutDashboard, path: '/c/dashboard' },
-  { title: 'Clientes', icon: Building2, path: '/c/clients' },
-  { title: 'Alertas', icon: Bell, path: '/c/alerts' },
-  { title: 'Reportes', icon: FileText, path: '/c/reports' },
+// Consultant AI tools - same as restaurant but for clients
+const consultantAIToolsItems = [
+  { title: 'Finanzas IA', icon: DollarSign, path: '/c/finances' },
+  { title: 'Operaciones IA', icon: ChefHat, path: '/c/operations' },
+  { title: 'Talento IA', icon: Users, path: '/c/talent' },
+  { title: 'Ingeniería de Menú', icon: Utensils, path: '/c/menu-engineering' },
+  { title: 'Sostenibilidad', icon: Leaf, path: '/c/sustainability' },
+];
+
+// Consultant management menu
+const consultantManagementItems = [
+  { title: 'Vista General', icon: LayoutDashboard, path: '/c/dashboard' },
   { title: 'Facturación', icon: CreditCard, path: '/c/billing' },
 ];
 
@@ -60,7 +66,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const { state, toggleSidebar } = useSidebar();
 
   const isCollapsed = state === 'collapsed';
-  const menuItems = userType === 'restaurant_owner' ? restaurantMenuItems : consultantMenuItems;
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
 
   const isActive = (path: string) => location.pathname === path;
@@ -99,28 +104,90 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-            {userType === 'restaurant_owner' ? 'Gestión' : 'Consultoría'}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(item.path)}
-                    isActive={isActive(item.path)}
-                    tooltip={item.title}
-                    className="text-sidebar-foreground hover:bg-sidebar-accent"
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="font-lato-medium">{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Consultant-specific: Client Selector */}
+        {userType === 'consultant' && !isCollapsed && (
+          <div className="px-3 pt-3">
+            <ClientSelector compact />
+          </div>
+        )}
+
+        {/* For Restaurant Owners */}
+        {userType === 'restaurant_owner' && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
+              Gestión
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {restaurantMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.path)}
+                      isActive={isActive(item.path)}
+                      tooltip={item.title}
+                      className="text-sidebar-foreground hover:bg-sidebar-accent"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="font-lato-medium">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* For Consultants: AI Tools Section */}
+        {userType === 'consultant' && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
+                Herramientas IA
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {consultantAIToolsItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        onClick={() => navigate(item.path)}
+                        isActive={isActive(item.path)}
+                        tooltip={item.title}
+                        className="text-sidebar-foreground hover:bg-sidebar-accent"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="font-lato-medium">{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
+                <Briefcase className="h-4 w-4 inline mr-1" />
+                Mi Consultoría
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {consultantManagementItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        onClick={() => navigate(item.path)}
+                        isActive={isActive(item.path)}
+                        tooltip={item.title}
+                        className="text-sidebar-foreground hover:bg-sidebar-accent"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="font-lato-medium">{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">

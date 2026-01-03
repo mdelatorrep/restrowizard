@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,11 @@ import { Building2, Users } from 'lucide-react';
 
 type UserType = 'restaurant_owner' | 'consultant';
 
-export const SignupForm = () => {
+interface SignupFormProps {
+  consultantRef?: string | null;
+}
+
+export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState<UserType>('restaurant_owner');
   const [formData, setFormData] = useState({ 
@@ -19,6 +23,13 @@ export const SignupForm = () => {
     restaurantName: '' 
   });
   const { signUp, signInWithGoogle } = useAuth();
+
+  // If coming from consultant referral, lock to restaurant owner
+  useEffect(() => {
+    if (consultantRef) {
+      setUserType('restaurant_owner');
+    }
+  }, [consultantRef]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +43,12 @@ export const SignupForm = () => {
         userType,
         userType === 'restaurant_owner' ? formData.restaurantName : undefined
       );
+      
+      // If there's a consultant referral, we need to link them after signup
+      // This will be handled by a database trigger or the onboarding process
+      if (consultantRef) {
+        localStorage.setItem('consultantRef', consultantRef);
+      }
     } catch (error) {
       console.error('Signup error:', error);
     } finally {
@@ -42,6 +59,9 @@ export const SignupForm = () => {
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
+      if (consultantRef) {
+        localStorage.setItem('consultantRef', consultantRef);
+      }
       await signInWithGoogle();
     } catch (error) {
       console.error('Google auth error:', error);

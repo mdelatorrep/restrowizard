@@ -3,6 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { AppHeader } from '@/components/navigation/AppHeader';
+import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import CopilotChat from '@/components/CopilotChat';
@@ -51,6 +52,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
         <AppSidebar userType={userType} />
         <main className="flex-1 flex flex-col min-h-screen">
           <AppHeader />
+          {userType === 'consultant' && <WorkingAsBar />}
           <div className="flex-1 p-6 overflow-auto">
             <Outlet />
           </div>
