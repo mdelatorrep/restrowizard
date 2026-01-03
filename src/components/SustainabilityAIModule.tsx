@@ -118,6 +118,9 @@ const SustainabilityAIModule = () => {
     preventable: true
   });
 
+  // Support consultant mode - import at top of file
+  // For now this component uses mock data, but the user_id should come from useDataUserId
+
   const runAIAnalysis = async () => {
     setIsLoading(true);
     try {
