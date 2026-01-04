@@ -923,6 +923,51 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_sales: {
+        Row: {
+          average_ticket: number | null
+          covers_count: number | null
+          created_at: string
+          food_cost: number | null
+          id: string
+          labor_cost: number | null
+          notes: string | null
+          other_costs: number | null
+          sale_date: string
+          total_revenue: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_ticket?: number | null
+          covers_count?: number | null
+          created_at?: string
+          food_cost?: number | null
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          other_costs?: number | null
+          sale_date?: string
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_ticket?: number | null
+          covers_count?: number | null
+          created_at?: string
+          food_cost?: number | null
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          other_costs?: number | null
+          sale_date?: string
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_categories: {
         Row: {
           created_at: string
@@ -1058,6 +1103,90 @@ export type Database = {
           reason?: string | null
           user_id?: string
           waste_date?: string
+        }
+        Relationships: []
+      }
+      industry_benchmarks: {
+        Row: {
+          avg_value: number
+          id: string
+          metric_category: string
+          metric_name: string
+          percentile_25: number | null
+          percentile_75: number | null
+          region: string | null
+          restaurant_type: string | null
+          sample_size: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_value: number
+          id?: string
+          metric_category: string
+          metric_name: string
+          percentile_25?: number | null
+          percentile_75?: number | null
+          region?: string | null
+          restaurant_type?: string | null
+          sample_size?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_value?: number
+          id?: string
+          metric_category?: string
+          metric_name?: string
+          percentile_25?: number | null
+          percentile_75?: number | null
+          region?: string | null
+          restaurant_type?: string | null
+          sample_size?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          current_stock: number
+          id: string
+          item_name: string
+          last_restocked_at: string | null
+          reorder_point: number | null
+          supplier_name: string | null
+          unit: string
+          unit_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          current_stock?: number
+          id?: string
+          item_name: string
+          last_restocked_at?: string | null
+          reorder_point?: number | null
+          supplier_name?: string | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          current_stock?: number
+          id?: string
+          item_name?: string
+          last_restocked_at?: string | null
+          reorder_point?: number | null
+          supplier_name?: string | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1885,6 +2014,48 @@ export type Database = {
           state?: string | null
           updated_at?: string
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      staff_members: {
+        Row: {
+          created_at: string
+          hire_date: string | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          performance_score: number | null
+          position: string
+          training_progress: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hire_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          performance_score?: number | null
+          position: string
+          training_progress?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hire_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          performance_score?: number | null
+          position?: string
+          training_progress?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

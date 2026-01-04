@@ -1,87 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import React, { useState } from 'react';
+import { Bar } from 'react-chartjs-2';
 import { 
-    Users, Brain, Target, Calendar, Clock, TrendingUp, 
+    Users, Brain, Target, Calendar, TrendingUp, 
     UserCheck, GraduationCap, Award, AlertTriangle,
-    Search, BookOpen, Zap, Activity, RefreshCw
+    Activity, RefreshCw, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock data para el módulo de talento
-const mockTalentData = {
-    staffOptimization: {
-        totalStaff: 24,
-        predictedNeeds: [
-            { day: 'Lunes', predicted: 8, current: 10, savings: 2 },
-            { day: 'Martes', predicted: 9, current: 10, savings: 1 },
-            { day: 'Miércoles', predicted: 11, current: 10, savings: -1 },
-            { day: 'Jueves', predicted: 13, current: 12, savings: -1 },
-            { day: 'Viernes', predicted: 16, current: 14, savings: -2 },
-            { day: 'Sábado', predicted: 18, current: 16, savings: -2 },
-            { day: 'Domingo', predicted: 14, current: 16, savings: 2 }
-        ],
-        costSavings: 320000
-    },
-    recruitment: {
-        openPositions: [
-            { position: 'Chef de Línea', urgency: 'high', candidates: 12, aiScore: 89, topCandidate: 'Ana García' },
-            { position: 'Mesero/a', urgency: 'medium', candidates: 28, aiScore: 94, topCandidate: 'Carlos Ruiz' },
-            { position: 'Barista', urgency: 'low', candidates: 8, aiScore: 76, topCandidate: 'Sofía López' }
-        ],
-        hiringSuccess: 78,
-        averageTime: 12,
-        retention: 85
-    },
-    training: {
-        programs: [
-            { 
-                employee: 'Juan Pérez', 
-                position: 'Cocinero', 
-                currentLevel: 'Intermedio',
-                targetLevel: 'Avanzado',
-                progress: 65,
-                skills: ['Gestión de Temperaturas', 'Presentación de Platos'],
-                completionDate: '2025-03-15'
-            },
-            { 
-                employee: 'María Silva', 
-                position: 'Mesera',
-                currentLevel: 'Básico',
-                targetLevel: 'Intermedio',
-                progress: 42,
-                skills: ['Servicio al Cliente', 'Conocimiento de Menú'],
-                completionDate: '2025-02-28'
-            },
-            { 
-                employee: 'Carlos Torres', 
-                position: 'Barista',
-                currentLevel: 'Avanzado',
-                targetLevel: 'Experto',
-                progress: 88,
-                skills: ['Arte Latte', 'Cata de Café'],
-                completionDate: '2025-02-10'
-            }
-        ],
-        overallCompletion: 65
-    },
-    performance: {
-        topPerformers: [
-            { name: 'Ana García', position: 'Chef', score: 95, improvement: '+8%' },
-            { name: 'Luis Rodríguez', position: 'Mesero', score: 92, improvement: '+12%' },
-            { name: 'Carmen Díaz', position: 'Barista', score: 89, improvement: '+5%' }
-        ],
-        needsAttention: [
-            { name: 'Pedro Martín', position: 'Ayudante de Cocina', score: 65, issues: ['Puntualidad', 'Productividad'] },
-            { name: 'Sofía Ruiz', position: 'Mesera', score: 68, issues: ['Conocimiento de menú'] }
-        ],
-        averageScore: 82
-    }
-};
+import { useTalentData } from '@/hooks/useTalentData';
+import { ModuleEmptyState, BenchmarkComparison } from '@/components/ui/empty-state';
 
 interface StaffMetricProps {
     icon: React.ReactNode;
@@ -114,36 +49,67 @@ const StaffMetric: React.FC<StaffMetricProps> = ({ icon, title, value, trend, de
     </Card>
 );
 
+interface StaffFormData {
+    name: string;
+    position: string;
+    hourly_rate: string;
+    performance_score: string;
+    training_progress: string;
+}
+
 const TalentAIModule = () => {
-    const [realTimeData, setRealTimeData] = useState(mockTalentData);
+    const [showAddForm, setShowAddForm] = useState(false);
     const [aiInsights, setAiInsights] = useState<string>('');
-    const { loading, optimizeStaff, analyzeCandidates } = useAIAgent();
+    const [formData, setFormData] = useState<StaffFormData>({
+        name: '',
+        position: '',
+        hourly_rate: '',
+        performance_score: '70',
+        training_progress: '0'
+    });
+    
+    const { staff, kpis, benchmarks, loading: dataLoading, hasData, addStaffMember, isViewingClient } = useTalentData();
+    const { loading: aiLoading, optimizeStaff } = useAIAgent();
     const { toast } = useToast();
 
-    useEffect(() => {
-        // Simulate real-time updates
-        const interval = setInterval(() => {
-            setRealTimeData(prev => ({
-                ...prev,
-                training: {
-                    ...prev.training,
-                    overallCompletion: Math.min(100, prev.training.overallCompletion + Math.random() * 2)
-                },
-                performance: {
-                    ...prev.performance,
-                    averageScore: Math.max(70, Math.min(95, prev.performance.averageScore + (Math.random() - 0.5) * 2))
-                }
-            }));
-        }, 45000); // Update every 45 seconds
+    const handleSubmit = async () => {
+        if (!formData.name || !formData.position) {
+            toast({
+                title: "Campos requeridos",
+                description: "Nombre y posición son obligatorios",
+                variant: "destructive"
+            });
+            return;
+        }
 
-        return () => clearInterval(interval);
-    }, []);
+        await addStaffMember({
+            name: formData.name,
+            position: formData.position,
+            hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+            hire_date: new Date().toISOString().split('T')[0],
+            performance_score: parseFloat(formData.performance_score),
+            training_progress: parseInt(formData.training_progress),
+            is_active: true
+        });
+
+        setFormData({
+            name: '',
+            position: '',
+            hourly_rate: '',
+            performance_score: '70',
+            training_progress: '0'
+        });
+        setShowAddForm(false);
+    };
 
     const runStaffAnalysis = async () => {
+        if (!kpis) return;
+        
         const analysis = await optimizeStaff({
-            currentStaff: realTimeData.staffOptimization,
-            performance: realTimeData.performance,
-            training: realTimeData.training
+            totalStaff: kpis.totalStaff,
+            avgPerformance: kpis.avgPerformance,
+            avgTrainingProgress: kpis.avgTrainingProgress,
+            positionBreakdown: kpis.positionBreakdown
         });
         
         if (analysis) {
@@ -155,197 +121,264 @@ const TalentAIModule = () => {
         }
     };
 
-    const staffOptimizationChart = {
-        labels: realTimeData.staffOptimization.predictedNeeds.map(d => d.day),
-        datasets: [
-            {
-                label: 'Personal Actual',
-                data: realTimeData.staffOptimization.predictedNeeds.map(d => d.current),
-                backgroundColor: 'hsl(var(--muted))',
-            },
-            {
-                label: 'Predicción IA',
-                data: realTimeData.staffOptimization.predictedNeeds.map(d => d.predicted),
-                backgroundColor: 'hsl(var(--primary))',
-            }
-        ]
+    // Show empty state if no data
+    if (!hasData && !dataLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-lato-bold text-foreground">Gestión y Optimización del Talento</h2>
+                </div>
+                
+                <ModuleEmptyState
+                    moduleName="Talento IA"
+                    description="Registra tu equipo para obtener análisis de rendimiento, planificación predictiva de horarios y recomendaciones de capacitación."
+                    features={[
+                        "Planificación predictiva de horarios",
+                        "Análisis de rendimiento con IA",
+                        "Capacitación adaptativa personalizada",
+                        "Identificación de top performers"
+                    ]}
+                    onGetStarted={() => setShowAddForm(true)}
+                />
+
+                <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Agregar Empleado</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div>
+                                <Label>Nombre *</Label>
+                                <Input
+                                    placeholder="Nombre completo"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Posición *</Label>
+                                <Select value={formData.position} onValueChange={(v) => setFormData({ ...formData, position: v })}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar posición" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="chef">Chef</SelectItem>
+                                        <SelectItem value="cocinero">Cocinero/a</SelectItem>
+                                        <SelectItem value="ayudante_cocina">Ayudante de Cocina</SelectItem>
+                                        <SelectItem value="mesero">Mesero/a</SelectItem>
+                                        <SelectItem value="barista">Barista</SelectItem>
+                                        <SelectItem value="cajero">Cajero/a</SelectItem>
+                                        <SelectItem value="gerente">Gerente</SelectItem>
+                                        <SelectItem value="otro">Otro</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Tarifa por Hora</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={formData.hourly_rate}
+                                        onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Rendimiento (%)</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={formData.performance_score}
+                                        onChange={(e) => setFormData({ ...formData, performance_score: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <Button onClick={handleSubmit} className="w-full">
+                                Agregar Empleado
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        );
+    }
+
+    // Position breakdown chart
+    const positionChart = {
+        labels: Object.keys(kpis?.positionBreakdown || {}),
+        datasets: [{
+            label: 'Empleados por Posición',
+            data: Object.values(kpis?.positionBreakdown || {}),
+            backgroundColor: 'hsl(var(--primary))'
+        }]
     };
 
     return (
         <div className="space-y-6">
-            {/* Header del módulo */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-lato-bold text-foreground">Gestión y Optimización del Talento</h2>
+                <div>
+                    <h2 className="text-2xl font-lato-bold text-foreground">Gestión y Optimización del Talento</h2>
+                    {isViewingClient && (
+                        <Badge variant="outline" className="mt-1">Datos del cliente</Badge>
+                    )}
+                </div>
                 <div className="flex items-center gap-3">
+                    <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Agregar Empleado
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Agregar Empleado</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <Label>Nombre *</Label>
+                                    <Input
+                                        placeholder="Nombre completo"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Posición *</Label>
+                                    <Select value={formData.position} onValueChange={(v) => setFormData({ ...formData, position: v })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar posición" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="chef">Chef</SelectItem>
+                                            <SelectItem value="cocinero">Cocinero/a</SelectItem>
+                                            <SelectItem value="ayudante_cocina">Ayudante de Cocina</SelectItem>
+                                            <SelectItem value="mesero">Mesero/a</SelectItem>
+                                            <SelectItem value="barista">Barista</SelectItem>
+                                            <SelectItem value="cajero">Cajero/a</SelectItem>
+                                            <SelectItem value="gerente">Gerente</SelectItem>
+                                            <SelectItem value="otro">Otro</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label>Tarifa por Hora</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={formData.hourly_rate}
+                                            onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Rendimiento (%)</Label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            value={formData.performance_score}
+                                            onChange={(e) => setFormData({ ...formData, performance_score: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <Button onClick={handleSubmit} className="w-full">
+                                    Agregar Empleado
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                     <Button 
                         onClick={runStaffAnalysis} 
-                        disabled={loading}
+                        disabled={aiLoading || !kpis}
                         className="bg-primary hover:bg-primary/90"
                     >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
                         Análisis IA
                     </Button>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                        <Activity className="w-4 h-4 mr-1" />
-                        Activo
-                    </Badge>
                 </div>
             </div>
 
-            {/* KPIs principales */}
+            {/* AI Insights */}
+            {aiInsights && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-primary">
+                            <Brain className="mr-2" size={20} />
+                            Insights IA - Talento
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                            {aiInsights}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StaffMetric
                     icon={<Users />}
-                    title="Personal Total"
-                    value={realTimeData.staffOptimization.totalStaff.toString()}
+                    title="Personal Activo"
+                    value={kpis?.activeStaff.toString() || '0'}
                     trend="neutral"
-                    description="Empleados activos"
+                    description={`${kpis?.totalStaff || 0} total registrados`}
                     colorClass="bg-blue-100 text-blue-600"
                 />
                 <StaffMetric
-                    icon={<Target />}
-                    title="Optimización Semanal"
-                    value={`$${new Intl.NumberFormat().format(realTimeData.staffOptimization.costSavings)}`}
-                    trend="up"
-                    description="Ahorro estimado en costos"
+                    icon={<Award />}
+                    title="Rendimiento Promedio"
+                    value={`${kpis?.avgPerformance.toFixed(0) || 0}%`}
+                    trend={kpis && kpis.avgPerformance > 70 ? 'up' : 'down'}
+                    description="Score general del equipo"
                     colorClass="bg-green-100 text-green-600"
                 />
                 <StaffMetric
                     icon={<GraduationCap />}
                     title="Progreso Capacitación"
-                    value={`${realTimeData.training.overallCompletion.toFixed(1)}%`}
+                    value={`${kpis?.avgTrainingProgress.toFixed(0) || 0}%`}
                     trend="up"
                     description="Completación promedio"
                     colorClass="bg-purple-100 text-purple-600"
                 />
                 <StaffMetric
-                    icon={<Award />}
-                    title="Rendimiento Promedio"
-                    value={`${realTimeData.performance.averageScore.toFixed(1)}`}
-                    trend="up"
-                    description="Score general del equipo"
+                    icon={<Target />}
+                    title="Tarifa Promedio"
+                    value={`$${kpis?.avgHourlyRate.toFixed(0) || 0}/hr`}
+                    trend="neutral"
+                    description="Costo por hora"
                     colorClass="bg-orange-100 text-orange-600"
                 />
             </div>
 
-            {/* Planificación de Horarios Predictiva */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
+            {/* Charts and Lists */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Position Breakdown */}
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             <Calendar className="mr-2 text-primary" />
-                            Planificación de Horarios Predictiva
+                            Distribución por Posición
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-80">
+                        <div className="h-64">
                             <Bar 
-                                data={staffOptimizationChart}
+                                data={positionChart}
                                 options={{
                                     responsive: true,
                                     maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: { position: 'top' as const }
-                                    },
-                                    scales: {
-                                        y: {
-                                            title: { display: true, text: 'Número de Empleados' }
-                                        }
-                                    }
+                                    plugins: { legend: { display: false } }
                                 }}
                             />
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Reclutamiento Inteligente</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {realTimeData.recruitment.openPositions.map((position, i) => (
-                                <div key={i} className={`p-3 rounded-lg border-l-4 ${
-                                    position.urgency === 'high' ? 'bg-red-50 border-red-500' :
-                                    position.urgency === 'medium' ? 'bg-orange-50 border-orange-500' :
-                                    'bg-green-50 border-green-500'
-                                }`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h4 className="font-lato-bold text-sm">{position.position}</h4>
-                                        <Badge variant="outline" className={
-                                            position.urgency === 'high' ? 'text-red-600' :
-                                            position.urgency === 'medium' ? 'text-orange-600' :
-                                            'text-green-600'
-                                        }>
-                                            {position.urgency === 'high' ? 'Urgente' : 
-                                             position.urgency === 'medium' ? 'Medio' : 'Bajo'}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground font-lato-light">
-                                        {position.candidates} candidatos • Score IA: {position.aiScore}%
-                                    </p>
-                                    <p className="text-xs font-lato-bold text-primary mt-1">
-                                        Top candidato: {position.topCandidate}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Capacitación Adaptativa */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <BookOpen className="mr-2 text-primary" />
-                        Capacitación Adaptativa
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {realTimeData.training.programs.map((program, i) => (
-                            <div key={i} className="p-4 bg-muted rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <h4 className="font-lato-bold text-sm">{program.employee}</h4>
-                                        <p className="text-xs text-muted-foreground">{program.position}</p>
-                                    </div>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {program.currentLevel} → {program.targetLevel}
-                                    </Badge>
-                                </div>
-                                
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-xs">
-                                        <span>Progreso</span>
-                                        <span>{program.progress}%</span>
-                                    </div>
-                                    <Progress value={program.progress} className="h-2" />
-                                </div>
-                                
-                                <div className="mt-3">
-                                    <p className="text-xs text-muted-foreground font-lato-light mb-1">Habilidades en desarrollo:</p>
-                                    <div className="flex flex-wrap gap-1">
-                                        {program.skills.map((skill, j) => (
-                                            <Badge key={j} variant="outline" className="text-xs px-2 py-1">
-                                                {skill}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                <p className="text-xs text-muted-foreground font-lato-light mt-2">
-                                    Completación: {program.completionDate}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Análisis de Rendimiento */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top Performers */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center">
@@ -355,108 +388,88 @@ const TalentAIModule = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {realTimeData.performance.topPerformers.map((performer, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            {kpis?.topPerformers.slice(0, 3).map((performer, i) => (
+                                <div key={performer.id} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
                                     <div className="flex items-center">
-                                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
                                             <Award className="text-green-600" size={20} />
                                         </div>
                                         <div>
-                                            <h4 className="font-lato-bold text-sm">{performer.name}</h4>
-                                            <p className="text-xs text-muted-foreground">{performer.position}</p>
+                                            <h4 className="font-semibold text-sm">{performer.name}</h4>
+                                            <p className="text-xs text-muted-foreground capitalize">{performer.position.replace('_', ' ')}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-lato-bold text-green-600">{performer.score}/100</p>
-                                        <p className="text-xs text-green-600">{performer.improvement}</p>
+                                        <p className="font-bold text-green-600">{performer.performance_score}/100</p>
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <AlertTriangle className="mr-2 text-primary" />
-                            Necesita Atención
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {realTimeData.performance.needsAttention.map((employee, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                                    <div className="flex items-center">
-                                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                                            <AlertTriangle className="text-orange-600" size={20} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-lato-bold text-sm">{employee.name}</h4>
-                                            <p className="text-xs text-muted-foreground">{employee.position}</p>
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                {employee.issues.map((issue, j) => (
-                                                    <Badge key={j} variant="outline" className="text-xs px-1 py-0 text-orange-600">
-                                                        {issue}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-lato-bold text-orange-600">{employee.score}/100</p>
-                                    </div>
-                                </div>
-                            ))}
+                            {(!kpis?.topPerformers || kpis.topPerformers.length === 0) && (
+                                <p className="text-center text-muted-foreground py-4">
+                                    No hay suficientes datos para mostrar top performers
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Resumen del Impacto de la IA */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center">
-                        <Brain className="mr-2 text-primary" />
-                        Impacto de la IA en Gestión de Talento
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="text-center">
-                            <div className="text-3xl font-lato-bold text-primary mb-2">
-                                ${new Intl.NumberFormat().format(realTimeData.staffOptimization.costSavings)}
-                            </div>
-                            <p className="text-sm text-muted-foreground">Ahorro mensual en costos laborales</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl font-lato-bold text-primary mb-2">
-                                {realTimeData.recruitment.retention}%
-                            </div>
-                            <p className="text-sm text-muted-foreground">Tasa de retención mejorada</p>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-3xl font-lato-bold text-primary mb-2">
-                                {realTimeData.recruitment.averageTime} días
-                            </div>
-                            <p className="text-sm text-muted-foreground">Tiempo promedio de contratación</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* AI Insights Panel */}
-            {aiInsights && (
+            {/* Needs Attention */}
+            {kpis?.needsAttention && kpis.needsAttention.length > 0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center">
-                            <Brain className="mr-2 text-primary" />
-                            Insights del Agente IA - Talento
+                            <AlertTriangle className="mr-2 text-orange-500" />
+                            Requieren Atención
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="p-4 bg-primary/5 rounded-lg">
-                            <p className="text-sm whitespace-pre-wrap">{aiInsights}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {kpis.needsAttention.map((member) => (
+                                <div key={member.id} className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-900">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-semibold text-sm">{member.name}</h4>
+                                        <Badge variant="outline" className="text-orange-600">
+                                            {member.performance_score}%
+                                        </Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground capitalize mb-2">
+                                        {member.position.replace('_', ' ')}
+                                    </p>
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-xs">
+                                            <span>Capacitación</span>
+                                            <span>{member.training_progress}%</span>
+                                        </div>
+                                        <Progress value={member.training_progress || 0} className="h-1" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Benchmarks */}
+            {benchmarks && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Comparación con Industria</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <BenchmarkComparison
+                                label="Tasa de Rotación"
+                                userValue={100 - (kpis?.activeStaff || 0) / (kpis?.totalStaff || 1) * 100}
+                                benchmarkValue={benchmarks.turnoverRate}
+                                higherIsBetter={false}
+                            />
+                            <BenchmarkComparison
+                                label="Completación de Capacitación"
+                                userValue={kpis?.avgTrainingProgress || 0}
+                                benchmarkValue={benchmarks.trainingCompletion}
+                                higherIsBetter={true}
+                            />
                         </div>
                     </CardContent>
                 </Card>
