@@ -3,13 +3,16 @@ import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2';
 import { 
     Brain, Target, Heart, TrendingUp, Zap, Eye, MessageSquare,
     Clock, Star, ChefHat, Smartphone, BarChart3, Users,
-    Activity, Gauge, Gift, Mail, RefreshCw
+    Activity, Gauge, Gift, Mail, RefreshCw, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { useToast } from '@/hooks/use-toast';
+import { useOperationsData } from '@/hooks/useOperationsData';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useActiveClient } from '@/contexts/ActiveClientContext';
 
 // Mock data para el módulo de operaciones
 const mockOperationsData = {
@@ -105,6 +108,8 @@ const OperationsAIModule: React.FC = () => {
     const [aiInsights, setAiInsights] = useState<string>('');
     const { loading, analyzeOperations } = useAIAgent();
     const { toast } = useToast();
+    const { activeClient } = useActiveClient();
+    const { kpis: realKpis, benchmarks, hasData, loading: dataLoading, isViewingClient, refetch } = useOperationsData();
 
     const runAIAnalysis = async () => {
         const analysis = await analyzeOperations({
