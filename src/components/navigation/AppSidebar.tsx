@@ -28,6 +28,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Briefcase,
+  Store,
+  Building2,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -42,6 +44,8 @@ const restaurantMenuItems = [
   { title: 'Talento IA', icon: Users, path: '/r/talent' },
   { title: 'Ingeniería de Menú', icon: Utensils, path: '/r/menu-engineering' },
   { title: 'Sostenibilidad', icon: Leaf, path: '/r/sustainability' },
+  { title: 'Ghost Kitchen', icon: Store, path: '/r/ghost-kitchen' },
+  { title: 'Gestión de Cadenas', icon: Building2, path: '/r/chain-management' },
 ];
 
 // Consultant AI tools - same as restaurant but for clients
@@ -51,6 +55,8 @@ const consultantAIToolsItems = [
   { title: 'Talento IA', icon: Users, path: '/c/talent' },
   { title: 'Ingeniería de Menú', icon: Utensils, path: '/c/menu-engineering' },
   { title: 'Sostenibilidad', icon: Leaf, path: '/c/sustainability' },
+  { title: 'Ghost Kitchen', icon: Store, path: '/c/ghost-kitchen' },
+  { title: 'Gestión de Cadenas', icon: Building2, path: '/c/chain-management' },
 ];
 
 // Consultant management menu

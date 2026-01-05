@@ -3,7 +3,7 @@ import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2';
 import { 
     Brain, UtensilsCrossed, Package, TrendingUp, Zap, AlertTriangle,
     Calculator, ShoppingCart, Truck, Leaf, Star, DollarSign,
-    BarChart3, PieChart, Activity, Target, RefreshCw
+    BarChart3, PieChart, Activity, Target, RefreshCw, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { useToast } from '@/hooks/use-toast';
+import { useMenuItemsData } from '@/hooks/useMenuItemsData';
+import { useInventoryData } from '@/hooks/useInventoryData';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useActiveClient } from '@/contexts/ActiveClientContext';
 
 // Mock data para el módulo de menú e inventario
 const mockMenuInventoryData = {
@@ -118,6 +122,12 @@ const MenuInventoryAIModule: React.FC = () => {
     const [realTimeData, setRealTimeData] = useState(mockMenuInventoryData);
     const { loading, analyzeMenu, predictInventory } = useAIAgent();
     const { toast } = useToast();
+    const { activeClient } = useActiveClient();
+    const { menuItems, hasData: hasMenuData, isViewingClient } = useMenuItemsData();
+    const { inventory, kpis: inventoryKpis, hasData: hasInventoryData } = useInventoryData();
+    
+    const hasData = hasMenuData || hasInventoryData;
+    const lowStockItems = inventory.filter(i => i.current_stock <= (i.reorder_point || 0));
 
     useEffect(() => {
         // Simulate real-time data updates

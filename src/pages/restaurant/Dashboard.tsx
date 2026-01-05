@@ -9,7 +9,13 @@ import {
   ArrowUpRight,
   AlertTriangle,
   Lightbulb,
-  Clock
+  Clock,
+  Leaf,
+  Store,
+  Building2,
+  RefreshCw,
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import ActionPlan from '@/components/ActionPlan';
+import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { useFinancesData } from '@/hooks/useFinancesData';
 
 interface KPIData {
   label: string;
@@ -42,6 +50,10 @@ const RestaurantDashboard: React.FC = () => {
   const [businessName, setBusinessName] = useState('Mi Restaurante');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
+  
+  // Real data hooks
+  const { alerts: copilotAlerts, unreadAlerts, generateAlerts, dismissAlert, isLoading: alertsLoading } = useCopilotAlerts();
+  const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -72,8 +84,37 @@ const RestaurantDashboard: React.FC = () => {
     updateGreeting();
   }, [user]);
 
-  // Mock KPI data
-  const kpis: KPIData[] = [
+  // KPI data - use real data when available, fallback to demo
+  const kpis: KPIData[] = hasFinanceData && financeKpis ? [
+    {
+      label: 'Ventas (7 días)',
+      value: `$${(financeKpis.totalRevenue / 1000).toFixed(1)}k`,
+      change: 12.5,
+      icon: <DollarSign className="h-5 w-5" />,
+      trend: 'up',
+    },
+    {
+      label: 'Food Cost',
+      value: `${financeKpis.foodCostPercentage.toFixed(1)}%`,
+      change: financeKpis.foodCostPercentage > 32 ? 2.1 : -1.5,
+      icon: <Utensils className="h-5 w-5" />,
+      trend: financeKpis.foodCostPercentage <= 32 ? 'up' : 'down',
+    },
+    {
+      label: 'Ticket Promedio',
+      value: `$${financeKpis.averageTicket.toFixed(0)}`,
+      change: 5.2,
+      icon: <Users className="h-5 w-5" />,
+      trend: 'up',
+    },
+    {
+      label: 'Clientes (7 días)',
+      value: financeKpis.totalCovers.toString(),
+      change: 8.3,
+      icon: <TrendingUp className="h-5 w-5" />,
+      trend: 'up',
+    },
+  ] : [
     {
       label: 'Ventas Hoy',
       value: '$42,580',
@@ -104,35 +145,51 @@ const RestaurantDashboard: React.FC = () => {
     },
   ];
 
-  // Mock alerts from AI
-  const alerts: Alert[] = [
-    {
-      id: '1',
-      type: 'warning',
-      title: 'Food Cost por arriba del target',
-      message: 'Tu food cost subió 2.1% esta semana. Te recomiendo revisar los precios con tu proveedor de carnes.',
-      action: 'Ver análisis',
-    },
-    {
-      id: '2',
-      type: 'info',
-      title: 'Oportunidad de optimización',
-      message: 'Detecté que los miércoles tienes 40% menos ventas. ¿Qué tal una promoción de mitad de semana?',
-      action: 'Crear promoción',
-    },
-    {
-      id: '3',
-      type: 'success',
-      title: 'Inventario optimizado',
-      message: 'El desperdicio se redujo 15% este mes. ¡Excelente trabajo del equipo!',
-    },
-  ];
+  // Map copilot alerts to display format
+  const getAlertType = (priority: string | null): 'warning' | 'info' | 'success' => {
+    if (priority === 'critical' || priority === 'high') return 'warning';
+    if (priority === 'low') return 'success';
+    return 'info';
+  };
+
+  const displayAlerts: Alert[] = copilotAlerts.length > 0 
+    ? copilotAlerts.slice(0, 4).map(a => ({
+        id: a.id,
+        type: getAlertType(a.priority),
+        title: a.title,
+        message: a.message,
+        action: a.action_url ? 'Ver más' : undefined
+      }))
+    : [
+        {
+          id: '1',
+          type: 'warning',
+          title: 'Food Cost por arriba del target',
+          message: 'Tu food cost subió 2.1% esta semana. Te recomiendo revisar los precios con tu proveedor de carnes.',
+          action: 'Ver análisis',
+        },
+        {
+          id: '2',
+          type: 'info',
+          title: 'Oportunidad de optimización',
+          message: 'Detecté que los miércoles tienes 40% menos ventas. ¿Qué tal una promoción de mitad de semana?',
+          action: 'Crear promoción',
+        },
+        {
+          id: '3',
+          type: 'success',
+          title: 'Inventario optimizado',
+          message: 'El desperdicio se redujo 15% este mes. ¡Excelente trabajo del equipo!',
+        },
+      ];
 
   const quickActions = [
     { label: 'Finanzas IA', path: '/r/finances', icon: DollarSign },
     { label: 'Operaciones', path: '/r/operations', icon: Clock },
     { label: 'Talento', path: '/r/talent', icon: Users },
     { label: 'Menú', path: '/r/menu-engineering', icon: Utensils },
+    { label: 'Ghost Kitchen', path: '/r/ghost-kitchen', icon: Store },
+    { label: 'Sostenibilidad', path: '/r/sustainability', icon: Leaf },
   ];
 
   return (
@@ -208,11 +265,11 @@ const RestaurantDashboard: React.FC = () => {
                   Alertas y recomendaciones basadas en tus datos
                 </CardDescription>
               </div>
-              <Badge variant="secondary">3 nuevas</Badge>
+              <Badge variant="secondary">{unreadAlerts.length || 3} nuevas</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {alerts.map((alert) => (
+            {displayAlerts.map((alert) => (
               <div
                 key={alert.id}
                 className={`p-4 rounded-lg border ${

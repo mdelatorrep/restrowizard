@@ -29,6 +29,8 @@ import RestaurantTalent from "./pages/restaurant/Talent";
 import RestaurantMenuEngineering from "./pages/restaurant/MenuEngineering";
 import RestaurantSustainability from "./pages/restaurant/Sustainability";
 import RestaurantSettings from "./pages/restaurant/Settings";
+import RestaurantGhostKitchen from "./pages/restaurant/GhostKitchen";
+import RestaurantChainManagement from "./pages/restaurant/ChainManagement";
 
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
@@ -40,6 +42,8 @@ import ConsultantMenuEngineering from "./pages/consultant/MenuEngineering";
 import ConsultantSustainability from "./pages/consultant/Sustainability";
 import ConsultantBilling from "./pages/consultant/Billing";
 import ConsultantSettings from "./pages/consultant/Settings";
+import ConsultantGhostKitchen from "./pages/consultant/GhostKitchen";
+import ConsultantChainManagement from "./pages/consultant/ChainManagement";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +79,8 @@ const App = () => (
                 <Route path="talent" element={<RestaurantTalent />} />
                 <Route path="menu-engineering" element={<RestaurantMenuEngineering />} />
                 <Route path="sustainability" element={<RestaurantSustainability />} />
+                <Route path="ghost-kitchen" element={<RestaurantGhostKitchen />} />
+                <Route path="chain-management" element={<RestaurantChainManagement />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 
@@ -91,6 +97,8 @@ const App = () => (
                 <Route path="talent" element={<ConsultantTalent />} />
                 <Route path="menu-engineering" element={<ConsultantMenuEngineering />} />
                 <Route path="sustainability" element={<ConsultantSustainability />} />
+                <Route path="ghost-kitchen" element={<ConsultantGhostKitchen />} />
+                <Route path="chain-management" element={<ConsultantChainManagement />} />
                 
                 {/* Consultant management */}
                 <Route path="billing" element={<ConsultantBilling />} />
