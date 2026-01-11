@@ -4,12 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { useChainData } from '@/hooks/useChainData';
+import { ModuleEmptyState } from '@/components/ui/empty-state';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   MapPin,
   TrendingUp,
-  TrendingDown,
   Users,
   DollarSign,
   Package,
@@ -34,7 +40,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -47,493 +53,239 @@ ChartJS.register(
   Legend
 );
 
-// Mock data for chain management
-const mockChainData = {
-  chain: {
-    name: 'Taco Supreme',
-    logo: '🌮',
-    totalLocations: 12,
-    activeLocations: 11,
-    totalRevenue: 4850000,
-    avgRating: 4.6,
-    founded: 2018
-  },
-  locations: [
-    { id: 1, name: 'Polanco', type: 'flagship', revenue: 680000, rating: 4.8, staff: 25, status: 'excellent', compliance: 98 },
-    { id: 2, name: 'Roma Norte', type: 'standard', revenue: 520000, rating: 4.7, staff: 18, status: 'good', compliance: 95 },
-    { id: 3, name: 'Condesa', type: 'standard', revenue: 490000, rating: 4.6, staff: 16, status: 'good', compliance: 92 },
-    { id: 4, name: 'Santa Fe', type: 'express', revenue: 380000, rating: 4.5, staff: 12, status: 'attention', compliance: 85 },
-    { id: 5, name: 'Coyoacán', type: 'standard', revenue: 450000, rating: 4.4, staff: 15, status: 'good', compliance: 90 },
-    { id: 6, name: 'Reforma', type: 'ghost_kitchen', revenue: 280000, rating: 4.3, staff: 8, status: 'attention', compliance: 88 }
-  ],
-  pendingTransfers: [
-    { id: 1, from: 'Polanco', to: 'Santa Fe', items: 'Carne (50kg), Tortillas (200u)', value: 12500, status: 'pending' },
-    { id: 2, from: 'Roma Norte', to: 'Reforma', items: 'Salsa Verde (20L), Queso (15kg)', value: 8200, status: 'in_transit' }
-  ],
-  complianceItems: [
-    { id: 1, name: 'Limpieza de cocina', frequency: 'daily', lastCheck: '2024-01-14', avgScore: 94 },
-    { id: 2, name: 'Inventario semanal', frequency: 'weekly', lastCheck: '2024-01-12', avgScore: 88 },
-    { id: 3, name: 'Capacitación HACCP', frequency: 'monthly', lastCheck: '2024-01-01', avgScore: 91 },
-    { id: 4, name: 'Auditoría de calidad', frequency: 'quarterly', lastCheck: '2023-12-15', avgScore: 86 }
-  ],
-  performanceChart: {
-    labels: ['Polanco', 'Roma', 'Condesa', 'Santa Fe', 'Coyoacán', 'Reforma'],
-    datasets: [
-      {
-        label: 'Ingresos ($k)',
-        data: [680, 520, 490, 380, 450, 280],
-        backgroundColor: 'hsl(var(--primary))',
-        borderRadius: 8
-      }
-    ]
-  },
-  trendChart: {
-    labels: ['Oct', 'Nov', 'Dic', 'Ene'],
-    datasets: [
-      {
-        label: 'Polanco',
-        data: [620, 650, 720, 680],
-        borderColor: 'hsl(var(--chart-1))',
-        tension: 0.4
-      },
-      {
-        label: 'Roma Norte',
-        data: [480, 500, 550, 520],
-        borderColor: 'hsl(var(--chart-2))',
-        tension: 0.4
-      },
-      {
-        label: 'Santa Fe',
-        data: [350, 360, 400, 380],
-        borderColor: 'hsl(var(--chart-3))',
-        tension: 0.4
-      }
-    ]
-  }
-};
-
 const ChainManagementModule = () => {
+  const { user } = useAuthContext();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showNewChainForm, setShowNewChainForm] = useState(false);
+  const [showNewLocationForm, setShowNewLocationForm] = useState(false);
+  const [formData, setFormData] = useState({ chain_name: '', description: '' });
+  const [locationFormData, setLocationFormData] = useState({ 
+    location_name: '', address: '', city: '', manager_name: '' 
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'excellent':
-        return <Badge className="bg-green-500">Excelente</Badge>;
-      case 'good':
-        return <Badge className="bg-blue-500">Bueno</Badge>;
-      case 'attention':
-        return <Badge className="bg-yellow-500">Atención</Badge>;
-      case 'critical':
-        return <Badge variant="destructive">Crítico</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  const { 
+    chains, 
+    locations, 
+    complianceChecklists, 
+    inventoryTransfers, 
+    summary,
+    hasData, 
+    isLoading,
+    isViewingClient 
+  } = useChainData();
+
+  const handleCreateChain = async () => {
+    if (!user || !formData.chain_name) {
+      toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('restaurant_chains').insert({
+        owner_id: user.id,
+        chain_name: formData.chain_name,
+        description: formData.description || null
+      });
+      if (error) throw error;
+      toast({ title: "Cadena creada", description: "Tu nueva cadena está lista" });
+      setShowNewChainForm(false);
+      setFormData({ chain_name: '', description: '' });
+      queryClient.invalidateQueries({ queryKey: ['restaurant-chains'] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'flagship':
-        return <Badge variant="outline" className="border-primary text-primary">Flagship</Badge>;
-      case 'express':
-        return <Badge variant="outline">Express</Badge>;
-      case 'ghost_kitchen':
-        return <Badge variant="outline">Ghost Kitchen</Badge>;
-      default:
-        return <Badge variant="outline">Estándar</Badge>;
+  const handleCreateLocation = async () => {
+    if (!chains[0]?.id || !locationFormData.location_name) {
+      toast({ title: "Error", description: "Nombre y cadena son obligatorios", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('chain_locations').insert({
+        chain_id: chains[0].id,
+        location_name: locationFormData.location_name,
+        address: locationFormData.address,
+        city: locationFormData.city,
+        manager_name: locationFormData.manager_name || null
+      });
+      if (error) throw error;
+      toast({ title: "Ubicación creada", description: "Nueva ubicación agregada" });
+      setShowNewLocationForm(false);
+      setLocationFormData({ location_name: '', address: '', city: '', manager_name: '' });
+      queryClient.invalidateQueries({ queryKey: ['chain-locations'] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Empty state
+  if (!hasData && !isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Building2 className="h-7 w-7 text-primary" />
+              Gestión de Cadenas
+            </h2>
+            <p className="text-muted-foreground mt-1">Administra múltiples ubicaciones de tu cadena</p>
+          </div>
+        </div>
+        <ModuleEmptyState
+          moduleName="Gestión de Cadenas"
+          description="Administra múltiples ubicaciones, menús estandarizados, transferencias de inventario y cumplimiento."
+          features={[
+            "Dashboard consolidado de todas las ubicaciones",
+            "Transferencias de inventario entre sucursales",
+            "Checklists de cumplimiento y auditorías",
+            "Métricas comparativas entre ubicaciones"
+          ]}
+          onGetStarted={() => setShowNewChainForm(true)}
+        />
+        {showNewChainForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader><CardTitle>Nueva Cadena</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div><Label>Nombre *</Label><Input value={formData.chain_name} onChange={(e) => setFormData({ ...formData, chain_name: e.target.value })} placeholder="Mi Cadena" /></div>
+                <div><Label>Descripción</Label><Input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Descripción opcional" /></div>
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowNewChainForm(false)}>Cancelar</Button>
+                  <Button className="flex-1" onClick={handleCreateChain} disabled={isSubmitting}>{isSubmitting ? 'Creando...' : 'Crear'}</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const currentChain = chains[0];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <span className="text-5xl">{mockChainData.chain.logo}</span>
           <div>
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
               <Building2 className="h-7 w-7 text-primary" />
-              {mockChainData.chain.name}
+              {currentChain?.chain_name || 'Mi Cadena'}
             </h2>
-            <p className="text-muted-foreground">
-              {mockChainData.chain.totalLocations} ubicaciones • Fundada en {mockChainData.chain.founded}
-            </p>
+            <p className="text-muted-foreground">{summary.totalLocations} ubicaciones{isViewingClient && <Badge variant="outline" className="ml-2">Cliente</Badge>}</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <ArrowRightLeft className="h-4 w-4 mr-2" />
-            Nueva Transferencia
-          </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Ubicación
-          </Button>
+          <Button variant="outline" onClick={() => setShowNewLocationForm(true)}><Plus className="h-4 w-4 mr-2" />Nueva Ubicación</Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Ubicaciones</p>
-                <p className="text-2xl font-bold">{mockChainData.chain.activeLocations}/{mockChainData.chain.totalLocations}</p>
-              </div>
-              <MapPin className="h-8 w-8 text-primary opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Ingresos Totales</p>
-                <p className="text-2xl font-bold">${(mockChainData.chain.totalRevenue / 1000000).toFixed(1)}M</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Empleados</p>
-                <p className="text-2xl font-bold">{mockChainData.locations.reduce((a, b) => a + b.staff, 0)}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Rating Promedio</p>
-                <p className="text-2xl font-bold flex items-center gap-1">
-                  {mockChainData.chain.avgRating}
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                </p>
-              </div>
-              <Star className="h-8 w-8 text-yellow-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Transferencias</p>
-                <p className="text-2xl font-bold">{mockChainData.pendingTransfers.length}</p>
-              </div>
-              <Package className="h-8 w-8 text-orange-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Ubicaciones</p><p className="text-2xl font-bold">{summary.activeLocations}/{summary.totalLocations}</p></div><MapPin className="h-8 w-8 text-primary opacity-20" /></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Personal Total</p><p className="text-2xl font-bold">{summary.totalStaff}</p></div><Users className="h-8 w-8 text-blue-500 opacity-20" /></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Transferencias</p><p className="text-2xl font-bold">{summary.pendingTransfers}</p></div><Package className="h-8 w-8 text-orange-500 opacity-20" /></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Checklists</p><p className="text-2xl font-bold">{complianceChecklists.length}</p></div><ClipboardCheck className="h-8 w-8 text-green-500 opacity-20" /></div></CardContent></Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Vista General</TabsTrigger>
           <TabsTrigger value="locations">Ubicaciones</TabsTrigger>
           <TabsTrigger value="transfers">Transferencias</TabsTrigger>
-          <TabsTrigger value="compliance">Cumplimiento</TabsTrigger>
-          <TabsTrigger value="analytics">Analítica</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Performance by Location */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Ingresos por Ubicación
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Bar 
-                  data={mockChainData.performanceChart}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { display: false } }
-                  }}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Trend Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Tendencia de Ingresos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Line 
-                  data={mockChainData.trendChart}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } }
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Location Status */}
+        <TabsContent value="overview" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Estado Rápido de Ubicaciones</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Ubicaciones</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {mockChainData.locations.map((loc) => (
-                  <div key={loc.id} className="text-center p-4 rounded-lg border bg-card">
-                    <p className="font-semibold">{loc.name}</p>
-                    {getStatusBadge(loc.status)}
-                    <p className="text-xl font-bold mt-2">${(loc.revenue / 1000).toFixed(0)}k</p>
-                    <div className="flex items-center justify-center gap-1 mt-1">
-                      <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                      <span className="text-sm">{loc.rating}</span>
+              {locations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No hay ubicaciones. Agrega tu primera ubicación.</div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {locations.map((loc) => (
+                    <div key={loc.id} className="text-center p-4 rounded-lg border bg-card">
+                      <p className="font-semibold">{loc.location_name}</p>
+                      <Badge variant={loc.is_active ? 'default' : 'secondary'}>{loc.is_active ? 'Activa' : 'Inactiva'}</Badge>
+                      <p className="text-sm text-muted-foreground mt-1">{loc.city}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="locations" className="space-y-4 mt-4">
+        <TabsContent value="locations" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockChainData.locations.map((location) => (
+            {locations.map((location) => (
               <Card key={location.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-primary" />
-                      {location.name}
-                    </CardTitle>
-                    {getTypeBadge(location.type)}
+                    <CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" />{location.location_name}</CardTitle>
+                    <Badge variant={location.is_active ? 'default' : 'secondary'}>{location.is_active ? 'Activa' : 'Inactiva'}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(location.status)}
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                      <span className="font-semibold">{location.rating}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Ingresos</p>
-                      <p className="font-bold text-lg">${(location.revenue / 1000).toFixed(0)}k</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Personal</p>
-                      <p className="font-bold text-lg">{location.staff}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Cumplimiento</span>
-                      <span>{location.compliance}%</span>
-                    </div>
-                    <Progress value={location.compliance} className="h-2" />
-                  </div>
-
-                  <Button variant="outline" className="w-full" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Detalles
-                  </Button>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{location.address}, {location.city}</p>
+                  {location.manager_name && <p className="text-sm">Gerente: {location.manager_name}</p>}
+                  <Button variant="outline" className="w-full" size="sm"><Eye className="h-4 w-4 mr-2" />Ver Detalles</Button>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="transfers" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ArrowRightLeft className="h-5 w-5" />
-                Transferencias de Inventario
-              </CardTitle>
-              <CardDescription>
-                Gestiona el movimiento de productos entre ubicaciones
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockChainData.pendingTransfers.map((transfer) => (
-                  <div key={transfer.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <p className="font-semibold">{transfer.from}</p>
-                        <p className="text-xs text-muted-foreground">Origen</p>
-                      </div>
-                      <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
-                      <div className="text-center">
-                        <p className="font-semibold">{transfer.to}</p>
-                        <p className="text-xs text-muted-foreground">Destino</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm">{transfer.items}</p>
-                      <p className="font-bold">${transfer.value.toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={transfer.status === 'pending' ? 'secondary' : 'default'}>
-                        {transfer.status === 'pending' ? 'Pendiente' : 'En tránsito'}
-                      </Badge>
-                      <Button size="sm" variant="outline">
-                        {transfer.status === 'pending' ? 'Aprobar' : 'Confirmar'}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="compliance" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                Checklists de Cumplimiento
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockChainData.complianceItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                    <div>
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Frecuencia: {item.frequency} • Último: {new Date(item.lastCheck).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-2xl font-bold">{item.avgScore}%</p>
-                        <p className="text-xs text-muted-foreground">Promedio</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Ver Registros
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Compliance by Location */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Cumplimiento por Ubicación</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {mockChainData.locations.map((loc) => (
-                  <div key={loc.id} className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{loc.name}</span>
-                      <span className={loc.compliance >= 90 ? 'text-green-500' : loc.compliance >= 80 ? 'text-yellow-500' : 'text-destructive'}>
-                        {loc.compliance}%
-                      </span>
-                    </div>
-                    <Progress value={loc.compliance} className="h-2" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Insights IA
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="font-semibold text-green-800 dark:text-green-200">Oportunidad</span>
-                  </div>
-                  <p className="text-sm mt-1">
-                    Polanco tiene 15% más capacidad disponible. Considera promociones para horas valle.
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                    <span className="font-semibold text-yellow-800 dark:text-yellow-200">Atención</span>
-                  </div>
-                  <p className="text-sm mt-1">
-                    Santa Fe muestra decline en cumplimiento. Programar visita de supervisión.
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
-                    <span className="font-semibold text-blue-800 dark:text-blue-200">Recomendación</span>
-                  </div>
-                  <p className="text-sm mt-1">
-                    El menú de temporada de Condesa tuvo +22% ventas. Replicar en otras ubicaciones.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Comparativa de Métricas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Bar 
-                  data={{
-                    labels: mockChainData.locations.map(l => l.name),
-                    datasets: [
-                      {
-                        label: 'Cumplimiento %',
-                        data: mockChainData.locations.map(l => l.compliance),
-                        backgroundColor: 'hsl(var(--chart-1))'
-                      },
-                      {
-                        label: 'Rating x20',
-                        data: mockChainData.locations.map(l => l.rating * 20),
-                        backgroundColor: 'hsl(var(--chart-2))'
-                      }
-                    ]
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } }
-                  }}
-                />
-              </CardContent>
+            <Card className="border-dashed flex items-center justify-center min-h-[200px] cursor-pointer hover:bg-muted/50" onClick={() => setShowNewLocationForm(true)}>
+              <div className="text-center"><Plus className="h-12 w-12 mx-auto text-muted-foreground" /><p className="mt-2 font-medium">Nueva Ubicación</p></div>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="transfers" className="mt-4">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><ArrowRightLeft className="h-5 w-5" />Transferencias</CardTitle></CardHeader>
+            <CardContent>
+              {inventoryTransfers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No hay transferencias pendientes</div>
+              ) : (
+                <div className="space-y-3">
+                  {inventoryTransfers.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between p-4 rounded-lg border">
+                      <div><Badge variant={t.status === 'pending' ? 'secondary' : 'default'}>{t.status}</Badge></div>
+                      <p className="font-bold">${(t.total_value || 0).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      {showNewLocationForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader><CardTitle>Nueva Ubicación</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div><Label>Nombre *</Label><Input value={locationFormData.location_name} onChange={(e) => setLocationFormData({ ...locationFormData, location_name: e.target.value })} /></div>
+              <div><Label>Dirección</Label><Input value={locationFormData.address} onChange={(e) => setLocationFormData({ ...locationFormData, address: e.target.value })} /></div>
+              <div><Label>Ciudad</Label><Input value={locationFormData.city} onChange={(e) => setLocationFormData({ ...locationFormData, city: e.target.value })} /></div>
+              <div><Label>Gerente</Label><Input value={locationFormData.manager_name} onChange={(e) => setLocationFormData({ ...locationFormData, manager_name: e.target.value })} /></div>
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" className="flex-1" onClick={() => setShowNewLocationForm(false)}>Cancelar</Button>
+                <Button className="flex-1" onClick={handleCreateLocation} disabled={isSubmitting}>{isSubmitting ? 'Creando...' : 'Crear'}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

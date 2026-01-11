@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,9 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { useGhostKitchenData } from '@/hooks/useGhostKitchenData';
+import { ModuleEmptyState } from '@/components/ui/empty-state';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ChefHat,
   Store,
@@ -20,7 +24,6 @@ import {
   Play,
   Pause,
   CheckCircle,
-  AlertCircle,
   DollarSign,
   Sparkles,
   BarChart3,
@@ -52,124 +55,86 @@ ChartJS.register(
   Legend
 );
 
-// Mock data
-const mockGhostKitchenData = {
-  brands: [
-    { 
-      id: 1, 
-      name: 'Burger Lab', 
-      logo: '🍔', 
-      status: 'active',
-      orders_today: 45,
-      revenue_today: 8250,
-      avg_prep_time: 12,
-      rating: 4.7,
-      platform: 'rappi'
-    },
-    { 
-      id: 2, 
-      name: 'Sushi Express', 
-      logo: '🍣', 
-      status: 'active',
-      orders_today: 32,
-      revenue_today: 9600,
-      avg_prep_time: 18,
-      rating: 4.8,
-      platform: 'uber_eats'
-    },
-    { 
-      id: 3, 
-      name: 'Taco Loco', 
-      logo: '🌮', 
-      status: 'paused',
-      orders_today: 0,
-      revenue_today: 0,
-      avg_prep_time: 8,
-      rating: 4.5,
-      platform: 'didi_food'
-    }
-  ],
-  aggregators: [
-    { name: 'Rappi', orders: 156, revenue: 28400, commission: 4260, color: 'hsl(var(--chart-1))' },
-    { name: 'Uber Eats', orders: 98, revenue: 21200, commission: 6360, color: 'hsl(var(--chart-2))' },
-    { name: 'DiDi Food', orders: 67, revenue: 12800, commission: 2560, color: 'hsl(var(--chart-3))' },
-    { name: 'Directo', orders: 34, revenue: 8900, commission: 0, color: 'hsl(var(--chart-4))' }
-  ],
-  productionQueue: [
-    { id: 1, order: '#4521', brand: 'Burger Lab', items: '2x Smash Burger, 1x Papas', status: 'cooking', timer: 4, station: 'Parrilla' },
-    { id: 2, order: '#4522', brand: 'Sushi Express', items: '1x Roll California, 1x Nigiri Mix', status: 'preparing', timer: 8, station: 'Sushi' },
-    { id: 3, order: '#4523', brand: 'Burger Lab', items: '1x Chicken Burger', status: 'pending', timer: 0, station: 'Parrilla' },
-    { id: 4, order: '#4524', brand: 'Sushi Express', items: '2x Roll Spicy Tuna', status: 'ready', timer: 0, station: 'Sushi' }
-  ],
-  hourlyOrders: [
-    { hour: '12:00', orders: 12, revenue: 2400 },
-    { hour: '13:00', orders: 28, revenue: 5600 },
-    { hour: '14:00', orders: 22, revenue: 4400 },
-    { hour: '15:00', orders: 8, revenue: 1600 },
-    { hour: '16:00', orders: 5, revenue: 1000 },
-    { hour: '17:00', orders: 15, revenue: 3000 },
-    { hour: '18:00', orders: 35, revenue: 7000 },
-    { hour: '19:00', orders: 42, revenue: 8400 },
-    { hour: '20:00', orders: 38, revenue: 7600 }
-  ],
-  kpis: {
-    totalOrders: 355,
-    totalRevenue: 71300,
-    avgPrepTime: 14,
-    onTimeRate: 92,
-    commissionPaid: 13180
-  }
-};
+interface NewBrandFormData {
+  brand_name: string;
+  cuisine_type: string;
+  logo_emoji: string;
+}
 
 const GhostKitchenModule = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [productionQueue, setProductionQueue] = useState(mockGhostKitchenData.productionQueue);
   const [showNewBrandForm, setShowNewBrandForm] = useState(false);
+  const [formData, setFormData] = useState<NewBrandFormData>({
+    brand_name: '',
+    cuisine_type: '',
+    logo_emoji: '🍔'
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateOrderStatus = (orderId: number, newStatus: string) => {
-    setProductionQueue(prev => 
-      prev.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
-    toast({
-      title: "Estado actualizado",
-      description: `Orden actualizada a: ${newStatus}`,
-    });
-  };
+  const { 
+    virtualBrands, 
+    aggregatorOrders, 
+    productionQueue, 
+    kpis, 
+    ordersByPlatform,
+    hasData, 
+    isLoading,
+    isViewingClient 
+  } = useGhostKitchenData();
 
-  const revenueByPlatform = {
-    labels: mockGhostKitchenData.aggregators.map(a => a.name),
-    datasets: [{
-      data: mockGhostKitchenData.aggregators.map(a => a.revenue),
-      backgroundColor: mockGhostKitchenData.aggregators.map(a => a.color),
-      borderWidth: 0
-    }]
-  };
+  // Map real data to display format
+  const displayBrands = virtualBrands.map(b => ({
+    id: b.id,
+    name: b.brand_name,
+    logo: b.brand_logo || '🍴',
+    status: b.is_active ? 'active' : 'paused',
+    orders_today: aggregatorOrders.filter(o => o.brand_id === b.id).length,
+    revenue_today: aggregatorOrders.filter(o => o.brand_id === b.id).reduce((sum, o) => sum + (o.subtotal || 0), 0),
+    avg_prep_time: b.avg_preparation_time || 15,
+    rating: 4.5,
+    cuisine: b.cuisine_type || 'General'
+  }));
 
-  const hourlyChart = {
-    labels: mockGhostKitchenData.hourlyOrders.map(h => h.hour),
-    datasets: [
-      {
-        label: 'Órdenes',
-        data: mockGhostKitchenData.hourlyOrders.map(h => h.orders),
-        borderColor: 'hsl(var(--primary))',
-        backgroundColor: 'hsl(var(--primary) / 0.1)',
-        fill: true,
-        tension: 0.4,
-        yAxisID: 'y'
-      },
-      {
-        label: 'Ingresos ($)',
-        data: mockGhostKitchenData.hourlyOrders.map(h => h.revenue),
-        borderColor: 'hsl(var(--chart-2))',
-        backgroundColor: 'transparent',
-        tension: 0.4,
-        yAxisID: 'y1'
-      }
-    ]
+  const handleCreateBrand = async () => {
+    if (!user || !formData.brand_name) {
+      toast({
+        title: "Error",
+        description: "El nombre de la marca es obligatorio",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('virtual_brands')
+        .insert({
+          user_id: user.id,
+          brand_name: formData.brand_name,
+          cuisine_type: formData.cuisine_type as any || 'other',
+          brand_logo: formData.logo_emoji,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Marca creada", description: "Tu nueva marca virtual está lista" });
+      setShowNewBrandForm(false);
+      setFormData({ brand_name: '', cuisine_type: '', logo_emoji: '🍔' });
+      queryClient.invalidateQueries({ queryKey: ['virtual-brands'] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo crear la marca",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -187,6 +152,121 @@ const GhostKitchenModule = () => {
     }
   };
 
+  const NewBrandModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader>
+          <CardTitle>Nueva Marca Virtual</CardTitle>
+          <CardDescription>Crea una nueva marca para tu ghost kitchen</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Nombre de la Marca *</Label>
+            <Input 
+              placeholder="Ej: Pizza Express" 
+              value={formData.brand_name}
+              onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de Cocina</Label>
+            <Select value={formData.cuisine_type} onValueChange={(v) => setFormData({ ...formData, cuisine_type: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="american">Americana</SelectItem>
+                <SelectItem value="mexican">Mexicana</SelectItem>
+                <SelectItem value="italian">Italiana</SelectItem>
+                <SelectItem value="japanese">Japonesa</SelectItem>
+                <SelectItem value="chinese">China</SelectItem>
+                <SelectItem value="other">Otra</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Emoji/Logo</Label>
+            <Select value={formData.logo_emoji} onValueChange={(v) => setFormData({ ...formData, logo_emoji: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="🍔">🍔 Hamburguesas</SelectItem>
+                <SelectItem value="🍕">🍕 Pizza</SelectItem>
+                <SelectItem value="🍣">🍣 Sushi</SelectItem>
+                <SelectItem value="🌮">🌮 Tacos</SelectItem>
+                <SelectItem value="🍜">🍜 Noodles</SelectItem>
+                <SelectItem value="🥗">🥗 Saludable</SelectItem>
+                <SelectItem value="🍗">🍗 Pollo</SelectItem>
+                <SelectItem value="🍴">🍴 General</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2 pt-4">
+            <Button variant="outline" className="flex-1" onClick={() => setShowNewBrandForm(false)}>
+              Cancelar
+            </Button>
+            <Button className="flex-1" onClick={handleCreateBrand} disabled={isSubmitting}>
+              {isSubmitting ? 'Creando...' : 'Crear Marca'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // Show empty state if no data
+  if (!hasData && !isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <ChefHat className="h-7 w-7 text-primary" />
+              Ghost Kitchen Manager
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              Gestiona múltiples marcas virtuales desde una sola cocina
+            </p>
+          </div>
+        </div>
+
+        <ModuleEmptyState
+          moduleName="Ghost Kitchen"
+          description="Crea marcas virtuales para operar múltiples conceptos desde tu cocina y conecta con agregadores de delivery."
+          features={[
+            "Gestión de múltiples marcas virtuales",
+            "Dashboard unificado de todos los agregadores",
+            "Cola de producción en tiempo real",
+            "Análisis de comisiones y rentabilidad por plataforma"
+          ]}
+          onGetStarted={() => setShowNewBrandForm(true)}
+        />
+
+        {showNewBrandForm && <NewBrandModal />}
+      </div>
+    );
+  }
+
+  // Chart data
+  const revenueByPlatform = {
+    labels: Object.keys(ordersByPlatform).length > 0 
+      ? Object.keys(ordersByPlatform).map(p => p.replace('_', ' ').toUpperCase())
+      : ['Sin datos'],
+    datasets: [{
+      data: Object.keys(ordersByPlatform).length > 0 
+        ? Object.values(ordersByPlatform).map(p => p.revenue)
+        : [1],
+      backgroundColor: [
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))'
+      ],
+      borderWidth: 0
+    }]
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -198,6 +278,7 @@ const GhostKitchenModule = () => {
           </h2>
           <p className="text-muted-foreground mt-1">
             Gestiona múltiples marcas virtuales desde una sola cocina
+            {isViewingClient && <Badge variant="outline" className="ml-2">Datos del cliente</Badge>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -219,7 +300,7 @@ const GhostKitchenModule = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Órdenes Hoy</p>
-                <p className="text-2xl font-bold">{mockGhostKitchenData.kpis.totalOrders}</p>
+                <p className="text-2xl font-bold">{kpis.totalOrders}</p>
               </div>
               <Package className="h-8 w-8 text-primary opacity-20" />
             </div>
@@ -231,7 +312,7 @@ const GhostKitchenModule = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ingresos Hoy</p>
-                <p className="text-2xl font-bold">${mockGhostKitchenData.kpis.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">${kpis.totalRevenue.toLocaleString()}</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-500 opacity-20" />
             </div>
@@ -242,10 +323,10 @@ const GhostKitchenModule = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Tiempo Promedio</p>
-                <p className="text-2xl font-bold">{mockGhostKitchenData.kpis.avgPrepTime} min</p>
+                <p className="text-sm text-muted-foreground">Marcas Activas</p>
+                <p className="text-2xl font-bold">{displayBrands.filter(b => b.status === 'active').length}</p>
               </div>
-              <Timer className="h-8 w-8 text-blue-500 opacity-20" />
+              <Store className="h-8 w-8 text-blue-500 opacity-20" />
             </div>
           </CardContent>
         </Card>
@@ -254,10 +335,10 @@ const GhostKitchenModule = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">A Tiempo</p>
-                <p className="text-2xl font-bold">{mockGhostKitchenData.kpis.onTimeRate}%</p>
+                <p className="text-sm text-muted-foreground">En Producción</p>
+                <p className="text-2xl font-bold">{productionQueue.length}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500 opacity-20" />
+              <Timer className="h-8 w-8 text-orange-500 opacity-20" />
             </div>
           </CardContent>
         </Card>
@@ -267,7 +348,7 @@ const GhostKitchenModule = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Comisiones</p>
-                <p className="text-2xl font-bold text-destructive">-${mockGhostKitchenData.kpis.commissionPaid.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-destructive">-${kpis.commissionPaid.toLocaleString()}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-destructive opacity-20" />
             </div>
@@ -303,32 +384,35 @@ const GhostKitchenModule = () => {
               </CardContent>
             </Card>
 
-            {/* Hourly Performance */}
+            {/* Brands Overview */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Rendimiento por Hora</CardTitle>
+                <CardTitle className="text-lg">Estado de Marcas</CardTitle>
               </CardHeader>
               <CardContent>
-                <Line 
-                  data={hourlyChart}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                      y: { 
-                        type: 'linear',
-                        position: 'left',
-                        title: { display: true, text: 'Órdenes' }
-                      },
-                      y1: {
-                        type: 'linear',
-                        position: 'right',
-                        title: { display: true, text: 'Ingresos ($)' },
-                        grid: { drawOnChartArea: false }
-                      }
-                    }
-                  }}
-                />
+                {displayBrands.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay marcas registradas
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {displayBrands.map((brand) => (
+                      <div key={brand.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{brand.logo}</span>
+                          <div>
+                            <p className="font-semibold">{brand.name}</p>
+                            <p className="text-sm text-muted-foreground">{brand.cuisine}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">${brand.revenue_today.toLocaleString()}</p>
+                          <p className="text-sm text-muted-foreground">{brand.orders_today} órdenes</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -342,27 +426,33 @@ const GhostKitchenModule = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {mockGhostKitchenData.aggregators.map((agg) => (
-                  <div key={agg.name} className="p-4 rounded-lg border bg-card">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold">{agg.name}</span>
-                      <Badge variant="outline">{agg.orders} órdenes</Badge>
+              {Object.keys(ordersByPlatform).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay datos de agregadores aún. Las órdenes aparecerán aquí.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {Object.entries(ordersByPlatform).map(([platform, data]) => (
+                    <div key={platform} className="p-4 rounded-lg border bg-card">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-semibold capitalize">{platform.replace('_', ' ')}</span>
+                        <Badge variant="outline">{data.orders} órdenes</Badge>
+                      </div>
+                      <p className="text-2xl font-bold">${data.revenue.toLocaleString()}</p>
+                      <p className="text-sm text-destructive">
+                        Comisión: -${data.commission.toLocaleString()}
+                      </p>
                     </div>
-                    <p className="text-2xl font-bold">${agg.revenue.toLocaleString()}</p>
-                    <p className="text-sm text-destructive">
-                      Comisión: -${agg.commission.toLocaleString()} ({Math.round(agg.commission / agg.revenue * 100)}%)
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="brands" className="space-y-4 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockGhostKitchenData.brands.map((brand) => (
+            {displayBrands.map((brand) => (
               <Card key={brand.id} className={brand.status === 'paused' ? 'opacity-60' : ''}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -400,9 +490,6 @@ const GhostKitchenModule = () => {
                       ⭐ {brand.rating}
                     </span>
                   </div>
-                  <Badge variant="outline" className="w-full justify-center">
-                    {brand.platform.replace('_', ' ').toUpperCase()}
-                  </Badge>
                 </CardContent>
               </Card>
             ))}
@@ -423,100 +510,42 @@ const GhostKitchenModule = () => {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ChefHat className="h-5 w-5" />
-                Cola de Producción en Tiempo Real
+                Cola de Producción
               </CardTitle>
               <CardDescription>
                 Gestiona las órdenes activas de todas las marcas
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {productionQueue.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <p className="text-lg font-bold">{order.order}</p>
-                        <p className="text-xs text-muted-foreground">{order.brand}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">{order.items}</p>
-                        <p className="text-sm text-muted-foreground">Estación: {order.station}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {order.timer > 0 && (
+              {productionQueue.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ChefHat className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Sin órdenes en cola</p>
+                  <p className="text-sm">Las órdenes nuevas aparecerán aquí</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {productionQueue.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                      <div className="flex items-center gap-4">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-primary">{order.timer}</p>
-                          <p className="text-xs text-muted-foreground">min</p>
+                          <p className="text-lg font-bold">#{order.order_id?.slice(-4) || 'N/A'}</p>
+                          <p className="text-xs text-muted-foreground">{order.brand_id?.slice(0, 6)}</p>
                         </div>
-                      )}
-                      {getStatusBadge(order.status)}
-                      <div className="flex gap-1">
-                        {order.status === 'pending' && (
-                          <Button size="sm" variant="outline" onClick={() => updateOrderStatus(order.id, 'preparing')}>
-                            Iniciar
-                          </Button>
-                        )}
-                        {order.status === 'preparing' && (
-                          <Button size="sm" variant="outline" onClick={() => updateOrderStatus(order.id, 'cooking')}>
-                            Cocinar
-                          </Button>
-                        )}
-                        {order.status === 'cooking' && (
-                          <Button size="sm" onClick={() => updateOrderStatus(order.id, 'ready')}>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Listo
-                          </Button>
-                        )}
+                        <div>
+                          <p className="font-medium">{order.item_name} x{order.quantity || 1}</p>
+                          <p className="text-sm text-muted-foreground">Estación: {order.station || 'General'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {getStatusBadge(order.status || 'pending')}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Station Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">🔥 Estación Parrilla</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-4xl font-bold">2</p>
-                  <p className="text-muted-foreground">órdenes activas</p>
-                </div>
-                <Progress value={60} className="mt-4" />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">🍣 Estación Sushi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-4xl font-bold">2</p>
-                  <p className="text-muted-foreground">órdenes activas</p>
-                </div>
-                <Progress value={80} className="mt-4" />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">📦 Empaque</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-4xl font-bold">1</p>
-                  <p className="text-muted-foreground">listo para entrega</p>
-                </div>
-                <Progress value={20} className="mt-4" />
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4 mt-4">
@@ -528,10 +557,10 @@ const GhostKitchenModule = () => {
               <CardContent>
                 <Bar 
                   data={{
-                    labels: mockGhostKitchenData.brands.map(b => b.name),
+                    labels: displayBrands.map(b => b.name),
                     datasets: [{
                       label: 'Ingresos',
-                      data: mockGhostKitchenData.brands.map(b => b.revenue_today),
+                      data: displayBrands.map(b => b.revenue_today),
                       backgroundColor: 'hsl(var(--primary))',
                       borderRadius: 8
                     }]
@@ -550,15 +579,18 @@ const GhostKitchenModule = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="font-semibold text-destructive">Comisiones este mes: ${mockGhostKitchenData.kpis.commissionPaid.toLocaleString()}</p>
+                  <p className="font-semibold text-destructive">Comisiones pagadas: ${kpis.commissionPaid.toLocaleString()}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Representa el {Math.round(mockGhostKitchenData.kpis.commissionPaid / mockGhostKitchenData.kpis.totalRevenue * 100)}% de tus ingresos
+                    {kpis.totalRevenue > 0 
+                      ? `Representa el ${Math.round(kpis.commissionPaid / kpis.totalRevenue * 100)}% de tus ingresos`
+                      : 'Sin datos de ingresos'
+                    }
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                   <p className="font-semibold text-green-600">Recomendación IA</p>
                   <p className="text-sm mt-1">
-                    Incrementar pedidos directos un 20% ahorraría ~$2,500/mes en comisiones
+                    Incrementar pedidos directos puede ahorrarte comisiones significativas
                   </p>
                 </div>
               </CardContent>
@@ -567,42 +599,7 @@ const GhostKitchenModule = () => {
         </TabsContent>
       </Tabs>
 
-      {/* New Brand Form Modal */}
-      {showNewBrandForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Nueva Marca Virtual</CardTitle>
-              <CardDescription>Crea una nueva marca para tu ghost kitchen</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nombre de la Marca</Label>
-                <Input placeholder="Ej: Pizza Express" />
-              </div>
-              <div className="space-y-2">
-                <Label>Tipo de Cocina</Label>
-                <Input placeholder="Ej: Italiana, Mexicana, etc." />
-              </div>
-              <div className="space-y-2">
-                <Label>Plataforma Principal</Label>
-                <Input placeholder="Ej: Rappi, Uber Eats" />
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => setShowNewBrandForm(false)}>
-                  Cancelar
-                </Button>
-                <Button className="flex-1" onClick={() => {
-                  toast({ title: "Marca creada", description: "Tu nueva marca virtual está lista" });
-                  setShowNewBrandForm(false);
-                }}>
-                  Crear Marca
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {showNewBrandForm && <NewBrandModal />}
     </div>
   );
 };

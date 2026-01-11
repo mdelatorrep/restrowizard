@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useUserType } from '@/hooks/useUserType';
+import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { useFinancesData } from '@/hooks/useFinancesData';
 import {
   MessageCircle,
   Send,
@@ -22,7 +24,8 @@ import {
   AlertTriangle,
   TrendingUp,
   ChefHat,
-  Briefcase
+  Briefcase,
+  RefreshCw
 } from 'lucide-react';
 
 interface Message {
@@ -30,12 +33,6 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-}
-
-interface DailyBriefing {
-  highlights: string[];
-  alerts: { type: string; message: string; priority: string }[];
-  recommendations: string[];
 }
 
 const CopilotChat = () => {
@@ -49,26 +46,54 @@ const CopilotChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Real data hooks
+  const { alerts: copilotAlerts, unreadAlerts, generateAlerts, isLoading: alertsLoading } = useCopilotAlerts();
+  const { kpis, sales, hasData: hasFinanceData } = useFinancesData();
 
-  // Mock daily briefing
-  const mockBriefing: DailyBriefing = {
-    highlights: [
-      '📈 Ventas ayer: $28,450 (+12% vs semana anterior)',
-      '⭐ Calificación promedio: 4.7/5 (32 reseñas nuevas)',
-      '👥 Reservaciones hoy: 45 (85% capacidad)'
-    ],
-    alerts: [
-      { type: 'inventory', message: 'Stock bajo: Aguacate (2kg restantes)', priority: 'high' },
-      { type: 'staff', message: 'Carlos García no se presentó a su turno', priority: 'medium' },
-      { type: 'equipment', message: 'Mantenimiento programado: Horno 2 (mañana)', priority: 'low' }
-    ],
-    recommendations: [
-      'Considera aumentar pedido de aguacate un 30% - tendencia de consumo al alza',
-      'El plato "Tacos al Pastor" tuvo 15% más ventas - promociona en redes',
-      'Hora pico esperada: 14:00-15:00 - asegura personal completo'
-    ]
+  // Generate dynamic briefing from real data
+  const getDynamicBriefing = () => {
+    const highlights: string[] = [];
+    const alertsForBriefing: { type: string; message: string; priority: string }[] = [];
+    const recommendations: string[] = [];
+
+    // Build highlights from finance data
+    if (hasFinanceData && kpis) {
+      highlights.push(`📈 Ingresos (7 días): $${(kpis.totalRevenue / 1000).toFixed(1)}k`);
+      highlights.push(`📊 Food Cost: ${kpis.foodCostPercentage.toFixed(1)}% ${kpis.foodCostPercentage <= 32 ? '✅' : '⚠️'}`);
+      highlights.push(`🎫 Ticket Promedio: $${kpis.averageTicket.toFixed(0)}`);
+      highlights.push(`👥 Cubiertos (7 días): ${kpis.totalCovers}`);
+    } else {
+      highlights.push('📊 Registra tus primeras ventas para ver métricas');
+    }
+
+    // Build alerts from copilot alerts
+    copilotAlerts.slice(0, 3).forEach(alert => {
+      alertsForBriefing.push({
+        type: alert.alert_type,
+        message: alert.message,
+        priority: alert.priority || 'medium'
+      });
+    });
+
+    // Build recommendations based on data
+    if (hasFinanceData && kpis) {
+      if (kpis.foodCostPercentage > 32) {
+        recommendations.push('Revisa tus costos de alimentos - están por encima del benchmark');
+      }
+      if (kpis.laborCostPercentage > 25) {
+        recommendations.push('Considera optimizar turnos de personal para reducir costos laborales');
+      }
+      recommendations.push('Mantén el registro diario de ventas para mejores predicciones');
+    } else {
+      recommendations.push('Comienza registrando tus ventas diarias en el módulo de Finanzas');
+      recommendations.push('Configura tu inventario para recibir alertas de stock bajo');
+    }
+
+    return { highlights, alerts: alertsForBriefing, recommendations };
   };
 
+  const briefing = getDynamicBriefing();
   useEffect(() => {
     // Scroll to bottom when new messages arrive
     if (scrollRef.current) {
@@ -161,10 +186,12 @@ const CopilotChat = () => {
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
-        {/* Notification badge */}
-        <span className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-xs text-white">
-          3
-        </span>
+        {/* Notification badge - show real unread count */}
+        {unreadAlerts.length > 0 && (
+          <span className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full flex items-center justify-center text-xs text-white">
+            {unreadAlerts.length}
+          </span>
+        )}
       </div>
     );
   }
@@ -223,34 +250,47 @@ const CopilotChat = () => {
             {/* Daily Briefing */}
             {showBriefing && (
               <div className="p-4 bg-muted/50 border-b space-y-3 max-h-60 overflow-y-auto">
-                <div className="flex items-center gap-2">
-                  <Sun className="h-5 w-5 text-yellow-500" />
-                  <h4 className="font-semibold">Briefing del Día</h4>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-5 w-5 text-yellow-500" />
+                    <h4 className="font-semibold">Briefing del Día</h4>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateAlerts()}
+                    disabled={alertsLoading}
+                    className="h-6 px-2"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${alertsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
                 </div>
                 
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">DESTACADOS</p>
-                  {mockBriefing.highlights.map((h, i) => (
+                  {briefing.highlights.map((h, i) => (
                     <p key={i} className="text-sm">{h}</p>
                   ))}
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">ALERTAS</p>
-                  {mockBriefing.alerts.map((a, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <AlertTriangle className={`h-4 w-4 ${
-                        a.priority === 'high' ? 'text-destructive' : 
-                        a.priority === 'medium' ? 'text-yellow-500' : 'text-blue-500'
-                      }`} />
-                      {a.message}
-                    </div>
-                  ))}
-                </div>
+                {briefing.alerts.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">ALERTAS</p>
+                    {briefing.alerts.map((a, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <AlertTriangle className={`h-4 w-4 ${
+                          a.priority === 'high' || a.priority === 'critical' ? 'text-destructive' : 
+                          a.priority === 'medium' ? 'text-yellow-500' : 'text-blue-500'
+                        }`} />
+                        {a.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">RECOMENDACIONES IA</p>
-                  {mockBriefing.recommendations.map((r, i) => (
+                  {briefing.recommendations.map((r, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm">
                       <Sparkles className="h-4 w-4 text-primary mt-0.5" />
                       {r}
