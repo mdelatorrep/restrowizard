@@ -1,11 +1,12 @@
 import React from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
-import Problem from '../components/Problem';
-import Solution from '../components/Solution';
+import LiveResults from '../components/LiveResults';
 import Ecosystem from '../components/Ecosystem';
-import EventsJobsSection from '../components/EventsJobsSection';
+import CopilotDemo from '../components/CopilotDemo';
+import ConsultantSection from '../components/ConsultantSection';
 import Testimonials from '../components/Testimonials';
+import Solution from '../components/Solution';
 import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
 
@@ -15,11 +16,16 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <Problem />
-        <Solution />
+        <LiveResults />
         <Ecosystem />
-        <EventsJobsSection />
-        <Testimonials />
+        <CopilotDemo />
+        <div id="consultores">
+          <ConsultantSection />
+        </div>
+        <div id="testimonios">
+          <Testimonials />
+        </div>
+        <Solution />
         <FinalCTA />
       </main>
       <Footer />
