@@ -35,15 +35,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleSuccessfulLogin = async (session: Session) => {
+  const handleSuccessfulLogin = async (session: Session, currentPath: string) => {
     console.log('🚀 handleSuccessfulLogin called:', { 
       userId: session?.user?.id, 
-      currentPath: location.pathname 
+      currentPath 
     });
     
     // Skip if already in protected routes
     const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
-    const isInProtectedRoute = protectedPrefixes.some(prefix => location.pathname.startsWith(prefix));
+    const isInProtectedRoute = protectedPrefixes.some(prefix => currentPath.startsWith(prefix));
     
     if (session?.user && !isInProtectedRoute) {
       console.log('📍 Checking user type for navigation...');
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .from('profiles')
             .select('user_type')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
           
           if (data) {
             profile = data;
@@ -87,12 +87,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (userType === 'consultant') {
           const { data: consultantProfile } = await supabase
             .from('consultant_profiles')
-            .select('id')
+            .select('id, company_name')
             .eq('user_id', session.user.id)
             .maybeSingle();
 
-          if (!consultantProfile) {
-            console.log('🎯 Consultant without profile, navigating to /c/onboarding');
+          if (!consultantProfile || !consultantProfile.company_name) {
+            console.log('🎯 Consultant without complete profile, navigating to /c/onboarding');
             navigate('/c/onboarding', { replace: true });
           } else {
             console.log('🎯 Consultant with profile, navigating to /c/dashboard');
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } else {
       console.log('❌ Navigation skipped:', {
-        currentPath: location.pathname,
+        currentPath,
         hasUser: !!session?.user,
         isInProtectedRoute
       });
@@ -141,14 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    // Obtener sesión inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Configurar listener de cambios de autenticación
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state change:', { 
@@ -161,16 +154,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Solo navegar en eventos de login activo, no en carga inicial
+        // Navigate on login events
         if (event === 'SIGNED_IN' && session) {
           console.log('✅ SIGNED_IN event detected, calling handleSuccessfulLogin');
-          await handleSuccessfulLogin(session);
+          // Use window.location.pathname for accurate current path
+          await handleSuccessfulLogin(session, window.location.pathname);
         }
       }
     );
 
+    // THEN get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📋 Initial session check:', { hasSession: !!session, userId: session?.user?.id });
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      // If already logged in on page load at /auth, navigate appropriately
+      if (session && window.location.pathname === '/auth') {
+        handleSuccessfulLogin(session, '/auth');
+      }
+    });
+
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const value = {
     user,
