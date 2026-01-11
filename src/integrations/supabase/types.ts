@@ -998,6 +998,142 @@ export type Database = {
         }
         Relationships: []
       }
+      event_quotations: {
+        Row: {
+          accepted_at: string | null
+          additional_costs: number | null
+          client_company: string | null
+          client_contact_name: string
+          client_email: string | null
+          client_phone: string | null
+          client_type: string | null
+          consultant_id: string
+          created_at: string | null
+          discount_percentage: number | null
+          event_date: string | null
+          event_description: string | null
+          event_duration_hours: number | null
+          event_end_date: string | null
+          event_name: string
+          event_type: string
+          guest_count: number | null
+          id: string
+          internal_notes: string | null
+          menu_cost_per_person: number | null
+          notes: string | null
+          profit_margin_percentage: number | null
+          public_slug: string | null
+          responded_at: string | null
+          restaurant_id: string | null
+          sent_at: string | null
+          services_cost: number | null
+          status: string | null
+          subtotal: number | null
+          total_amount: number | null
+          updated_at: string | null
+          valid_until: string | null
+          venue_cost: number | null
+          viewed_at: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          additional_costs?: number | null
+          client_company?: string | null
+          client_contact_name: string
+          client_email?: string | null
+          client_phone?: string | null
+          client_type?: string | null
+          consultant_id: string
+          created_at?: string | null
+          discount_percentage?: number | null
+          event_date?: string | null
+          event_description?: string | null
+          event_duration_hours?: number | null
+          event_end_date?: string | null
+          event_name: string
+          event_type: string
+          guest_count?: number | null
+          id?: string
+          internal_notes?: string | null
+          menu_cost_per_person?: number | null
+          notes?: string | null
+          profit_margin_percentage?: number | null
+          public_slug?: string | null
+          responded_at?: string | null
+          restaurant_id?: string | null
+          sent_at?: string | null
+          services_cost?: number | null
+          status?: string | null
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          venue_cost?: number | null
+          viewed_at?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          additional_costs?: number | null
+          client_company?: string | null
+          client_contact_name?: string
+          client_email?: string | null
+          client_phone?: string | null
+          client_type?: string | null
+          consultant_id?: string
+          created_at?: string | null
+          discount_percentage?: number | null
+          event_date?: string | null
+          event_description?: string | null
+          event_duration_hours?: number | null
+          event_end_date?: string | null
+          event_name?: string
+          event_type?: string
+          guest_count?: number | null
+          id?: string
+          internal_notes?: string | null
+          menu_cost_per_person?: number | null
+          notes?: string | null
+          profit_margin_percentage?: number | null
+          public_slug?: string | null
+          responded_at?: string | null
+          restaurant_id?: string | null
+          sent_at?: string | null
+          services_cost?: number | null
+          status?: string | null
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          valid_until?: string | null
+          venue_cost?: number | null
+          viewed_at?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_quotations_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_quotations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_quotations_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           budget: number | null
@@ -1687,6 +1823,158 @@ export type Database = {
         }
         Relationships: []
       }
+      quotation_gallery: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          quotation_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          quotation_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          quotation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_gallery_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "event_quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_menu_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          is_included: boolean | null
+          item_description: string | null
+          item_name: string
+          menu_item_id: string | null
+          notes: string | null
+          price_per_person: number | null
+          quantity: number | null
+          quotation_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_included?: boolean | null
+          item_description?: string | null
+          item_name: string
+          menu_item_id?: string | null
+          notes?: string | null
+          price_per_person?: number | null
+          quantity?: number | null
+          quotation_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_included?: boolean | null
+          item_description?: string | null
+          item_name?: string
+          menu_item_id?: string | null
+          notes?: string | null
+          price_per_person?: number | null
+          quantity?: number | null
+          quotation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_menu_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "event_quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_services: {
+        Row: {
+          created_at: string | null
+          duration_hours: number | null
+          id: string
+          notes: string | null
+          price: number | null
+          provider_contact: string | null
+          provider_name: string | null
+          quotation_id: string
+          service_description: string | null
+          service_name: string
+          service_provider_id: string | null
+          service_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_hours?: number | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          quotation_id: string
+          service_description?: string | null
+          service_name: string
+          service_provider_id?: string | null
+          service_type: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_hours?: number | null
+          id?: string
+          notes?: string | null
+          price?: number | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          quotation_id?: string
+          service_description?: string | null
+          service_name?: string
+          service_provider_id?: string | null
+          service_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_services_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "event_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_services_service_provider_id_fkey"
+            columns: ["service_provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_businesses: {
         Row: {
           address: string | null
@@ -1838,6 +2126,72 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "menu_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_zones: {
+        Row: {
+          amenities: Json | null
+          capacity_max: number | null
+          capacity_min: number | null
+          consultant_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          name: string
+          price_per_event: number | null
+          price_per_hour: number | null
+          restaurant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amenities?: Json | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          consultant_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name: string
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          restaurant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amenities?: Json | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          consultant_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name?: string
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          restaurant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_zones_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultant_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_zones_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_businesses"
             referencedColumns: ["id"]
           },
         ]

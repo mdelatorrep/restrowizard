@@ -30,6 +30,7 @@ import {
   Briefcase,
   Store,
   Building2,
+  CalendarDays,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -57,6 +58,7 @@ const consultantAIToolsItems = [
   { title: 'Sostenibilidad', icon: Leaf, path: '/c/sustainability' },
   { title: 'Ghost Kitchen', icon: Store, path: '/c/ghost-kitchen' },
   { title: 'Gestión de Cadenas', icon: Building2, path: '/c/chain-management' },
+  { title: 'Eventos y Cotizaciones', icon: CalendarDays, path: '/c/events' },
 ];
 
 // Consultant management menu

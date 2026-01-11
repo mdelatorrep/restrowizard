@@ -44,6 +44,10 @@ import ConsultantBilling from "./pages/consultant/Billing";
 import ConsultantSettings from "./pages/consultant/Settings";
 import ConsultantGhostKitchen from "./pages/consultant/GhostKitchen";
 import ConsultantChainManagement from "./pages/consultant/ChainManagement";
+import ConsultantEvents from "./pages/consultant/Events";
+import ConsultantEventSpaces from "./pages/consultant/EventSpaces";
+import ConsultantNewQuotation from "./pages/consultant/NewQuotation";
+import PublicQuotationPage from "./pages/PublicQuotation";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +71,7 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
+              <Route path="/cotizacion/:slug" element={<PublicQuotationPage />} />
 
               {/* Restaurant onboarding (outside layout) */}
               <Route path="/r/onboarding" element={<RestaurantOnboarding />} />
@@ -99,6 +104,9 @@ const App = () => (
                 <Route path="sustainability" element={<ConsultantSustainability />} />
                 <Route path="ghost-kitchen" element={<ConsultantGhostKitchen />} />
                 <Route path="chain-management" element={<ConsultantChainManagement />} />
+                <Route path="events" element={<ConsultantEvents />} />
+                <Route path="events/spaces" element={<ConsultantEventSpaces />} />
+                <Route path="events/new" element={<ConsultantNewQuotation />} />
                 
                 {/* Consultant management */}
                 <Route path="billing" element={<ConsultantBilling />} />
