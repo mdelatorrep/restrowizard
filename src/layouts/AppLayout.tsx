@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/navigation/AppHeader';
 import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
+import { supabase } from '@/integrations/supabase/client';
 import CopilotChat from '@/components/CopilotChat';
 
 interface AppLayoutProps {
@@ -15,8 +16,42 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
   const { user, loading: authLoading } = useAuth();
   const { userType, loading: typeLoading, hasCompletedOnboarding } = useUserType();
+  const [hasDiagnosis, setHasDiagnosis] = useState<boolean | null>(null);
+  const [checkingDiagnosis, setCheckingDiagnosis] = useState(true);
 
-  if (authLoading || typeLoading) {
+  // Check if restaurant owner has completed diagnosis
+  useEffect(() => {
+    const checkDiagnosis = async () => {
+      if (!user || userType !== 'restaurant_owner') {
+        setHasDiagnosis(true); // Consultants don't need diagnosis
+        setCheckingDiagnosis(false);
+        return;
+      }
+
+      try {
+        const { data } = await supabase
+          .from('maturity_diagnoses')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        setHasDiagnosis(!!data);
+      } catch (error) {
+        console.error('Error checking diagnosis:', error);
+        setHasDiagnosis(false);
+      } finally {
+        setCheckingDiagnosis(false);
+      }
+    };
+
+    if (user && userType && hasCompletedOnboarding) {
+      checkDiagnosis();
+    } else {
+      setCheckingDiagnosis(false);
+    }
+  }, [user, userType, hasCompletedOnboarding]);
+
+  if (authLoading || typeLoading || checkingDiagnosis) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -39,6 +74,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
   // If user hasn't completed onboarding, redirect to type-specific onboarding
   if (!hasCompletedOnboarding) {
     return <Navigate to={userType === 'restaurant_owner' ? '/r/onboarding' : '/c/onboarding'} replace />;
+  }
+
+  // If restaurant owner hasn't completed diagnosis, redirect to diagnosis
+  if (userType === 'restaurant_owner' && hasDiagnosis === false) {
+    return <Navigate to="/diagnosis" replace />;
   }
 
   // If accessing wrong dashboard type, redirect

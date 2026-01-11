@@ -287,7 +287,7 @@ const Diagnosis = () => {
               </p>
               <button 
                 className="bg-primary text-primary-foreground font-lato-bold text-xl px-10 py-4 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/r/dashboard')}
               >
                 Ver mi Plan de Acción Personalizado <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-2" />
               </button>
