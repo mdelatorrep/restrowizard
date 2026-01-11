@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
 
   // Let AuthProvider handle navigation, just manage loading state here
 

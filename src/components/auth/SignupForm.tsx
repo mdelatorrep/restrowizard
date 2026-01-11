@@ -22,7 +22,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef }) => {
     fullName: '', 
     restaurantName: '' 
   });
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
 
   // If coming from consultant referral, lock to restaurant owner
   useEffect(() => {
