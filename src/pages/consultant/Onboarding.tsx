@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Briefcase, Award, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Briefcase, Award, CheckCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ const ConsultantOnboarding: React.FC = () => {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     company_name: '',
@@ -26,6 +28,46 @@ const ConsultantOnboarding: React.FC = () => {
     linkedin_url: '',
   });
 
+  // Check if consultant profile already exists
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: existingProfile } = await supabase
+          .from('consultant_profiles')
+          .select('id, company_name, bio, specializations, years_experience, website_url, linkedin_url')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          // Profile exists - check if it's complete
+          if (existingProfile.company_name) {
+            // Already completed, redirect to dashboard
+            navigate('/c/dashboard', { replace: true });
+            return;
+          }
+          // Profile exists but incomplete - load data for editing
+          setExistingProfileId(existingProfile.id);
+          setFormData({
+            company_name: existingProfile.company_name || '',
+            bio: existingProfile.bio || '',
+            specializations: existingProfile.specializations?.join(', ') || '',
+            years_experience: existingProfile.years_experience?.toString() || '',
+            website_url: existingProfile.website_url || '',
+            linkedin_url: existingProfile.linkedin_url || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error checking profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkExistingProfile();
+  }, [user, navigate]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -33,27 +75,61 @@ const ConsultantOnboarding: React.FC = () => {
   const handleSubmit = async () => {
     if (!user) return;
     setIsSubmitting(true);
+    
     try {
-      const { error } = await supabase
-        .from('consultant_profiles')
-        .insert({
-          user_id: user.id,
-          company_name: formData.company_name,
-          bio: formData.bio,
-          specializations: formData.specializations.split(',').map(s => s.trim()).filter(Boolean),
-          years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
-          website_url: formData.website_url || null,
-          linkedin_url: formData.linkedin_url || null,
-        });
+      const profileData = {
+        user_id: user.id,
+        company_name: formData.company_name.trim(),
+        bio: formData.bio.trim() || null,
+        specializations: formData.specializations
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean),
+        years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
+        website_url: formData.website_url.trim() || null,
+        linkedin_url: formData.linkedin_url.trim() || null,
+      };
+
+      let error;
+
+      if (existingProfileId) {
+        // Update existing profile
+        const result = await supabase
+          .from('consultant_profiles')
+          .update(profileData)
+          .eq('id', existingProfileId);
+        error = result.error;
+      } else {
+        // Insert new profile
+        const result = await supabase
+          .from('consultant_profiles')
+          .insert(profileData);
+        error = result.error;
+      }
+
       if (error) throw error;
+      
       toast({ title: "¡Perfecto!", description: "Tu perfil de consultor ha sido creado." });
-      navigate('/c/dashboard');
+      navigate('/c/dashboard', { replace: true });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      console.error('Submit error:', error);
+      toast({ 
+        title: "Error", 
+        description: error.message || "No se pudo guardar el perfil", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
