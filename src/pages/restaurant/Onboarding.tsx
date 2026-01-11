@@ -57,10 +57,11 @@ const RestaurantOnboarding: React.FC = () => {
 
       toast({
         title: "¡Perfecto!",
-        description: "Tu restaurante ha sido configurado correctamente.",
+        description: "Tu restaurante ha sido configurado. Ahora vamos a hacer un diagnóstico rápido.",
       });
 
-      navigate('/r/dashboard');
+      // Navigate to diagnosis instead of dashboard
+      navigate('/diagnosis');
     } catch (error: any) {
       toast({
         title: "Error",

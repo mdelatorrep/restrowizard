@@ -48,17 +48,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (session?.user && !isInProtectedRoute) {
       console.log('📍 Checking user type for navigation...');
       
+      // Small delay to ensure profile trigger has completed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       try {
-        // Get user profile to determine type
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('user_id', session.user.id)
-          .single();
+        // Get user profile to determine type (retry logic for new users)
+        let profile = null;
+        let retries = 3;
+        
+        while (retries > 0 && !profile) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (data) {
+            profile = data;
+          } else if (error && retries > 1) {
+            console.log('⏳ Profile not found yet, retrying...', retries - 1);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          retries--;
+        }
 
-        console.log('🔍 User profile:', profile, 'Error:', error);
+        console.log('🔍 User profile:', profile);
 
-        if (error || !profile?.user_type) {
+        if (!profile?.user_type) {
           // No profile yet, go to type selection onboarding
           console.log('🎯 No user type, navigating to /onboarding');
           navigate('/onboarding', { replace: true });
@@ -73,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .from('consultant_profiles')
             .select('id')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
 
           if (!consultantProfile) {
             console.log('🎯 Consultant without profile, navigating to /c/onboarding');
@@ -83,26 +99,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             navigate('/c/dashboard', { replace: true });
           }
         } else {
-          // Restaurant owner - check for diagnosis
-          const { data: diagnosis } = await supabase
-            .from('maturity_diagnoses')
-            .select('id')
-            .eq('user_id', session.user.id)
-            .limit(1)
-            .single();
-
-          // Check for business profile (restaurant onboarding)
+          // Restaurant owner - check for business first
           const { data: business } = await supabase
             .from('restaurant_businesses')
             .select('id')
             .eq('owner_id', session.user.id)
-            .limit(1)
-            .single();
+            .maybeSingle();
 
           if (!business) {
             console.log('🎯 Restaurant owner without business, navigating to /r/onboarding');
             navigate('/r/onboarding', { replace: true });
-          } else if (!diagnosis) {
+            return;
+          }
+
+          // Check for maturity diagnosis
+          const { data: diagnosis } = await supabase
+            .from('maturity_diagnoses')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (!diagnosis) {
             console.log('🎯 Restaurant owner without diagnosis, navigating to /diagnosis');
             navigate('/diagnosis', { replace: true });
           } else {

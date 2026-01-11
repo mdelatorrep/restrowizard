@@ -37,14 +37,14 @@ export const useUserType = () => {
             .from('restaurant_businesses')
             .select('id')
             .eq('owner_id', user.id)
-            .single();
+            .maybeSingle();
           setHasCompletedOnboarding(!!business);
         } else if (type === 'consultant') {
           const { data: consultantProfile } = await supabase
             .from('consultant_profiles')
             .select('id')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
           setHasCompletedOnboarding(!!consultantProfile);
         }
       } catch (error) {
