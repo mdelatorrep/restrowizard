@@ -1,132 +1,146 @@
-const CACHE_NAME = 'restrowizard-v1';
-const STATIC_CACHE = 'restrowizard-static-v1';
-const DYNAMIC_CACHE = 'restrowizard-dynamic-v1';
+const STATIC_CACHE = "restrowizard-static-v3";
+const DYNAMIC_CACHE = "restrowizard-dynamic-v3";
 
-// Cache static assets
+// Keep precache minimal to avoid serving stale JS chunks
 const STATIC_ASSETS = [
-  '/',
-  '/auth',
-  '/diagnosis',
-  '/dashboard',
-  '/menus',
-  '/events',
-  '/jobs',
-  '/src/assets/restrowizard-logo.png',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Lato:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap'
+  "/",
+  "/manifest.json",
+  "/robots.txt",
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Lato:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap",
 ];
 
 // URLs that should always be fetched from network
 const NETWORK_FIRST = [
-  '/api/',
-  'https://nvlfykimndffywwuirft.supabase.co/',
-  '/functions/v1/'
+  "/api/",
+  "/functions/v1/",
 ];
 
-// Install event - cache static assets
-self.addEventListener('install', event => {
-  console.log('🔧 Service Worker installing...');
+self.addEventListener("install", (event) => {
+  console.log("🔧 Service Worker installing...");
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('📦 Caching static assets');
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => {
+        console.log("📦 Precaching static assets");
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean old caches
-self.addEventListener('activate', event => {
-  console.log('✅ Service Worker activated');
+self.addEventListener("activate", (event) => {
+  console.log("✅ Service Worker activated");
   event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
           cacheNames
-            .filter(cacheName => 
-              cacheName !== STATIC_CACHE && 
-              cacheName !== DYNAMIC_CACHE
+            .filter(
+              (cacheName) => cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE
             )
-            .map(cacheName => {
-              console.log('🗑️ Deleting old cache:', cacheName);
+            .map((cacheName) => {
+              console.log("🗑️ Deleting old cache:", cacheName);
               return caches.delete(cacheName);
             })
-        );
-      })
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
 
-// Fetch event - serve from cache with network fallback
-self.addEventListener('fetch', event => {
+self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
+  if (request.method !== "GET") return;
+  if (!request.url.startsWith("http")) return;
 
-  // Skip chrome-extension and other protocols
-  if (!request.url.startsWith('http')) return;
-
-  event.respondWith(
-    handleFetch(request, url)
-  );
+  event.respondWith(handleFetch(request, url));
 });
 
 async function handleFetch(request, url) {
-  // Network first for API calls
-  if (NETWORK_FIRST.some(pattern => url.href.includes(pattern))) {
+  // Always go network-first for document navigations (avoid stale HTML + mixed chunks)
+  if (request.mode === "navigate") {
     try {
       const networkResponse = await fetch(request);
-      // Cache successful API responses
+      if (networkResponse.ok) {
+        const cache = await caches.open(STATIC_CACHE);
+        cache.put("/", networkResponse.clone());
+      }
+      return networkResponse;
+    } catch {
+      const cached = await caches.match("/");
+      return (
+        cached ||
+        new Response(
+          "<!DOCTYPE html><html><head><title>RestroWizard - Sin conexión</title></head><body><h1>Sin conexión</h1><p>Por favor, verifica tu conexión a internet.</p></body></html>",
+          { headers: { "Content-Type": "text/html" } }
+        )
+      );
+    }
+  }
+
+  // Network-first for APIs
+  if (NETWORK_FIRST.some((pattern) => url.href.includes(pattern))) {
+    try {
+      const networkResponse = await fetch(request);
       if (networkResponse.ok) {
         const cache = await caches.open(DYNAMIC_CACHE);
         cache.put(request, networkResponse.clone());
       }
       return networkResponse;
-    } catch (error) {
-      console.log('🌐 Network failed, trying cache for:', url.href);
+    } catch {
       const cachedResponse = await caches.match(request);
-      return cachedResponse || new Response(
-        JSON.stringify({ error: 'Conexión perdida. Algunos datos pueden no estar actualizados.' }), 
-        { 
-          status: 503, 
-          headers: { 'Content-Type': 'application/json' } 
-        }
+      return (
+        cachedResponse ||
+        new Response(
+          JSON.stringify({
+            error: "Conexión perdida. Algunos datos pueden no estar actualizados.",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          }
+        )
       );
     }
   }
 
-  // Cache first for static assets and pages
-  try {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
+  // IMPORTANT: avoid caching Vite dev deps / JS/CSS chunks with cache-first.
+  // Mixed cached chunks can lead to React hook dispatcher = null.
+  const isViteDeps = url.pathname.includes("/node_modules/.vite/");
+  const isScriptOrStyle =
+    request.destination === "script" ||
+    request.destination === "style" ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".css");
 
-    // Fetch from network and cache
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(
-        STATIC_ASSETS.includes(url.pathname) ? STATIC_CACHE : DYNAMIC_CACHE
-      );
-      cache.put(request, networkResponse.clone());
+  if (isViteDeps || isScriptOrStyle) {
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        const cache = await caches.open(DYNAMIC_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    } catch {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      throw new Error("Network failed for script/style");
     }
-    return networkResponse;
-  } catch (error) {
-    console.log('❌ Fetch failed for:', url.href);
-    
-    // Return offline page for navigation requests
-    if (request.mode === 'navigate') {
-      const offlinePage = await caches.match('/');
-      return offlinePage || new Response(
-        '<!DOCTYPE html><html><head><title>RestroWizard - Sin conexión</title></head><body><h1>Sin conexión</h1><p>Por favor, verifica tu conexión a internet.</p></body></html>',
-        { headers: { 'Content-Type': 'text/html' } }
-      );
-    }
-    
-    throw error;
   }
+
+  // Cache-first for other assets (images, fonts, etc.)
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) return cachedResponse;
+
+  const networkResponse = await fetch(request);
+  if (networkResponse.ok) {
+    const cache = await caches.open(DYNAMIC_CACHE);
+    cache.put(request, networkResponse.clone());
+  }
+  return networkResponse;
 }
 
 // Push notification event
