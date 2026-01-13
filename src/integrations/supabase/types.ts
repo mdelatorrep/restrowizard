@@ -514,26 +514,42 @@ export type Database = {
       }
       consultant_clients: {
         Row: {
-          client_user_id: string
+          claimed_at: string | null
+          client_user_id: string | null
           consultant_id: string
           created_at: string
           end_date: string | null
           id: string
+          invitation_sent_at: string | null
+          invitation_token: string | null
           monthly_fee: number | null
           notes: string | null
+          restaurant_city: string | null
+          restaurant_cuisine_type: string | null
+          restaurant_email: string | null
+          restaurant_name: string | null
+          restaurant_phone: string | null
           services_included: string[] | null
           start_date: string | null
           status: Database["public"]["Enums"]["consultant_client_status"] | null
           updated_at: string
         }
         Insert: {
-          client_user_id: string
+          claimed_at?: string | null
+          client_user_id?: string | null
           consultant_id: string
           created_at?: string
           end_date?: string | null
           id?: string
+          invitation_sent_at?: string | null
+          invitation_token?: string | null
           monthly_fee?: number | null
           notes?: string | null
+          restaurant_city?: string | null
+          restaurant_cuisine_type?: string | null
+          restaurant_email?: string | null
+          restaurant_name?: string | null
+          restaurant_phone?: string | null
           services_included?: string[] | null
           start_date?: string | null
           status?:
@@ -542,13 +558,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client_user_id?: string
+          claimed_at?: string | null
+          client_user_id?: string | null
           consultant_id?: string
           created_at?: string
           end_date?: string | null
           id?: string
+          invitation_sent_at?: string | null
+          invitation_token?: string | null
           monthly_fee?: number | null
           notes?: string | null
+          restaurant_city?: string | null
+          restaurant_cuisine_type?: string | null
+          restaurant_email?: string | null
+          restaurant_name?: string | null
+          restaurant_phone?: string | null
           services_included?: string[] | null
           start_date?: string | null
           status?:
@@ -2769,6 +2793,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_consultant_client: {
+        Args: { p_invitation_token: string }
+        Returns: Json
+      }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       has_role: {
         Args: {

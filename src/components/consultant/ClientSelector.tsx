@@ -20,9 +20,10 @@ interface ClientSelectorProps {
 
 export const ClientSelector: React.FC<ClientSelectorProps> = ({ compact = false }) => {
   const navigate = useNavigate();
-  const { activeClient, setActiveClient, clients, loading } = useActiveClient();
+  const { activeClient, setActiveClient, clients, loading, getClientDisplayName, getClientCity } = useActiveClient();
 
-  const activeClients = clients.filter(c => c.status === 'active');
+  // Show all clients that are active OR prospects (consultants can work with prospects too)
+  const workableClients = clients.filter(c => c.status === 'active' || c.status === 'prospect');
 
   if (loading) {
     return (
@@ -45,11 +46,11 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ compact = false 
             {activeClient ? (
               <div className="flex flex-col items-start truncate">
                 <span className="font-lato-medium text-sm truncate text-sidebar-foreground">
-                  {activeClient.business?.name || 'Sin nombre'}
+                  {getClientDisplayName(activeClient)}
                 </span>
-                {!compact && activeClient.business?.city && (
+                {!compact && getClientCity(activeClient) && (
                   <span className="text-xs text-sidebar-foreground/60 truncate">
-                    {activeClient.business.city}
+                    {getClientCity(activeClient)}
                   </span>
                 )}
               </div>
@@ -75,66 +76,76 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({ compact = false 
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {activeClients.length === 0 ? (
+        {workableClients.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
             <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-lato-light">No tienes clientes activos</p>
+            <p className="text-sm font-lato-light">No tienes clientes</p>
             <Button 
               variant="link" 
               size="sm" 
-              onClick={() => navigate('/c/dashboard')}
+              onClick={() => navigate('/c/clients')}
               className="mt-1"
             >
-              Invitar cliente
+              Agregar cliente
             </Button>
           </div>
         ) : (
           <>
-            {activeClients.map((client) => (
-              <DropdownMenuItem
-                key={client.id}
-                onClick={() => setActiveClient(client)}
-                className="cursor-pointer"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "w-2 h-2 rounded-full",
-                      client.diagnosis?.overall_score && client.diagnosis.overall_score >= 70 
-                        ? "bg-green-500" 
-                        : client.diagnosis?.overall_score && client.diagnosis.overall_score >= 40 
-                          ? "bg-yellow-500" 
-                          : "bg-red-500"
-                    )} />
-                    <div className="flex flex-col">
-                      <span className="font-lato-medium text-sm">
-                        {client.business?.name || 'Sin nombre'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {client.business?.city || 'Sin ubicación'}
-                        {client.business?.cuisine_type && ` · ${client.business.cuisine_type}`}
-                      </span>
+            {workableClients.map((client) => {
+              const clientName = getClientDisplayName(client);
+              const clientCity = getClientCity(client);
+              const cuisineType = client.business?.cuisine_type || client.restaurant_cuisine_type;
+              const isLinked = !!client.client_user_id;
+
+              return (
+                <DropdownMenuItem
+                  key={client.id}
+                  onClick={() => setActiveClient(client)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        !isLinked 
+                          ? "bg-amber-500" // Unlinked clients
+                          : client.diagnosis?.overall_score && client.diagnosis.overall_score >= 70 
+                            ? "bg-green-500" 
+                            : client.diagnosis?.overall_score && client.diagnosis.overall_score >= 40 
+                              ? "bg-yellow-500" 
+                              : "bg-muted-foreground"
+                      )} />
+                      <div className="flex flex-col">
+                        <span className="font-lato-medium text-sm">
+                          {clientName}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {clientCity || 'Sin ubicación'}
+                          {cuisineType && ` · ${cuisineType}`}
+                          {!isLinked && ' · Sin vincular'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {client.alerts_count && client.alerts_count > 0 && (
+                        <Badge variant="outline" className="text-xs h-5">
+                          {client.alerts_count}
+                        </Badge>
+                      )}
+                      {activeClient?.id === client.id && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {client.alerts_count && client.alerts_count > 0 && (
-                      <Badge variant="outline" className="text-xs h-5">
-                        {client.alerts_count}
-                      </Badge>
-                    )}
-                    {activeClient?.id === client.id && (
-                      <Check className="h-4 w-4 text-primary" />
-                    )}
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            ))}
+                </DropdownMenuItem>
+              );
+            })}
           </>
         )}
         
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={() => navigate('/c/dashboard')}
+          onClick={() => navigate('/c/clients')}
           className="cursor-pointer text-primary"
         >
           <Plus className="h-4 w-4 mr-2" />
