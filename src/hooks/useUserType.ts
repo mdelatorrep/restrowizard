@@ -42,10 +42,10 @@ export const useUserType = () => {
         } else if (type === 'consultant') {
           const { data: consultantProfile } = await supabase
             .from('consultant_profiles')
-            .select('id')
+            .select('id, company_name')
             .eq('user_id', user.id)
             .maybeSingle();
-          setHasCompletedOnboarding(!!consultantProfile);
+          setHasCompletedOnboarding(!!consultantProfile?.company_name);
         }
       } catch (error) {
         console.error('Error fetching user type:', error);
