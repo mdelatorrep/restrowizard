@@ -31,7 +31,11 @@ const ConsultantOnboarding: React.FC = () => {
   // Check if consultant profile already exists
   useEffect(() => {
     const checkExistingProfile = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        navigate('/auth', { replace: true });
+        return;
+      }
       
       try {
         const { data: existingProfile } = await supabase

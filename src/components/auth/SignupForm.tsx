@@ -11,9 +11,10 @@ type UserType = 'restaurant_owner' | 'consultant';
 
 interface SignupFormProps {
   consultantRef?: string | null;
+  inviteToken?: string | null;
 }
 
-export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef }) => {
+export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteToken }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState<UserType>('restaurant_owner');
   const [formData, setFormData] = useState({ 
@@ -24,30 +25,30 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef }) => {
   });
   const { signUp } = useAuth();
 
-  // If coming from consultant referral, lock to restaurant owner
+  // If coming from an invitation/referral, lock to restaurant owner
   useEffect(() => {
-    if (consultantRef) {
+    if (consultantRef || inviteToken) {
       setUserType('restaurant_owner');
     }
-  }, [consultantRef]);
+  }, [consultantRef, inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      await signUp(
+      const { error } = await signUp(
         formData.email, 
         formData.password, 
         formData.fullName,
         userType,
         userType === 'restaurant_owner' ? formData.restaurantName : undefined
       );
-      
-      // If there's a consultant referral, we need to link them after signup
-      // This will be handled by a database trigger or the onboarding process
-      if (consultantRef) {
-        localStorage.setItem('consultantRef', consultantRef);
+
+      // Only persist tokens if signup succeeded
+      if (!error) {
+        if (consultantRef) localStorage.setItem('consultantRef', consultantRef);
+        if (inviteToken) localStorage.setItem('clientInviteToken', inviteToken);
       }
     } catch (error) {
       console.error('Signup error:', error);

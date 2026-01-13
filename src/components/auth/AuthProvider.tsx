@@ -40,6 +40,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       userId: session?.user?.id, 
       currentPath 
     });
+
+    // Best-effort: if user came with a client invitation token, claim it now.
+    // This prevents "invite → login/signup → nothing happens" loops.
+    const claimPendingClientInvite = async () => {
+      const token = localStorage.getItem('clientInviteToken');
+      if (!token) return;
+
+      try {
+        const { error } = await supabase.rpc('claim_consultant_client', {
+          p_invitation_token: token,
+        });
+
+        if (!error) {
+          localStorage.removeItem('clientInviteToken');
+          console.log('🔗 Client invite claimed successfully');
+        } else {
+          console.warn('⚠️ Could not claim client invite:', error);
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not claim client invite (exception):', e);
+      }
+    };
     
     // Skip if already in protected routes
     const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
@@ -47,6 +69,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     if (session?.user && !isInProtectedRoute) {
       console.log('📍 Checking user type for navigation...');
+
+      // Attempt invite claim without blocking the rest of navigation
+      await claimPendingClientInvite();
       
       // Small delay to ensure profile trigger has completed
       await new Promise(resolve => setTimeout(resolve, 500));
