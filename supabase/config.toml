@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.sustainability-ai-analysis]
 verify_jwt = false
 
+[functions.supplier-analyzer]
+verify_jwt = false
+
 [functions.send-push-notification]
 verify_jwt = true
