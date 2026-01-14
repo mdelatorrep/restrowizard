@@ -233,6 +233,57 @@ export type Database = {
           },
         ]
       }
+      business_opening_projects: {
+        Row: {
+          business_type: string
+          city: string
+          country: string
+          created_at: string | null
+          cuisine_type: string | null
+          current_phase: string | null
+          estimated_budget: number | null
+          id: string
+          neighborhood: string | null
+          progress_percentage: number | null
+          project_name: string
+          target_opening_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_type: string
+          city: string
+          country?: string
+          created_at?: string | null
+          cuisine_type?: string | null
+          current_phase?: string | null
+          estimated_budget?: number | null
+          id?: string
+          neighborhood?: string | null
+          progress_percentage?: number | null
+          project_name: string
+          target_opening_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_type?: string
+          city?: string
+          country?: string
+          created_at?: string | null
+          cuisine_type?: string | null
+          current_phase?: string | null
+          estimated_budget?: number | null
+          id?: string
+          neighborhood?: string | null
+          progress_percentage?: number | null
+          project_name?: string
+          target_opening_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       carbon_footprint_items: {
         Row: {
           category: string
@@ -1783,6 +1834,97 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      opening_checklist_items: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          phase: string
+          project_id: string | null
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          phase: string
+          project_id?: string | null
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          phase?: string
+          project_id?: string | null
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_checklist_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "business_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opening_phase_analyses: {
+        Row: {
+          analysis_data: Json | null
+          created_at: string | null
+          estimated_cost: number | null
+          estimated_time_days: number | null
+          id: string
+          phase: string
+          project_id: string | null
+          recommendations: Json | null
+          sources: Json | null
+          status: string | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          estimated_time_days?: number | null
+          id?: string
+          phase: string
+          project_id?: string | null
+          recommendations?: Json | null
+          sources?: Json | null
+          status?: string | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          estimated_time_days?: number | null
+          id?: string
+          phase?: string
+          project_id?: string | null
+          recommendations?: Json | null
+          sources?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_phase_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "business_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
