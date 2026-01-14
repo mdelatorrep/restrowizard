@@ -2,9 +2,20 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWandMagicSparkles, faCogs, faRocket, faCheckCircle, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 
 const Solution = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { userType } = useUserType();
+
+  const getStartPath = () => {
+    if (!user) return '/auth';
+    if (userType === 'consultant') return '/c/dashboard';
+    if (userType === 'restaurant_owner') return '/r/dashboard';
+    return '/onboarding';
+  };
 
   const steps = [
     {
@@ -119,10 +130,10 @@ const Solution = () => {
         {/* CTA */}
         <div className="mt-20 text-center">
           <button 
-            onClick={() => navigate('/diagnosis')}
+            onClick={() => navigate(getStartPath())}
             className="bg-gradient-to-r from-purple-medium to-purple-intense hover:from-purple-intense hover:to-purple-medium text-white font-lato-bold text-xl px-12 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
-            Comenzar Mi Diagnóstico Gratis
+            {user ? 'Ir al Dashboard' : 'Comenzar Mi Diagnóstico Gratis'}
           </button>
         </div>
       </div>

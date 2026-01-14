@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Briefcase, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,23 @@ import { useAuth } from '@/hooks/useAuth';
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { updateUserType, loading: typeLoading } = useUserType();
+  const { userType, updateUserType, loading: typeLoading, hasCompletedOnboarding } = useUserType();
   const [selectedType, setSelectedType] = useState<'restaurant_owner' | 'consultant' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // If user already has a type, redirect them appropriately
+  useEffect(() => {
+    if (!authLoading && !typeLoading && user && userType) {
+      // User already selected a type - redirect to appropriate flow
+      if (hasCompletedOnboarding) {
+        // Fully onboarded - go to dashboard
+        navigate(userType === 'consultant' ? '/c/dashboard' : '/r/dashboard', { replace: true });
+      } else {
+        // Has type but hasn't completed type-specific onboarding
+        navigate(userType === 'consultant' ? '/c/onboarding' : '/r/onboarding', { replace: true });
+      }
+    }
+  }, [authLoading, typeLoading, user, userType, hasCompletedOnboarding, navigate]);
 
   if (authLoading || typeLoading) {
     return (
@@ -24,6 +38,15 @@ const Onboarding: React.FC = () => {
   if (!user) {
     navigate('/auth');
     return null;
+  }
+
+  // If user has type, show loading while redirecting
+  if (userType) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const handleContinue = async () => {

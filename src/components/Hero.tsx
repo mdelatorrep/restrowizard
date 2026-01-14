@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faRobot, faChartLine, faUsers, faUtensils, faArrowRight, 
@@ -10,8 +11,16 @@ import {
 const Hero = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { userType } = useUserType();
   const [counter, setCounter] = useState(2347892);
   const [showDemo, setShowDemo] = useState(false);
+
+  // Determine the correct path for logged-in users
+  const getLoggedInPath = () => {
+    if (userType === 'consultant') return '/c/dashboard';
+    if (userType === 'restaurant_owner') return '/r/dashboard';
+    return '/onboarding';
+  };
 
   // Animated counter effect
   useEffect(() => {
@@ -111,12 +120,12 @@ const Hero = () => {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
               <button 
-                onClick={() => user ? navigate('/diagnosis') : navigate('/auth')}
+                onClick={() => user ? navigate(getLoggedInPath()) : navigate('/auth')}
                 className="group relative bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-lato-bold text-lg px-8 py-4 rounded-xl shadow-2xl shadow-green-500/30 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
                 <FontAwesomeIcon icon={faBolt} className="text-yellow-300" />
-                Diagnóstico Gratis
+                {user ? 'Ir al Dashboard' : 'Diagnóstico Gratis'}
                 <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
               </button>
               

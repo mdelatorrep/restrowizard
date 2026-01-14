@@ -4,12 +4,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes, faStar, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { userType } = useUserType();
+
+  // Determine the correct dashboard path based on user type
+  const getDashboardPath = () => {
+    if (userType === 'consultant') return '/c/dashboard';
+    if (userType === 'restaurant_owner') return '/r/dashboard';
+    return '/onboarding'; // Fallback if no type yet
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -90,7 +99,7 @@ const Header = () => {
             <>
               <Button
                 variant="ghost"
-                onClick={() => navigate('/diagnosis')}
+                onClick={() => navigate(getDashboardPath())}
                 className={`font-lato-medium ${
                   isScrolled ? 'text-purple-medium hover:bg-purple-medium/10' : 'text-white hover:bg-white/10'
                 }`}
@@ -163,7 +172,7 @@ const Header = () => {
                 <>
                   <button 
                     onClick={() => {
-                      navigate('/diagnosis');
+                      navigate(getDashboardPath());
                       setIsMenuOpen(false);
                     }}
                     className="block w-full text-center px-4 py-3 rounded-lg border-2 border-purple-medium text-purple-medium font-lato-bold hover:bg-purple-medium hover:text-white transition-all"

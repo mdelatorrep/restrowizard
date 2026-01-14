@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { useDiagnosis, DiagnosisResult } from '@/hooks/useDiagnosis';
 import { maturityModel, getLevelFromScore, getLevelDescription } from '@/data/maturityModel';
 import MaturityChart from '@/components/MaturityChart';
@@ -17,14 +18,21 @@ const Diagnosis = () => {
   const [results, setResults] = useState<DiagnosisResult | null>(null);
   
   const { user } = useAuth();
+  const { userType, loading: typeLoading } = useUserType();
   const { loading, saveDiagnosis } = useDiagnosis();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
+      return;
     }
-  }, [user, navigate]);
+    
+    // Consultants should not access diagnosis - redirect to consultant dashboard
+    if (!typeLoading && userType === 'consultant') {
+      navigate('/c/dashboard', { replace: true });
+    }
+  }, [user, userType, typeLoading, navigate]);
 
   const startDiagnosis = () => {
     setCurrentStep('questions');
