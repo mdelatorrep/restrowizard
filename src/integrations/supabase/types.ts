@@ -2437,6 +2437,74 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_analysis: {
+        Row: {
+          alternatives: Json | null
+          analysis_date: string | null
+          city: string
+          country: string | null
+          created_at: string | null
+          current_cost: number | null
+          current_supplier: string | null
+          error_message: string | null
+          id: string
+          inventory_item_id: string | null
+          item_name: string
+          market_insights: string | null
+          potential_savings: number | null
+          recommendations: string[] | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alternatives?: Json | null
+          analysis_date?: string | null
+          city: string
+          country?: string | null
+          created_at?: string | null
+          current_cost?: number | null
+          current_supplier?: string | null
+          error_message?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name: string
+          market_insights?: string | null
+          potential_savings?: number | null
+          recommendations?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alternatives?: Json | null
+          analysis_date?: string | null
+          city?: string
+          country?: string | null
+          created_at?: string | null
+          current_cost?: number | null
+          current_supplier?: string | null
+          error_message?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name?: string
+          market_insights?: string | null
+          potential_savings?: number | null
+          recommendations?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_analysis_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sustainability_goals: {
         Row: {
           created_at: string
