@@ -76,21 +76,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (existingError) throw existingError;
 
-      if (!existing) {
-        const { error: insertError } = await supabase.from('profiles').insert({
-          user_id: session.user.id,
-          full_name: typeof meta.full_name === 'string' ? meta.full_name : null,
-          restaurant_name:
-            typeof meta.restaurant_name === 'string' ? meta.restaurant_name : null,
-          user_type:
-            meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner'
-              ? meta.user_type
-              : null,
-        });
+       if (!existing) {
+         const { error: upsertError } = await supabase
+           .from('profiles')
+           .upsert(
+             {
+               user_id: session.user.id,
+               full_name: typeof meta.full_name === 'string' ? meta.full_name : null,
+               restaurant_name:
+                 typeof meta.restaurant_name === 'string' ? meta.restaurant_name : null,
+               user_type:
+                 meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner'
+                   ? meta.user_type
+                   : null,
+             },
+             { onConflict: 'user_id' }
+           );
 
-        if (insertError) throw insertError;
-        return;
-      }
+         if (upsertError) throw upsertError;
+         return;
+       }
 
       // If the row exists but user_type is missing, hydrate from metadata when possible.
       if (

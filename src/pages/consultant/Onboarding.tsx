@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { pushDebugEvent } from '@/lib/debugEvents';
 
 /**
  * Consultant onboarding page - collects company info.
@@ -39,6 +40,7 @@ const ConsultantOnboarding: React.FC = () => {
   useEffect(() => {
     const loadExistingProfile = async () => {
       console.log('📝 [ConsultantOnboarding] loadExistingProfile called, user:', user?.id);
+      void pushDebugEvent(user?.id, 'ConsultantOnboarding', 'loadExistingProfile_start');
       
       if (!user) {
         console.log('📝 [ConsultantOnboarding] No user, skipping load');
@@ -77,6 +79,9 @@ const ConsultantOnboarding: React.FC = () => {
       } catch (error) {
         console.error('📝 [ConsultantOnboarding] Error loading profile:', error);
       } finally {
+        void pushDebugEvent(user?.id, 'ConsultantOnboarding', 'loadExistingProfile_end', {
+          foundExistingProfileId: existingProfileId ? true : false,
+        });
         setIsLoadingProfile(false);
       }
     };
