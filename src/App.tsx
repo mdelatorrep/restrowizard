@@ -8,6 +8,7 @@ import { ActiveClientProvider } from "./contexts/ActiveClientContext";
 import InactivityManager from "./components/InactivityManager";
 import InstallPWAPrompt from "./components/InstallPWAPrompt";
 import AppLayout from "./layouts/AppLayout";
+import OnboardingGuard from "./components/guards/OnboardingGuard";
 
 // Public pages
 import Index from "./pages/Index";
@@ -73,11 +74,19 @@ const App = () => (
               <Route path="/menu/:slug" element={<PublicMenu />} />
               <Route path="/cotizacion/:slug" element={<PublicQuotationPage />} />
 
-              {/* Restaurant onboarding (outside layout) */}
-              <Route path="/r/onboarding" element={<RestaurantOnboarding />} />
+              {/* Restaurant onboarding (requires NOT having completed onboarding) */}
+              <Route path="/r/onboarding" element={
+                <OnboardingGuard requireOnboarding={false} userType="restaurant_owner">
+                  <RestaurantOnboarding />
+                </OnboardingGuard>
+              } />
 
-              {/* Restaurant routes (with layout) */}
-              <Route path="/r" element={<AppLayout requiredUserType="restaurant_owner" />}>
+              {/* Restaurant routes (requires completed onboarding) */}
+              <Route path="/r" element={
+                <OnboardingGuard requireOnboarding={true} userType="restaurant_owner">
+                  <AppLayout requiredUserType="restaurant_owner" />
+                </OnboardingGuard>
+              }>
                 <Route path="dashboard" element={<RestaurantDashboard />} />
                 <Route path="finances" element={<RestaurantFinances />} />
                 <Route path="operations" element={<RestaurantOperations />} />
@@ -89,11 +98,19 @@ const App = () => (
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 
-              {/* Consultant onboarding (outside layout) */}
-              <Route path="/c/onboarding" element={<ConsultantOnboarding />} />
+              {/* Consultant onboarding (requires NOT having completed onboarding) */}
+              <Route path="/c/onboarding" element={
+                <OnboardingGuard requireOnboarding={false} userType="consultant">
+                  <ConsultantOnboarding />
+                </OnboardingGuard>
+              } />
 
-              {/* Consultant routes (with layout) */}
-              <Route path="/c" element={<AppLayout requiredUserType="consultant" />}>
+              {/* Consultant routes (requires completed onboarding) */}
+              <Route path="/c" element={
+                <OnboardingGuard requireOnboarding={true} userType="consultant">
+                  <AppLayout requiredUserType="consultant" />
+                </OnboardingGuard>
+              }>
                 <Route path="dashboard" element={<ConsultantDashboard />} />
                 
                 {/* AI Tools for clients */}

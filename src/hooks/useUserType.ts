@@ -9,29 +9,15 @@ type UserTypeQueryData = {
   hasCompletedOnboarding: boolean;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => {
-  // Fetch profile (retry a few times because profile triggers can be slightly delayed on fresh signups)
-  let profile: { user_type: string | null } | null = null;
+  // Fetch profile - should always exist due to trigger
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('user_type')
+    .eq('user_id', userId)
+    .maybeSingle();
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('user_type')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (data) {
-      profile = data;
-      break;
-    }
-
-    // No row yet; wait briefly and retry
-    await sleep(250);
-  }
+  if (profileError) throw profileError;
 
   const type = (profile?.user_type as UserType) ?? null;
 
@@ -51,7 +37,7 @@ const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => 
     return { userType: type, hasCompletedOnboarding: !!business };
   }
 
-  // Consultant
+  // Consultant - check if they have a company_name set
   const { data: consultantProfile, error } = await supabase
     .from('consultant_profiles')
     .select('id, company_name')
@@ -72,35 +58,33 @@ export const useUserType = () => {
 
   const queryKey = ['userType', user?.id] as const;
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey,
     enabled: Boolean(user?.id),
     queryFn: () => fetchUserTypeData(user!.id),
-    // Keep it fresh-ish without overfetching
-    staleTime: 10_000,
-    refetchOnWindowFocus: true,
+    staleTime: 5_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const userType: UserType = data?.userType ?? null;
   const hasCompletedOnboarding = data?.hasCompletedOnboarding ?? false;
 
+  // isReady means we have fetched at least once (even if result is null)
+  const isReady = Boolean(user?.id) ? isFetched : true;
+
   const updateUserType = async (type: UserType) => {
     if (!user) return;
 
-    // Use upsert so first-time users without a profiles row don't get stuck.
     const { error } = await supabase
       .from('profiles')
       .upsert(
-        {
-          user_id: user.id,
-          user_type: type,
-        },
+        { user_id: user.id, user_type: type },
         { onConflict: 'user_id' }
       );
 
     if (error) throw error;
 
-    // Optimistic cache update + refetch onboarding status
     queryClient.setQueryData<UserTypeQueryData>(queryKey, (prev) => ({
       userType: type,
       hasCompletedOnboarding: prev?.hasCompletedOnboarding ?? false,
@@ -112,11 +96,14 @@ export const useUserType = () => {
   const refreshUserType = async () => {
     if (!user?.id) return;
     await queryClient.invalidateQueries({ queryKey });
+    // Wait for refetch to complete
+    await queryClient.refetchQueries({ queryKey });
   };
 
   return {
     userType,
-    loading: Boolean(user?.id) ? isLoading || isFetching : false,
+    loading: Boolean(user?.id) && isLoading,
+    isReady,
     hasCompletedOnboarding,
     updateUserType,
     refreshUserType,
