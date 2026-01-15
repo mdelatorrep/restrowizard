@@ -107,7 +107,10 @@ const Header = () => {
                 Dashboard
               </Button>
               <Button 
-                onClick={signOut}
+                onClick={async () => {
+                  await signOut();
+                  navigate('/');
+                }}
                 variant="outline"
                 className={`font-lato-bold ${
                   isScrolled 
@@ -180,9 +183,10 @@ const Header = () => {
                     Dashboard
                   </button>
                   <button 
-                    onClick={() => {
-                      signOut();
+                    onClick={async () => {
                       setIsMenuOpen(false);
+                      await signOut();
+                      navigate('/');
                     }}
                     className="block w-full text-center px-4 py-3 rounded-lg bg-purple-intense text-white font-lato-bold hover:opacity-90 transition-all"
                   >
