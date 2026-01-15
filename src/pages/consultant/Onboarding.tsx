@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Briefcase, Award, CheckCircle, Loader2 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * Consultant onboarding page - collects company info.
+ * NO redirect logic here - that's handled by OnboardingGuard.
+ */
 const ConsultantOnboarding: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
+  const { refreshUserType } = useUserType();
   const { toast } = useToast();
+  
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -30,20 +35,14 @@ const ConsultantOnboarding: React.FC = () => {
     linkedin_url: '',
   });
 
-  // Check if consultant profile already exists
+  // Load existing partial profile data if any
   useEffect(() => {
-    const checkExistingProfile = async () => {
-      // Wait for auth to finish loading before checking user
-      if (authLoading) {
-        return;
-      }
-      
+    const loadExistingProfile = async () => {
       if (!user) {
-        setIsLoading(false);
-        navigate('/auth', { replace: true });
+        setIsLoadingProfile(false);
         return;
       }
-      
+
       try {
         const { data: existingProfile } = await supabase
           .from('consultant_profiles')
@@ -52,13 +51,6 @@ const ConsultantOnboarding: React.FC = () => {
           .maybeSingle();
 
         if (existingProfile) {
-          // Profile exists - check if it's complete
-          if (existingProfile.company_name) {
-            // Already completed, redirect to dashboard
-            navigate('/c/dashboard', { replace: true });
-            return;
-          }
-          // Profile exists but incomplete - load data for editing
           setExistingProfileId(existingProfile.id);
           setFormData({
             company_name: existingProfile.company_name || '',
@@ -70,14 +62,14 @@ const ConsultantOnboarding: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error('Error checking profile:', error);
+        console.error('Error loading profile:', error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingProfile(false);
       }
     };
 
-    checkExistingProfile();
-  }, [user, authLoading, navigate]);
+    loadExistingProfile();
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -85,8 +77,18 @@ const ConsultantOnboarding: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!user) return;
-    setIsSubmitting(true);
     
+    if (!formData.company_name.trim()) {
+      toast({ 
+        title: "Campo requerido", 
+        description: "El nombre de la empresa es obligatorio",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       const profileData = {
         user_id: user.id,
@@ -104,14 +106,12 @@ const ConsultantOnboarding: React.FC = () => {
       let error;
 
       if (existingProfileId) {
-        // Update existing profile
         const result = await supabase
           .from('consultant_profiles')
           .update(profileData)
           .eq('id', existingProfileId);
         error = result.error;
       } else {
-        // Insert new profile
         const result = await supabase
           .from('consultant_profiles')
           .insert(profileData);
@@ -119,27 +119,27 @@ const ConsultantOnboarding: React.FC = () => {
       }
 
       if (error) throw error;
-      
+
       toast({ title: "¡Perfecto!", description: "Tu perfil de consultor ha sido creado." });
 
-      // Important: refresh cached userType/onboarding status BEFORE navigating,
-      // otherwise AppLayout may still think onboarding is incomplete and bounce back here.
-      await queryClient.refetchQueries({ queryKey: ['userType', user.id] });
+      // Refresh the cached userType data and wait for it to complete
+      await refreshUserType();
 
+      // Navigate to dashboard
       navigate('/c/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Submit error:', error);
-      toast({ 
-        title: "Error", 
-        description: error.message || "No se pudo guardar el perfil", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo guardar el perfil",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoadingProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -163,19 +163,33 @@ const ConsultantOnboarding: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Nombre de tu empresa *</Label>
-                  <Input placeholder="Gastro Consulting" value={formData.company_name} onChange={(e) => handleInputChange('company_name', e.target.value)} />
+                  <Input 
+                    placeholder="Gastro Consulting" 
+                    value={formData.company_name} 
+                    onChange={(e) => handleInputChange('company_name', e.target.value)} 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Sobre ti</Label>
-                  <Textarea placeholder="Cuéntanos sobre tu experiencia..." value={formData.bio} onChange={(e) => handleInputChange('bio', e.target.value)} />
+                  <Textarea 
+                    placeholder="Cuéntanos sobre tu experiencia..." 
+                    value={formData.bio} 
+                    onChange={(e) => handleInputChange('bio', e.target.value)} 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Años de experiencia</Label>
-                  <Input type="number" placeholder="10" value={formData.years_experience} onChange={(e) => handleInputChange('years_experience', e.target.value)} />
+                  <Input 
+                    type="number" 
+                    placeholder="10" 
+                    value={formData.years_experience} 
+                    onChange={(e) => handleInputChange('years_experience', e.target.value)} 
+                  />
                 </div>
               </CardContent>
             </>
           )}
+          
           {step === 2 && (
             <>
               <CardHeader className="text-center">
@@ -188,30 +202,64 @@ const ConsultantOnboarding: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Especialidades (separadas por coma)</Label>
-                  <Input placeholder="Operaciones, Finanzas, Marketing" value={formData.specializations} onChange={(e) => handleInputChange('specializations', e.target.value)} />
+                  <Input 
+                    placeholder="Operaciones, Finanzas, Marketing" 
+                    value={formData.specializations} 
+                    onChange={(e) => handleInputChange('specializations', e.target.value)} 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Sitio web</Label>
-                  <Input placeholder="https://tuconsultoria.com" value={formData.website_url} onChange={(e) => handleInputChange('website_url', e.target.value)} />
+                  <Input 
+                    placeholder="https://tuconsultoria.com" 
+                    value={formData.website_url} 
+                    onChange={(e) => handleInputChange('website_url', e.target.value)} 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>LinkedIn</Label>
-                  <Input placeholder="https://linkedin.com/in/tu-perfil" value={formData.linkedin_url} onChange={(e) => handleInputChange('linkedin_url', e.target.value)} />
+                  <Input 
+                    placeholder="https://linkedin.com/in/tu-perfil" 
+                    value={formData.linkedin_url} 
+                    onChange={(e) => handleInputChange('linkedin_url', e.target.value)} 
+                  />
                 </div>
               </CardContent>
             </>
           )}
+
           <div className="flex justify-between p-6 pt-0">
-            <Button variant="outline" onClick={() => step > 1 ? setStep(1) : navigate('/onboarding')} className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => step > 1 ? setStep(1) : navigate('/onboarding')} 
+              className="gap-2"
+            >
               <ArrowLeft className="h-4 w-4" /> Atrás
             </Button>
+            
             {step < 2 ? (
-              <Button onClick={() => setStep(2)} disabled={!formData.company_name} className="gap-2">
+              <Button 
+                onClick={() => setStep(2)} 
+                disabled={!formData.company_name.trim()} 
+                className="gap-2"
+              >
                 Siguiente <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? 'Guardando...' : 'Comenzar'} <CheckCircle className="h-4 w-4" />
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting || !formData.company_name.trim()} 
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Guardando...
+                  </>
+                ) : (
+                  <>
+                    Comenzar <CheckCircle className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             )}
           </div>
