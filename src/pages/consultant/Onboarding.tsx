@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ConsultantOnboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +31,11 @@ const ConsultantOnboarding: React.FC = () => {
   // Check if consultant profile already exists
   useEffect(() => {
     const checkExistingProfile = async () => {
+      // Wait for auth to finish loading before checking user
+      if (authLoading) {
+        return;
+      }
+      
       if (!user) {
         setIsLoading(false);
         navigate('/auth', { replace: true });
@@ -70,7 +75,7 @@ const ConsultantOnboarding: React.FC = () => {
     };
 
     checkExistingProfile();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
