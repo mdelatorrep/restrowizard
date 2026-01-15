@@ -10,6 +10,8 @@ type UserTypeQueryData = {
 };
 
 const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => {
+  console.log('📊 [useUserType] fetchUserTypeData called for userId:', userId);
+  
   // Fetch profile - should always exist due to trigger
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -17,11 +19,14 @@ const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => 
     .eq('user_id', userId)
     .maybeSingle();
 
+  console.log('📊 [useUserType] profiles query result:', { profile, profileError });
+
   if (profileError) throw profileError;
 
   const type = (profile?.user_type as UserType) ?? null;
 
   if (!type) {
+    console.log('📊 [useUserType] No user_type found, returning incomplete');
     return { userType: null, hasCompletedOnboarding: false };
   }
 
@@ -32,9 +37,13 @@ const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => 
       .eq('owner_id', userId)
       .maybeSingle();
 
+    console.log('📊 [useUserType] restaurant_businesses query result:', { business, error });
+
     if (error) throw error;
 
-    return { userType: type, hasCompletedOnboarding: !!business };
+    const result = { userType: type, hasCompletedOnboarding: !!business };
+    console.log('📊 [useUserType] Returning for restaurant_owner:', result);
+    return result;
   }
 
   // Consultant - check if they have a company_name set
@@ -44,12 +53,16 @@ const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => 
     .eq('user_id', userId)
     .maybeSingle();
 
+  console.log('📊 [useUserType] consultant_profiles query result:', { consultantProfile, error });
+
   if (error) throw error;
 
-  return {
+  const result = {
     userType: type,
     hasCompletedOnboarding: !!consultantProfile?.company_name,
   };
+  console.log('📊 [useUserType] Returning for consultant:', result);
+  return result;
 };
 
 export const useUserType = () => {

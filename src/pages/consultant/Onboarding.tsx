@@ -38,19 +38,30 @@ const ConsultantOnboarding: React.FC = () => {
   // Load existing partial profile data if any
   useEffect(() => {
     const loadExistingProfile = async () => {
+      console.log('📝 [ConsultantOnboarding] loadExistingProfile called, user:', user?.id);
+      
       if (!user) {
+        console.log('📝 [ConsultantOnboarding] No user, skipping load');
         setIsLoadingProfile(false);
         return;
       }
 
       try {
-        const { data: existingProfile } = await supabase
+        console.log('📝 [ConsultantOnboarding] Querying consultant_profiles for user:', user.id);
+        const { data: existingProfile, error } = await supabase
           .from('consultant_profiles')
           .select('id, company_name, bio, specializations, years_experience, website_url, linkedin_url')
           .eq('user_id', user.id)
           .maybeSingle();
 
+        console.log('📝 [ConsultantOnboarding] Query result:', { existingProfile, error });
+
+        if (error) {
+          console.error('📝 [ConsultantOnboarding] Query error:', error);
+        }
+
         if (existingProfile) {
+          console.log('📝 [ConsultantOnboarding] Found existing profile, setting existingProfileId:', existingProfile.id);
           setExistingProfileId(existingProfile.id);
           setFormData({
             company_name: existingProfile.company_name || '',
@@ -60,9 +71,11 @@ const ConsultantOnboarding: React.FC = () => {
             website_url: existingProfile.website_url || '',
             linkedin_url: existingProfile.linkedin_url || '',
           });
+        } else {
+          console.log('📝 [ConsultantOnboarding] No existing profile found');
         }
       } catch (error) {
-        console.error('Error loading profile:', error);
+        console.error('📝 [ConsultantOnboarding] Error loading profile:', error);
       } finally {
         setIsLoadingProfile(false);
       }
@@ -76,9 +89,20 @@ const ConsultantOnboarding: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    console.log('📝 [ConsultantOnboarding] handleSubmit called', { 
+      userId: user?.id, 
+      existingProfileId,
+      formData,
+      currentStep: step 
+    });
+
+    if (!user) {
+      console.log('📝 [ConsultantOnboarding] No user, aborting submit');
+      return;
+    }
     
     if (!formData.company_name.trim()) {
+      console.log('📝 [ConsultantOnboarding] company_name is empty, showing error');
       toast({ 
         title: "Campo requerido", 
         description: "El nombre de la empresa es obligatorio",
@@ -103,32 +127,32 @@ const ConsultantOnboarding: React.FC = () => {
         linkedin_url: formData.linkedin_url.trim() || null,
       };
 
-      let error;
+      console.log('📝 [ConsultantOnboarding] Profile data to save:', profileData);
 
-      if (existingProfileId) {
-        const result = await supabase
-          .from('consultant_profiles')
-          .update(profileData)
-          .eq('id', existingProfileId);
-        error = result.error;
-      } else {
-        const result = await supabase
-          .from('consultant_profiles')
-          .insert(profileData);
-        error = result.error;
-      }
+      // ALWAYS use UPSERT to avoid duplicate key errors
+      console.log('📝 [ConsultantOnboarding] Using UPSERT on consultant_profiles');
+      const { data, error } = await supabase
+        .from('consultant_profiles')
+        .upsert(profileData, { onConflict: 'user_id' })
+        .select('id, company_name')
+        .single();
+
+      console.log('📝 [ConsultantOnboarding] UPSERT result:', { data, error });
 
       if (error) throw error;
 
       toast({ title: "¡Perfecto!", description: "Tu perfil de consultor ha sido creado." });
 
       // Refresh the cached userType data and wait for it to complete
+      console.log('📝 [ConsultantOnboarding] Calling refreshUserType...');
       await refreshUserType();
+      console.log('📝 [ConsultantOnboarding] refreshUserType completed');
 
       // Navigate to dashboard
+      console.log('📝 [ConsultantOnboarding] Navigating to /c/dashboard');
       navigate('/c/dashboard', { replace: true });
     } catch (error: any) {
-      console.error('Submit error:', error);
+      console.error('📝 [ConsultantOnboarding] Submit error:', error);
       toast({
         title: "Error",
         description: error.message || "No se pudo guardar el perfil",
