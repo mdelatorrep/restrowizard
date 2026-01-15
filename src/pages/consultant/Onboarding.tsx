@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Briefcase, Award, CheckCircle, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ConsultantOnboarding: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -119,6 +121,11 @@ const ConsultantOnboarding: React.FC = () => {
       if (error) throw error;
       
       toast({ title: "¡Perfecto!", description: "Tu perfil de consultor ha sido creado." });
+
+      // Important: refresh cached userType/onboarding status BEFORE navigating,
+      // otherwise AppLayout may still think onboarding is incomplete and bounce back here.
+      await queryClient.refetchQueries({ queryKey: ['userType', user.id] });
+
       navigate('/c/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Submit error:', error);
