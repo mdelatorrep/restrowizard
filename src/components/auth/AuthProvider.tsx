@@ -62,6 +62,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.warn('⚠️ Could not claim client invite (exception):', e);
       }
     };
+
+    // Ensure a public.profiles row exists for this user.
+    // Some historical signups are missing it, which breaks user_type + onboarding routing.
+    const ensureProfileRow = async () => {
+      const meta = (session.user.user_metadata ?? {}) as Record<string, any>;
+
+      const { data: existing, error: existingError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (!existing) {
+        const { error: insertError } = await supabase.from('profiles').insert({
+          user_id: session.user.id,
+          full_name: typeof meta.full_name === 'string' ? meta.full_name : null,
+          restaurant_name:
+            typeof meta.restaurant_name === 'string' ? meta.restaurant_name : null,
+          user_type:
+            meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner'
+              ? meta.user_type
+              : null,
+        });
+
+        if (insertError) throw insertError;
+        return;
+      }
+
+      // If the row exists but user_type is missing, hydrate from metadata when possible.
+      if (
+        !existing.user_type &&
+        (meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner')
+      ) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ user_type: meta.user_type })
+          .eq('user_id', session.user.id);
+
+        if (updateError) throw updateError;
+      }
+    };
     
     // Skip if already in protected routes
     const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
@@ -73,29 +116,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Attempt invite claim without blocking the rest of navigation
       await claimPendingClientInvite();
       
-      // Small delay to ensure profile trigger has completed
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      try {
-        // Get user profile to determine type (retry logic for new users)
-        let profile = null;
-        let retries = 3;
-        
-        while (retries > 0 && !profile) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (data) {
-            profile = data;
-          } else if (error && retries > 1) {
-            console.log('⏳ Profile not found yet, retrying...', retries - 1);
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-          retries--;
-        }
+       // Small delay to ensure profile trigger has completed
+       await new Promise(resolve => setTimeout(resolve, 500));
+       
+       try {
+         // Make sure profiles row exists (some accounts were created without it)
+         await ensureProfileRow();
+
+         // Get user profile to determine type (retry logic for new users)
+         let profile = null;
+         let retries = 3;
+         
+         while (retries > 0 && !profile) {
+           const { data, error } = await supabase
+             .from('profiles')
+             .select('user_type')
+             .eq('user_id', session.user.id)
+             .maybeSingle();
+           
+           if (error) throw error;
+
+           if (data) {
+             profile = data;
+             break;
+           }
+
+           // No row yet; wait briefly and retry
+           if (retries > 1) {
+             console.log('⏳ Profile not found yet, retrying...', retries - 1);
+             await new Promise(resolve => setTimeout(resolve, 300));
+           }
+
+           retries--;
+         }
 
         console.log('🔍 User profile:', profile);
 
