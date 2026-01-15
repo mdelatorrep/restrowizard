@@ -87,10 +87,16 @@ export const useUserType = () => {
   const updateUserType = async (type: UserType) => {
     if (!user) return;
 
+    // Use upsert so first-time users without a profiles row don't get stuck.
     const { error } = await supabase
       .from('profiles')
-      .update({ user_type: type })
-      .eq('user_id', user.id);
+      .upsert(
+        {
+          user_id: user.id,
+          user_type: type,
+        },
+        { onConflict: 'user_id' }
+      );
 
     if (error) throw error;
 
