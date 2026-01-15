@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { Loader2 } from 'lucide-react';
+import { pushDebugEvent } from '@/lib/debugEvents';
 
 interface OnboardingGuardProps {
   children: React.ReactNode;
@@ -26,6 +27,33 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { userType, hasCompletedOnboarding, loading: typeLoading, isReady } = useUserType();
+
+  const lastDecisionKeyRef = useRef<string | null>(null);
+
+  const report = (decision: string, extra?: Record<string, unknown>) => {
+    if (!user?.id) return;
+
+    const key = JSON.stringify({
+      path: location.pathname,
+      decision,
+      requireOnboarding,
+      requiredUserType,
+      userType,
+      hasCompletedOnboarding,
+    });
+
+    if (lastDecisionKeyRef.current === key) return;
+    lastDecisionKeyRef.current = key;
+
+    void pushDebugEvent(user.id, 'OnboardingGuard', decision, {
+      path: location.pathname,
+      requireOnboarding,
+      requiredUserType,
+      userType,
+      hasCompletedOnboarding,
+      ...extra,
+    });
+  };
 
   // ===== TRACEABILITY LOGGING =====
   console.log('🛡️ [OnboardingGuard] Render:', {
@@ -78,10 +106,12 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
       // User hasn't completed onboarding -> send to onboarding page
       const onboardingPath = requiredUserType === 'restaurant_owner' ? '/r/onboarding' : '/c/onboarding';
       console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', onboardingPath, '(onboarding not complete)');
+      report('redirect_onboarding_incomplete', { to: onboardingPath });
       return <Navigate to={onboardingPath} replace />;
     }
     // User has completed onboarding -> allow access
     console.log('🛡️ [OnboardingGuard] DECISION: Allow access (onboarding complete)');
+    report('allow_onboarding_complete');
     return <>{children}</>;
   }
 
@@ -90,11 +120,13 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
     // User already completed onboarding -> send to dashboard
     const dashboardPath = requiredUserType === 'restaurant_owner' ? '/r/dashboard' : '/c/dashboard';
     console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', dashboardPath, '(already onboarded, skip onboarding page)');
+    report('redirect_already_onboarded', { to: dashboardPath });
     return <Navigate to={dashboardPath} replace />;
   }
 
   // User needs to complete onboarding and is on onboarding page -> allow access
   console.log('🛡️ [OnboardingGuard] DECISION: Allow access to onboarding page');
+  report('allow_onboarding_page');
   return <>{children}</>;
 };
 

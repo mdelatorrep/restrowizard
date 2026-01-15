@@ -1043,6 +1043,33 @@ export type Database = {
         }
         Relationships: []
       }
+      debug_events: {
+        Row: {
+          action: string
+          created_at: string
+          data: Json | null
+          id: string
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          scope: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_categories: {
         Row: {
           created_at: string
