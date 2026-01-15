@@ -3,7 +3,7 @@ import { RequireActiveClient } from '@/components/consultant/RequireActiveClient
 
 export default function ConsultantNewBusiness() {
   return (
-    <RequireActiveClient>
+    <RequireActiveClient moduleName="Apertura de Nuevo Negocio">
       <BusinessOpeningAssistant userType="consultant" />
     </RequireActiveClient>
   );
