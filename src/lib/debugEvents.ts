@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 /**
  * Best-effort debug event logger.
@@ -15,12 +16,14 @@ export const pushDebugEvent = async (
   if (!userId) return;
 
   try {
-    await supabase.from('debug_events').insert({
-      user_id: userId,
-      scope,
-      action,
-      data: data ?? {},
-    });
+    await supabase.from('debug_events').insert([
+      {
+        user_id: userId,
+        scope,
+        action,
+        data: (data ?? {}) as Json,
+      },
+    ]);
   } catch (e) {
     // Swallow errors: traceability must never break the product.
     console.warn('🧾 [debug_events] insert failed:', e);
