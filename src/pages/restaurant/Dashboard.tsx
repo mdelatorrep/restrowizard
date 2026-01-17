@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ActionPlan from '@/components/ActionPlan';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
 import { useFinancesData } from '@/hooks/useFinancesData';
+import { useFirst90Days } from '@/hooks/useFirst90Days';
 
 interface KPIData {
   label: string;
@@ -51,9 +52,17 @@ const RestaurantDashboard: React.FC = () => {
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   
+  // Check if restaurant is new (within first 90 days)
+  const { isNewRestaurant, isLoading: loadingFirst90 } = useFirst90Days();
+  
   // Real data hooks
   const { alerts: copilotAlerts, unreadAlerts, generateAlerts, dismissAlert, isLoading: alertsLoading } = useCopilotAlerts();
   const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
+
+  // Redirect new restaurants to First 90 Days dashboard
+  if (!loadingFirst90 && isNewRestaurant) {
+    return <Navigate to="/r/first-90-days" replace />;
+  }
 
   useEffect(() => {
     const fetchBusiness = async () => {
