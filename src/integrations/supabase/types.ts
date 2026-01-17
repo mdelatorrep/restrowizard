@@ -1576,6 +1576,61 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_deductions: {
+        Row: {
+          deducted_at: string
+          id: string
+          inventory_item_id: string | null
+          order_id: string | null
+          quantity_deducted: number
+          recipe_id: string | null
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          deducted_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          order_id?: string | null
+          quantity_deducted: number
+          recipe_id?: string | null
+          unit: string
+          user_id: string
+        }
+        Update: {
+          deducted_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          order_id?: string | null
+          quantity_deducted?: number
+          recipe_id?: string | null
+          unit?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_deductions_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_deductions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_deductions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           alert_when_low: boolean | null
@@ -2735,6 +2790,42 @@ export type Database = {
           },
         ]
       }
+      payment_gateway_credentials: {
+        Row: {
+          created_at: string
+          gateway: string
+          id: string
+          is_active: boolean
+          is_sandbox: boolean
+          private_key: string | null
+          public_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gateway: string
+          id?: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          private_key?: string | null
+          public_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gateway?: string
+          id?: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          private_key?: string | null
+          public_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pos_cash_movements: {
         Row: {
           amount: number
@@ -3702,6 +3793,10 @@ export type Database = {
           id: string
           is_pos_order: boolean | null
           items: Json
+          kitchen_notes: string | null
+          kitchen_ready_at: string | null
+          kitchen_started_at: string | null
+          kitchen_status: string | null
           order_number: number
           order_type: string | null
           payment_method: string | null
@@ -3741,6 +3836,10 @@ export type Database = {
           id?: string
           is_pos_order?: boolean | null
           items?: Json
+          kitchen_notes?: string | null
+          kitchen_ready_at?: string | null
+          kitchen_started_at?: string | null
+          kitchen_status?: string | null
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
@@ -3780,6 +3879,10 @@ export type Database = {
           id?: string
           is_pos_order?: boolean | null
           items?: Json
+          kitchen_notes?: string | null
+          kitchen_ready_at?: string | null
+          kitchen_started_at?: string | null
+          kitchen_status?: string | null
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
