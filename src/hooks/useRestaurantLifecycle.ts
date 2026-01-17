@@ -67,11 +67,11 @@ export function useRestaurantLifecycle(): LifecycleData {
   // Fetch restaurant business
   const { data: business, isLoading: loadingBusiness } = useQuery({
     queryKey: ['restaurant-business', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ id: string; name: string; opening_date: string | null } | null> => {
       const { data, error } = await supabase
         .from('restaurant_businesses')
-        .select('*')
-        .eq('user_id', user!.id)
+        .select('id, name, opening_date')
+        .eq('owner_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
