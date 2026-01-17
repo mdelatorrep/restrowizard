@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Rocket, 
-  Calendar, 
   CheckCircle2, 
   Clock, 
   PartyPopper,
@@ -11,8 +10,8 @@ import {
   Megaphone,
   ClipboardCheck,
   AlertTriangle,
-  ArrowRight,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePreOpeningTasks, PreOpeningTask } from '@/hooks/usePreOpeningTasks';
 
 interface PreOpeningCountdownProps {
   businessName: string;
@@ -32,42 +32,6 @@ interface PreOpeningCountdownProps {
   daysUntilOpening: number;
   projectId?: string;
 }
-
-interface PreOpeningTask {
-  id: string;
-  title: string;
-  description: string;
-  category: 'operations' | 'marketing' | 'team' | 'legal';
-  daysBeforeOpening: number;
-  isCompleted: boolean;
-}
-
-const DEFAULT_PRE_OPENING_TASKS: Omit<PreOpeningTask, 'id' | 'isCompleted'>[] = [
-  // 30 days before
-  { title: 'Confirmar todos los permisos', description: 'Verificar licencias sanitarias, comerciales y de bomberos', category: 'legal', daysBeforeOpening: 30 },
-  { title: 'Contratar personal completo', description: 'Tener el equipo completo contratado y listo', category: 'team', daysBeforeOpening: 30 },
-  { title: 'Lanzar redes sociales', description: 'Crear expectativa con contenido teaser', category: 'marketing', daysBeforeOpening: 30 },
-  
-  // 14 days before
-  { title: 'Prueba de menú completo', description: 'Cocinar todo el menú y ajustar tiempos', category: 'operations', daysBeforeOpening: 14 },
-  { title: 'Capacitación del equipo', description: 'Entrenar en servicio, POS y protocolos', category: 'team', daysBeforeOpening: 14 },
-  { title: 'Invitaciones para soft opening', description: 'Enviar invitaciones a familia y amigos', category: 'marketing', daysBeforeOpening: 14 },
-  
-  // 7 days before
-  { title: 'Soft opening', description: 'Prueba con invitados selectos', category: 'operations', daysBeforeOpening: 7 },
-  { title: 'Ajustes finales de menú', description: 'Incorporar feedback del soft opening', category: 'operations', daysBeforeOpening: 7 },
-  { title: 'Comunicado de prensa', description: 'Enviar nota de prensa a medios locales', category: 'marketing', daysBeforeOpening: 7 },
-  
-  // 3 days before
-  { title: 'Inventario completo', description: 'Stock de ingredientes para primera semana', category: 'operations', daysBeforeOpening: 3 },
-  { title: 'Verificación de equipos', description: 'Revisar que todo funcione correctamente', category: 'operations', daysBeforeOpening: 3 },
-  { title: 'Horarios de apertura publicados', description: 'Anunciar horarios en todas las plataformas', category: 'marketing', daysBeforeOpening: 3 },
-  
-  // 1 day before
-  { title: 'Mise en place completo', description: 'Todo preparado para el primer servicio', category: 'operations', daysBeforeOpening: 1 },
-  { title: 'Reunión de equipo final', description: 'Motivar y alinear expectativas', category: 'team', daysBeforeOpening: 1 },
-  { title: 'Decoración de inauguración', description: 'Preparar el ambiente para el gran día', category: 'operations', daysBeforeOpening: 1 },
-];
 
 const getCategoryIcon = (category: PreOpeningTask['category']) => {
   switch (category) {
@@ -98,23 +62,24 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [tasks, setTasks] = useState<PreOpeningTask[]>([]);
+  // Use persistent tasks from database
+  const { 
+    tasks, 
+    isLoading: isLoadingTasks, 
+    toggleTask, 
+    completedCount: completedTasks, 
+    progressPercent, 
+    getOverdueTasks, 
+    getUpcomingTasks 
+  } = usePreOpeningTasks(projectId);
+  
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
   const [isConfirmingOpening, setIsConfirmingOpening] = useState(false);
-
-  // Initialize tasks
-  useEffect(() => {
-    const initialTasks = DEFAULT_PRE_OPENING_TASKS.map((task, index) => ({
-      ...task,
-      id: `task-${index}`,
-      isCompleted: false,
-    }));
-    setTasks(initialTasks);
-  }, []);
 
   // Update countdown every minute
   useEffect(() => {
     const updateCountdown = () => {
+      if (!openingDate) return;
       const target = parseISO(openingDate);
       const now = new Date();
       
@@ -130,18 +95,9 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
     return () => clearInterval(interval);
   }, [openingDate]);
 
-  const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
-    ));
-  };
-
-  const completedTasks = tasks.filter(t => t.isCompleted).length;
-  const progressPercent = Math.round((completedTasks / tasks.length) * 100);
-
-  // Get tasks that should be done by now
-  const overdueTasks = tasks.filter(t => !t.isCompleted && t.daysBeforeOpening >= daysUntilOpening);
-  const upcomingTasks = tasks.filter(t => !t.isCompleted && t.daysBeforeOpening < daysUntilOpening);
+  // Computed task lists
+  const overdueTasks = getOverdueTasks(daysUntilOpening);
+  const upcomingTasks = getUpcomingTasks(daysUntilOpening);
 
   const handleConfirmOpening = async () => {
     if (!user) return;
@@ -186,6 +142,17 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
       setIsConfirmingOpening(false);
     }
   };
+
+  if (isLoadingTasks) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+          <p className="text-muted-foreground">Cargando checklist...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -326,7 +293,7 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
               
               <TabsContent value="all" className="mt-4 space-y-3">
                 {tasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} daysUntilOpening={daysUntilOpening} />
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
                 ))}
               </TabsContent>
               
@@ -338,20 +305,20 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
                   </div>
                 ) : (
                   overdueTasks.map(task => (
-                    <TaskItem key={task.id} task={task} onToggle={toggleTask} daysUntilOpening={daysUntilOpening} isOverdue />
+                    <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isOverdue />
                   ))
                 )}
               </TabsContent>
               
               <TabsContent value="upcoming" className="mt-4 space-y-3">
                 {upcomingTasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} daysUntilOpening={daysUntilOpening} />
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
                 ))}
               </TabsContent>
               
               <TabsContent value="completed" className="mt-4 space-y-3">
-                {tasks.filter(t => t.isCompleted).map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} daysUntilOpening={daysUntilOpening} />
+                {tasks.filter(t => t.is_completed).map(task => (
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
                 ))}
               </TabsContent>
             </Tabs>
@@ -364,26 +331,26 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
 
 interface TaskItemProps {
   task: PreOpeningTask;
-  onToggle: (id: string) => void;
+  onToggle: () => void;
   daysUntilOpening: number;
   isOverdue?: boolean;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, isOverdue }) => {
   const Icon = getCategoryIcon(task.category);
-  const shouldBeDone = task.daysBeforeOpening >= daysUntilOpening;
+  const shouldBeDone = task.days_before_opening >= daysUntilOpening;
   
   return (
     <div 
       className={`flex items-center gap-4 p-4 rounded-lg border transition-all cursor-pointer
-        ${task.isCompleted ? 'bg-muted/50 border-muted' : shouldBeDone ? 'bg-warning/5 border-warning/30' : 'bg-card border-border hover:border-primary/50'}
+        ${task.is_completed ? 'bg-muted/50 border-muted' : shouldBeDone ? 'bg-warning/5 border-warning/30' : 'bg-card border-border hover:border-primary/50'}
       `}
-      onClick={() => onToggle(task.id)}
+      onClick={onToggle}
     >
       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
-        ${task.isCompleted ? 'bg-success border-success' : 'border-muted-foreground'}
+        ${task.is_completed ? 'bg-success border-success' : 'border-muted-foreground'}
       `}>
-        {task.isCompleted && <CheckCircle2 className="h-4 w-4 text-success-foreground" />}
+        {task.is_completed && <CheckCircle2 className="h-4 w-4 text-success-foreground" />}
       </div>
       
       <div className={`p-2 rounded-lg ${getCategoryColor(task.category)}`}>
@@ -391,14 +358,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, i
       </div>
       
       <div className="flex-1">
-        <p className={`font-medium ${task.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+        <p className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
           {task.title}
         </p>
         <p className="text-sm text-muted-foreground">{task.description}</p>
       </div>
       
-      <Badge variant={shouldBeDone && !task.isCompleted ? 'destructive' : 'outline'}>
-        {task.daysBeforeOpening} días antes
+      <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'}>
+        {task.days_before_opening} días antes
       </Badge>
     </div>
   );
