@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SocialMention {
   id: string;
@@ -82,7 +83,6 @@ export const useSocialMentions = () => {
     const negative = data.filter(m => m.sentiment_label === 'negative').length;
     const responded = data.filter(m => m.responded).length;
     
-    // Reputation score: 0-100 based on positive ratio and avg sentiment
     const positiveRatio = positive / total;
     const reputationScore = Math.round(((positiveRatio * 50) + ((avgSentiment + 1) / 2 * 50)));
 
@@ -115,7 +115,6 @@ export const useSocialMentions = () => {
       setKpis(calculateKPIs(mentionsData));
       setHasData(mentionsData.length > 0);
 
-      // Fetch accounts
       const { data: accountsData } = await supabase
         .from('social_accounts')
         .select('*')
@@ -124,7 +123,6 @@ export const useSocialMentions = () => {
       
       setAccounts((accountsData || []) as unknown as SocialAccount[]);
 
-      // Fetch reports
       const { data: reportsData } = await supabase
         .from('sentiment_reports')
         .select('*')
@@ -140,13 +138,23 @@ export const useSocialMentions = () => {
     }
   };
 
-  const addMention = async (mention: Partial<SocialMention>) => {
+  const addMention = async (mentionData: { platform: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('social_mentions')
-        .insert([{ ...mention, user_id: userId }])
+        .insert([{ 
+          platform: mentionData.platform,
+          user_id: userId,
+          external_id: mentionData.external_id as string | undefined,
+          author_name: mentionData.author_name as string | undefined,
+          content: mentionData.content as string | undefined,
+          rating: mentionData.rating as number | undefined,
+          sentiment_score: mentionData.sentiment_score as number | undefined,
+          sentiment_label: mentionData.sentiment_label as string | undefined,
+          key_topics: (mentionData.key_topics ?? null) as Json,
+        }])
         .select()
         .single();
 
@@ -178,13 +186,19 @@ export const useSocialMentions = () => {
     }
   };
 
-  const addAccount = async (account: Partial<SocialAccount>) => {
+  const addAccount = async (accountData: { platform: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('social_accounts')
-        .insert([{ ...account, user_id: userId }])
+        .insert([{ 
+          platform: accountData.platform,
+          user_id: userId,
+          account_name: accountData.account_name as string | undefined,
+          account_url: accountData.account_url as string | undefined,
+          is_active: accountData.is_active as boolean | undefined,
+        }])
         .select()
         .single();
 

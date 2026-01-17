@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import type { Json } from '@/integrations/supabase/types';
+
+export interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  notes?: string;
+}
 
 export interface RestaurantOrder {
   id: string;
@@ -31,18 +39,11 @@ export interface RestaurantOrder {
   updated_at: string;
 }
 
-export interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-  notes?: string;
-}
-
 export interface DeliveryZone {
   id: string;
   user_id: string;
   zone_name: string;
-  polygon: unknown;
+  polygon: Json | null;
   delivery_fee: number;
   min_order: number;
   estimated_time_minutes: number;
@@ -110,7 +111,6 @@ export const useOrders = () => {
       setKpis(calculateKPIs(ordersData));
       setHasData(ordersData.length > 0);
 
-      // Fetch delivery zones
       const { data: zonesData } = await supabase
         .from('delivery_zones')
         .select('*')
@@ -125,13 +125,23 @@ export const useOrders = () => {
     }
   };
 
-  const createOrder = async (orderData: Partial<RestaurantOrder>) => {
+  const createOrder = async (orderData: { items: OrderItem[]; subtotal: number; total: number; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('restaurant_orders')
-        .insert([{ ...orderData, user_id: userId, items: orderData.items as unknown as Record<string, unknown>[] }])
+        .insert([{ 
+          items: orderData.items as unknown as Json,
+          subtotal: orderData.subtotal,
+          total: orderData.total,
+          user_id: userId,
+          source: orderData.source as string | undefined,
+          order_type: orderData.order_type as string | undefined,
+          customer_name: orderData.customer_name as string | undefined,
+          customer_phone: orderData.customer_phone as string | undefined,
+          delivery_address: orderData.delivery_address as string | undefined,
+        }])
         .select()
         .single();
 
@@ -149,7 +159,7 @@ export const useOrders = () => {
 
   const updateOrderStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const updates: Partial<RestaurantOrder> = { status };
+      const updates: Record<string, unknown> = { status };
       if (status === 'completed') {
         updates.completed_at = new Date().toISOString();
       }
@@ -161,7 +171,6 @@ export const useOrders = () => {
 
       if (error) throw error;
 
-      // Add to history
       await supabase.from('order_status_history').insert([{
         order_id: id,
         status,
@@ -177,13 +186,21 @@ export const useOrders = () => {
     }
   };
 
-  const createZone = async (zone: Partial<DeliveryZone>) => {
+  const createZone = async (zoneData: { zone_name: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('delivery_zones')
-        .insert([{ ...zone, user_id: userId }])
+        .insert([{ 
+          zone_name: zoneData.zone_name,
+          user_id: userId,
+          polygon: (zoneData.polygon ?? null) as Json,
+          delivery_fee: zoneData.delivery_fee as number | undefined,
+          min_order: zoneData.min_order as number | undefined,
+          estimated_time_minutes: zoneData.estimated_time_minutes as number | undefined,
+          is_active: zoneData.is_active as boolean | undefined,
+        }])
         .select()
         .single();
 

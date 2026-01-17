@@ -88,7 +88,6 @@ export const useRecipes = () => {
       
       const recipesData = (data || []) as unknown as Recipe[];
       
-      // Fetch ingredients for each recipe
       const recipesWithIngredients: RecipeWithIngredients[] = await Promise.all(
         recipesData.map(async (recipe) => {
           const { data: ingredients } = await supabase
@@ -114,13 +113,23 @@ export const useRecipes = () => {
     }
   };
 
-  const createRecipe = async (recipeData: Partial<Recipe>) => {
+  const createRecipe = async (recipeData: { name: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('recipes')
-        .insert([{ ...recipeData, user_id: userId }])
+        .insert([{ 
+          name: recipeData.name,
+          user_id: userId,
+          category: recipeData.category as string | undefined,
+          portions: recipeData.portions as number | undefined,
+          preparation_time_minutes: recipeData.preparation_time_minutes as number | undefined,
+          difficulty: recipeData.difficulty as string | undefined,
+          instructions: recipeData.instructions as string | undefined,
+          tips: recipeData.tips as string | undefined,
+          is_secret: recipeData.is_secret as boolean | undefined,
+        }])
         .select()
         .single();
 
@@ -170,11 +179,20 @@ export const useRecipes = () => {
     }
   };
 
-  const addIngredient = async (recipeId: string, ingredient: Partial<RecipeIngredient>) => {
+  const addIngredient = async (recipeId: string, ingredientData: { ingredient_name: string; quantity: number; unit: string; [key: string]: unknown }) => {
     try {
       const { error } = await supabase
         .from('recipe_ingredients')
-        .insert([{ ...ingredient, recipe_id: recipeId }]);
+        .insert([{ 
+          recipe_id: recipeId,
+          ingredient_name: ingredientData.ingredient_name,
+          quantity: ingredientData.quantity,
+          unit: ingredientData.unit,
+          cost_per_unit: ingredientData.cost_per_unit as number | undefined,
+          notes: ingredientData.notes as string | undefined,
+          is_optional: ingredientData.is_optional as boolean | undefined,
+          sort_order: ingredientData.sort_order as number | undefined,
+        }]);
 
       if (error) throw error;
       
