@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Building2, MapPin, DollarSign, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Building2, MapPin, DollarSign, CheckCircle, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { differenceInDays, parseISO, format } from 'date-fns';
 
 interface ExistingBusinessOnboardingProps {
   onBack: () => void;
@@ -30,13 +32,28 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
     state: '',
     employee_count: '',
     monthly_revenue_range: '',
+    opening_date: '', // Added for lifecycle calculation
   });
 
-  const totalSteps = 3;
+  const totalSteps = 4; // Added step for opening date
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Calculate lifecycle stage based on opening date
+  const getLifecycleStage = () => {
+    if (!formData.opening_date) return null;
+    const openingDate = parseISO(formData.opening_date);
+    const today = new Date();
+    const daysDiff = differenceInDays(today, openingDate);
+    
+    if (daysDiff < 0) return { stage: 'pre_opening', days: Math.abs(daysDiff), label: 'Pre-Apertura' };
+    if (daysDiff <= 90) return { stage: 'first_90_days', days: daysDiff, label: 'Primeros 90 Días' };
+    return { stage: 'normal_operation', days: daysDiff, label: 'Operación Normal' };
+  };
+
+  const lifecycleInfo = getLifecycleStage();
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -55,6 +72,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
           state: formData.state,
           employee_count: formData.employee_count ? parseInt(formData.employee_count) : null,
           monthly_revenue_range: formData.monthly_revenue_range,
+          opening_date: formData.opening_date || null,
         });
 
       if (error) throw error;
@@ -80,6 +98,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
   const canProceed = () => {
     if (step === 1) return formData.name && formData.business_type;
     if (step === 2) return formData.city;
+    if (step === 3) return formData.opening_date;
     return true;
   };
 
@@ -89,7 +108,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-colors ${
@@ -230,6 +249,54 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
           )}
 
           {step === 3 && (
+            <>
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                  <Calendar className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle className="text-2xl font-headline">
+                  ¿Cuándo abriste tu restaurante?
+                </CardTitle>
+                <CardDescription className="font-lato-light">
+                  Esto nos ayuda a personalizar tu experiencia según tu etapa
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="opening_date">Fecha de apertura *</Label>
+                  <Input
+                    id="opening_date"
+                    type="date"
+                    value={formData.opening_date}
+                    onChange={(e) => handleInputChange('opening_date', e.target.value)}
+                  />
+                </div>
+                
+                {lifecycleInfo && (
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                        {lifecycleInfo.label}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {lifecycleInfo.stage === 'pre_opening' && (
+                        <>Te faltan {lifecycleInfo.days} días para abrir. Te ayudaremos con la preparación.</>
+                      )}
+                      {lifecycleInfo.stage === 'first_90_days' && (
+                        <>Llevas {lifecycleInfo.days} días operando. Estás en la fase crítica de estabilización.</>
+                      )}
+                      {lifecycleInfo.stage === 'normal_operation' && (
+                        <>Tu restaurante lleva {Math.floor(lifecycleInfo.days / 30)} meses operando. Es hora de optimizar.</>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </>
+          )}
+
+          {step === 4 && (
             <>
               <CardHeader className="text-center">
                 <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">

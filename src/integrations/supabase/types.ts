@@ -2726,6 +2726,59 @@ export type Database = {
           },
         ]
       }
+      pre_opening_tasks: {
+        Row: {
+          category: string
+          completed_at: string | null
+          created_at: string
+          days_before_opening: number
+          description: string | null
+          id: string
+          is_completed: boolean
+          project_id: string | null
+          task_key: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          completed_at?: string | null
+          created_at?: string
+          days_before_opening?: number
+          description?: string | null
+          id?: string
+          is_completed?: boolean
+          project_id?: string | null
+          task_key: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          days_before_opening?: number
+          description?: string | null
+          id?: string
+          is_completed?: boolean
+          project_id?: string | null
+          task_key?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_opening_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "business_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Rocket, Building2, ArrowRight } from 'lucide-react';
+import { Rocket, Building2, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface BusinessTypeSelectorProps {
   onSelect: (type: 'new' | 'existing') => void;
@@ -15,10 +16,10 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ onSe
       <div className="w-full max-w-3xl">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-headline font-bold text-primary mb-3">
-            ¿Cómo está tu restaurante?
+            ¡Bienvenido a RestroWizard!
           </h1>
           <p className="text-lg text-muted-foreground font-lato-light max-w-xl mx-auto">
-            Esto nos ayudará a personalizar tu experiencia y darte las herramientas correctas
+            Cuéntanos sobre tu negocio para personalizar tu experiencia
           </p>
         </div>
 
@@ -48,22 +49,31 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ onSe
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">Tu experiencia incluirá:</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Guía paso a paso desde la concepción hasta tu gran apertura
+                </p>
+              </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Asistente de apertura con IA
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Asistente IA de apertura
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Guía de requisitos legales
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Checklist de requisitos legales
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Checklist de equipamiento
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Countdown pre-apertura
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  Plan de lanzamiento
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Seguimiento primeros 90 días
                 </li>
               </ul>
             </CardContent>
@@ -94,22 +104,31 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({ onSe
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-3 rounded-lg bg-info/5 border border-info/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-info" />
+                  <span className="text-sm font-medium text-info">Tu experiencia incluirá:</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Diagnóstico inmediato con plan de acción personalizado
+                </p>
+              </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-info" />
+                  <CheckCircle2 className="h-4 w-4 text-info" />
                   Diagnóstico de madurez
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-info" />
+                  <CheckCircle2 className="h-4 w-4 text-info" />
                   Plan de acción personalizado
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-info" />
+                  <CheckCircle2 className="h-4 w-4 text-info" />
                   Benchmark contra industria
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-info" />
-                  Mejora continua
+                  <CheckCircle2 className="h-4 w-4 text-info" />
+                  Herramientas IA de optimización
                 </li>
               </ul>
             </CardContent>
