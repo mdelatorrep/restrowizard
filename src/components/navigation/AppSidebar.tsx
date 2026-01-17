@@ -39,6 +39,7 @@ import {
   HeadphonesIcon,
   Globe,
   Rocket,
+  Crown,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -60,6 +61,7 @@ const restaurantMenuItems = [
 const restaurantExtraItems = [
   { title: 'Marca', icon: Palette, path: '/r/brand' },
   { title: 'Menús Digitales', icon: Utensils, path: '/r/menus' },
+  { title: 'Fidelización', icon: Crown, path: '/r/loyalty' },
   { title: 'Feedback', icon: MessageSquare, path: '/r/feedback' },
   { title: 'Recetas', icon: BookOpen, path: '/r/recipes' },
   { title: 'Pedidos', icon: ShoppingBag, path: '/r/orders' },
