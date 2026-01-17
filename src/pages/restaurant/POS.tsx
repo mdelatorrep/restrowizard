@@ -30,7 +30,8 @@ import {
   AlertCircle,
   ArrowRightLeft,
   ChevronRight,
-  Table2
+  Table2,
+  WifiOff
 } from 'lucide-react';
 import { usePOSSession } from '@/hooks/usePOSSession';
 import { usePOSCart, POSCartItem } from '@/hooks/usePOSCart';
@@ -40,6 +41,8 @@ import { usePOSDiscounts } from '@/hooks/usePOSDiscounts';
 import { useMenuItemsData } from '@/hooks/useMenuItemsData';
 import { useLoyaltyData } from '@/hooks/useLoyaltyData';
 import { useInventoryDeduction } from '@/hooks/useInventoryDeduction';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { OfflineIndicator } from '@/components/pos/OfflineIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -363,6 +366,21 @@ const POS = () => {
   const { menuItems, loading: menuLoading } = useMenuItemsData();
   const { customers, awardPoints } = useLoyaltyData();
   const { deductInventoryForOrder } = useInventoryDeduction();
+  
+  // Offline sync
+  const {
+    isOnline,
+    isSyncing,
+    pendingCount,
+    lastSyncAt,
+    syncErrors,
+    saveSaleOffline,
+    syncPendingSales,
+    retryFailedSales,
+    getPendingSales,
+    clearPendingSales,
+    cacheProductsForOffline
+  } = useOfflineSync();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -372,6 +390,13 @@ const POS = () => {
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerSearch, setCustomerSearch] = useState('');
+
+  // Cache products for offline use when they load
+  useEffect(() => {
+    if (menuItems.length > 0) {
+      cacheProductsForOffline(menuItems);
+    }
+  }, [menuItems, cacheProductsForOffline]);
 
   // Get unique categories
   const categories = [...new Set(menuItems.filter(i => i.category).map(i => i.category))];
@@ -409,29 +434,73 @@ const POS = () => {
   const handlePayment = async (payments: PaymentSplit[], tipAmount: number) => {
     if (!user?.id || items.length === 0) return;
 
+    const saleId = `sale-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const saleData = {
+      id: saleId,
+      tableId: selectedTable,
+      tableName: selectedTable ? tables.find(t => t.id === selectedTable)?.table_number?.toString() : undefined,
+      items: items.map(i => ({
+        id: i.menu_item_id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity
+      })),
+      subtotal: subtotal,
+      discountAmount: 0,
+      taxAmount: taxAmount,
+      tipAmount: tipAmount,
+      total: total + tipAmount,
+      payments: payments.map(p => ({
+        methodId: p.method_id,
+        methodName: p.method_name,
+        amount: p.amount
+      })),
+      customerName: selectedCustomer?.customer_name,
+      createdAt: new Date().toISOString()
+    };
+
+    // If offline, save locally
+    if (!isOnline) {
+      const saved = await saveSaleOffline(saleData);
+      if (saved) {
+        // Clear cart and reset
+        clearCart();
+        setSelectedCustomer(null);
+        if (selectedTable) {
+          setSelectedTable(null);
+        }
+        toast({
+          title: "Venta guardada offline",
+          description: "Se sincronizará cuando haya conexión"
+        });
+      }
+      return;
+    }
+
     try {
       // Create order
+      const orderPayload: any = {
+        session_id: currentSession?.id,
+        table_id: selectedTable,
+        items: items.map(i => ({
+          menu_item_id: i.menu_item_id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity
+        })),
+        subtotal: subtotal,
+        tax_amount: taxAmount,
+        tip_amount: tipAmount,
+        total: total + tipAmount,
+        status: 'completed',
+        order_type: selectedTable ? 'dine_in' : 'takeout',
+        is_pos_order: true,
+        guests_count: 1
+      };
+
       const { data: order, error: orderError } = await supabase
         .from('restaurant_orders')
-        .insert({
-          user_id: user.id,
-          session_id: currentSession?.id,
-          table_id: selectedTable,
-          items: items.map(i => ({
-            menu_item_id: i.menu_item_id,
-            name: i.name,
-            price: i.price,
-            quantity: i.quantity
-          })),
-          subtotal: subtotal,
-          tax_amount: taxAmount,
-          tip_amount: tipAmount,
-          total: total + tipAmount,
-          status: 'completed',
-          order_type: selectedTable ? 'dine_in' : 'takeout',
-          is_pos_order: true,
-          guests_count: 1
-        })
+        .insert(orderPayload)
         .select()
         .single();
 
@@ -476,6 +545,24 @@ const POS = () => {
 
     } catch (error: any) {
       console.error('Error completing sale:', error);
+      
+      // If network error, save offline
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError') || !navigator.onLine) {
+        const saved = await saveSaleOffline(saleData);
+        if (saved) {
+          clearCart();
+          setSelectedCustomer(null);
+          if (selectedTable) {
+            setSelectedTable(null);
+          }
+          toast({
+            title: "Guardado offline",
+            description: "La venta se sincronizará cuando haya conexión"
+          });
+          return;
+        }
+      }
+      
       toast({
         title: "Error al completar venta",
         description: error.message,
@@ -535,7 +622,24 @@ const POS = () => {
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Offline Indicator */}
+          {(!isOnline || pendingCount > 0) && (
+            <div className="flex items-center gap-2">
+              {!isOnline && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <WifiOff className="h-3 w-3" />
+                  Offline
+                </Badge>
+              )}
+              {pendingCount > 0 && (
+                <Badge variant="secondary" className="bg-amber-500/20 text-amber-700">
+                  {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+          )}
+          
           {!hasOpenSession ? (
             <Button size="sm" onClick={() => setOpenSessionDialog(true)}>
               <DollarSign className="h-4 w-4 mr-1" />
@@ -796,6 +900,23 @@ const POS = () => {
                 Cobrar
               </Button>
             </div>
+
+            {/* Offline Sync Panel */}
+            {(!isOnline || pendingCount > 0) && (
+              <div className="mt-3">
+                <OfflineIndicator
+                  isOnline={isOnline}
+                  isSyncing={isSyncing}
+                  pendingCount={pendingCount}
+                  lastSyncAt={lastSyncAt}
+                  syncErrors={syncErrors}
+                  onSync={syncPendingSales}
+                  onRetryFailed={retryFailedSales}
+                  onClearPending={clearPendingSales}
+                  getPendingSales={getPendingSales}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
