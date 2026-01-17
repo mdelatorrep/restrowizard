@@ -2027,6 +2027,7 @@ export type Database = {
           is_active: boolean
           last_order_at: string | null
           lifetime_points: number
+          loyalty_code: string | null
           notes: string | null
           predicted_ltv: number | null
           preferred_items: Json | null
@@ -2052,6 +2053,7 @@ export type Database = {
           is_active?: boolean
           last_order_at?: string | null
           lifetime_points?: number
+          loyalty_code?: string | null
           notes?: string | null
           predicted_ltv?: number | null
           preferred_items?: Json | null
@@ -2077,6 +2079,7 @@ export type Database = {
           is_active?: boolean
           last_order_at?: string | null
           lifetime_points?: number
+          loyalty_code?: string | null
           notes?: string | null
           predicted_ltv?: number | null
           preferred_items?: Json | null

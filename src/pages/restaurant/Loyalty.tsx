@@ -29,9 +29,11 @@ import {
   Search,
   MoreVertical,
   Eye,
-  Award
+  Award,
+  QrCode
 } from 'lucide-react';
 import { useLoyaltyData, type LoyaltyCustomer, type LoyaltyTier, type RewardsCatalogItem } from '@/hooks/useLoyaltyData';
+import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
 import { cn } from '@/lib/utils';
 
 // Tier Badge Component
@@ -53,11 +55,13 @@ const TierBadge = ({ tier }: { tier?: LoyaltyTier }) => {
 const CustomerCard = ({ 
   customer, 
   onViewDetails,
-  onAwardPoints 
+  onAwardPoints,
+  onShowQR
 }: { 
   customer: LoyaltyCustomer;
   onViewDetails: () => void;
   onAwardPoints: () => void;
+  onShowQR: () => void;
 }) => {
   const isAtRisk = customer.churn_risk_score >= 0.6 || (customer.days_since_last_order && customer.days_since_last_order > 45);
   
@@ -104,6 +108,9 @@ const CustomerCard = ({
         )}
 
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onShowQR}>
+            <QrCode className="w-4 h-4" />
+          </Button>
           <Button variant="outline" size="sm" className="flex-1" onClick={onViewDetails}>
             <Eye className="w-4 h-4 mr-1" /> Ver
           </Button>
@@ -190,6 +197,7 @@ const Loyalty = () => {
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [showNewRewardDialog, setShowNewRewardDialog] = useState(false);
   const [showAwardPointsDialog, setShowAwardPointsDialog] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
 
   // Form states
@@ -531,6 +539,10 @@ const Loyalty = () => {
                     setSelectedCustomer(customer);
                     setShowAwardPointsDialog(true);
                   }}
+                  onShowQR={() => {
+                    setSelectedCustomer(customer);
+                    setShowQRDialog(true);
+                  }}
                 />
               ))}
             </div>
@@ -860,6 +872,13 @@ const Loyalty = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR Dialog */}
+      <LoyaltyQRDialog
+        customer={selectedCustomer}
+        open={showQRDialog}
+        onOpenChange={setShowQRDialog}
+      />
     </div>
   );
 };

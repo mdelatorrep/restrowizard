@@ -42,6 +42,7 @@ export interface LoyaltyCustomer {
   birthday: string | null;
   notes: string | null;
   is_active: boolean;
+  loyalty_code: string;
   created_at: string;
 }
 
@@ -244,6 +245,7 @@ export const useLoyaltyData = () => {
           days_since_last_order: calculateDaysSinceLastOrder(c.last_order_at),
           preferred_items: Array.isArray(c.preferred_items) ? c.preferred_items : [],
           ai_insights: typeof c.ai_insights === 'object' && c.ai_insights !== null ? c.ai_insights : {},
+          loyalty_code: c.loyalty_code || '',
         };
       }) as LoyaltyCustomer[];
       setCustomers(customersData);
