@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { PhaseAnalysis, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
 import { 
   Scale, MapPin, ChefHat, Truck, Users, Megaphone, TrendingUp,
-  Loader2, ChevronDown, ChevronUp, ExternalLink, RefreshCw, CheckCircle2, Clock
+  Loader2, ChevronDown, ChevronUp, ExternalLink, RefreshCw, CheckCircle2, Clock, Sparkles, Eye
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -30,24 +30,57 @@ interface PhaseAnalysisCardProps {
 
 export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }: PhaseAnalysisCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevAnalysisRef = useRef<PhaseAnalysis | undefined>(undefined);
   const phaseInfo = PHASES.find(p => p.id === phaseId);
 
   const hasAnalysis = !!analysis;
   const analysisText = analysis?.analysis_data?.text || 
     (typeof analysis?.analysis_data === 'string' ? analysis.analysis_data : null);
 
+  // Auto-expand when analysis is completed (detected by change from undefined to defined)
+  useEffect(() => {
+    if (analysis && !prevAnalysisRef.current) {
+      // Analysis just completed - auto expand and show success state
+      setIsExpanded(true);
+      setJustCompleted(true);
+      
+      // Clear the "just completed" highlight after 3 seconds
+      const timer = setTimeout(() => setJustCompleted(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevAnalysisRef.current = analysis;
+  }, [analysis]);
+
   return (
-    <Card className={`transition-all ${hasAnalysis ? 'border-primary/30' : ''}`}>
+    <Card className={`transition-all duration-500 ${
+      justCompleted 
+        ? 'border-green-500 shadow-lg shadow-green-500/20 ring-2 ring-green-500/30' 
+        : hasAnalysis 
+          ? 'border-primary/30' 
+          : ''
+    }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${hasAnalysis ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-              {PHASE_ICONS[phaseId]}
+            <div className={`p-2 rounded-lg transition-colors ${
+              justCompleted 
+                ? 'bg-green-500/20 text-green-600' 
+                : hasAnalysis 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'bg-muted text-muted-foreground'
+            }`}>
+              {justCompleted ? <Sparkles className="h-5 w-5 animate-pulse" /> : PHASE_ICONS[phaseId]}
             </div>
             <div>
               <CardTitle className="text-lg">{phaseInfo?.name}</CardTitle>
               <CardDescription className="text-sm">
-                {hasAnalysis ? (
+                {justCompleted ? (
+                  <span className="flex items-center gap-1 text-green-600 font-medium animate-pulse">
+                    <Sparkles className="h-3 w-3" />
+                    ¡Análisis listo! Revisa los resultados abajo
+                  </span>
+                ) : hasAnalysis ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-3 w-3" />
                     Análisis completado
@@ -62,26 +95,38 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
             </div>
           </div>
           
-          <Button
-            variant={hasAnalysis ? "outline" : "default"}
-            size="sm"
-            onClick={onAnalyze}
-            disabled={isAnalyzing}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analizando...
-              </>
-            ) : hasAnalysis ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
-              </>
-            ) : (
-              'Analizar'
+          <div className="flex gap-2">
+            {hasAnalysis && !isExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(true)}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Ver análisis
+              </Button>
             )}
-          </Button>
+            <Button
+              variant={hasAnalysis ? "outline" : "default"}
+              size="sm"
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Analizando...
+                </>
+              ) : hasAnalysis ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Actualizar
+                </>
+              ) : (
+                'Analizar'
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -91,7 +136,7 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
                 <span className="text-sm text-muted-foreground">
-                  Ver análisis detallado
+                  {isExpanded ? 'Ocultar análisis' : 'Ver análisis detallado'}
                 </span>
                 {isExpanded ? (
                   <ChevronUp className="h-4 w-4" />
@@ -104,22 +149,22 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
             <CollapsibleContent className="mt-4">
               {/* Cost and time estimates */}
               {(analysis.estimated_cost || analysis.estimated_time_days) && (
-                <div className="flex gap-4 mb-4">
+                <div className="flex gap-4 mb-4 flex-wrap">
                   {analysis.estimated_cost && (
                     <Badge variant="secondary" className="text-sm">
-                      Costo estimado: ${analysis.estimated_cost.toLocaleString()} MXN
+                      💰 Costo estimado: ${analysis.estimated_cost.toLocaleString()} MXN
                     </Badge>
                   )}
                   {analysis.estimated_time_days && (
                     <Badge variant="secondary" className="text-sm">
-                      Tiempo: ~{analysis.estimated_time_days} días
+                      ⏱️ Tiempo: ~{analysis.estimated_time_days} días
                     </Badge>
                   )}
                 </div>
               )}
 
               {/* Analysis content */}
-              <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+              <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-muted/30">
                 {analysisText ? (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
                     <ReactMarkdown>{analysisText}</ReactMarkdown>
@@ -136,7 +181,7 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
               {/* Sources */}
               {analysis.sources && analysis.sources.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">Fuentes consultadas:</h4>
+                  <h4 className="text-sm font-medium mb-2">📚 Fuentes consultadas:</h4>
                   <div className="flex flex-wrap gap-2">
                     {analysis.sources.map((source, index) => (
                       <a

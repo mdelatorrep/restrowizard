@@ -76,6 +76,15 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     setAnalyzingPhase(phaseId);
     await analyzePhase(project, phaseId);
     setAnalyzingPhase(null);
+    
+    // Auto-generate checklist after first analysis if not exists
+    if (!checklist || checklist.length === 0) {
+      toast({
+        title: "Generando checklist",
+        description: "Creando tu lista de tareas personalizada...",
+      });
+      await generateChecklist(project);
+    }
   };
 
   const handleAskQuestion = async (question: string) => {
