@@ -46,6 +46,7 @@ import RestaurantNewBusiness from "./pages/restaurant/NewBusiness";
 import RestaurantMenus from "./pages/restaurant/Menus";
 import RestaurantLoyalty from "./pages/restaurant/Loyalty";
 import RestaurantFirst90Days from "./pages/restaurant/First90Days";
+import RestaurantPreOpening from "./pages/restaurant/PreOpening";
 
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
@@ -123,6 +124,7 @@ const App = () => (
                 <Route path="menus" element={<RestaurantMenus />} />
                 <Route path="loyalty" element={<RestaurantLoyalty />} />
                 <Route path="first-90-days" element={<RestaurantFirst90Days />} />
+                <Route path="pre-opening" element={<RestaurantPreOpening />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 

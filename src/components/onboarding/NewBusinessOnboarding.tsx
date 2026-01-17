@@ -87,8 +87,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     setIsCompletingSetup(true);
     
     try {
-      // 1. Create the restaurant business from project data
-      const { data: business, error: businessError } = await supabase
+      // 1. Create the restaurant business from project data with target opening date
+      const { data: business, error: businessError } = await (supabase as any)
         .from('restaurant_businesses')
         .insert({
           owner_id: user.id,
@@ -98,6 +98,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
           city: project.city,
           state: project.country,
           address: project.neighborhood || '',
+          opening_date: project.target_opening_date || null, // Use the planned opening date
         })
         .select()
         .single();

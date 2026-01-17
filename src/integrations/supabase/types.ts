@@ -3173,6 +3173,7 @@ export type Database = {
           id: string
           monthly_revenue_range: string | null
           name: string
+          opening_date: string | null
           owner_id: string
           phone: string | null
           state: string | null
@@ -3190,6 +3191,7 @@ export type Database = {
           id?: string
           monthly_revenue_range?: string | null
           name: string
+          opening_date?: string | null
           owner_id: string
           phone?: string | null
           state?: string | null
@@ -3207,6 +3209,7 @@ export type Database = {
           id?: string
           monthly_revenue_range?: string | null
           name?: string
+          opening_date?: string | null
           owner_id?: string
           phone?: string | null
           state?: string | null
