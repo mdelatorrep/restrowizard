@@ -19,6 +19,7 @@ import Events from "./pages/Events";
 import Jobs from "./pages/Jobs";
 import Menus from "./pages/Menus";
 import PublicMenu from "./pages/PublicMenu";
+import PublicFeedback from "./pages/PublicFeedback";
 import NotFound from "./pages/NotFound";
 
 // Restaurant pages
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
+              <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
               <Route path="/cotizacion/:slug" element={<PublicQuotationPage />} />
 
               {/* Restaurant onboarding (requires NOT having completed onboarding) */}
