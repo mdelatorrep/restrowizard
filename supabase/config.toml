@@ -14,3 +14,27 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = true
+
+[functions.business-opening-assistant]
+verify_jwt = false
+
+[functions.ai-proactive-alerts]
+verify_jwt = false
+
+[functions.feedback-ai-analysis]
+verify_jwt = false
+
+[functions.recipe-ai-assistant]
+verify_jwt = false
+
+[functions.sales-ai-projections]
+verify_jwt = false
+
+[functions.support-ai-assistant]
+verify_jwt = false
+
+[functions.social-ai-analysis]
+verify_jwt = false
+
+[functions.brand-ai-generator]
+verify_jwt = false
