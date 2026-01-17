@@ -140,12 +140,23 @@ export const useOrders = () => {
           order_type: orderData.order_type as string | undefined,
           customer_name: orderData.customer_name as string | undefined,
           customer_phone: orderData.customer_phone as string | undefined,
+          customer_email: orderData.customer_email as string | undefined,
           delivery_address: orderData.delivery_address as string | undefined,
         }])
         .select()
         .single();
 
       if (error) throw error;
+
+      // === LOYALTY INTEGRATION ===
+      // Auto-register or update loyalty customer and award points
+      if (data && (orderData.customer_phone || orderData.customer_email)) {
+        try {
+          await processLoyaltyForOrder(data, orderData);
+        } catch (loyaltyError) {
+          console.error('Loyalty processing error (non-blocking):', loyaltyError);
+        }
+      }
       
       toast({ title: 'Pedido creado', description: `Pedido #${data.order_number} registrado` });
       await fetchOrders();
@@ -154,6 +165,114 @@ export const useOrders = () => {
       console.error('Error creating order:', error);
       toast({ title: 'Error', description: 'No se pudo crear el pedido', variant: 'destructive' });
       return null;
+    }
+  };
+
+  // Process loyalty points for an order
+  const processLoyaltyForOrder = async (
+    order: { id: string; total: number; order_number: number },
+    orderData: Record<string, unknown>
+  ) => {
+    const customerPhone = orderData.customer_phone as string | undefined;
+    const customerEmail = orderData.customer_email as string | undefined;
+    const customerName = (orderData.customer_name as string) || 'Cliente';
+
+    // Try to find existing loyalty customer
+    let loyaltyCustomer = null;
+    
+    if (customerEmail) {
+      const { data } = await supabase
+        .from('loyalty_customers')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('customer_email', customerEmail)
+        .maybeSingle();
+      loyaltyCustomer = data;
+    }
+    
+    if (!loyaltyCustomer && customerPhone) {
+      const { data } = await supabase
+        .from('loyalty_customers')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('customer_phone', customerPhone)
+        .maybeSingle();
+      loyaltyCustomer = data;
+    }
+
+    // Calculate points (1 point per $1000 spent, configurable)
+    const pointsToAward = Math.floor(order.total / 1000);
+    
+    if (loyaltyCustomer) {
+      // Update existing customer
+      const newPoints = (loyaltyCustomer.current_points || 0) + pointsToAward;
+      const newLifetime = (loyaltyCustomer.lifetime_points || 0) + pointsToAward;
+      const newTotal = (Number(loyaltyCustomer.total_spent) || 0) + order.total;
+      const newOrders = (loyaltyCustomer.total_orders || 0) + 1;
+      const newAvg = newTotal / newOrders;
+
+      await supabase
+        .from('loyalty_customers')
+        .update({
+          current_points: newPoints,
+          lifetime_points: newLifetime,
+          total_spent: newTotal,
+          total_orders: newOrders,
+          avg_order_value: newAvg,
+          last_order_at: new Date().toISOString(),
+        })
+        .eq('id', loyaltyCustomer.id);
+
+      // Log points transaction
+      if (pointsToAward > 0) {
+        await supabase
+          .from('loyalty_points_transactions')
+          .insert([{
+            user_id: userId,
+            customer_id: loyaltyCustomer.id,
+            points: pointsToAward,
+            transaction_type: 'earn',
+            source: 'order',
+            source_id: order.id,
+            description: `+${pointsToAward} pts por pedido #${order.order_number}`,
+            balance_after: newPoints,
+          }]);
+      }
+    } else {
+      // Create new loyalty customer
+      const { data: newCustomer } = await supabase
+        .from('loyalty_customers')
+        .insert([{
+          user_id: userId,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          current_points: pointsToAward,
+          lifetime_points: pointsToAward,
+          total_spent: order.total,
+          total_orders: 1,
+          avg_order_value: order.total,
+          first_order_at: new Date().toISOString(),
+          last_order_at: new Date().toISOString(),
+        }])
+        .select()
+        .single();
+
+      // Log initial points transaction
+      if (newCustomer && pointsToAward > 0) {
+        await supabase
+          .from('loyalty_points_transactions')
+          .insert([{
+            user_id: userId,
+            customer_id: newCustomer.id,
+            points: pointsToAward,
+            transaction_type: 'earn',
+            source: 'order',
+            source_id: order.id,
+            description: `+${pointsToAward} pts por pedido #${order.order_number} (bienvenida)`,
+            balance_after: pointsToAward,
+          }]);
+      }
     }
   };
 

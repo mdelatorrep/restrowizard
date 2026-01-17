@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.brand-ai-generator]
 verify_jwt = false
+
+[functions.loyalty-ai-engine]
+verify_jwt = false
