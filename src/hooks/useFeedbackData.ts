@@ -95,7 +95,6 @@ export const useFeedbackData = () => {
       setKpis(calculateKPIs(feedbackData));
       setHasData(feedbackData.length > 0);
 
-      // Fetch campaigns
       const { data: campaignsData } = await supabase
         .from('feedback_campaigns')
         .select('*')
@@ -153,13 +152,20 @@ export const useFeedbackData = () => {
     }
   };
 
-  const createCampaign = async (campaign: Partial<FeedbackCampaign>) => {
+  const createCampaign = async (campaignData: { name: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('feedback_campaigns')
-        .insert([{ ...campaign, user_id: userId }])
+        .insert([{ 
+          name: campaignData.name,
+          user_id: userId,
+          qr_code_url: campaignData.qr_code_url as string | undefined,
+          short_url: campaignData.short_url as string | undefined,
+          active: campaignData.active as boolean | undefined,
+          incentive: campaignData.incentive as string | undefined,
+        }])
         .select()
         .single();
 

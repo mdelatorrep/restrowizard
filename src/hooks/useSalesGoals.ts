@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SalesGoal {
   id: string;
@@ -65,7 +66,6 @@ export const useSalesGoals = () => {
     const remaining = goal.revenue_goal - actualRevenue;
     const dailyTarget = daysRemaining > 0 ? remaining / daysRemaining : 0;
     
-    // Project based on current pace
     const dailyAvg = elapsedDays > 0 ? actualRevenue / elapsedDays : 0;
     const projectedCompletion = dailyAvg * totalDays;
 
@@ -95,17 +95,14 @@ export const useSalesGoals = () => {
       const goalsData = (data || []) as unknown as SalesGoal[];
       setGoals(goalsData);
       
-      // Find current active goal
       const today = new Date().toISOString().split('T')[0];
       const active = goalsData.find(g => g.period_start <= today && g.period_end >= today);
       setCurrentGoal(active || null);
       
-      // Fetch actual sales to calculate progress (mock for now)
-      const actualRevenue = 0; // Would come from daily_sales table
+      const actualRevenue = 0;
       setKpis(calculateKPIs(active || null, actualRevenue));
       setHasData(goalsData.length > 0);
 
-      // Fetch projections
       const { data: projectionsData } = await supabase
         .from('sales_projections')
         .select('*')
@@ -121,13 +118,23 @@ export const useSalesGoals = () => {
     }
   };
 
-  const createGoal = async (goalData: Partial<SalesGoal>) => {
+  const createGoal = async (goalData: { period_start: string; period_end: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('sales_goals')
-        .insert([{ ...goalData, user_id: userId }])
+        .insert([{ 
+          period_start: goalData.period_start,
+          period_end: goalData.period_end,
+          user_id: userId,
+          period_type: goalData.period_type as string | undefined,
+          revenue_goal: goalData.revenue_goal as number | undefined,
+          covers_goal: goalData.covers_goal as number | undefined,
+          avg_ticket_goal: goalData.avg_ticket_goal as number | undefined,
+          category_goals: (goalData.category_goals ?? null) as Json,
+          notes: goalData.notes as string | undefined,
+        }])
         .select()
         .single();
 
@@ -147,7 +154,7 @@ export const useSalesGoals = () => {
     try {
       const { error } = await supabase
         .from('sales_goals')
-        .update(updates)
+        .update(updates as Record<string, unknown>)
         .eq('id', id);
 
       if (error) throw error;

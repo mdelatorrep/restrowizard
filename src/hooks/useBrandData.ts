@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface RestaurantBrand {
   id: string;
@@ -58,7 +59,6 @@ export const useBrandData = () => {
         setBrand(data as unknown as RestaurantBrand);
         setHasData(true);
         
-        // Fetch assets
         const { data: assetsData } = await supabase
           .from('brand_assets')
           .select('*')
@@ -76,13 +76,28 @@ export const useBrandData = () => {
     }
   };
 
-  const createBrand = async (brandData: Partial<RestaurantBrand>) => {
+  const createBrand = async (brandData: { brand_name: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
+      const insertData = {
+        brand_name: brandData.brand_name,
+        user_id: userId,
+        logo_url: brandData.logo_url as string | undefined,
+        tagline: brandData.tagline as string | undefined,
+        primary_color: brandData.primary_color as string | undefined,
+        secondary_color: brandData.secondary_color as string | undefined,
+        accent_color: brandData.accent_color as string | undefined,
+        font_primary: brandData.font_primary as string | undefined,
+        font_secondary: brandData.font_secondary as string | undefined,
+        brand_voice: brandData.brand_voice as string | undefined,
+        brand_values: (brandData.brand_values ?? null) as Json,
+        social_links: (brandData.social_links ?? null) as Json,
+      };
+
       const { data, error } = await supabase
         .from('restaurant_brands')
-        .insert([{ ...brandData, user_id: userId }])
+        .insert([insertData])
         .select()
         .single();
 
@@ -104,7 +119,7 @@ export const useBrandData = () => {
     try {
       const { data, error } = await supabase
         .from('restaurant_brands')
-        .update(updates)
+        .update(updates as Record<string, unknown>)
         .eq('id', brand.id)
         .select()
         .single();

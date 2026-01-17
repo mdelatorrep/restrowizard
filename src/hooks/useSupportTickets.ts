@@ -79,7 +79,6 @@ export const useSupportTickets = () => {
     const ratings = data.filter(t => t.satisfaction_rating).map(t => t.satisfaction_rating!);
     const avgSatisfaction = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
     
-    // Calculate avg response time (simplified)
     const respondedTickets = data.filter(t => t.first_response_at);
     let avgResponseHours = 0;
     if (respondedTickets.length > 0) {
@@ -119,7 +118,6 @@ export const useSupportTickets = () => {
       setKpis(calculateKPIs(ticketsData));
       setHasData(ticketsData.length > 0);
 
-      // Fetch templates
       const { data: templatesData } = await supabase
         .from('support_templates')
         .select('*')
@@ -135,13 +133,23 @@ export const useSupportTickets = () => {
     }
   };
 
-  const createTicket = async (ticketData: Partial<SupportTicket>) => {
+  const createTicket = async (ticketData: { type: string; subject: string; description: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('support_tickets')
-        .insert([{ ...ticketData, user_id: userId }])
+        .insert([{ 
+          type: ticketData.type,
+          subject: ticketData.subject,
+          description: ticketData.description,
+          user_id: userId,
+          priority: ticketData.priority as string | undefined,
+          customer_name: ticketData.customer_name as string | undefined,
+          customer_email: ticketData.customer_email as string | undefined,
+          customer_phone: ticketData.customer_phone as string | undefined,
+          order_id: ticketData.order_id as string | undefined,
+        }])
         .select()
         .single();
 
@@ -182,7 +190,6 @@ export const useSupportTickets = () => {
 
       if (error) throw error;
 
-      // Update first_response_at if this is the first staff response
       const ticket = tickets.find(t => t.id === ticketId);
       if (ticket && !ticket.first_response_at && senderType === 'staff') {
         await supabase
@@ -213,13 +220,20 @@ export const useSupportTickets = () => {
     return (data || []) as unknown as TicketMessage[];
   };
 
-  const createTemplate = async (template: Partial<SupportTemplate>) => {
+  const createTemplate = async (templateData: { name: string; [key: string]: unknown }) => {
     if (!userId) return null;
     
     try {
       const { data, error } = await supabase
         .from('support_templates')
-        .insert([{ ...template, user_id: userId }])
+        .insert([{ 
+          name: templateData.name,
+          user_id: userId,
+          category: templateData.category as string | undefined,
+          subject_template: templateData.subject_template as string | undefined,
+          body_template: templateData.body_template as string | undefined,
+          is_active: templateData.is_active as boolean | undefined,
+        }])
         .select()
         .single();
 
