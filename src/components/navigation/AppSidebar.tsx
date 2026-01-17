@@ -49,6 +49,7 @@ interface AppSidebarProps {
 
 const restaurantMenuItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/r/dashboard' },
+  { title: 'Primeros 90 Días', icon: Rocket, path: '/r/first-90-days' },
   { title: 'Finanzas IA', icon: DollarSign, path: '/r/finances' },
   { title: 'Operaciones IA', icon: ChefHat, path: '/r/operations' },
   { title: 'Talento IA', icon: Users, path: '/r/talent' },
