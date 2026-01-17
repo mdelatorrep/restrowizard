@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle, ArrowRight, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, Circle, ArrowRight, Sparkles, Target, TrendingUp, Loader2, Brain, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useDiagnosis, DiagnosisResult } from '@/hooks/useDiagnosis';
+import { useDiagnosis, AIActionPlan, DiagnosisResult } from '@/hooks/useDiagnosis';
 import { maturityModel, getLevelFromScore } from '@/data/maturityModel';
-import { supabase } from '@/integrations/supabase/client';
+import AIActionPlanComponent from '@/components/AIActionPlan';
+import MaturityInsights from '@/components/MaturityInsights';
+import MaturityBenchmark from '@/components/MaturityBenchmark';
 
 interface ActionItem {
   id: string;
@@ -22,10 +25,14 @@ interface ActionItem {
 
 const ActionPlan: React.FC = () => {
   const { user } = useAuth();
-  const { getLastDiagnosis } = useDiagnosis();
+  const { getLastDiagnosis, getAIActionPlan, generateAIAnalysis, getBenchmarkComparison, aiLoading } = useDiagnosis();
   const [diagnosis, setDiagnosis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [aiActionPlan, setAiActionPlan] = useState<AIActionPlan | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiBenchmark, setAiBenchmark] = useState<any>(null);
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   useEffect(() => {
     const loadDiagnosis = async () => {
@@ -35,7 +42,22 @@ const ActionPlan: React.FC = () => {
         const data = await getLastDiagnosis(user.id);
         if (data) {
           setDiagnosis(data);
-          generateActionItems(data.pillar_scores as Record<string, number>);
+          
+          // Load cached AI data if available
+          if (data.ai_action_plan) {
+            setAiActionPlan(data.ai_action_plan as unknown as AIActionPlan);
+          }
+          if (data.ai_analysis) {
+            setAiAnalysis(data.ai_analysis);
+          }
+          if (data.ai_benchmark) {
+            setAiBenchmark(data.ai_benchmark);
+          }
+          
+          // Generate fallback action items
+          if (!data.ai_action_plan) {
+            generateActionItems(data.pillar_scores as Record<string, number>);
+          }
         }
       } catch (error) {
         console.error('Error loading diagnosis:', error);
@@ -47,85 +69,67 @@ const ActionPlan: React.FC = () => {
     loadDiagnosis();
   }, [user]);
 
+  const generateAIContent = async () => {
+    if (!diagnosis || !user) return;
+    
+    setGeneratingAI(true);
+    
+    const diagnosisResult: DiagnosisResult = {
+      pillarScores: diagnosis.pillar_scores,
+      overallScore: diagnosis.overall_score,
+      overallLevel: diagnosis.overall_level
+    };
+    
+    const context = diagnosis.restaurant_context || {};
+    
+    try {
+      // Generate all AI content
+      const [analysis, plan, benchmark] = await Promise.all([
+        generateAIAnalysis(diagnosis.id, diagnosisResult, context),
+        getAIActionPlan(diagnosis.id, diagnosisResult, context),
+        getBenchmarkComparison(diagnosis.id, diagnosisResult, context)
+      ]);
+      
+      if (analysis) setAiAnalysis(analysis);
+      if (plan) setAiActionPlan(plan);
+      if (benchmark) setAiBenchmark(benchmark);
+    } catch (error) {
+      console.error('Error generating AI content:', error);
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
   const generateActionItems = (pillarScores: Record<string, number>) => {
     const items: ActionItem[] = [];
     
-    // Generate action items based on pillar scores
     const pillarRoutes: Record<string, string> = {
-      'finanzas': '/r/finances',
-      'operaciones': '/r/operations',
-      'talento': '/r/talent',
-      'cliente': '/r/menu-engineering'
+      'p1': '/r/finances',
+      'p2': '/r/operations',
+      'p3': '/r/talent',
+      'p4': '/r/menu-engineering'
     };
 
     const pillarActions: Record<string, { low: string[], medium: string[], high: string[] }> = {
-      'finanzas': {
-        low: [
-          'Implementar control básico de costos',
-          'Establecer presupuesto mensual',
-          'Crear reporte de ingresos diarios'
-        ],
-        medium: [
-          'Analizar márgenes por categoría',
-          'Optimizar precios con IA',
-          'Reducir food cost un 5%'
-        ],
-        high: [
-          'Automatizar reportes financieros',
-          'Proyección de flujo de caja',
-          'Análisis predictivo de ventas'
-        ]
+      'p1': {
+        low: ['Implementar control básico de costos', 'Establecer presupuesto mensual', 'Crear reporte de ingresos diarios'],
+        medium: ['Analizar márgenes por categoría', 'Optimizar precios con IA', 'Reducir food cost un 5%'],
+        high: ['Automatizar reportes financieros', 'Proyección de flujo de caja', 'Análisis predictivo de ventas']
       },
-      'operaciones': {
-        low: [
-          'Digitalizar registro de inventario',
-          'Establecer checklist diario de apertura',
-          'Documentar procesos clave'
-        ],
-        medium: [
-          'Integrar sistema de gestión de inventario',
-          'Automatizar órdenes a proveedores',
-          'Optimizar layout de cocina'
-        ],
-        high: [
-          'Dashboard de operaciones en tiempo real',
-          'Predicción de demanda con IA',
-          'Certificación de procesos'
-        ]
+      'p2': {
+        low: ['Digitalizar registro de inventario', 'Establecer checklist diario de apertura', 'Documentar procesos clave'],
+        medium: ['Integrar sistema de gestión de inventario', 'Automatizar órdenes a proveedores', 'Optimizar layout de cocina'],
+        high: ['Dashboard de operaciones en tiempo real', 'Predicción de demanda con IA', 'Certificación de procesos']
       },
-      'talento': {
-        low: [
-          'Crear descripciones de puesto',
-          'Implementar evaluación de desempeño',
-          'Establecer horarios rotativos'
-        ],
-        medium: [
-          'Programa de capacitación continua',
-          'Sistema de incentivos por rendimiento',
-          'Optimizar programación de turnos'
-        ],
-        high: [
-          'Plan de carrera para empleados',
-          'Análisis predictivo de rotación',
-          'Cultura de mejora continua'
-        ]
+      'p3': {
+        low: ['Crear descripciones de puesto', 'Implementar evaluación de desempeño', 'Establecer horarios rotativos'],
+        medium: ['Programa de capacitación continua', 'Sistema de incentivos por rendimiento', 'Optimizar programación de turnos'],
+        high: ['Plan de carrera para empleados', 'Análisis predictivo de rotación', 'Cultura de mejora continua']
       },
-      'cliente': {
-        low: [
-          'Digitalizar menú con QR',
-          'Recolectar feedback de clientes',
-          'Establecer programa de lealtad básico'
-        ],
-        medium: [
-          'Análisis de ingeniería de menú',
-          'Segmentación de clientes',
-          'Estrategia de marketing digital'
-        ],
-        high: [
-          'Personalización de experiencia',
-          'Predicción de preferencias',
-          'Optimización dinámica del menú'
-        ]
+      'p4': {
+        low: ['Digitalizar menú con QR', 'Recolectar feedback de clientes', 'Establecer programa de lealtad básico'],
+        medium: ['Análisis de ingeniería de menú', 'Segmentación de clientes', 'Estrategia de marketing digital'],
+        high: ['Personalización de experiencia', 'Predicción de preferencias', 'Optimización dinámica del menú']
       }
     };
 
@@ -133,7 +137,6 @@ const ActionPlan: React.FC = () => {
       const pillar = maturityModel.pillars.find(p => p.id === pillarId);
       if (!pillar) return;
 
-      const level = getLevelFromScore(score);
       const actions = pillarActions[pillarId];
       if (!actions) return;
 
@@ -165,7 +168,6 @@ const ActionPlan: React.FC = () => {
       });
     });
 
-    // Sort by priority
     items.sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -227,11 +229,91 @@ const ActionPlan: React.FC = () => {
 
   const overallScore = diagnosis.overall_score || 0;
   const overallLevel = getLevelFromScore(overallScore);
+
+  const diagnosisResult: DiagnosisResult = {
+    pillarScores: diagnosis.pillar_scores,
+    overallScore: diagnosis.overall_score,
+    overallLevel: diagnosis.overall_level
+  };
+
+  // If we have AI Action Plan, show the enhanced version
+  if (aiActionPlan) {
+    return (
+      <Tabs defaultValue="plan" className="space-y-4">
+        <TabsList className="grid grid-cols-3 w-full">
+          <TabsTrigger value="plan" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Plan de Acción
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="flex items-center gap-2" disabled={!aiAnalysis}>
+            <Brain className="h-4 w-4" />
+            Insights
+          </TabsTrigger>
+          <TabsTrigger value="benchmark" className="flex items-center gap-2" disabled={!aiBenchmark}>
+            <BarChart3 className="h-4 w-4" />
+            Benchmark
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="plan">
+          <AIActionPlanComponent 
+            actionPlan={aiActionPlan} 
+            diagnosisId={diagnosis.id}
+            diagnosisResult={diagnosisResult}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights">
+          {aiAnalysis && <MaturityInsights analysis={aiAnalysis} />}
+        </TabsContent>
+
+        <TabsContent value="benchmark">
+          {aiBenchmark && <MaturityBenchmark benchmark={aiBenchmark} />}
+        </TabsContent>
+      </Tabs>
+    );
+  }
+
+  // Fallback to basic action plan with option to generate AI version
   const completedItems = actionItems.filter(item => item.completed).length;
   const progress = actionItems.length > 0 ? (completedItems / actionItems.length) * 100 : 0;
 
   return (
     <div className="space-y-6">
+      {/* Generate AI Plan CTA */}
+      <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h3 className="font-headline font-bold text-lg flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Genera tu Plan con IA
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Obtén recomendaciones personalizadas, benchmarks y KPIs
+              </p>
+            </div>
+            <Button 
+              onClick={generateAIContent} 
+              disabled={generatingAI}
+              className="shrink-0"
+            >
+              {generatingAI ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Brain className="mr-2 h-4 w-4" />
+                  Generar con IA
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Card */}
       <Card className="bg-gradient-to-br from-primary/5 to-secondary/5">
         <CardHeader>
@@ -239,7 +321,7 @@ const ActionPlan: React.FC = () => {
             <div>
               <CardTitle className="flex items-center gap-2 font-headline">
                 <Target className="h-5 w-5 text-primary" />
-                Tu Plan de Acción Personalizado
+                Tu Plan de Acción
               </CardTitle>
               <CardDescription className="font-lato-light">
                 Basado en tu diagnóstico de madurez
