@@ -1578,42 +1578,51 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          alert_when_low: boolean | null
           category: string | null
           created_at: string
           current_stock: number
           id: string
           item_name: string
           last_restocked_at: string | null
+          min_stock_level: number | null
           reorder_point: number | null
           supplier_name: string | null
+          track_stock: boolean | null
           unit: string
           unit_cost: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          alert_when_low?: boolean | null
           category?: string | null
           created_at?: string
           current_stock?: number
           id?: string
           item_name: string
           last_restocked_at?: string | null
+          min_stock_level?: number | null
           reorder_point?: number | null
           supplier_name?: string | null
+          track_stock?: boolean | null
           unit?: string
           unit_cost?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          alert_when_low?: boolean | null
           category?: string | null
           created_at?: string
           current_stock?: number
           id?: string
           item_name?: string
           last_restocked_at?: string | null
+          min_stock_level?: number | null
           reorder_point?: number | null
           supplier_name?: string | null
+          track_stock?: boolean | null
           unit?: string
           unit_cost?: number | null
           updated_at?: string
@@ -2726,6 +2735,285 @@ export type Database = {
           },
         ]
       }
+      pos_cash_movements: {
+        Row: {
+          amount: number
+          authorized_by: string | null
+          created_at: string
+          id: string
+          movement_type: string
+          reason: string | null
+          session_id: string
+        }
+        Insert: {
+          amount: number
+          authorized_by?: string | null
+          created_at?: string
+          id?: string
+          movement_type: string
+          reason?: string | null
+          session_id: string
+        }
+        Update: {
+          amount?: number
+          authorized_by?: string | null
+          created_at?: string
+          id?: string
+          movement_type?: string
+          reason?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_discounts: {
+        Row: {
+          authorization_code: string | null
+          created_at: string
+          discount_type: string
+          id: string
+          is_active: boolean
+          max_discount_amount: number | null
+          min_order_value: number | null
+          name: string
+          requires_authorization: boolean | null
+          updated_at: string
+          usage_count: number | null
+          user_id: string
+          valid_from: string | null
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          authorization_code?: string | null
+          created_at?: string
+          discount_type: string
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_order_value?: number | null
+          name: string
+          requires_authorization?: boolean | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id: string
+          valid_from?: string | null
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          authorization_code?: string | null
+          created_at?: string
+          discount_type?: string
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          min_order_value?: number | null
+          name?: string
+          requires_authorization?: boolean | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string
+          valid_from?: string | null
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      pos_payment_methods: {
+        Row: {
+          commission_percent: number | null
+          created_at: string
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          method_name: string
+          method_type: string
+          provider: string | null
+          requires_reference: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_percent?: number | null
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          method_name: string
+          method_type: string
+          provider?: string | null
+          requires_reference?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_percent?: number | null
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          method_name?: string
+          method_type?: string
+          provider?: string | null
+          requires_reference?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pos_sessions: {
+        Row: {
+          actual_cash: number | null
+          cashier_name: string
+          closed_at: string | null
+          closing_cash: number | null
+          created_at: string
+          difference: number | null
+          expected_cash: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opening_cash: number
+          sales_count: number | null
+          status: string
+          terminal_id: string | null
+          total_sales: number | null
+          total_tips: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_cash?: number | null
+          cashier_name: string
+          closed_at?: string | null
+          closing_cash?: number | null
+          created_at?: string
+          difference?: number | null
+          expected_cash?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_cash?: number
+          sales_count?: number | null
+          status?: string
+          terminal_id?: string | null
+          total_sales?: number | null
+          total_tips?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_cash?: number | null
+          cashier_name?: string
+          closed_at?: string | null
+          closing_cash?: number | null
+          created_at?: string
+          difference?: number | null
+          expected_cash?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_cash?: number
+          sales_count?: number | null
+          status?: string
+          terminal_id?: string | null
+          total_sales?: number | null
+          total_tips?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pos_transactions: {
+        Row: {
+          amount: number
+          authorization_code: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          payment_method_id: string | null
+          payment_method_name: string | null
+          processed_at: string
+          processed_by: string | null
+          processor_response: Json | null
+          reference_number: string | null
+          session_id: string | null
+          status: string
+          tip_amount: number | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          authorization_code?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_method_id?: string | null
+          payment_method_name?: string | null
+          processed_at?: string
+          processed_by?: string | null
+          processor_response?: Json | null
+          reference_number?: string | null
+          session_id?: string | null
+          status?: string
+          tip_amount?: number | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          authorization_code?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_method_id?: string | null
+          payment_method_name?: string | null
+          processed_at?: string
+          processed_by?: string | null
+          processor_response?: Json | null
+          reference_number?: string | null
+          session_id?: string | null
+          status?: string
+          tip_amount?: number | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_transactions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "pos_payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_opening_tasks: {
         Row: {
           category: string
@@ -3406,21 +3694,33 @@ export type Database = {
           delivery_fee: number | null
           delivery_notes: string | null
           discount: number | null
+          discount_amount: number | null
+          discount_id: string | null
           driver_phone: string | null
           estimated_time_minutes: number | null
+          guests_count: number | null
           id: string
+          is_pos_order: boolean | null
           items: Json
           order_number: number
           order_type: string | null
           payment_method: string | null
           payment_status: string | null
+          session_id: string | null
           source: string | null
+          split_from_order_id: string | null
           status: string | null
           subtotal: number
+          table_id: string | null
           tax: number | null
+          tax_amount: number | null
+          tip_amount: number | null
+          tip_percent: number | null
           total: number
           updated_at: string | null
           user_id: string
+          waiter_id: string | null
+          waiter_name: string | null
         }
         Insert: {
           assigned_driver?: string | null
@@ -3433,21 +3733,33 @@ export type Database = {
           delivery_fee?: number | null
           delivery_notes?: string | null
           discount?: number | null
+          discount_amount?: number | null
+          discount_id?: string | null
           driver_phone?: string | null
           estimated_time_minutes?: number | null
+          guests_count?: number | null
           id?: string
+          is_pos_order?: boolean | null
           items?: Json
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          session_id?: string | null
           source?: string | null
+          split_from_order_id?: string | null
           status?: string | null
           subtotal?: number
+          table_id?: string | null
           tax?: number | null
+          tax_amount?: number | null
+          tip_amount?: number | null
+          tip_percent?: number | null
           total?: number
           updated_at?: string | null
           user_id: string
+          waiter_id?: string | null
+          waiter_name?: string | null
         }
         Update: {
           assigned_driver?: string | null
@@ -3460,23 +3772,120 @@ export type Database = {
           delivery_fee?: number | null
           delivery_notes?: string | null
           discount?: number | null
+          discount_amount?: number | null
+          discount_id?: string | null
           driver_phone?: string | null
           estimated_time_minutes?: number | null
+          guests_count?: number | null
           id?: string
+          is_pos_order?: boolean | null
           items?: Json
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          session_id?: string | null
           source?: string | null
+          split_from_order_id?: string | null
           status?: string | null
           subtotal?: number
+          table_id?: string | null
           tax?: number | null
+          tax_amount?: number | null
+          tip_amount?: number | null
+          tip_percent?: number | null
           total?: number
           updated_at?: string | null
           user_id?: string
+          waiter_id?: string | null
+          waiter_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_orders_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "pos_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_split_from_order_id_fkey"
+            columns: ["split_from_order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_tables: {
+        Row: {
+          capacity: number
+          created_at: string
+          current_order_id: string | null
+          id: string
+          position_x: number | null
+          position_y: number | null
+          shape: string | null
+          status: string
+          table_number: string
+          updated_at: string
+          user_id: string
+          waiter_id: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          current_order_id?: string | null
+          id?: string
+          position_x?: number | null
+          position_y?: number | null
+          shape?: string | null
+          status?: string
+          table_number: string
+          updated_at?: string
+          user_id: string
+          waiter_id?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          current_order_id?: string | null
+          id?: string
+          position_x?: number | null
+          position_y?: number | null
+          shape?: string | null
+          status?: string
+          table_number?: string
+          updated_at?: string
+          user_id?: string
+          waiter_id?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurant_zones: {
         Row: {

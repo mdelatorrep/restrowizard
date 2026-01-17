@@ -173,6 +173,12 @@ const lifecycleExtraItems: MenuItem[] = [
     stages: ['first_90_days', 'normal_operation']
   },
   { 
+    title: 'Punto de Venta', 
+    icon: CreditCard, 
+    path: '/r/pos',
+    stages: ['first_90_days', 'normal_operation']
+  },
+  {
     title: 'Metas de Venta', 
     icon: Target, 
     path: '/r/sales-goals',
