@@ -99,7 +99,7 @@ const PublicFeedback = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data: feedbackData, error } = await supabase
         .from('customer_feedback')
         .insert([{
           user_id: campaign?.user_id,
@@ -112,7 +112,9 @@ const PublicFeedback = () => {
           comment: formData.comment || null,
           source: 'qr_campaign',
           campaign_id: campaignId,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -121,6 +123,22 @@ const PublicFeedback = () => {
         .from('feedback_campaigns')
         .update({ responses_count: (campaign as any).responses_count ? (campaign as any).responses_count + 1 : 1 })
         .eq('id', campaignId);
+
+      // === LOYALTY INTEGRATION ===
+      // Award bonus points for positive feedback (4-5 stars)
+      if (formData.rating >= 4 && formData.customer_email && campaign?.user_id) {
+        try {
+          await processLoyaltyForFeedback(
+            campaign.user_id,
+            formData.customer_email,
+            formData.customer_name || 'Cliente',
+            formData.rating,
+            feedbackData?.id
+          );
+        } catch (loyaltyError) {
+          console.error('Loyalty bonus error (non-blocking):', loyaltyError);
+        }
+      }
 
       setSubmitted(true);
     } catch (error) {
@@ -132,6 +150,82 @@ const PublicFeedback = () => {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Process loyalty bonus points for feedback
+  const processLoyaltyForFeedback = async (
+    restaurantUserId: string,
+    customerEmail: string,
+    customerName: string,
+    rating: number,
+    feedbackId?: string
+  ) => {
+    // Find existing loyalty customer by email
+    const { data: loyaltyCustomer } = await supabase
+      .from('loyalty_customers')
+      .select('*')
+      .eq('user_id', restaurantUserId)
+      .eq('customer_email', customerEmail)
+      .maybeSingle();
+
+    // Calculate bonus points based on rating
+    const bonusPoints = rating === 5 ? 25 : 15; // 25 for 5 stars, 15 for 4 stars
+
+    if (loyaltyCustomer) {
+      // Award bonus points to existing customer
+      const newPoints = (loyaltyCustomer.current_points || 0) + bonusPoints;
+      const newLifetime = (loyaltyCustomer.lifetime_points || 0) + bonusPoints;
+
+      await supabase
+        .from('loyalty_customers')
+        .update({
+          current_points: newPoints,
+          lifetime_points: newLifetime,
+        })
+        .eq('id', loyaltyCustomer.id);
+
+      // Log transaction
+      await supabase
+        .from('loyalty_points_transactions')
+        .insert([{
+          user_id: restaurantUserId,
+          customer_id: loyaltyCustomer.id,
+          points: bonusPoints,
+          transaction_type: 'bonus',
+          source: 'feedback',
+          source_id: feedbackId,
+          description: `+${bonusPoints} pts bonus por reseña de ${rating} estrellas`,
+          balance_after: newPoints,
+        }]);
+    } else {
+      // Create new loyalty customer with bonus points
+      const { data: newCustomer } = await supabase
+        .from('loyalty_customers')
+        .insert([{
+          user_id: restaurantUserId,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          current_points: bonusPoints,
+          lifetime_points: bonusPoints,
+        }])
+        .select()
+        .single();
+
+      if (newCustomer) {
+        await supabase
+          .from('loyalty_points_transactions')
+          .insert([{
+            user_id: restaurantUserId,
+            customer_id: newCustomer.id,
+            points: bonusPoints,
+            transaction_type: 'bonus',
+            source: 'feedback',
+            source_id: feedbackId,
+            description: `+${bonusPoints} pts de bienvenida por reseña de ${rating} estrellas`,
+            balance_after: bonusPoints,
+          }]);
+      }
     }
   };
 
