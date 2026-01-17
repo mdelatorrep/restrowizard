@@ -278,7 +278,7 @@ const SalesGoals = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Metas Activas</p>
-                <p className="text-3xl font-bold">{kpis?.totalGoals || 0}</p>
+                <p className="text-3xl font-bold">{goals.length}</p>
               </div>
               <Target className="h-8 w-8 text-primary" />
             </div>
@@ -300,7 +300,7 @@ const SalesGoals = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Proyecciones</p>
-                <p className="text-3xl font-bold">{kpis?.projectionsCount || 0}</p>
+                <p className="text-3xl font-bold">{projections.length}</p>
               </div>
               <Calendar className="h-8 w-8 text-blue-500" />
             </div>
@@ -311,7 +311,7 @@ const SalesGoals = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Promedio Confianza</p>
-                <p className="text-3xl font-bold">{((kpis?.avgConfidence || 0) * 100).toFixed(0)}%</p>
+                <p className="text-3xl font-bold">{kpis?.progressPercent || 0}%</p>
               </div>
               <DollarSign className="h-8 w-8 text-orange-500" />
             </div>

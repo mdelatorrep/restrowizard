@@ -284,7 +284,7 @@ const Support = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En Proceso</p>
-                <p className="text-3xl font-bold text-green-600">{kpis?.inProgressTickets || 0}</p>
+                <p className="text-3xl font-bold text-green-600">{kpis?.resolutionRate || 0}%</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
