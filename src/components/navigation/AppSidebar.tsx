@@ -318,7 +318,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </div>
         )}
 
-        {/* Consultant-specific: Client Selector */}
+        {/* Consultant-specific: Client Selector with lifecycle info */}
         {userType === 'consultant' && !isCollapsed && (
           <div className="px-3 pt-3">
             <ClientSelector compact />
