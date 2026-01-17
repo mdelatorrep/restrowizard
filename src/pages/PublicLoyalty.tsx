@@ -20,7 +20,14 @@ import {
   XCircle,
   Trophy,
   PartyPopper,
-  Loader2
+  Loader2,
+  Award,
+  Target,
+  Flame,
+  Users,
+  MessageSquare,
+  Zap,
+  Lock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -81,6 +88,24 @@ interface RedeemedReward {
   } | null;
 }
 
+interface Achievement {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  achievement_type: string;
+  threshold: number;
+  bonus_points: number;
+  is_active: boolean;
+}
+
+interface CustomerAchievement {
+  id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  points_awarded: number;
+}
+
 const PublicLoyalty = () => {
   const { codigo } = useParams<{ codigo: string }>();
   const { toast } = useToast();
@@ -88,6 +113,8 @@ const PublicLoyalty = () => {
   const [transactions, setTransactions] = useState<PointsTransaction[]>([]);
   const [availableRewards, setAvailableRewards] = useState<RewardItem[]>([]);
   const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<CustomerAchievement[]>([]);
   const [allTiers, setAllTiers] = useState<LoyaltyTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +254,28 @@ const PublicLoyalty = () => {
         })));
       }
 
+      // Fetch achievements
+      const { data: achievementsData } = await supabase
+        .from('loyalty_achievements')
+        .select('*')
+        .eq('user_id', customerData.user_id)
+        .eq('is_active', true)
+        .order('threshold', { ascending: true });
+
+      if (achievementsData) {
+        setAchievements(achievementsData);
+      }
+
+      // Fetch customer's unlocked achievements
+      const { data: unlockedData } = await supabase
+        .from('loyalty_customer_achievements')
+        .select('*')
+        .eq('customer_id', customerData.id);
+
+      if (unlockedData) {
+        setUnlockedAchievements(unlockedData);
+      }
+
     } catch (err) {
       console.error('Error fetching loyalty data:', err);
       setError('Error al cargar los datos. Intenta de nuevo.');
@@ -316,6 +365,63 @@ const PublicLoyalty = () => {
   const openRedeemConfirmation = (reward: RewardItem) => {
     setSelectedReward(reward);
     setShowConfirmDialog(true);
+  };
+
+  // Helper to get achievement progress
+  const getAchievementProgress = (achievement: Achievement) => {
+    if (!customer) return 0;
+    
+    let currentValue = 0;
+    switch (achievement.achievement_type) {
+      case 'orders_count':
+        currentValue = customer.total_orders;
+        break;
+      case 'total_spent':
+        currentValue = customer.total_spent;
+        break;
+      case 'streak':
+        currentValue = 0; // Would need streak tracking
+        break;
+      case 'referrals':
+        currentValue = 0; // Would need referral tracking
+        break;
+      case 'reviews':
+        currentValue = 0; // Would need review tracking
+        break;
+      default:
+        currentValue = 0;
+    }
+    
+    return Math.min((currentValue / achievement.threshold) * 100, 100);
+  };
+
+  const isAchievementUnlocked = (achievementId: string) => {
+    return unlockedAchievements.some(ua => ua.achievement_id === achievementId);
+  };
+
+  const getAchievementIcon = (iconName: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      'trophy': <Trophy className="w-6 h-6" />,
+      'star': <Star className="w-6 h-6" />,
+      'flame': <Flame className="w-6 h-6" />,
+      'target': <Target className="w-6 h-6" />,
+      'users': <Users className="w-6 h-6" />,
+      'message': <MessageSquare className="w-6 h-6" />,
+      'zap': <Zap className="w-6 h-6" />,
+      'award': <Award className="w-6 h-6" />,
+      'crown': <Crown className="w-6 h-6" />,
+      'gift': <Gift className="w-6 h-6" />,
+    };
+    return icons[iconName] || <Award className="w-6 h-6" />;
+  };
+
+  const achievementTypeLabels: Record<string, string> = {
+    'orders_count': 'Órdenes',
+    'total_spent': 'Gasto total',
+    'streak': 'Racha',
+    'referrals': 'Referidos',
+    'reviews': 'Reseñas',
+    'custom': 'Especial',
   };
 
   const getNextTier = () => {
@@ -479,21 +585,167 @@ const PublicLoyalty = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="rewards" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="rewards">
-              <Gift className="w-4 h-4 mr-1" />
-              Canjear
+        <Tabs defaultValue="achievements" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="achievements" className="text-xs sm:text-sm">
+              <Award className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Logros</span>
             </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="w-4 h-4 mr-1" />
-              Historial
+            <TabsTrigger value="rewards" className="text-xs sm:text-sm">
+              <Gift className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Canjear</span>
             </TabsTrigger>
-            <TabsTrigger value="my-rewards">
-              <Star className="w-4 h-4 mr-1" />
-              Mis Premios
+            <TabsTrigger value="history" className="text-xs sm:text-sm">
+              <History className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Historial</span>
+            </TabsTrigger>
+            <TabsTrigger value="my-rewards" className="text-xs sm:text-sm">
+              <Star className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Premios</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Achievements Tab */}
+          <TabsContent value="achievements" className="space-y-4 mt-4">
+            {/* Unlocked Badges Summary */}
+            <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Logros desbloqueados</p>
+                    <p className="text-2xl font-bold">
+                      {unlockedAchievements.length} / {achievements.length}
+                    </p>
+                  </div>
+                  <div className="flex -space-x-2">
+                    {achievements.slice(0, 4).map(a => {
+                      const unlocked = isAchievementUnlocked(a.id);
+                      return (
+                        <div
+                          key={a.id}
+                          className={cn(
+                            "w-10 h-10 rounded-full border-2 border-background flex items-center justify-center",
+                            unlocked 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {unlocked ? getAchievementIcon(a.icon) : <Lock className="w-4 h-4" />}
+                        </div>
+                      );
+                    })}
+                    {achievements.length > 4 && (
+                      <div className="w-10 h-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-medium">
+                        +{achievements.length - 4}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Achievement List */}
+            {achievements.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Award className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-muted-foreground">No hay logros disponibles</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {achievements.map(achievement => {
+                  const unlocked = isAchievementUnlocked(achievement.id);
+                  const progress = getAchievementProgress(achievement);
+                  const unlockedData = unlockedAchievements.find(ua => ua.achievement_id === achievement.id);
+                  
+                  return (
+                    <Card 
+                      key={achievement.id} 
+                      className={cn(
+                        "transition-all overflow-hidden",
+                        unlocked && "border-primary/50 bg-primary/5"
+                      )}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          {/* Badge Icon */}
+                          <div className={cn(
+                            "w-14 h-14 rounded-full flex items-center justify-center shrink-0 relative",
+                            unlocked 
+                              ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg" 
+                              : "bg-muted text-muted-foreground"
+                          )}>
+                            {unlocked ? (
+                              <>
+                                {getAchievementIcon(achievement.icon)}
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                  <CheckCircle2 className="w-3 h-3 text-white" />
+                                </div>
+                              </>
+                            ) : (
+                              <Lock className="w-5 h-5" />
+                            )}
+                          </div>
+
+                          {/* Achievement Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className={cn(
+                                  "font-semibold",
+                                  unlocked && "text-primary"
+                                )}>
+                                  {achievement.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {achievement.description}
+                                </p>
+                              </div>
+                              <Badge variant={unlocked ? "default" : "secondary"} className="shrink-0">
+                                +{achievement.bonus_points} pts
+                              </Badge>
+                            </div>
+
+                            {/* Progress Bar */}
+                            {!unlocked && (
+                              <div className="mt-3 space-y-1">
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground">
+                                    {achievementTypeLabels[achievement.achievement_type]}
+                                  </span>
+                                  <span className="font-medium">
+                                    {Math.round(progress)}%
+                                  </span>
+                                </div>
+                                <Progress value={progress} className="h-2" />
+                                <p className="text-xs text-muted-foreground">
+                                  Meta: {achievement.threshold.toLocaleString()}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Unlocked Date */}
+                            {unlocked && unlockedData && (
+                              <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                Desbloqueado el{' '}
+                                {new Date(unlockedData.unlocked_at).toLocaleDateString('es', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           {/* Available Rewards */}
           <TabsContent value="rewards" className="space-y-3 mt-4">
