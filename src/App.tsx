@@ -32,6 +32,14 @@ import RestaurantSustainability from "./pages/restaurant/Sustainability";
 import RestaurantSettings from "./pages/restaurant/Settings";
 import RestaurantGhostKitchen from "./pages/restaurant/GhostKitchen";
 import RestaurantChainManagement from "./pages/restaurant/ChainManagement";
+import RestaurantBrand from "./pages/restaurant/Brand";
+import RestaurantFeedback from "./pages/restaurant/Feedback";
+import RestaurantRecipes from "./pages/restaurant/Recipes";
+import RestaurantOrders from "./pages/restaurant/Orders";
+import RestaurantSalesGoals from "./pages/restaurant/SalesGoals";
+import RestaurantSupport from "./pages/restaurant/Support";
+import RestaurantSocialListening from "./pages/restaurant/SocialListening";
+import RestaurantNewBusiness from "./pages/restaurant/NewBusiness";
 
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
@@ -87,7 +95,7 @@ const App = () => (
                   <AppLayout requiredUserType="restaurant_owner" />
                 </OnboardingGuard>
               }>
-                <Route path="dashboard" element={<RestaurantDashboard />} />
+              <Route path="dashboard" element={<RestaurantDashboard />} />
                 <Route path="finances" element={<RestaurantFinances />} />
                 <Route path="operations" element={<RestaurantOperations />} />
                 <Route path="talent" element={<RestaurantTalent />} />
@@ -95,6 +103,14 @@ const App = () => (
                 <Route path="sustainability" element={<RestaurantSustainability />} />
                 <Route path="ghost-kitchen" element={<RestaurantGhostKitchen />} />
                 <Route path="chain-management" element={<RestaurantChainManagement />} />
+                <Route path="brand" element={<RestaurantBrand />} />
+                <Route path="feedback" element={<RestaurantFeedback />} />
+                <Route path="recipes" element={<RestaurantRecipes />} />
+                <Route path="orders" element={<RestaurantOrders />} />
+                <Route path="sales-goals" element={<RestaurantSalesGoals />} />
+                <Route path="support" element={<RestaurantSupport />} />
+                <Route path="social-listening" element={<RestaurantSocialListening />} />
+                <Route path="new-business" element={<RestaurantNewBusiness />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 
