@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-import KitchenDisplay from "@/pages/restaurant/KitchenDisplay";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -49,7 +48,7 @@ import RestaurantLoyalty from "./pages/restaurant/Loyalty";
 import RestaurantFirst90Days from "./pages/restaurant/First90Days";
 import RestaurantPreOpening from "./pages/restaurant/PreOpening";
 import RestaurantPOS from "./pages/restaurant/POS";
-
+import RestaurantKitchen from "./pages/restaurant/KitchenDisplay";
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
 import ConsultantDashboard from "./pages/consultant/Dashboard";
@@ -132,6 +131,7 @@ const App = () => (
                 <Route path="first-90-days" element={<RestaurantFirst90Days />} />
                 <Route path="pre-opening" element={<RestaurantPreOpening />} />
                 <Route path="pos" element={<RestaurantPOS />} />
+                <Route path="kitchen" element={<RestaurantKitchen />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 

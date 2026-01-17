@@ -39,6 +39,7 @@ import { usePOSPayment, PaymentSplit } from '@/hooks/usePOSPayment';
 import { usePOSDiscounts } from '@/hooks/usePOSDiscounts';
 import { useMenuItemsData } from '@/hooks/useMenuItemsData';
 import { useLoyaltyData } from '@/hooks/useLoyaltyData';
+import { useInventoryDeduction } from '@/hooks/useInventoryDeduction';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -361,6 +362,7 @@ const POS = () => {
   const { discounts, applyDiscount: validateDiscount } = usePOSDiscounts();
   const { menuItems, loading: menuLoading } = useMenuItemsData();
   const { customers, awardPoints } = useLoyaltyData();
+  const { deductInventoryForOrder } = useInventoryDeduction();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -437,6 +439,17 @@ const POS = () => {
 
       // Process payment transactions
       await processPayment(order.id, payments, tipAmount);
+
+      // Deduct inventory automatically based on recipes
+      const inventoryResult = await deductInventoryForOrder(order.id, items.map(i => ({
+        menu_item_id: i.menu_item_id,
+        name: i.name,
+        quantity: i.quantity
+      })));
+      
+      if (inventoryResult.deductedCount > 0) {
+        console.log(`Inventory deducted for ${inventoryResult.deductedCount} items`);
+      }
 
       // Award loyalty points if customer selected
       if (selectedCustomer) {
