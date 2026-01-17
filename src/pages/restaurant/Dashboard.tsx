@@ -27,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ActionPlan from '@/components/ActionPlan';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
 import { useFinancesData } from '@/hooks/useFinancesData';
-import { useFirst90Days } from '@/hooks/useFirst90Days';
+import { useRestaurantLifecycle } from '@/hooks/useRestaurantLifecycle';
 
 interface KPIData {
   label: string;
@@ -52,16 +52,24 @@ const RestaurantDashboard: React.FC = () => {
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   
-  // Check if restaurant is new (within first 90 days)
-  const { isNewRestaurant, isLoading: loadingFirst90 } = useFirst90Days();
+  // Check restaurant lifecycle stage
+  const lifecycle = useRestaurantLifecycle();
   
   // Real data hooks
   const { alerts: copilotAlerts, unreadAlerts, generateAlerts, dismissAlert, isLoading: alertsLoading } = useCopilotAlerts();
   const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
 
-  // Redirect new restaurants to First 90 Days dashboard
-  if (!loadingFirst90 && isNewRestaurant) {
-    return <Navigate to="/r/first-90-days" replace />;
+  // Redirect based on lifecycle stage
+  if (!lifecycle.isLoading) {
+    if (lifecycle.stage === 'pre_opening') {
+      return <Navigate to="/r/pre-opening" replace />;
+    }
+    if (lifecycle.stage === 'first_90_days') {
+      return <Navigate to="/r/first-90-days" replace />;
+    }
+    if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement') {
+      return <Navigate to="/r/new-business" replace />;
+    }
   }
 
   useEffect(() => {
