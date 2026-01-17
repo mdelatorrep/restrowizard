@@ -7,12 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useFeedbackData, CustomerFeedback } from '@/hooks/useFeedbackData';
+import { useFeedbackData, CustomerFeedback, FeedbackCampaign } from '@/hooks/useFeedbackData';
+import { FeedbackQRDialog } from '@/components/feedback/FeedbackQRDialog';
 import { useToast } from '@/hooks/use-toast';
 import { 
   MessageSquare, Star, TrendingUp, TrendingDown, AlertTriangle, 
   QrCode, Plus, Loader2, ThumbsUp, ThumbsDown, Minus, Sparkles,
-  Mail, Phone
+  Mail, Phone, Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,6 +54,7 @@ const Feedback = () => {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<CustomerFeedback | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<FeedbackCampaign | null>(null);
   const [responseText, setResponseText] = useState('');
 
   const [feedbackForm, setFeedbackForm] = useState({
@@ -354,14 +356,32 @@ const Feedback = () => {
                     <CardTitle className="text-lg">{campaign.name}</CardTitle>
                     <CardDescription>{campaign.incentive || 'Sin incentivo'}</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Respuestas:</span>
                       <span className="font-semibold">{campaign.responses_count || 0}</span>
                     </div>
-                    <Badge variant={campaign.active ? 'default' : 'secondary'}>
-                      {campaign.active ? 'Activa' : 'Inactiva'}
-                    </Badge>
+                    <div className="flex items-center justify-between">
+                      <Badge variant={campaign.active ? 'default' : 'secondary'}>
+                        {campaign.active ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(`/feedback/${campaign.id}`, '_blank')}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedCampaign(campaign)}
+                        >
+                          <QrCode className="h-4 w-4 mr-1" />
+                          QR
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -458,6 +478,13 @@ const Feedback = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* QR Code Dialog for Campaigns */}
+      <FeedbackQRDialog
+        campaign={selectedCampaign}
+        open={!!selectedCampaign}
+        onOpenChange={(open) => !open && setSelectedCampaign(null)}
+      />
     </div>
   );
 };

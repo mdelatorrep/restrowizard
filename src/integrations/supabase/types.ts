@@ -1007,6 +1007,7 @@ export type Database = {
         Row: {
           ai_response_suggestion: string | null
           ambiance_rating: number | null
+          campaign_id: string | null
           comment: string | null
           created_at: string | null
           customer_email: string | null
@@ -1029,6 +1030,7 @@ export type Database = {
         Insert: {
           ai_response_suggestion?: string | null
           ambiance_rating?: number | null
+          campaign_id?: string | null
           comment?: string | null
           created_at?: string | null
           customer_email?: string | null
@@ -1051,6 +1053,7 @@ export type Database = {
         Update: {
           ai_response_suggestion?: string | null
           ambiance_rating?: number | null
+          campaign_id?: string | null
           comment?: string | null
           created_at?: string | null
           customer_email?: string | null
@@ -1070,7 +1073,15 @@ export type Database = {
           user_id?: string
           value_rating?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_feedback_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_briefings: {
         Row: {
@@ -3972,6 +3983,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_campaign_responses: {
+        Args: { campaign_id: string }
+        Returns: undefined
       }
       increment_job_views: { Args: { job_id: string }; Returns: undefined }
     }
