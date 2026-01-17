@@ -53,6 +53,7 @@ interface LoyaltyCustomer {
   total_orders: number;
   tier_id: string | null;
   loyalty_code: string;
+  restaurant_name: string | null;
   tier?: LoyaltyTier | null;
 }
 
@@ -164,6 +165,7 @@ const PublicLoyalty = () => {
         total_orders: customerData.total_orders,
         tier_id: customerData.tier_id,
         loyalty_code: customerData.loyalty_code || '',
+        restaurant_name: customerData.restaurant_name || 'Restaurante',
         tier: customerData.tier ? {
           ...customerData.tier,
           benefits: (customerData.tier.benefits as string[]) || []
@@ -496,6 +498,7 @@ const PublicLoyalty = () => {
       <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6 pb-20">
         <div className="max-w-lg mx-auto text-center">
           <Crown className="w-12 h-12 mx-auto mb-3 opacity-90" />
+          <p className="text-sm opacity-70 mb-1">{customer.restaurant_name}</p>
           <h1 className="text-2xl font-bold mb-1">Mi Fidelidad</h1>
           <p className="opacity-80">Bienvenido, {customer.customer_name}</p>
         </div>

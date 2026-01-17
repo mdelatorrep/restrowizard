@@ -2032,6 +2032,7 @@ export type Database = {
           predicted_ltv: number | null
           preferred_items: Json | null
           preferred_order_time: string | null
+          restaurant_name: string | null
           tier_id: string | null
           total_orders: number
           total_spent: number
@@ -2058,6 +2059,7 @@ export type Database = {
           predicted_ltv?: number | null
           preferred_items?: Json | null
           preferred_order_time?: string | null
+          restaurant_name?: string | null
           tier_id?: string | null
           total_orders?: number
           total_spent?: number
@@ -2084,6 +2086,7 @@ export type Database = {
           predicted_ltv?: number | null
           preferred_items?: Json | null
           preferred_order_time?: string | null
+          restaurant_name?: string | null
           tier_id?: string | null
           total_orders?: number
           total_spent?: number
