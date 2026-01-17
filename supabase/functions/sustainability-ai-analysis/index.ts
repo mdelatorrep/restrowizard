@@ -12,13 +12,21 @@ serve(async (req) => {
 
   try {
     const { type, data } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const systemPrompt = `Eres un experto en sostenibilidad y ESG para restaurantes. Analiza los datos proporcionados y genera recomendaciones específicas para:
+    const systemPrompt = `Eres un experto en sostenibilidad y ESG para restaurantes en Latinoamérica. 
+Tienes acceso a búsqueda web para obtener información actualizada sobre:
+- Regulaciones ambientales locales
+- Precios de energías renovables
+- Proveedores sostenibles
+- Certificaciones ESG
+- Mejores prácticas de la industria
+
+Analiza los datos proporcionados y genera recomendaciones específicas para:
 - Reducir huella de carbono
 - Minimizar desperdicio alimenticio
 - Optimizar uso de agua y energía
@@ -34,31 +42,53 @@ ${JSON.stringify(data, null, 2)}
 Incluye:
 1. Resumen ejecutivo
 2. Áreas de mejora prioritarias
-3. Acciones concretas recomendadas
-4. Estimación de ahorro potencial`;
+3. Acciones concretas recomendadas con costos estimados actuales de mercado
+4. Estimación de ahorro potencial
+5. Normativas o certificaciones aplicables en la región`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling OpenAI GPT-5 with web search for sustainability analysis...');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 2000
+        max_tokens: 3000,
+        tools: [{ type: 'web_search_preview' }],
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`AI Gateway error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Límite de solicitudes excedido. Intenta más tarde.', success: false }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'Se requiere pago. Agrega créditos a tu cuenta.', success: false }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const result = await response.json();
     const analysis = result.choices?.[0]?.message?.content || 'No se pudo generar el análisis.';
+
+    console.log('Sustainability analysis completed successfully');
 
     return new Response(JSON.stringify({ analysis, success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

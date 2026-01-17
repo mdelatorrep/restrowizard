@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { action, data } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     let systemPrompt = "";
@@ -23,28 +23,30 @@ serve(async (req) => {
 
     switch (action) {
       case "generate_palette":
-        systemPrompt = `Eres un diseñador de marca experto en restaurantes. Genera una paleta de colores profesional.
+        systemPrompt = `Eres un diseñador de marca experto en restaurantes con acceso a búsqueda web para tendencias actuales de diseño y branding gastronómico. Genera una paleta de colores profesional basada en tendencias actuales.
 Responde en JSON con:
 - primary_color: color principal en HEX
 - secondary_color: color secundario en HEX
 - accent_color: color de acento en HEX
 - background_color: color de fondo sugerido en HEX
 - text_color: color de texto sugerido en HEX
-- rationale: explicación de por qué estos colores funcionan
+- rationale: explicación de por qué estos colores funcionan y qué tendencias siguen
 - mood: palabras que describen el mood (array)`;
         
         userPrompt = `Genera paleta de colores para:
 Nombre del restaurante: ${data.brand_name}
 Tipo de cocina: ${data.cuisine_type || 'No especificado'}
 Ambiente deseado: ${data.desired_mood || 'Profesional y acogedor'}
-Público objetivo: ${data.target_audience || 'General'}`;
+Público objetivo: ${data.target_audience || 'General'}
+
+Busca tendencias actuales de diseño para restaurantes de este tipo.`;
         break;
 
       case "suggest_typography":
-        systemPrompt = `Eres un tipógrafo experto en branding gastronómico. Sugiere combinaciones de tipografías.
+        systemPrompt = `Eres un tipógrafo experto en branding gastronómico con acceso a búsqueda web para tendencias tipográficas actuales. Sugiere combinaciones de tipografías modernas y disponibles.
 Responde en JSON con:
-- font_primary: tipografía para títulos (nombre de Google Font)
-- font_secondary: tipografía para cuerpo (nombre de Google Font)
+- font_primary: tipografía para títulos (nombre de Google Font disponible)
+- font_secondary: tipografía para cuerpo (nombre de Google Font disponible)
 - font_accent: tipografía para acentos opcionales
 - pairing_rationale: por qué funcionan juntas
 - usage_guidelines: cómo usar cada una`;
@@ -52,11 +54,13 @@ Responde en JSON con:
         userPrompt = `Sugiere tipografías para:
 Nombre del restaurante: ${data.brand_name}
 Estilo de marca: ${data.brand_style || 'Moderno'}
-Tipo de cocina: ${data.cuisine_type || 'No especificado'}`;
+Tipo de cocina: ${data.cuisine_type || 'No especificado'}
+
+Busca tendencias tipográficas actuales en branding gastronómico.`;
         break;
 
       case "generate_tagline":
-        systemPrompt = `Eres un copywriter experto en gastronomía. Genera opciones de tagline/eslogan.
+        systemPrompt = `Eres un copywriter experto en gastronomía con acceso a búsqueda web para analizar taglines exitosos de restaurantes. Genera opciones de tagline/eslogan creativos y únicos.
 Responde en JSON con:
 - taglines: array de 5 opciones de tagline
 - recommended: el tagline recomendado
@@ -66,11 +70,13 @@ Responde en JSON con:
 Nombre: ${data.brand_name}
 Tipo de cocina: ${data.cuisine_type || 'No especificado'}
 Valores de marca: ${data.brand_values || 'Calidad, sabor, servicio'}
-Diferenciador: ${data.differentiator || 'No especificado'}`;
+Diferenciador: ${data.differentiator || 'No especificado'}
+
+Busca ejemplos de taglines exitosos de restaurantes similares para inspiración.`;
         break;
 
       case "generate_brand_manual":
-        systemPrompt = `Eres un consultor de branding. Genera un manual de marca resumido pero completo.
+        systemPrompt = `Eres un consultor de branding experto con acceso a búsqueda web para mejores prácticas actuales de branding gastronómico. Genera un manual de marca resumido pero completo.
 Responde en JSON con:
 - brand_essence: esencia de la marca (2-3 oraciones)
 - mission: misión
@@ -87,25 +93,31 @@ Tagline: ${data.tagline || 'No definido'}
 Colores: Primario ${data.primary_color}, Secundario ${data.secondary_color}
 Tipografías: ${data.font_primary}, ${data.font_secondary}
 Tipo de restaurante: ${data.cuisine_type || 'No especificado'}
-Voz de marca: ${data.brand_voice || 'No definida'}`;
+Voz de marca: ${data.brand_voice || 'No definida'}
+
+Busca mejores prácticas actuales de manuales de marca para restaurantes.`;
         break;
 
       default:
         throw new Error("Acción no válida");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log(`Calling OpenAI GPT-5-mini with web search for brand generation: ${action}`);
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        max_tokens: 1500,
+        tools: [{ type: 'web_search_preview' }],
       }),
     });
 
@@ -122,7 +134,7 @@ Voz de marca: ${data.brand_voice || 'No definida'}`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const aiData = await response.json();
