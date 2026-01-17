@@ -311,7 +311,7 @@ const SocialListening = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Positivas</p>
-                <p className="text-3xl font-bold text-green-600">{kpis?.positive || 0}</p>
+                <p className="text-3xl font-bold text-green-600">{kpis?.positivePercent || 0}%</p>
               </div>
               <ThumbsUp className="h-8 w-8 text-green-500" />
             </div>
@@ -322,7 +322,7 @@ const SocialListening = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Negativas</p>
-                <p className="text-3xl font-bold text-red-600">{kpis?.negative || 0}</p>
+                <p className="text-3xl font-bold text-red-600">{kpis?.negativePercent || 0}%</p>
               </div>
               <ThumbsDown className="h-8 w-8 text-red-500" />
             </div>

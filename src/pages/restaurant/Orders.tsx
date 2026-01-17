@@ -393,7 +393,7 @@ const Orders = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ventas Hoy</p>
-                <p className="text-3xl font-bold">${kpis?.totalRevenue?.toLocaleString() || 0}</p>
+                <p className="text-3xl font-bold">${kpis?.avgOrderValue?.toLocaleString() || 0}</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-500" />
             </div>
@@ -415,7 +415,7 @@ const Orders = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completados</p>
-                <p className="text-3xl font-bold">{kpis?.completedOrders || 0}</p>
+                <p className="text-3xl font-bold">{kpis?.completionRate || 0}%</p>
               </div>
               <ShoppingBag className="h-8 w-8 text-blue-500" />
             </div>
