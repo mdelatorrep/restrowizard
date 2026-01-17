@@ -1,61 +1,18 @@
-import { useState } from 'react';
-import { Search, MapPin, Clock, Euro, Users, BookOpen, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, MapPin, Clock, Euro, Users, BookOpen, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useJobs, Job, JobFilters } from '@/hooks/useJobs';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-// Mock data for demonstration
-const mockJobs = [
-  {
-    id: '1',
-    title: 'Chef de Cocina',
-    restaurant_name: 'Restaurante El Dorado',
-    location: 'Madrid, España',
-    job_type: 'full_time',
-    experience_level: 'senior',
-    job_category: 'kitchen',
-    salary_min: 2500,
-    salary_max: 3500,
-    applications_count: 12,
-    created_at: '2024-01-15',
-    description: 'Buscamos chef experimentado para liderar nuestra cocina mediterránea...',
-    skills_required: ['Cocina mediterránea', 'Gestión de equipos', 'Control de costes']
-  },
-  {
-    id: '2',
-    title: 'Camarero/a',
-    restaurant_name: 'Café Central',
-    location: 'Barcelona, España',
-    job_type: 'part_time',
-    experience_level: 'entry',
-    job_category: 'service',
-    salary_min: 1200,
-    salary_max: 1600,
-    applications_count: 8,
-    created_at: '2024-01-14',
-    description: 'Oportunidad para empezar en el sector de la restauración...',
-    skills_required: ['Atención al cliente', 'Trabajo en equipo', 'Idiomas']
-  },
-  {
-    id: '3',
-    title: 'Gerente de Restaurante',
-    restaurant_name: 'Grupo Gastronómico Premium',
-    location: 'Valencia, España',
-    job_type: 'full_time',
-    experience_level: 'lead',
-    job_category: 'management',
-    salary_min: 3500,
-    salary_max: 4500,
-    applications_count: 15,
-    created_at: '2024-01-13',
-    description: 'Únete a nuestro equipo directivo para gestionar operaciones...',
-    skills_required: ['Gestión', 'Liderazgo', 'Análisis financiero']
-  }
-];
-
+// Mock courses data (could be moved to DB later)
 const mockCourses = [
   {
     id: '1',
@@ -102,8 +59,38 @@ const Jobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const { loading, getJobs } = useJobs();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const formatJobType = (type: string) => {
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const loadJobs = async (filters?: JobFilters) => {
+    const data = await getJobs(filters);
+    setJobs(data);
+  };
+
+  const handleSearch = () => {
+    const filters: JobFilters = {};
+    if (searchTerm) filters.search = searchTerm;
+    if (locationFilter) filters.location = locationFilter;
+    if (categoryFilter && categoryFilter !== 'all') filters.category = categoryFilter;
+    loadJobs(filters);
+  };
+
+  const handlePublishJob = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    navigate('/r/talent'); // Redirect to talent module where jobs can be managed
+  };
+
+  const formatJobType = (type: string | null) => {
+    if (!type) return 'No especificado';
     const types: Record<string, string> = {
       full_time: 'Tiempo completo',
       part_time: 'Tiempo parcial',
@@ -114,7 +101,8 @@ const Jobs = () => {
     return types[type] || type;
   };
 
-  const formatCategory = (category: string) => {
+  const formatCategory = (category: string | null) => {
+    if (!category) return 'General';
     const categories: Record<string, string> = {
       kitchen: 'Cocina',
       service: 'Servicio',
@@ -127,7 +115,8 @@ const Jobs = () => {
     return categories[category] || category;
   };
 
-  const formatLevel = (level: string) => {
+  const formatLevel = (level: string | null) => {
+    if (!level) return 'No especificado';
     const levels: Record<string, string> = {
       entry: 'Inicial',
       junior: 'Junior',
@@ -148,10 +137,18 @@ const Jobs = () => {
     return levels[level] || level;
   };
 
+  const formatSalary = (min: number | null, max: number | null) => {
+    if (!min && !max) return 'A convenir';
+    if (min && max) return `€${min.toLocaleString()} - €${max.toLocaleString()}`;
+    if (min) return `Desde €${min.toLocaleString()}`;
+    if (max) return `Hasta €${max.toLocaleString()}`;
+    return 'A convenir';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary to-primary-foreground text-primary-foreground py-16">
+      <section className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-16">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -171,6 +168,7 @@ const Jobs = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
                 <div className="flex-1 relative">
@@ -180,6 +178,7 @@ const Jobs = () => {
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                     className="pl-10"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -194,8 +193,8 @@ const Jobs = () => {
                     <SelectItem value="administration">Administración</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  Buscar
+                <Button size="lg" onClick={handleSearch} disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
                 </Button>
               </div>
             </div>
@@ -221,79 +220,86 @@ const Jobs = () => {
             <TabsContent value="jobs">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Ofertas de Empleo</h2>
-                <Button className="flex items-center gap-2">
+                <Button className="flex items-center gap-2" onClick={handlePublishJob}>
                   <Plus className="h-4 w-4" />
                   Publicar Empleo
                 </Button>
               </div>
 
-              <div className="grid gap-6">
-                {mockJobs.map((job) => (
-                  <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
-                          <CardDescription className="text-base text-foreground font-medium">
-                            {job.restaurant_name}
-                          </CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold text-primary">
-                            €{job.salary_min} - €{job.salary_max}
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : jobs.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No hay ofertas de empleo</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Sé el primero en publicar una oferta de trabajo
+                  </p>
+                  <Button onClick={handlePublishJob}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Publicar Empleo
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  {jobs.map((job) => (
+                    <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+                            <CardDescription className="text-base text-foreground font-medium">
+                              {job.employer_id ? 'Empresa verificada' : 'Empresa no especificada'}
+                            </CardDescription>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {job.applications_count} candidatos
+                          <div className="text-right">
+                            <div className="text-lg font-semibold text-primary">
+                              {formatSalary(job.salary_min, job.salary_max)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {job.applications_count || 0} candidatos
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        <Badge variant="secondary">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {job.location}
-                        </Badge>
-                        <Badge variant="outline">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {formatJobType(job.job_type)}
-                        </Badge>
-                        <Badge variant="outline">
-                          {formatCategory(job.job_category)}
-                        </Badge>
-                        <Badge variant="outline">
-                          {formatLevel(job.experience_level)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {job.description}
-                      </p>
-                      
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {job.skills_required.slice(0, 3).map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {skill}
+                        
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {job.location && (
+                            <Badge variant="secondary">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {job.location}
+                            </Badge>
+                          )}
+                          <Badge variant="outline">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatJobType(job.job_type)}
                           </Badge>
-                        ))}
-                        {job.skills_required.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{job.skills_required.length - 3} más
+                          <Badge variant="outline">
+                            {formatCategory(job.category)}
                           </Badge>
-                        )}
-                      </div>
+                          <Badge variant="outline">
+                            {formatLevel(job.experience_level)}
+                          </Badge>
+                        </div>
+                      </CardHeader>
                       
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">
-                          Publicado hace 2 días
-                        </span>
-                        <Button>Ver Detalles</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <CardContent>
+                        <p className="text-muted-foreground mb-4 line-clamp-2">
+                          {job.description || 'Sin descripción disponible'}
+                        </p>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">
+                            Publicado {formatDistanceToNow(new Date(job.created_at), { addSuffix: true, locale: es })}
+                          </span>
+                          <Button>Ver Detalles</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="training">
@@ -369,7 +375,7 @@ const Jobs = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-primary">500+</div>
+              <div className="text-3xl font-bold text-primary">{jobs.length || '0'}</div>
               <div className="text-sm text-muted-foreground">Ofertas Activas</div>
             </div>
             <div>

@@ -63,6 +63,10 @@ import ConsultantChainManagement from "./pages/consultant/ChainManagement";
 import ConsultantEvents from "./pages/consultant/Events";
 import ConsultantEventSpaces from "./pages/consultant/EventSpaces";
 import ConsultantNewQuotation from "./pages/consultant/NewQuotation";
+import ConsultantClients from "./pages/consultant/Clients";
+import ConsultantReports from "./pages/consultant/Reports";
+import ConsultantAlerts from "./pages/consultant/Alerts";
+import ConsultantNewBusiness from "./pages/consultant/NewBusiness";
 import PublicQuotationPage from "./pages/PublicQuotation";
 
 const queryClient = new QueryClient();
@@ -156,6 +160,10 @@ const App = () => (
                 <Route path="events/new" element={<ConsultantNewQuotation />} />
                 
                 {/* Consultant management */}
+                <Route path="clients" element={<ConsultantClients />} />
+                <Route path="reports" element={<ConsultantReports />} />
+                <Route path="alerts" element={<ConsultantAlerts />} />
+                <Route path="new-business" element={<ConsultantNewBusiness />} />
                 <Route path="billing" element={<ConsultantBilling />} />
                 <Route path="settings" element={<ConsultantSettings />} />
               </Route>

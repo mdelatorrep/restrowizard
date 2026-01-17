@@ -9,10 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users, Star, Clock, Search, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function Events() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<'event' | 'venue' | 'service'>('event');
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -73,29 +77,54 @@ export default function Events() {
     { id: "graduation", name: "Graduaciones", color: "bg-green-100 text-green-800" }
   ];
 
-  const handleCreateEvent = () => {
+  const handleAction = (type: 'event' | 'venue' | 'service') => {
     if (!user) {
       navigate("/auth");
       return;
     }
-    navigate("/events/create");
+    setDialogType(type);
+    setCreateDialogOpen(true);
   };
 
-  const handlePublishVenue = () => {
-    if (!user) {
-      navigate("/auth");
-      return;
+  const handleDialogAction = () => {
+    // Based on user type, navigate to appropriate section
+    setCreateDialogOpen(false);
+    
+    if (dialogType === 'event') {
+      toast.info("Para organizar eventos, contacta con un restaurante o consultor");
+      // Could redirect to contact form or show contact info
+    } else if (dialogType === 'venue') {
+      navigate("/r/settings"); // Restaurant settings where they can manage their venue
+      toast.success("Configura tu espacio desde la configuración de tu restaurante");
+    } else if (dialogType === 'service') {
+      toast.info("Próximamente: Marketplace de servicios para eventos");
     }
-    navigate("/venues/create");
   };
 
-  const handlePublishService = () => {
-    if (!user) {
-      navigate("/auth");
-      return;
+  const getDialogContent = () => {
+    switch (dialogType) {
+      case 'event':
+        return {
+          title: "Organizar un Evento",
+          description: "Para organizar un evento, te recomendamos contactar directamente con los restaurantes o espacios de tu interés.",
+          buttonText: "Entendido"
+        };
+      case 'venue':
+        return {
+          title: "Publicar tu Espacio",
+          description: "Si eres propietario de un restaurante, puedes configurar tu espacio para eventos desde el panel de configuración.",
+          buttonText: "Ir a Configuración"
+        };
+      case 'service':
+        return {
+          title: "Ofrecer Servicios",
+          description: "El marketplace de servicios para eventos estará disponible próximamente. Te notificaremos cuando esté listo.",
+          buttonText: "Entendido"
+        };
     }
-    navigate("/services/create");
   };
+
+  const dialogContent = getDialogContent();
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,20 +142,40 @@ export default function Events() {
           </p>
           
           <div className="flex flex-wrap justify-center gap-4">
-            <Button onClick={handleCreateEvent} size="lg" className="bg-primary text-primary-foreground">
+            <Button onClick={() => handleAction('event')} size="lg" className="bg-primary text-primary-foreground">
               <Calendar className="mr-2 h-5 w-5" />
               Organizar Evento
             </Button>
-            <Button onClick={handlePublishVenue} variant="outline" size="lg">
+            <Button onClick={() => handleAction('venue')} variant="outline" size="lg">
               <MapPin className="mr-2 h-5 w-5" />
               Publicar Espacio
             </Button>
-            <Button onClick={handlePublishService} variant="outline" size="lg">
+            <Button onClick={() => handleAction('service')} variant="outline" size="lg">
               <Users className="mr-2 h-5 w-5" />
               Ofrecer Servicios
             </Button>
           </div>
         </section>
+
+        {/* Dialog for actions */}
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{dialogContent.title}</DialogTitle>
+              <DialogDescription>
+                {dialogContent.description}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleDialogAction}>
+                {dialogContent.buttonText}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Search and Filters */}
         <section className="mb-8">
@@ -174,7 +223,7 @@ export default function Events() {
           <TabsContent value="venues" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Espacios Disponibles</h2>
-              <Button onClick={handlePublishVenue} variant="outline">
+              <Button onClick={() => handleAction('venue')} variant="outline">
                 Publicar mi espacio
               </Button>
             </div>
@@ -238,7 +287,7 @@ export default function Events() {
           <TabsContent value="services" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Servicios para Eventos</h2>
-              <Button onClick={handlePublishService} variant="outline">
+              <Button onClick={() => handleAction('service')} variant="outline">
                 Ofrecer servicios
               </Button>
             </div>
@@ -295,7 +344,7 @@ export default function Events() {
           <TabsContent value="events" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Eventos Próximos</h2>
-              <Button onClick={handleCreateEvent}>
+              <Button onClick={() => handleAction('event')}>
                 Crear Evento
               </Button>
             </div>
@@ -306,7 +355,7 @@ export default function Events() {
               <p className="text-muted-foreground mb-6">
                 Encuentra el espacio perfecto y los mejores servicios para tu evento
               </p>
-              <Button onClick={handleCreateEvent} size="lg">
+              <Button onClick={() => handleAction('event')} size="lg">
                 Comenzar a organizar
               </Button>
             </div>
