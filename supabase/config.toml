@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.loyalty-ai-engine]
 verify_jwt = false
+
+[functions.maturity-ai-engine]
+verify_jwt = false
