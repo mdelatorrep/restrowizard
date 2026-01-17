@@ -42,6 +42,7 @@ import RestaurantSupport from "./pages/restaurant/Support";
 import RestaurantSocialListening from "./pages/restaurant/SocialListening";
 import RestaurantNewBusiness from "./pages/restaurant/NewBusiness";
 import RestaurantMenus from "./pages/restaurant/Menus";
+import RestaurantLoyalty from "./pages/restaurant/Loyalty";
 
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
@@ -115,6 +116,7 @@ const App = () => (
                 <Route path="social-listening" element={<RestaurantSocialListening />} />
                 <Route path="new-business" element={<RestaurantNewBusiness />} />
                 <Route path="menus" element={<RestaurantMenus />} />
+                <Route path="loyalty" element={<RestaurantLoyalty />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 

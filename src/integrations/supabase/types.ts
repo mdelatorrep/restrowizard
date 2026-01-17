@@ -1864,6 +1864,462 @@ export type Database = {
           },
         ]
       }
+      loyalty_achievements: {
+        Row: {
+          achievement_type: string
+          bonus_points: number
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          threshold: number
+          user_id: string
+        }
+        Insert: {
+          achievement_type: string
+          bonus_points?: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          threshold: number
+          user_id: string
+        }
+        Update: {
+          achievement_type?: string
+          bonus_points?: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          threshold?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_campaigns: {
+        Row: {
+          bonus_points: number | null
+          budget_points: number | null
+          campaign_type: string
+          conditions: Json | null
+          created_at: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_order_value: number | null
+          name: string
+          points_multiplier: number | null
+          points_spent: number | null
+          starts_at: string
+          target_segment: string | null
+          target_tier_ids: string[] | null
+          updated_at: string
+          user_id: string
+          uses_count: number | null
+        }
+        Insert: {
+          bonus_points?: number | null
+          budget_points?: number | null
+          campaign_type: string
+          conditions?: Json | null
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_value?: number | null
+          name: string
+          points_multiplier?: number | null
+          points_spent?: number | null
+          starts_at: string
+          target_segment?: string | null
+          target_tier_ids?: string[] | null
+          updated_at?: string
+          user_id: string
+          uses_count?: number | null
+        }
+        Update: {
+          bonus_points?: number | null
+          budget_points?: number | null
+          campaign_type?: string
+          conditions?: Json | null
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_value?: number | null
+          name?: string
+          points_multiplier?: number | null
+          points_spent?: number | null
+          starts_at?: string
+          target_segment?: string | null
+          target_tier_ids?: string[] | null
+          updated_at?: string
+          user_id?: string
+          uses_count?: number | null
+        }
+        Relationships: []
+      }
+      loyalty_customer_achievements: {
+        Row: {
+          achievement_id: string
+          customer_id: string
+          id: string
+          points_awarded: number
+          unlocked_at: string
+        }
+        Insert: {
+          achievement_id: string
+          customer_id: string
+          id?: string
+          points_awarded?: number
+          unlocked_at?: string
+        }
+        Update: {
+          achievement_id?: string
+          customer_id?: string
+          id?: string
+          points_awarded?: number
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_customer_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_customer_achievements_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_customers: {
+        Row: {
+          ai_insights: Json | null
+          avg_order_value: number
+          birthday: string | null
+          churn_risk_score: number | null
+          created_at: string
+          current_points: number
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          first_order_at: string | null
+          id: string
+          is_active: boolean
+          last_order_at: string | null
+          lifetime_points: number
+          notes: string | null
+          predicted_ltv: number | null
+          preferred_items: Json | null
+          preferred_order_time: string | null
+          tier_id: string | null
+          total_orders: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_insights?: Json | null
+          avg_order_value?: number
+          birthday?: string | null
+          churn_risk_score?: number | null
+          created_at?: string
+          current_points?: number
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          first_order_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_order_at?: string | null
+          lifetime_points?: number
+          notes?: string | null
+          predicted_ltv?: number | null
+          preferred_items?: Json | null
+          preferred_order_time?: string | null
+          tier_id?: string | null
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_insights?: Json | null
+          avg_order_value?: number
+          birthday?: string | null
+          churn_risk_score?: number | null
+          created_at?: string
+          current_points?: number
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          first_order_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_order_at?: string | null
+          lifetime_points?: number
+          notes?: string | null
+          predicted_ltv?: number | null
+          preferred_items?: Json | null
+          preferred_order_time?: string | null
+          tier_id?: string | null
+          total_orders?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_customers_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_points_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          customer_id: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          points: number
+          source: string
+          source_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          customer_id: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          points: number
+          source: string
+          source_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          customer_id?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          points?: number
+          source?: string
+          source_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_points_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          catalog_item_id: string
+          created_at: string
+          customer_id: string
+          expires_at: string | null
+          id: string
+          order_id: string | null
+          points_spent: number
+          redeemed_at: string | null
+          redemption_code: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          catalog_item_id: string
+          created_at?: string
+          customer_id: string
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          points_spent: number
+          redeemed_at?: string | null
+          redemption_code: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          catalog_item_id?: string
+          created_at?: string
+          customer_id?: string
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          points_spent?: number
+          redeemed_at?: string | null
+          redemption_code?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_rewards_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rewards_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards_catalog: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          min_tier_id: string | null
+          name: string
+          points_required: number
+          reward_type: string
+          reward_value: number | null
+          sort_order: number
+          stock_limit: number | null
+          stock_used: number | null
+          terms: string | null
+          updated_at: string
+          user_id: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_tier_id?: string | null
+          name: string
+          points_required: number
+          reward_type: string
+          reward_value?: number | null
+          sort_order?: number
+          stock_limit?: number | null
+          stock_used?: number | null
+          terms?: string | null
+          updated_at?: string
+          user_id: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_tier_id?: string | null
+          name?: string
+          points_required?: number
+          reward_type?: string
+          reward_value?: number | null
+          sort_order?: number
+          stock_limit?: number | null
+          stock_used?: number | null
+          terms?: string | null
+          updated_at?: string
+          user_id?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_catalog_min_tier_id_fkey"
+            columns: ["min_tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_tiers: {
+        Row: {
+          benefits: Json | null
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          min_points: number
+          name: string
+          points_multiplier: number
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          min_points?: number
+          name: string
+          points_multiplier?: number
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          benefits?: Json | null
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          min_points?: number
+          name?: string
+          points_multiplier?: number
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       maturity_diagnoses: {
         Row: {
           answers: Json
@@ -3977,6 +4433,7 @@ export type Database = {
         Returns: Json
       }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
+      generate_redemption_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
