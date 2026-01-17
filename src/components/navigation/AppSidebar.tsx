@@ -59,6 +59,7 @@ const restaurantMenuItems = [
 
 const restaurantExtraItems = [
   { title: 'Marca', icon: Palette, path: '/r/brand' },
+  { title: 'Menús Digitales', icon: Utensils, path: '/r/menus' },
   { title: 'Feedback', icon: MessageSquare, path: '/r/feedback' },
   { title: 'Recetas', icon: BookOpen, path: '/r/recipes' },
   { title: 'Pedidos', icon: ShoppingBag, path: '/r/orders' },
