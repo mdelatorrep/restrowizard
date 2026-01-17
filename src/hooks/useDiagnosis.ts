@@ -148,16 +148,18 @@ export const useDiagnosis = () => {
       console.log('🏷️ Mapped level:', { original: result.overallLevel, mapped: dbLevel });
       
       console.log('💾 Inserting into database...');
+      const insertData = {
+        user_id: userId,
+        answers,
+        pillar_scores: result.pillarScores,
+        overall_score: result.overallScore,
+        overall_level: dbLevel as 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto',
+        restaurant_context: context || null
+      };
+      
       const { data, error } = await supabase
         .from('maturity_diagnoses')
-        .insert({
-          user_id: userId,
-          answers,
-          pillar_scores: result.pillarScores,
-          overall_score: result.overallScore,
-          overall_level: dbLevel as 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto',
-          restaurant_context: context || null
-        })
+        .insert(insertData as any)
         .select()
         .single();
 
