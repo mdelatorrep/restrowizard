@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { 
   Crown, 
   Star, 
@@ -17,10 +18,13 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Trophy
+  Trophy,
+  PartyPopper,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface LoyaltyTier {
   id: string;
@@ -79,6 +83,7 @@ interface RedeemedReward {
 
 const PublicLoyalty = () => {
   const { codigo } = useParams<{ codigo: string }>();
+  const { toast } = useToast();
   const [customer, setCustomer] = useState<LoyaltyCustomer | null>(null);
   const [transactions, setTransactions] = useState<PointsTransaction[]>([]);
   const [availableRewards, setAvailableRewards] = useState<RewardItem[]>([]);
@@ -86,6 +91,13 @@ const PublicLoyalty = () => {
   const [allTiers, setAllTiers] = useState<LoyaltyTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Redemption state
+  const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redemptionResult, setRedemptionResult] = useState<{ code: string; expiresAt: string } | null>(null);
 
   useEffect(() => {
     if (codigo) {
@@ -221,6 +233,89 @@ const PublicLoyalty = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle reward redemption
+  const handleRedeemReward = async () => {
+    if (!customer || !selectedReward) return;
+
+    setRedeeming(true);
+    try {
+      // Generate a unique redemption code
+      const redemptionCode = `RW${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      // Calculate expiration (30 days from now)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      // Start transaction: Create reward redemption
+      const { data: rewardData, error: rewardError } = await supabase
+        .from('loyalty_rewards')
+        .insert({
+          user_id: customer.tier_id ? (await supabase.from('loyalty_tiers').select('user_id').eq('id', customer.tier_id).single()).data?.user_id : null,
+          customer_id: customer.id,
+          catalog_item_id: selectedReward.id,
+          points_spent: selectedReward.points_required,
+          redemption_code: redemptionCode,
+          status: 'pending',
+          expires_at: expiresAt.toISOString()
+        })
+        .select()
+        .single();
+
+      if (rewardError) throw rewardError;
+
+      // Deduct points from customer
+      const newPoints = customer.current_points - selectedReward.points_required;
+      const { error: updateError } = await supabase
+        .from('loyalty_customers')
+        .update({ current_points: newPoints })
+        .eq('id', customer.id);
+
+      if (updateError) throw updateError;
+
+      // Record the transaction
+      await supabase
+        .from('loyalty_points_transactions')
+        .insert({
+          user_id: customer.tier_id ? (await supabase.from('loyalty_tiers').select('user_id').eq('id', customer.tier_id).single()).data?.user_id : null,
+          customer_id: customer.id,
+          points: -selectedReward.points_required,
+          transaction_type: 'redeem',
+          source: 'reward_redemption',
+          source_id: rewardData.id,
+          description: `Canje: ${selectedReward.name}`,
+          balance_after: newPoints
+        });
+
+      // Update local state
+      setCustomer(prev => prev ? { ...prev, current_points: newPoints } : null);
+      setRedemptionResult({
+        code: redemptionCode,
+        expiresAt: expiresAt.toISOString()
+      });
+      
+      setShowConfirmDialog(false);
+      setShowSuccessDialog(true);
+
+      // Refresh data
+      fetchCustomerData();
+
+    } catch (err) {
+      console.error('Error redeeming reward:', err);
+      toast({
+        title: 'Error',
+        description: 'No se pudo canjear la recompensa. Intenta de nuevo.',
+        variant: 'destructive'
+      });
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
+  const openRedeemConfirmation = (reward: RewardItem) => {
+    setSelectedReward(reward);
+    setShowConfirmDialog(true);
   };
 
   const getNextTier = () => {
@@ -438,6 +533,7 @@ const PublicLoyalty = () => {
                           size="sm" 
                           disabled={!canRedeem}
                           className="ml-3"
+                          onClick={() => canRedeem && openRedeemConfirmation(reward)}
                         >
                           {canRedeem ? 'Canjear' : (
                             <span className="flex items-center gap-1">
@@ -534,6 +630,127 @@ const PublicLoyalty = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-primary" />
+              Confirmar Canje
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de canjear esta recompensa?
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedReward && (
+            <div className="py-4">
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <h3 className="font-semibold text-lg">{selectedReward.name}</h3>
+                {selectedReward.description && (
+                  <p className="text-sm text-muted-foreground">{selectedReward.description}</p>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Puntos a usar:</span>
+                  <span className="font-bold text-primary flex items-center gap-1">
+                    <Coins className="w-4 h-4" />
+                    {selectedReward.points_required.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Puntos restantes:</span>
+                  <span className="font-medium">
+                    {(customer!.current_points - selectedReward.points_required).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button 
+              onClick={handleRedeemReward} 
+              disabled={redeeming}
+              className="w-full"
+            >
+              {redeeming ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Canjeando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Confirmar Canje
+                </>
+              )}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={redeeming}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="max-w-sm">
+          <div className="text-center py-4">
+            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+              <PartyPopper className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">¡Felicidades!</h2>
+            <p className="text-muted-foreground mb-4">
+              Has canjeado exitosamente tu recompensa
+            </p>
+
+            {selectedReward && (
+              <div className="p-4 bg-muted rounded-lg mb-4">
+                <p className="font-semibold">{selectedReward.name}</p>
+              </div>
+            )}
+
+            {redemptionResult && (
+              <div className="space-y-3">
+                <div className="p-4 bg-primary/10 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Tu código de canje</p>
+                  <p className="text-2xl font-mono font-bold text-primary tracking-wider">
+                    {redemptionResult.code}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Válido hasta el{' '}
+                  {new Date(redemptionResult.expiresAt).toLocaleDateString('es', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Muestra este código al momento de tu compra
+                </p>
+              </div>
+            )}
+
+            <Button 
+              className="w-full mt-6"
+              onClick={() => {
+                setShowSuccessDialog(false);
+                setSelectedReward(null);
+                setRedemptionResult(null);
+              }}
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
