@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { User, Bell, Shield, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User, Bell, Shield, Building2, CreditCard } from 'lucide-react';
+import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
 
 const Settings: React.FC = () => {
   return (
@@ -19,119 +21,155 @@ const Settings: React.FC = () => {
         </p>
       </div>
 
-      {/* Profile Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <User className="h-5 w-5" />
-            Perfil
-          </CardTitle>
-          <CardDescription>Tu información personal</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Nombre completo</Label>
-              <Input id="fullName" placeholder="Tu nombre" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="tu@email.com" disabled />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input id="phone" placeholder="+52 55 1234 5678" />
-          </div>
-          <Button>Guardar cambios</Button>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="profile">Perfil</TabsTrigger>
+          <TabsTrigger value="business">Negocio</TabsTrigger>
+          <TabsTrigger value="payments">Pasarelas de Pago</TabsTrigger>
+          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+          <TabsTrigger value="security">Seguridad</TabsTrigger>
+        </TabsList>
 
-      {/* Business Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <Building2 className="h-5 w-5" />
-            Negocio
-          </CardTitle>
-          <CardDescription>Información de tu restaurante</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Nombre del restaurante</Label>
-              <Input id="businessName" placeholder="Mi Restaurante" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="businessType">Tipo de negocio</Label>
-              <Input id="businessType" placeholder="Restaurante" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Dirección</Label>
-            <Input id="address" placeholder="Calle, número, colonia, ciudad" />
-          </div>
-          <Button>Actualizar negocio</Button>
-        </CardContent>
-      </Card>
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-headline">
+                <User className="h-5 w-5" />
+                Perfil
+              </CardTitle>
+              <CardDescription>Tu información personal</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nombre completo</Label>
+                  <Input id="fullName" placeholder="Tu nombre" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="tu@email.com" disabled />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input id="phone" placeholder="+57 300 123 4567" />
+              </div>
+              <Button>Guardar cambios</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Notifications Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <Bell className="h-5 w-5" />
-            Notificaciones
-          </CardTitle>
-          <CardDescription>Configura cómo quieres recibir alertas</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Alertas del Co-Piloto IA</p>
-              <p className="text-sm text-muted-foreground">Recibe alertas proactivas en tiempo real</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Resumen diario por email</p>
-              <p className="text-sm text-muted-foreground">Recibe un resumen cada mañana</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Notificaciones push</p>
-              <p className="text-sm text-muted-foreground">Alertas en tu dispositivo móvil</p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="business">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-headline">
+                <Building2 className="h-5 w-5" />
+                Negocio
+              </CardTitle>
+              <CardDescription>Información de tu restaurante</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="businessName">Nombre del restaurante</Label>
+                  <Input id="businessName" placeholder="Mi Restaurante" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessType">Tipo de negocio</Label>
+                  <Input id="businessType" placeholder="Restaurante" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Dirección</Label>
+                <Input id="address" placeholder="Calle, número, barrio, ciudad" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nit">NIT</Label>
+                  <Input id="nit" placeholder="900.123.456-7" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Ciudad</Label>
+                  <Input id="city" placeholder="Bogotá" />
+                </div>
+              </div>
+              <Button>Actualizar negocio</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Security Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <Shield className="h-5 w-5" />
-            Seguridad
-          </CardTitle>
-          <CardDescription>Protege tu cuenta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline">Cambiar contraseña</Button>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Autenticación de dos factores</p>
-              <p className="text-sm text-muted-foreground">Añade una capa extra de seguridad</p>
-            </div>
-            <Switch />
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="payments">
+          <PaymentGatewaySettings />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-headline">
+                <Bell className="h-5 w-5" />
+                Notificaciones
+              </CardTitle>
+              <CardDescription>Configura cómo quieres recibir alertas</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Alertas del Co-Piloto IA</p>
+                  <p className="text-sm text-muted-foreground">Recibe alertas proactivas en tiempo real</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Resumen diario por email</p>
+                  <p className="text-sm text-muted-foreground">Recibe un resumen cada mañana</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Notificaciones push</p>
+                  <p className="text-sm text-muted-foreground">Alertas en tu dispositivo móvil</p>
+                </div>
+                <Switch />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Alertas de stock bajo</p>
+                  <p className="text-sm text-muted-foreground">Notificación cuando el inventario esté bajo</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-headline">
+                <Shield className="h-5 w-5" />
+                Seguridad
+              </CardTitle>
+              <CardDescription>Protege tu cuenta</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button variant="outline">Cambiar contraseña</Button>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Autenticación de dos factores</p>
+                  <p className="text-sm text-muted-foreground">Añade una capa extra de seguridad</p>
+                </div>
+                <Switch />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

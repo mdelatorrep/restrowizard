@@ -84,9 +84,9 @@ export const useInventoryDeduction = () => {
         // Get current inventory
         const { data: inventoryItem, error: fetchError } = await supabase
           .from('inventory_items')
-          .select('id, current_stock, minimum_stock, name')
+          .select('id, current_stock, min_stock_level, item_name')
           .eq('id', ingredient.inventory_item_id)
-          .single();
+          .maybeSingle();
 
         if (fetchError || !inventoryItem) {
           console.error(`Error fetching inventory item ${ingredient.inventory_item_id}:`, fetchError);
@@ -127,8 +127,8 @@ export const useInventoryDeduction = () => {
         }
 
         // Check for low stock alert
-        if (newStock <= (inventoryItem.minimum_stock || 0)) {
-          toast.warning(`⚠️ Stock bajo: ${inventoryItem.name} (${newStock} ${ingredient.unit})`);
+        if (newStock <= (inventoryItem.min_stock_level || 0)) {
+          toast.warning(`⚠️ Stock bajo: ${inventoryItem.item_name} (${newStock} ${ingredient.unit})`);
         }
       }
 

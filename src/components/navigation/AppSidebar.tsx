@@ -47,6 +47,7 @@ import {
   Timer,
   TrendingUp,
   LucideIcon,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -176,6 +177,12 @@ const lifecycleExtraItems: MenuItem[] = [
     title: 'Punto de Venta', 
     icon: CreditCard, 
     path: '/r/pos',
+    stages: ['first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Cocina (KDS)', 
+    icon: UtensilsCrossed, 
+    path: '/r/kitchen',
     stages: ['first_90_days', 'normal_operation']
   },
   {
