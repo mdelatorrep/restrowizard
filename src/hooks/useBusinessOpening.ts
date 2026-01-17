@@ -229,7 +229,9 @@ export function useBusinessOpening() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
+      // Force immediate refetch of analyses
+      await queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
+      await queryClient.refetchQueries({ queryKey: ['project-analyses', project.id] });
       
       toast({
         title: 'Análisis completado',
