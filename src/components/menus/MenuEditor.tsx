@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Edit3, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit3, Save, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useMenus, RestaurantMenu, MenuItem } from '@/hooks/useMenus';
+import { useRecipes, RecipeWithIngredients } from '@/hooks/useRecipes';
 import { useToast } from '@/hooks/use-toast';
 
 interface MenuEditorProps {
@@ -18,10 +19,12 @@ interface MenuEditorProps {
 
 export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
   const { menus, getMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, updateMenu } = useMenus();
+  const { recipes } = useRecipes();
   const { toast } = useToast();
   const [menu, setMenu] = useState<RestaurantMenu | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<string>('');
   const [newItem, setNewItem] = useState({
     name: '',
     description: '',
@@ -54,6 +57,36 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
     { value: 'vegan', label: 'Vegano' },
     { value: 'gluten_free', label: 'Sin Gluten' },
   ];
+
+  // Handle recipe selection to auto-fill item data
+  const handleRecipeSelect = (recipeId: string) => {
+    setSelectedRecipe(recipeId);
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      // Map recipe category to menu category
+      const categoryMap: Record<string, string> = {
+        'entrada': 'appetizers',
+        'plato_fuerte': 'main_courses',
+        'postre': 'desserts',
+        'bebida': 'beverages',
+        'salsa': 'specials',
+        'base': 'specials',
+      };
+      
+      setNewItem({
+        name: recipe.name,
+        description: recipe.instructions?.substring(0, 150) || '',
+        price: recipe.cost_per_portion ? (recipe.cost_per_portion * 3).toFixed(2) : '', // Suggest 3x cost markup
+        category: categoryMap[recipe.category] || 'main_courses',
+        dietary_tags: [],
+      });
+      
+      toast({
+        title: 'Receta seleccionada',
+        description: `Costo por porción: $${recipe.cost_per_portion?.toFixed(2) || 0}. Precio sugerido: 3x costo.`,
+      });
+    }
+  };
 
   useEffect(() => {
     const currentMenu = menus.find(m => m.id === menuId);
@@ -162,6 +195,36 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Recipe Selector */}
+            {recipes.length > 0 && (
+              <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-dashed">
+                <Label className="flex items-center gap-2 mb-2">
+                  <ChefHat className="w-4 h-4" />
+                  Crear desde Receta (opcional)
+                </Label>
+                <Select value={selectedRecipe} onValueChange={handleRecipeSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una receta para autocompletar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipes.map((recipe) => (
+                      <SelectItem key={recipe.id} value={recipe.id}>
+                        <span className="flex items-center gap-2">
+                          {recipe.name}
+                          <Badge variant="outline" className="text-xs">
+                            ${recipe.cost_per_portion?.toFixed(2) || '0.00'}/porción
+                          </Badge>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Al seleccionar una receta, se calculará el precio sugerido (3x costo)
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label>Nombre *</Label>
