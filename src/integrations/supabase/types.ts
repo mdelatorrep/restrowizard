@@ -2326,34 +2326,105 @@ export type Database = {
         }
         Relationships: []
       }
+      maturity_action_tracking: {
+        Row: {
+          action_id: string
+          action_title: string
+          completed_at: string | null
+          created_at: string
+          diagnosis_id: string
+          id: string
+          notes: string | null
+          pillar_id: string
+          priority: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_id: string
+          action_title: string
+          completed_at?: string | null
+          created_at?: string
+          diagnosis_id: string
+          id?: string
+          notes?: string | null
+          pillar_id: string
+          priority: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_id?: string
+          action_title?: string
+          completed_at?: string | null
+          created_at?: string
+          diagnosis_id?: string
+          id?: string
+          notes?: string | null
+          pillar_id?: string
+          priority?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maturity_action_tracking_diagnosis_id_fkey"
+            columns: ["diagnosis_id"]
+            isOneToOne: false
+            referencedRelation: "maturity_diagnoses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maturity_diagnoses: {
         Row: {
+          ai_action_plan: Json | null
+          ai_analysis: Json | null
+          ai_benchmark: Json | null
+          ai_generated_at: string | null
           answers: Json
           created_at: string
           id: string
           overall_level: Database["public"]["Enums"]["maturity_level"]
           overall_score: number
           pillar_scores: Json
+          restaurant_context: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          ai_action_plan?: Json | null
+          ai_analysis?: Json | null
+          ai_benchmark?: Json | null
+          ai_generated_at?: string | null
           answers?: Json
           created_at?: string
           id?: string
           overall_level?: Database["public"]["Enums"]["maturity_level"]
           overall_score?: number
           pillar_scores?: Json
+          restaurant_context?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          ai_action_plan?: Json | null
+          ai_analysis?: Json | null
+          ai_benchmark?: Json | null
+          ai_generated_at?: string | null
           answers?: Json
           created_at?: string
           id?: string
           overall_level?: Database["public"]["Enums"]["maturity_level"]
           overall_score?: number
           pillar_scores?: Json
+          restaurant_context?: Json | null
           updated_at?: string
           user_id?: string
         }
