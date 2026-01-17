@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,16 +17,18 @@ import { OpeningChat } from '@/components/opening/OpeningChat';
 
 interface NewBusinessOnboardingProps {
   onBack: () => void;
+  resumeProjectId?: string; // Optional: if provided, resume this project instead of creating new
 }
 
 type OnboardingStep = 'create' | 'setup' | 'complete';
 
-export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ onBack }) => {
+export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ onBack, resumeProjectId }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [step, setStep] = useState<OnboardingStep>('create');
-  const [projectId, setProjectId] = useState<string | null>(null);
+  // If resuming, start in setup step directly
+  const [step, setStep] = useState<OnboardingStep>(resumeProjectId ? 'setup' : 'create');
+  const [projectId, setProjectId] = useState<string | null>(resumeProjectId || null);
   const [analyzingPhase, setAnalyzingPhase] = useState<PhaseId | null>(null);
   const [activeTab, setActiveTab] = useState('phases');
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
@@ -46,6 +48,16 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const { data: project } = useProject(projectId || '');
   const { data: analyses } = useProjectAnalyses(projectId || '');
   const { data: checklist } = useProjectChecklist(projectId || '');
+
+  // If resuming and we have a project, show a toast
+  useEffect(() => {
+    if (resumeProjectId && project) {
+      toast({
+        title: "Continuando tu proyecto",
+        description: `Retomando "${project.project_name}"`,
+      });
+    }
+  }, [resumeProjectId, project?.id]);
 
   const getPhaseAnalysis = (phaseId: PhaseId) => {
     return analyses?.find(a => a.phase === phaseId);
@@ -221,13 +233,15 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   // Step 2: Setup & Analysis
   if (step === 'setup' && project) {
     const progress = calculateProgress();
-    const canComplete = progress >= 50; // Allow completion after 50% of phases analyzed
+    // Allow completion after at least 1 phase analyzed OR if resuming a project
+    const hasAnyAnalysis = analyses && analyses.length > 0;
+    const canComplete = hasAnyAnalysis || progress > 0;
 
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={onBack}>
                 <ArrowLeft className="h-5 w-5" />
@@ -243,23 +257,38 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               </div>
             </div>
 
-            <Button 
-              onClick={handleCompleteSetup}
-              disabled={!canComplete || isCompletingSetup}
-              className="gap-2"
-            >
-              {isCompletingSetup ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Finalizando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  ¡Ya abrí mi restaurante!
-                </>
+            <div className="flex gap-2 flex-wrap">
+              {/* Skip analysis button - always available */}
+              {!hasAnyAnalysis && (
+                <Button 
+                  variant="outline"
+                  onClick={handleCompleteSetup}
+                  disabled={isCompletingSetup}
+                  className="gap-2"
+                >
+                  Saltar y crear restaurante
+                </Button>
               )}
-            </Button>
+              
+              {/* Main complete button */}
+              <Button 
+                onClick={handleCompleteSetup}
+                disabled={isCompletingSetup}
+                className="gap-2"
+              >
+                {isCompletingSetup ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Finalizando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    ¡Ya abrí mi restaurante!
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Progress */}
@@ -272,11 +301,12 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
                 </span>
               </div>
               <Progress value={progress} className="h-3" />
-              {!canComplete && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Analiza al menos {Math.ceil(PHASES.length / 2)} fases para poder finalizar
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                {hasAnyAnalysis 
+                  ? "Puedes finalizar cuando quieras o continuar analizando más fases"
+                  : "Analiza al menos 1 fase o presiona 'Saltar' para crear tu restaurante directamente"
+                }
+              </p>
             </CardContent>
           </Card>
 
