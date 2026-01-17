@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { action, data } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     let systemPrompt = "";
@@ -39,7 +39,7 @@ Cliente: ${data.customer_name || 'No especificado'}`;
         break;
 
       case "generate_response":
-        systemPrompt = `Eres un gerente de servicio al cliente profesional y empático. Genera una respuesta para el ticket que:
+        systemPrompt = `Eres un gerente de servicio al cliente profesional y empático con acceso a búsqueda web para mejores prácticas de resolución de conflictos en restaurantes. Genera una respuesta para el ticket que:
 - Sea profesional y empática
 - Aborde el problema específico
 - Ofrezca una solución cuando sea posible
@@ -53,59 +53,71 @@ Tipo: ${data.type}
 Prioridad: ${data.priority}
 Asunto: ${data.subject}
 Descripción: ${data.description}
-Historial de mensajes: ${data.messages?.map((m: any) => `[${m.sender_type}]: ${m.message}`).join('\n') || 'Sin historial'}`;
+Historial de mensajes: ${data.messages?.map((m: any) => `[${m.sender_type}]: ${m.message}`).join('\n') || 'Sin historial'}
+
+Busca mejores prácticas de respuesta para este tipo de caso en restaurantes.`;
         break;
 
       case "suggest_resolution":
-        systemPrompt = `Eres un experto en resolución de conflictos en restaurantes. Sugiere la mejor forma de resolver el caso.
+        systemPrompt = `Eres un experto en resolución de conflictos en restaurantes con acceso a búsqueda web para casos de estudio y mejores prácticas de la industria. Sugiere la mejor forma de resolver el caso.
 Responde en JSON con:
-- recommended_resolution: descripción de la resolución
-- compensation_suggestion: si aplica compensación, qué tipo
+- recommended_resolution: descripción de la resolución basada en mejores prácticas
+- compensation_suggestion: si aplica compensación, qué tipo (basado en estándares de la industria)
 - escalation_needed: boolean
 - prevention_tips: cómo evitar casos similares
-- estimated_resolution_time: tiempo estimado`;
+- estimated_resolution_time: tiempo estimado
+- similar_cases: cómo se resolvieron casos similares`;
         
         userPrompt = `Sugiere resolución para:
 Tipo: ${data.type}
 Prioridad: ${data.priority}
 Descripción: ${data.description}
 Estado actual: ${data.status}
-Tiempo abierto: ${data.time_open || 'Reciente'}`;
+Tiempo abierto: ${data.time_open || 'Reciente'}
+
+Busca mejores prácticas y casos de estudio para resolver este tipo de situación.`;
         break;
 
       case "analyze_trends":
-        systemPrompt = `Eres un analista de servicio al cliente. Analiza los tickets y detecta patrones.
+        systemPrompt = `Eres un analista de servicio al cliente con acceso a búsqueda web para benchmarks de la industria. Analiza los tickets y detecta patrones.
 Responde en JSON con:
 - common_issues: array de problemas frecuentes
 - peak_times: cuándo ocurren más tickets
 - improvement_areas: áreas a mejorar
 - positive_trends: aspectos positivos
-- recommendations: acciones recomendadas`;
+- recommendations: acciones recomendadas basadas en mejores prácticas de la industria
+- industry_comparison: comparación con benchmarks de la industria`;
         
         userPrompt = `Analiza estos tickets:
 Total tickets: ${data.total_tickets}
 Por tipo: ${JSON.stringify(data.by_type || {})}
 Por prioridad: ${JSON.stringify(data.by_priority || {})}
 Tasa de resolución: ${data.resolution_rate}%
-Tiempo promedio de respuesta: ${data.avg_response_time} horas`;
+Tiempo promedio de respuesta: ${data.avg_response_time} horas
+
+Busca benchmarks de servicio al cliente para restaurantes y compara.`;
         break;
 
       default:
         throw new Error("Acción no válida");
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log(`Calling OpenAI GPT-5-mini with web search for support assistant: ${action}`);
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        max_tokens: 1500,
+        tools: [{ type: 'web_search_preview' }],
       }),
     });
 
@@ -122,7 +134,7 @@ Tiempo promedio de respuesta: ${data.avg_response_time} horas`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const aiData = await response.json();

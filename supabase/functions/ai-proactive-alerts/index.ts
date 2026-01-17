@@ -25,7 +25,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     const { user_id, analysis_type } = await req.json();
 
@@ -143,21 +143,23 @@ serve(async (req) => {
       }
     }
 
-    // 4. Generate AI-powered insights if available
-    if (LOVABLE_API_KEY && salesData && salesData.length > 0) {
+    // 4. Generate AI-powered insights with web search
+    if (OPENAI_API_KEY && salesData && salesData.length > 0) {
       try {
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        console.log('Calling OpenAI GPT-5-nano with web search for proactive insights...');
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4.1-nano',
             messages: [
               {
                 role: 'system',
-                content: `Eres un analista de restaurantes. Analiza los datos y genera UNA alerta de oportunidad de negocio en español. 
+                content: `Eres un analista de restaurantes con acceso a búsqueda web para tendencias actuales. Analiza los datos y genera UNA alerta de oportunidad de negocio en español basada en tendencias actuales de mercado. 
                 Responde solo con un JSON: {"title": "...", "message": "...", "priority": "low|medium"}`
               },
               {
@@ -165,7 +167,8 @@ serve(async (req) => {
                 content: `Datos de ventas últimos 7 días: ${JSON.stringify(salesData.slice(0, 7))}`
               }
             ],
-            max_tokens: 200
+            max_tokens: 300,
+            tools: [{ type: 'web_search_preview' }],
           }),
         });
 

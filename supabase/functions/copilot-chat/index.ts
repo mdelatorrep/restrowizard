@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { message, history } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
     }
 
     const systemPrompt = `Eres el Co-Piloto de RestroWizard, un asistente IA especializado en gestión de restaurantes.
@@ -28,6 +28,7 @@ Tu rol es ayudar a gerentes y dueños de restaurantes con:
 - Sostenibilidad y ESG
 
 Responde siempre en español, de forma concisa y práctica. Usa datos cuando estén disponibles.
+Tienes acceso a búsqueda web para obtener información actualizada sobre tendencias de la industria, precios de mercado, regulaciones y mejores prácticas.
 Si no tienes datos específicos, ofrece recomendaciones generales basadas en mejores prácticas de la industria.`;
 
     const messages = [
@@ -36,27 +37,46 @@ Si no tienes datos específicos, ofrece recomendaciones generales basadas en mej
       { role: 'user', content: message }
     ];
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log('Calling OpenAI GPT-5-mini with web search for copilot chat...');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4.1-mini',
         messages,
-        max_tokens: 1000
+        max_tokens: 1500,
+        tools: [{ type: 'web_search_preview' }],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error('OpenAI API error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Límite de solicitudes excedido. Intenta más tarde.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'Se requiere pago. Agrega créditos a tu cuenta.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content || 'No pude generar una respuesta.';
+
+    console.log('Copilot chat completed successfully');
 
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
