@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBusinessOpening, BusinessProject, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
 import { OpeningProjectWizard } from './opening/OpeningProjectWizard';
 import { PhaseAnalysisCard } from './opening/PhaseAnalysisCard';
@@ -33,9 +33,30 @@ interface BusinessOpeningAssistantProps {
 
 export function BusinessOpeningAssistant({ userType }: BusinessOpeningAssistantProps) {
   const navigate = useNavigate();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Persist selectedProjectId in URL to survive page refresh
+  const selectedProjectIdFromUrl = searchParams.get('projectId');
+  const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(selectedProjectIdFromUrl);
   const [activeTab, setActiveTab] = useState('phases');
   const [analyzingPhase, setAnalyzingPhase] = useState<PhaseId | null>(null);
+
+  // Sync URL with state
+  const setSelectedProjectId = (id: string | null) => {
+    setSelectedProjectIdState(id);
+    if (id) {
+      setSearchParams({ projectId: id });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  // On mount, restore from URL
+  useEffect(() => {
+    if (selectedProjectIdFromUrl && !selectedProjectId) {
+      setSelectedProjectIdState(selectedProjectIdFromUrl);
+    }
+  }, [selectedProjectIdFromUrl]);
 
   const {
     projects,
