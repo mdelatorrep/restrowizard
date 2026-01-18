@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
@@ -13,6 +13,8 @@ type OnboardingFlow = 'select' | 'new' | 'existing' | 'resume';
 const RestaurantOnboarding: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { hasCompletedOnboarding, loading: typeLoading } = useUserType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectIdFromUrl = searchParams.get('projectId');
   const [flow, setFlow] = useState<OnboardingFlow | null>(null);
 
   // Check if user has an existing opening project to resume
@@ -33,18 +35,24 @@ const RestaurantOnboarding: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  // Determine initial flow based on existing data
+  // Determine initial flow based on URL + existing data
   useEffect(() => {
     if (loadingProject || !user) return;
+
+    // If a projectId is in the URL, always resume that project (prevents "losing" progress on refresh)
+    if (projectIdFromUrl) {
+      setFlow('resume');
+      return;
+    }
     
     // If user has an incomplete project, resume it
-    if (existingProject && existingProject.progress_percentage < 100) {
+    if (existingProject && (existingProject.progress_percentage ?? 0) < 100) {
       console.log('📋 Found existing project to resume:', existingProject.project_name);
       setFlow('resume');
     } else if (flow === null) {
       setFlow('select');
     }
-  }, [existingProject, loadingProject, user, flow]);
+  }, [existingProject, loadingProject, user, flow, projectIdFromUrl]);
 
   // Loading state
   if (authLoading || typeLoading || loadingProject || flow === null) {
@@ -78,8 +86,11 @@ const RestaurantOnboarding: React.FC = () => {
   if (flow === 'new' || flow === 'resume') {
     return (
       <NewBusinessOnboarding 
-        onBack={() => setFlow('select')} 
-        resumeProjectId={flow === 'resume' ? existingProject?.id : undefined}
+        onBack={() => {
+          setSearchParams({});
+          setFlow('select');
+        }} 
+        resumeProjectId={flow === 'resume' ? (projectIdFromUrl || existingProject?.id) : undefined}
       />
     );
   }

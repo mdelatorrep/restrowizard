@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,15 +25,27 @@ type OnboardingStep = 'create' | 'setup' | 'complete';
 
 export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ onBack, resumeProjectId }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { refreshUserType } = useUserType();
   const { toast } = useToast();
+
+  // Prefer URL param for persistence across refresh; fallback to resumeProjectId
+  const projectIdFromUrl = searchParams.get('projectId');
+  const initialProjectId = projectIdFromUrl || resumeProjectId || null;
+
   // If resuming, start in setup step directly
-  const [step, setStep] = useState<OnboardingStep>(resumeProjectId ? 'setup' : 'create');
-  const [projectId, setProjectId] = useState<string | null>(resumeProjectId || null);
+  const [step, setStep] = useState<OnboardingStep>(initialProjectId ? 'setup' : 'create');
+  const [projectId, setProjectIdState] = useState<string | null>(initialProjectId);
   const [analyzingPhase, setAnalyzingPhase] = useState<PhaseId | null>(null);
   const [activeTab, setActiveTab] = useState('phases');
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
+
+  const setProjectId = (id: string | null) => {
+    setProjectIdState(id);
+    if (id) setSearchParams({ projectId: id });
+    else setSearchParams({});
+  };
 
   const {
     useProject,
@@ -53,13 +65,21 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   // If resuming and we have a project, show a toast
   useEffect(() => {
-    if (resumeProjectId && project) {
+    if ((resumeProjectId || projectIdFromUrl) && project) {
       toast({
         title: "Continuando tu proyecto",
         description: `Retomando "${project.project_name}"`,
       });
     }
-  }, [resumeProjectId, project?.id]);
+  }, [resumeProjectId, projectIdFromUrl, project?.id]);
+
+  // Keep local state in sync if URL changes (e.g. user opens a shared link)
+  useEffect(() => {
+    if (projectIdFromUrl && projectIdFromUrl !== projectId) {
+      setProjectIdState(projectIdFromUrl);
+      setStep('setup');
+    }
+  }, [projectIdFromUrl]);
 
   const getPhaseAnalysis = (phaseId: PhaseId) => {
     return analyses?.find(a => a.phase === phaseId);
@@ -75,6 +95,16 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   const handleAnalyzePhase = async (phaseId: PhaseId) => {
     if (!project) return;
+
+    // Prevent concurrent analyses (this was causing state to "jump" and appear to lose progress)
+    if (isAnalyzing || analyzingPhase) {
+      toast({
+        title: 'Análisis en progreso',
+        description: 'Espera a que termine el análisis actual antes de iniciar otro.',
+      });
+      return;
+    }
+
     setAnalyzingPhase(phaseId);
     await analyzePhase(project, phaseId);
     setAnalyzingPhase(null);
@@ -229,7 +259,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             </div>
           </div>
 
-          <OpeningProjectWizard
+           <OpeningProjectWizard
             onSubmit={async (data) => {
               const newProject = await createProject.mutateAsync(data);
               if (newProject) {

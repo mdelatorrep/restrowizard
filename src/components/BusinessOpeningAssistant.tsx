@@ -95,6 +95,12 @@ export function BusinessOpeningAssistant({ userType }: BusinessOpeningAssistantP
 
   const handleAnalyzePhase = async (phaseId: PhaseId) => {
     if (!selectedProject) return;
+
+    // Prevent concurrent analyses (can make UI state appear to reset)
+    if (isAnalyzing || analyzingPhase) {
+      return;
+    }
+
     setAnalyzingPhase(phaseId);
     await analyzePhase(selectedProject, phaseId);
     setAnalyzingPhase(null);
