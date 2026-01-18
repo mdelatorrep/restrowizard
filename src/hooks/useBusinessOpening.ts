@@ -113,6 +113,7 @@ export function useBusinessOpening() {
     return useQuery({
       queryKey: ['project-analyses', projectId],
       queryFn: async () => {
+        console.log('[useBusinessOpening] Fetching analyses for project:', projectId);
         const { data, error } = await supabase
           .from('opening_phase_analyses')
           .select('*')
@@ -120,9 +121,13 @@ export function useBusinessOpening() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        console.log('[useBusinessOpening] Fetched analyses:', data?.length);
         return data as PhaseAnalysis[];
       },
-      enabled: !!projectId,
+      enabled: !!projectId && projectId.length > 0,
+      staleTime: 0, // Always refetch when query is re-executed
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
     });
   };
 
@@ -236,12 +241,17 @@ export function useBusinessOpening() {
       if (error) throw error;
 
       // Immediately update the cache with the new analysis
+      console.log('[useBusinessOpening] Updating cache for project:', project.id, 'phase:', phase);
       queryClient.setQueryData(['project-analyses', project.id], (old: PhaseAnalysis[] | undefined) => {
-        if (!old) return [analysis as PhaseAnalysis];
+        const newAnalysis = analysis as PhaseAnalysis;
+        if (!old) return [newAnalysis];
         // Replace existing analysis for this phase or add new one
         const filtered = old.filter(a => a.phase !== phase);
-        return [...filtered, analysis as PhaseAnalysis];
+        return [...filtered, newAnalysis];
       });
+      
+      // Also invalidate to ensure fresh data on next navigation
+      queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
       
       toast({
         title: 'Análisis completado',
