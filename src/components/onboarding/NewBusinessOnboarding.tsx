@@ -8,6 +8,7 @@ import { OpeningProjectWizard } from '@/components/opening/OpeningProjectWizard'
 import { PhaseAnalysisCard } from '@/components/opening/PhaseAnalysisCard';
 import { useBusinessOpening, PHASES, PhaseId, BusinessProject } from '@/hooks/useBusinessOpening';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +26,7 @@ type OnboardingStep = 'create' | 'setup' | 'complete';
 export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ onBack, resumeProjectId }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshUserType } = useUserType();
   const { toast } = useToast();
   // If resuming, start in setup step directly
   const [step, setStep] = useState<OnboardingStep>(resumeProjectId ? 'setup' : 'create');
@@ -179,6 +181,9 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
         .from('business_opening_projects')
         .update({ progress_percentage: 100, current_phase: 'completed' })
         .eq('id', project.id);
+
+      // 6. Refresh user type cache so OnboardingGuard knows onboarding is complete
+      await refreshUserType();
 
       toast({
         title: "¡Felicidades! 🎉",
