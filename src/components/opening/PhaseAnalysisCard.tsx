@@ -10,6 +10,7 @@ import {
   Loader2, ChevronDown, ChevronUp, ExternalLink, RefreshCw, CheckCircle2, Clock, Sparkles, Eye
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const PHASE_ICONS: Record<string, React.ReactNode> = {
   legal_requirements: <Scale className="h-5 w-5" />,
@@ -171,8 +172,8 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
               {/* Analysis content */}
               <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-muted/30">
                 {analysisText ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{analysisText}</ReactMarkdown>
+                  <div className="prose prose-sm max-w-none dark:prose-invert prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-muted prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisText}</ReactMarkdown>
                   </div>
                 ) : analysis.analysis_data ? (
                   <pre className="text-sm whitespace-pre-wrap">
