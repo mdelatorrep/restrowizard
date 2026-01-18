@@ -233,9 +233,13 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     }
   };
 
-  // Navigate to dashboard after completion
-  const handleGoToDashboard = () => {
-    navigate('/r/dashboard');
+  // Navigate to dashboard after completion - ensure user type is refreshed
+  const handleGoToDashboard = async () => {
+    // Double-check the user type is refreshed before navigating
+    await refreshUserType();
+    // Small delay to ensure React Query has propagated the update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    navigate('/r/dashboard', { replace: true });
   };
 
   // Step 1: Create Project
@@ -301,38 +305,24 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {/* Skip analysis button - always available */}
-              {!hasAnyAnalysis && (
-                <Button 
-                  variant="outline"
-                  onClick={handleCompleteSetup}
-                  disabled={isCompletingSetup}
-                  className="gap-2"
-                >
-                  Saltar y crear restaurante
-                </Button>
+            {/* Single action button - clearer UX */}
+            <Button 
+              onClick={handleCompleteSetup}
+              disabled={isCompletingSetup}
+              className="gap-2"
+            >
+              {isCompletingSetup ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creando tu restaurante...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  {hasAnyAnalysis ? 'Finalizar y crear restaurante' : 'Crear restaurante ahora'}
+                </>
               )}
-              
-              {/* Main complete button */}
-              <Button 
-                onClick={handleCompleteSetup}
-                disabled={isCompletingSetup}
-                className="gap-2"
-              >
-                {isCompletingSetup ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Finalizando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    ¡Ya abrí mi restaurante!
-                  </>
-                )}
-              </Button>
-            </div>
+            </Button>
           </div>
 
           {/* Progress */}
@@ -347,8 +337,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               <Progress value={progress} className="h-3" />
               <p className="text-xs text-muted-foreground mt-2">
                 {hasAnyAnalysis 
-                  ? "Puedes finalizar cuando quieras o continuar analizando más fases"
-                  : "Analiza al menos 1 fase o presiona 'Saltar' para crear tu restaurante directamente"
+                  ? "Puedes finalizar cuando quieras o continuar analizando más fases para obtener mejores recomendaciones"
+                  : "Analiza las fases que necesites o crea tu restaurante directamente con el botón superior"
                 }
               </p>
             </CardContent>

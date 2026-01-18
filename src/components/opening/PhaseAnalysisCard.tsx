@@ -35,14 +35,36 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
   const prevAnalysisRef = useRef<PhaseAnalysis | undefined>(undefined);
   const phaseInfo = PHASES.find(p => p.id === phaseId);
 
-  const hasAnalysis = !!analysis;
+  const hasAnalysis = !!analysis && analysis.status === 'completed';
   
-  // Extract text from various possible formats
-  const analysisText = 
-    analysis?.analysis_data?.text ||  // Primary: stored text
-    analysis?.analysis_data?.analysis ||  // Backup: alternative key
-    (typeof analysis?.analysis_data === 'string' ? analysis.analysis_data : null) ||  // String format
-    (analysis?.analysis_data?.structured?.text ? analysis.analysis_data.structured.text : null); // Nested structured
+  // Extract text from various possible formats - comprehensive extraction
+  const extractAnalysisText = (): string | null => {
+    const data = analysis?.analysis_data;
+    if (!data) return null;
+    
+    // Direct string format
+    if (typeof data === 'string') return data;
+    
+    // Object with text property (most common)
+    if (data.text && typeof data.text === 'string') return data.text;
+    
+    // Object with analysis property
+    if (data.analysis && typeof data.analysis === 'string') return data.analysis;
+    
+    // Nested in structured object
+    if (data.structured?.text && typeof data.structured.text === 'string') return data.structured.text;
+    
+    // If data is an object but none of the above, try to find any string property
+    for (const key of Object.keys(data)) {
+      if (typeof data[key] === 'string' && data[key].length > 100) {
+        return data[key];
+      }
+    }
+    
+    return null;
+  };
+  
+  const analysisText = extractAnalysisText();
 
   // Auto-expand when analysis is completed (detected by change from undefined to defined)
   useEffect(() => {
