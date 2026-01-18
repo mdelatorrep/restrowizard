@@ -49,6 +49,7 @@ import RestaurantFirst90Days from "./pages/restaurant/First90Days";
 import RestaurantPreOpening from "./pages/restaurant/PreOpening";
 import RestaurantPOS from "./pages/restaurant/POS";
 import RestaurantKitchen from "./pages/restaurant/KitchenDisplay";
+import RestaurantPOSReports from "./pages/restaurant/POSReports";
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
 import ConsultantDashboard from "./pages/consultant/Dashboard";
@@ -131,6 +132,7 @@ const App = () => (
                 <Route path="first-90-days" element={<RestaurantFirst90Days />} />
                 <Route path="pre-opening" element={<RestaurantPreOpening />} />
                 <Route path="pos" element={<RestaurantPOS />} />
+                <Route path="pos-reports" element={<RestaurantPOSReports />} />
                 <Route path="kitchen" element={<RestaurantKitchen />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>

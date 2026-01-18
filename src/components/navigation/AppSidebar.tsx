@@ -48,6 +48,7 @@ import {
   TrendingUp,
   LucideIcon,
   UtensilsCrossed,
+  BarChart3,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -177,6 +178,12 @@ const lifecycleExtraItems: MenuItem[] = [
     title: 'Punto de Venta', 
     icon: CreditCard, 
     path: '/r/pos',
+    stages: ['first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Reportes Ventas', 
+    icon: BarChart3, 
+    path: '/r/pos-reports',
     stages: ['first_90_days', 'normal_operation']
   },
   { 
