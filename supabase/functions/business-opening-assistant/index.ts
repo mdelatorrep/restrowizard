@@ -228,9 +228,7 @@ ${getLocationContext(data)}
 Responde en MARKDOWN legible, NO en JSON. Usa datos del mercado laboral de ${data.city}.
 
 ## 1. Organigrama Recomendado
-```
-[Estructura visual del equipo]
-```
+(Incluye un diagrama de organigrama con los puestos del equipo)
 - Puestos necesarios
 - Cantidad por turno
 - Estructura de mandos
