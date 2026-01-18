@@ -35,8 +35,13 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
   const phaseInfo = PHASES.find(p => p.id === phaseId);
 
   const hasAnalysis = !!analysis;
-  const analysisText = analysis?.analysis_data?.text || 
-    (typeof analysis?.analysis_data === 'string' ? analysis.analysis_data : null);
+  
+  // Extract text from various possible formats
+  const analysisText = 
+    analysis?.analysis_data?.text ||  // Primary: stored text
+    analysis?.analysis_data?.analysis ||  // Backup: alternative key
+    (typeof analysis?.analysis_data === 'string' ? analysis.analysis_data : null) ||  // String format
+    (analysis?.analysis_data?.structured?.text ? analysis.analysis_data.structured.text : null); // Nested structured
 
   // Auto-expand when analysis is completed (detected by change from undefined to defined)
   useEffect(() => {

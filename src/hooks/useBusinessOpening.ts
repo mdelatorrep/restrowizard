@@ -214,24 +214,34 @@ export function useBusinessOpening() {
         throw new Error(result.error || 'Analysis failed');
       }
 
-      // Save the analysis to the database
+      // Save the analysis to the database - ALWAYS store text properly
       const { data: analysis, error } = await supabase
         .from('opening_phase_analyses')
-        .insert({
+        .upsert({
           project_id: project.id,
           phase,
-          analysis_data: result.structured_data || { text: result.analysis },
+          analysis_data: {
+            text: result.analysis, // Always store the formatted text
+            structured: result.structured_data || null, // Structured data as backup
+          },
           sources: result.sources || [],
           status: 'completed',
+        }, { 
+          onConflict: 'project_id,phase',
+          ignoreDuplicates: false 
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Force immediate refetch of analyses
-      await queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
-      await queryClient.refetchQueries({ queryKey: ['project-analyses', project.id] });
+      // Immediately update the cache with the new analysis
+      queryClient.setQueryData(['project-analyses', project.id], (old: PhaseAnalysis[] | undefined) => {
+        if (!old) return [analysis as PhaseAnalysis];
+        // Replace existing analysis for this phase or add new one
+        const filtered = old.filter(a => a.phase !== phase);
+        return [...filtered, analysis as PhaseAnalysis];
+      });
       
       toast({
         title: 'Análisis completado',
@@ -300,6 +310,16 @@ export function useBusinessOpening() {
     setIsAnalyzing(true);
 
     try {
+      // First, delete existing checklist items for this project to avoid duplicates
+      const { error: deleteError } = await supabase
+        .from('opening_checklist_items')
+        .delete()
+        .eq('project_id', project.id);
+
+      if (deleteError) {
+        console.warn('Could not clear existing checklist:', deleteError);
+      }
+
       const response = await supabase.functions.invoke('business-opening-assistant', {
         body: {
           action: 'generate_checklist',
@@ -332,8 +352,19 @@ export function useBusinessOpening() {
       }
 
       if (items.length > 0) {
+        // Deduplicate items by title (case-insensitive)
+        const seenTitles = new Set<string>();
+        const uniqueItems = items.filter((item: any) => {
+          const normalizedTitle = item.title?.toLowerCase().trim();
+          if (seenTitles.has(normalizedTitle)) {
+            return false;
+          }
+          seenTitles.add(normalizedTitle);
+          return true;
+        });
+
         // Save checklist items to database
-        const checklistItems = items.map((item: any, index: number) => ({
+        const checklistItems = uniqueItems.map((item: any, index: number) => ({
           project_id: project.id,
           phase: item.phase || 'planning',
           title: item.title,
@@ -348,7 +379,8 @@ export function useBusinessOpening() {
 
         if (error) throw error;
 
-        queryClient.invalidateQueries({ queryKey: ['project-checklist', project.id] });
+        // Immediately update the cache
+        queryClient.setQueryData(['project-checklist', project.id], savedItems as ChecklistItem[]);
         
         toast({
           title: 'Checklist generado',
