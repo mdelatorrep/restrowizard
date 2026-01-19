@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { pushDebugEvent } from '@/lib/debugEvents';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutGrid, ListChecks, MessageSquare } from 'lucide-react';
 import { OpeningChecklist } from '@/components/opening/OpeningChecklist';
@@ -42,7 +43,26 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const [activeTab, setActiveTab] = useState('phases');
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
 
+  // Deterministic checklist generation (avoid "random" regeneration)
+  const pendingAutoChecklistRef = useRef(false);
+  const autoChecklistGeneratedForProjectsRef = useRef<Set<string>>(new Set());
+
+  const trace = (action: string, data?: Record<string, unknown>) => {
+    const payload = {
+      ...data,
+      step,
+      activeTab,
+      projectId,
+      projectIdFromUrl,
+      resumeProjectId,
+      ts: new Date().toISOString(),
+    };
+    console.debug(`[opening_onboarding] ${action}`, payload);
+    void pushDebugEvent(user?.id, 'opening_onboarding', action, payload);
+  };
+
   const setProjectId = (id: string | null) => {
+    trace('set_project_id', { nextProjectId: id, prevProjectId: projectId });
     setProjectIdState(id);
     if (id) setSearchParams({ projectId: id });
     else setSearchParams({});
@@ -59,8 +79,16 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   // Use dedicated hooks for project data - these are proper React hooks
   const { data: project } = useBusinessProject(projectId);
-  const { data: analyses } = useProjectAnalyses(projectId);
-  const { data: checklist } = useProjectChecklist(projectId);
+  const analysesQuery = useProjectAnalyses(projectId);
+  const checklistQuery = useProjectChecklist(projectId);
+  const analyses = analysesQuery.data;
+  const checklist = checklistQuery.data;
+
+  // Lightweight state-change telemetry
+  useEffect(() => {
+    trace('state_change');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, activeTab, projectId]);
 
   // If resuming and we have a project, show a toast
   useEffect(() => {
@@ -69,28 +97,61 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
         title: "Continuando tu proyecto",
         description: `Retomando "${project.project_name}"`,
       });
+      trace('resume_detected', { projectName: project.project_name, projectId: project.id });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeProjectId, projectIdFromUrl, project?.id]);
 
   // Keep local state in sync if URL changes (e.g. user opens a shared link)
   useEffect(() => {
     if (projectIdFromUrl && projectIdFromUrl !== projectId) {
+      trace('url_project_id_changed', { nextProjectId: projectIdFromUrl });
       setProjectIdState(projectIdFromUrl);
       setStep('setup');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectIdFromUrl]);
 
   const getPhaseAnalysis = (phaseId: PhaseId) => {
-    return analyses?.find(a => a.phase === phaseId);
+    return analyses?.find((a) => a.phase === phaseId);
   };
 
   const calculateProgress = () => {
     if (!analyses) return 0;
-    const completedPhases = PHASES.filter(p => 
-      analyses.some(a => a.phase === p.id && a.status === 'completed')
+    const completedPhases = PHASES.filter((p) =>
+      analyses.some((a) => a.phase === p.id && a.status === 'completed')
     ).length;
     return (completedPhases / PHASES.length) * 100;
   };
+
+  // Resolve pending auto-checklist once checklist query is actually fetched
+  useEffect(() => {
+    if (!project) return;
+    if (!pendingAutoChecklistRef.current) return;
+    if (!checklistQuery.isFetched) return;
+
+    pendingAutoChecklistRef.current = false;
+
+    const count = checklist?.length ?? 0;
+    if (count > 0) {
+      trace('checklist_autogen_skipped_existing', { count });
+      return;
+    }
+
+    if (autoChecklistGeneratedForProjectsRef.current.has(project.id)) return;
+    autoChecklistGeneratedForProjectsRef.current.add(project.id);
+
+    toast({
+      title: 'Generando checklist',
+      description: 'Creando tu lista de tareas personalizada...',
+    });
+
+    trace('checklist_autogen_start', { reason: 'post_first_analysis_deferred' });
+    void generateChecklist(project).finally(() => {
+      trace('checklist_autogen_end', { reason: 'post_first_analysis_deferred' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, checklistQuery.isFetched, checklist?.length]);
 
   const handleAnalyzePhase = async (phaseId: PhaseId) => {
     if (!project) return;
@@ -101,34 +162,56 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
         title: 'Análisis en progreso',
         description: 'Espera a que termine el análisis actual antes de iniciar otro.',
       });
+      trace('analyze_blocked', { phaseId, isAnalyzing, analyzingPhase });
       return;
     }
 
     setAnalyzingPhase(phaseId);
-    await analyzePhase(project, phaseId);
+    const t0 = Date.now();
+    trace('analyze_start', { phaseId });
+
+    const res = await analyzePhase(project, phaseId);
+
+    trace('analyze_end', { phaseId, ok: !!res, ms: Date.now() - t0 });
     setAnalyzingPhase(null);
-    
-    // Auto-generate checklist after first analysis if not exists
-    if (!checklist || checklist.length === 0) {
-      toast({
-        title: "Generando checklist",
-        description: "Creando tu lista de tareas personalizada...",
-      });
-      await generateChecklist(project);
+
+    // Deterministic checklist generation: only after query is fetched & confirmed empty
+    const checklistCount = checklist?.length ?? 0;
+    const alreadyDone = autoChecklistGeneratedForProjectsRef.current.has(project.id);
+
+    if (!alreadyDone && checklistCount === 0) {
+      if (checklistQuery.isFetched) {
+        autoChecklistGeneratedForProjectsRef.current.add(project.id);
+
+        toast({
+          title: 'Generando checklist',
+          description: 'Creando tu lista de tareas personalizada...',
+        });
+
+        trace('checklist_autogen_start', { reason: 'post_first_analysis', phaseId });
+        await generateChecklist(project);
+        trace('checklist_autogen_end', { reason: 'post_first_analysis', phaseId });
+      } else {
+        pendingAutoChecklistRef.current = true;
+        trace('checklist_autogen_pending', { phaseId });
+      }
     }
   };
 
   const handleAskQuestion = async (question: string) => {
     if (!project) return null;
+    trace('chat_question', { length: question.length });
     return await askAssistant(project, question);
   };
 
   const handleGenerateChecklist = async () => {
     if (!project) return;
+    trace('checklist_manual_generate');
     await generateChecklist(project);
   };
 
   const handleToggleChecklistItem = (itemId: string, isCompleted: boolean) => {
+    trace('checklist_toggle', { itemId, isCompleted });
     toggleChecklistItem.mutate({ itemId, isCompleted });
   };
 
@@ -360,7 +443,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="phases" className="mt-6">
+            <TabsContent value="phases" className="mt-6" forceMount>
               <div className="grid gap-4 md:grid-cols-2">
                 {PHASES.map((phase) => (
                   <PhaseAnalysisCard
@@ -374,7 +457,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               </div>
             </TabsContent>
 
-            <TabsContent value="checklist" className="mt-6">
+            <TabsContent value="checklist" className="mt-6" forceMount>
               {checklist && checklist.length > 0 ? (
                 <OpeningChecklist 
                   items={checklist} 
@@ -406,7 +489,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
               )}
             </TabsContent>
 
-            <TabsContent value="chat" className="mt-6">
+            <TabsContent value="chat" className="mt-6" forceMount>
               <OpeningChat 
                 project={project}
                 onAskQuestion={handleAskQuestion}
