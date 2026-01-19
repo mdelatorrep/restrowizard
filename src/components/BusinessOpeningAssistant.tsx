@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBusinessOpening, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
-import { useBusinessProject, useProjectAnalyses, useProjectChecklist, BusinessProject } from '@/hooks/useBusinessProject';
+import { useBusinessProject, useProjectAnalyses, useProjectChecklist } from '@/hooks/useBusinessProject';
 import { OpeningProjectWizard } from './opening/OpeningProjectWizard';
 import { PhaseAnalysisCard } from './opening/PhaseAnalysisCard';
 import { OpeningChecklist } from './opening/OpeningChecklist';
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
+import { pushDebugEvent } from '@/lib/debugEvents';
 import { 
   Rocket, ArrowLeft, Building2, MapPin, Calendar, DollarSign, 
   LayoutGrid, ListChecks, MessageSquare, Trash2, Loader2, 
