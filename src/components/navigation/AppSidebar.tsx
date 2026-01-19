@@ -45,6 +45,8 @@ import {
   Lightbulb,
   Wrench,
   Timer,
+  CalendarCheck,
+  LayoutTemplate,
   TrendingUp,
   LucideIcon,
   UtensilsCrossed,
@@ -209,6 +211,18 @@ const lifecycleExtraItems: MenuItem[] = [
     icon: Globe, 
     path: '/r/social-listening',
     stages: ['first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Sitio Web', 
+    icon: LayoutTemplate, 
+    path: '/r/website',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Reservaciones', 
+    icon: CalendarCheck, 
+    path: '/r/reservations',
+    stages: ['pre_opening', 'first_90_days', 'normal_operation']
   },
 ];
 

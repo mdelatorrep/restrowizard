@@ -50,6 +50,9 @@ import RestaurantPreOpening from "./pages/restaurant/PreOpening";
 import RestaurantPOS from "./pages/restaurant/POS";
 import RestaurantKitchen from "./pages/restaurant/KitchenDisplay";
 import RestaurantPOSReports from "./pages/restaurant/POSReports";
+import RestaurantWebsite from "./pages/restaurant/Website";
+import RestaurantReservations from "./pages/restaurant/Reservations";
+import PublicRestaurant from "./pages/PublicRestaurant";
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
 import ConsultantDashboard from "./pages/consultant/Dashboard";
@@ -93,6 +96,7 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
+              <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
               <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
               <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
               <Route path="/mi-fidelidad/:codigo" element={<PublicLoyalty />} />
@@ -134,6 +138,8 @@ const App = () => (
                 <Route path="pos" element={<RestaurantPOS />} />
                 <Route path="pos-reports" element={<RestaurantPOSReports />} />
                 <Route path="kitchen" element={<RestaurantKitchen />} />
+                <Route path="website" element={<RestaurantWebsite />} />
+                <Route path="reservations" element={<RestaurantReservations />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 
