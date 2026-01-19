@@ -1,6 +1,8 @@
 import React from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
+import WebsiteShowcase from '../components/WebsiteShowcase';
+import Problem from '../components/Problem';
 import LiveResults from '../components/LiveResults';
 import Ecosystem from '../components/Ecosystem';
 import CopilotDemo from '../components/CopilotDemo';
@@ -16,6 +18,8 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
+        <WebsiteShowcase />
+        <Problem />
         <LiveResults />
         <Ecosystem />
         <CopilotDemo />
