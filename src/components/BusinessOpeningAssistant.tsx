@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useBusinessOpening, BusinessProject, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
+import { useBusinessOpening, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
+import { useBusinessProject, useProjectAnalyses, useProjectChecklist, BusinessProject } from '@/hooks/useBusinessProject';
 import { OpeningProjectWizard } from './opening/OpeningProjectWizard';
 import { PhaseAnalysisCard } from './opening/PhaseAnalysisCard';
 import { OpeningChecklist } from './opening/OpeningChecklist';
@@ -62,9 +63,6 @@ export function BusinessOpeningAssistant({ userType }: BusinessOpeningAssistantP
     projects,
     loadingProjects,
     isAnalyzing,
-    useProject,
-    useProjectAnalyses,
-    useProjectChecklist,
     createProject,
     analyzePhase,
     askAssistant,
@@ -73,9 +71,10 @@ export function BusinessOpeningAssistant({ userType }: BusinessOpeningAssistantP
     deleteProject,
   } = useBusinessOpening();
 
-  const { data: selectedProject } = useProject(selectedProjectId || '');
-  const { data: analyses } = useProjectAnalyses(selectedProjectId || '');
-  const { data: checklist } = useProjectChecklist(selectedProjectId || '');
+  // Use dedicated hooks for project data - these are proper React hooks
+  const { data: selectedProject } = useBusinessProject(selectedProjectId);
+  const { data: analyses } = useProjectAnalyses(selectedProjectId);
+  const { data: checklist } = useProjectChecklist(selectedProjectId);
 
   const basePath = userType === 'consultant' ? '/c' : '/r';
 

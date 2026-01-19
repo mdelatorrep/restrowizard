@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { OpeningProjectWizard } from '@/components/opening/OpeningProjectWizard';
 import { PhaseAnalysisCard } from '@/components/opening/PhaseAnalysisCard';
-import { useBusinessOpening, PHASES, PhaseId, BusinessProject } from '@/hooks/useBusinessOpening';
+import { useBusinessOpening, PHASES, PhaseId } from '@/hooks/useBusinessOpening';
+import { useBusinessProject, useProjectAnalyses, useProjectChecklist, BusinessProject } from '@/hooks/useBusinessProject';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,9 +49,6 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   };
 
   const {
-    useProject,
-    useProjectAnalyses,
-    useProjectChecklist,
     createProject,
     analyzePhase,
     askAssistant,
@@ -59,9 +57,10 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     isAnalyzing,
   } = useBusinessOpening();
 
-  const { data: project } = useProject(projectId || '');
-  const { data: analyses } = useProjectAnalyses(projectId || '');
-  const { data: checklist } = useProjectChecklist(projectId || '');
+  // Use dedicated hooks for project data - these are proper React hooks
+  const { data: project } = useBusinessProject(projectId);
+  const { data: analyses } = useProjectAnalyses(projectId);
+  const { data: checklist } = useProjectChecklist(projectId);
 
   // If resuming and we have a project, show a toast
   useEffect(() => {

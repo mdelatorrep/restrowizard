@@ -4,47 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
-export interface BusinessProject {
-  id: string;
-  user_id: string;
-  project_name: string;
-  business_type: string;
-  cuisine_type?: string;
-  city: string;
-  country: string;
-  neighborhood?: string;
-  estimated_budget?: number;
-  target_opening_date?: string;
-  current_phase: string;
-  progress_percentage: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PhaseAnalysis {
-  id: string;
-  project_id: string;
-  phase: string;
-  analysis_data: any;
-  sources: string[];
-  recommendations: any;
-  estimated_cost?: number;
-  estimated_time_days?: number;
-  status: string;
-  created_at: string;
-}
-
-export interface ChecklistItem {
-  id: string;
-  project_id: string;
-  phase: string;
-  title: string;
-  description?: string;
-  is_completed: boolean;
-  completed_at?: string;
-  sort_order: number;
-  created_at: string;
-}
+// Re-export types from the new hook for backward compatibility
+export type { BusinessProject, PhaseAnalysis, ChecklistItem } from './useBusinessProject';
+import type { BusinessProject, PhaseAnalysis } from './useBusinessProject';
 
 export interface CreateProjectData {
   projectName: string;
@@ -69,6 +31,10 @@ export const PHASES = [
 
 export type PhaseId = typeof PHASES[number]['id'];
 
+/**
+ * Hook for business opening operations (mutations and list query)
+ * For individual project data, use the dedicated hooks from useBusinessProject.ts
+ */
 export function useBusinessOpening() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -89,65 +55,6 @@ export function useBusinessOpening() {
     },
     enabled: !!user,
   });
-
-  // Fetch a specific project
-  const useProject = (projectId: string) => {
-    return useQuery({
-      queryKey: ['business-project', projectId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('business_opening_projects')
-          .select('*')
-          .eq('id', projectId)
-          .single();
-
-        if (error) throw error;
-        return data as BusinessProject;
-      },
-      enabled: !!projectId,
-    });
-  };
-
-  // Fetch analyses for a project
-  const useProjectAnalyses = (projectId: string) => {
-    return useQuery({
-      queryKey: ['project-analyses', projectId],
-      queryFn: async () => {
-        console.log('[useBusinessOpening] Fetching analyses for project:', projectId);
-        const { data, error } = await supabase
-          .from('opening_phase_analyses')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        console.log('[useBusinessOpening] Fetched analyses:', data?.length);
-        return data as PhaseAnalysis[];
-      },
-      enabled: !!projectId && projectId.length > 0,
-      staleTime: 0, // Always refetch when query is re-executed
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
-    });
-  };
-
-  // Fetch checklist for a project
-  const useProjectChecklist = (projectId: string) => {
-    return useQuery({
-      queryKey: ['project-checklist', projectId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('opening_checklist_items')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('sort_order', { ascending: true });
-
-        if (error) throw error;
-        return data as ChecklistItem[];
-      },
-      enabled: !!projectId,
-    });
-  };
 
   // Create a new project
   const createProject = useMutation({
@@ -195,6 +102,8 @@ export function useBusinessOpening() {
     setIsAnalyzing(true);
     
     try {
+      console.log('[useBusinessOpening] Starting analysis for phase:', phase);
+      
       const response = await supabase.functions.invoke('business-opening-assistant', {
         body: {
           action: 'analyze_phase',
@@ -219,15 +128,17 @@ export function useBusinessOpening() {
         throw new Error(result.error || 'Analysis failed');
       }
 
-      // Save the analysis to the database - ALWAYS store text properly
+      console.log('[useBusinessOpening] AI response received, saving to database');
+
+      // Save the analysis to the database
       const { data: analysis, error } = await supabase
         .from('opening_phase_analyses')
         .upsert({
           project_id: project.id,
           phase,
           analysis_data: {
-            text: result.analysis, // Always store the formatted text
-            structured: result.structured_data || null, // Structured data as backup
+            text: result.analysis,
+            structured: result.structured_data || null,
           },
           sources: result.sources || [],
           status: 'completed',
@@ -240,8 +151,9 @@ export function useBusinessOpening() {
 
       if (error) throw error;
 
-      // Immediately update the cache with the new analysis
-      console.log('[useBusinessOpening] Updating cache for project:', project.id, 'phase:', phase);
+      console.log('[useBusinessOpening] Analysis saved, updating cache for project:', project.id);
+      
+      // Update the cache immediately with the new analysis
       queryClient.setQueryData(['project-analyses', project.id], (old: PhaseAnalysis[] | undefined) => {
         const newAnalysis = analysis as PhaseAnalysis;
         if (!old) return [newAnalysis];
@@ -251,7 +163,7 @@ export function useBusinessOpening() {
       });
       
       // Also invalidate to ensure fresh data on next navigation
-      queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
+      await queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
       
       toast({
         title: 'Análisis completado',
@@ -316,7 +228,7 @@ export function useBusinessOpening() {
   };
 
   // Generate checklist
-  const generateChecklist = async (project: BusinessProject): Promise<ChecklistItem[] | null> => {
+  const generateChecklist = async (project: BusinessProject) => {
     setIsAnalyzing(true);
 
     try {
@@ -389,15 +301,15 @@ export function useBusinessOpening() {
 
         if (error) throw error;
 
-        // Immediately update the cache
-        queryClient.setQueryData(['project-checklist', project.id], savedItems as ChecklistItem[]);
+        // Update the cache
+        queryClient.setQueryData(['project-checklist', project.id], savedItems);
         
         toast({
           title: 'Checklist generado',
           description: `Se crearon ${savedItems.length} tareas para tu proyecto.`,
         });
 
-        return savedItems as ChecklistItem[];
+        return savedItems;
       }
 
       return null;
@@ -427,7 +339,7 @@ export function useBusinessOpening() {
 
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-checklist'] });
     },
   });
@@ -474,9 +386,6 @@ export function useBusinessOpening() {
     projects,
     loadingProjects,
     isAnalyzing,
-    useProject,
-    useProjectAnalyses,
-    useProjectChecklist,
     createProject,
     analyzePhase,
     askAssistant,
