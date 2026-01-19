@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.pos-payment-processor]
 verify_jwt = false
+
+[functions.website-public-order]
+verify_jwt = false

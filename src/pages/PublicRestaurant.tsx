@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { usePublicWebsite, PublicWebsiteData } from '@/hooks/useRestaurantWebsite';
 import { usePublicReservation } from '@/hooks/useReservations';
+import { usePublicCart } from '@/hooks/usePublicCart';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { DeliveryCart, CartButton } from '@/components/public-website/DeliveryCart';
 import { 
   Phone, Mail, MapPin, Clock, Calendar, Users, 
   Facebook, Instagram, Twitter, Globe, ChevronDown,
-  Utensils, Star, Heart
+  Utensils, Star, Heart, ShoppingCart, Plus, Truck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,7 +55,10 @@ export default function PublicRestaurant() {
   const [menus, setMenus] = useState<RestaurantMenu[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState('inicio');
+  const [showCart, setShowCart] = useState(false);
+  
+  // Cart hook - initialized with website user_id
+  const cart = usePublicCart(website?.user_id || '');
   
   // Reservation form
   const [reservationForm, setReservationForm] = useState({
@@ -71,7 +76,11 @@ export default function PublicRestaurant() {
     if (website?.user_id && website.show_menu) {
       loadMenus(website.user_id);
     }
-  }, [website?.user_id, website?.show_menu]);
+    // Load delivery zones if delivery is enabled
+    if (website?.user_id && website.show_delivery) {
+      cart.loadZones();
+    }
+  }, [website?.user_id, website?.show_menu, website?.show_delivery]);
 
   useEffect(() => {
     if (selectedMenu) {
@@ -194,6 +203,7 @@ export default function PublicRestaurant() {
               <a href="#inicio" className="text-sm hover:text-primary transition-colors">Inicio</a>
               {website.show_about && <a href="#nosotros" className="text-sm hover:text-primary transition-colors">Nosotros</a>}
               {website.show_menu && <a href="#menu" className="text-sm hover:text-primary transition-colors">Menú</a>}
+              {website.show_delivery && <a href="#menu" className="text-sm hover:text-primary transition-colors flex items-center gap-1"><Truck className="h-4 w-4" />Pedir</a>}
               {website.show_gallery && <a href="#galeria" className="text-sm hover:text-primary transition-colors">Galería</a>}
               {website.show_reservations && <a href="#reservas" className="text-sm hover:text-primary transition-colors">Reservas</a>}
               {website.show_contact && <a href="#contacto" className="text-sm hover:text-primary transition-colors">Contacto</a>}
@@ -267,9 +277,23 @@ export default function PublicRestaurant() {
       {website.show_menu && menus.length > 0 && (
         <section id="menu" className="py-20">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ fontFamily: brand?.primary_font }}>
-              Nuestro Menú
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4" style={{ fontFamily: brand?.primary_font }}>
+              {website.show_delivery ? 'Pide a Domicilio' : 'Nuestro Menú'}
             </h2>
+            
+            {website.show_delivery && website.delivery_message && (
+              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+                {website.delivery_message}
+              </p>
+            )}
+            
+            {website.show_delivery && website.delivery_min_order && (
+              <div className="flex justify-center mb-8">
+                <Badge variant="secondary" className="text-sm px-4 py-1">
+                  Pedido mínimo: ${website.delivery_min_order.toLocaleString()}
+                </Badge>
+              </div>
+            )}
             
             {menus.length > 1 && (
               <div className="flex justify-center gap-4 mb-8">
@@ -291,7 +315,7 @@ export default function PublicRestaurant() {
                   <h3 className="text-2xl font-semibold mb-6 pb-2 border-b">{category}</h3>
                   <div className="space-y-6">
                     {items.map(item => (
-                      <div key={item.id} className="flex gap-4">
+                      <div key={item.id} className="flex gap-4 group">
                         {item.image_url && (
                           <img 
                             src={item.image_url} 
@@ -313,12 +337,44 @@ export default function PublicRestaurant() {
                                 </div>
                               )}
                             </div>
-                            <span className="font-bold text-lg" style={{ color: 'var(--brand-primary)' }}>
-                              ${item.price.toLocaleString()}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold text-lg" style={{ color: 'var(--brand-primary)' }}>
+                                ${item.price.toLocaleString()}
+                              </span>
+                              {website.show_delivery && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => cart.addItem({
+                                    id: item.id,
+                                    name: item.name,
+                                    price: item.price,
+                                    image_url: item.image_url || undefined,
+                                  })}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           {item.description && (
                             <p className="text-muted-foreground mt-2">{item.description}</p>
+                          )}
+                          {website.show_delivery && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="mt-2 md:hidden"
+                              onClick={() => cart.addItem({
+                                id: item.id,
+                                name: item.name,
+                                price: item.price,
+                                image_url: item.image_url || undefined,
+                              })}
+                            >
+                              <Plus className="h-4 w-4 mr-1" /> Agregar
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -561,6 +617,36 @@ export default function PublicRestaurant() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Delivery Cart Button & Modal */}
+      {website.show_delivery && (
+        <>
+          <CartButton 
+            itemCount={cart.itemCount} 
+            total={cart.total} 
+            onClick={() => setShowCart(true)} 
+          />
+          {showCart && (
+            <DeliveryCart
+              items={cart.items}
+              zones={cart.zones}
+              selectedZone={cart.deliveryZone}
+              subtotal={cart.subtotal}
+              deliveryFee={cart.deliveryFee}
+              total={cart.total}
+              minOrderMet={cart.minOrderMet}
+              minOrderAmount={cart.deliveryZone?.min_order || website.delivery_min_order || undefined}
+              submitting={cart.submitting}
+              onUpdateQuantity={cart.updateQuantity}
+              onRemoveItem={cart.removeItem}
+              onUpdateNotes={cart.updateNotes}
+              onSelectZone={cart.setDeliveryZone}
+              onSubmit={cart.submitOrder}
+              onClose={() => setShowCart(false)}
+            />
+          )}
+        </>
       )}
 
       {/* Footer */}
