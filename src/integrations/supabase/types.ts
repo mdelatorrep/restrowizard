@@ -3990,6 +3990,134 @@ export type Database = {
           },
         ]
       }
+      restaurant_websites: {
+        Row: {
+          about_description: string | null
+          about_image_url: string | null
+          about_title: string | null
+          business_hours: Json | null
+          created_at: string | null
+          custom_scripts: string | null
+          delivery_message: string | null
+          delivery_min_order: number | null
+          favicon_url: string | null
+          gallery_images: Json | null
+          google_analytics_id: string | null
+          hero_cta_link: string | null
+          hero_cta_text: string | null
+          hero_image_url: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          id: string
+          is_published: boolean | null
+          meta_description: string | null
+          reservation_advance_days: number | null
+          reservation_available_times: Json | null
+          reservation_max_party_size: number | null
+          reservation_slot_duration: number | null
+          show_about: boolean | null
+          show_contact: boolean | null
+          show_delivery: boolean | null
+          show_gallery: boolean | null
+          show_loyalty: boolean | null
+          show_menu: boolean | null
+          show_reservations: boolean | null
+          show_reviews: boolean | null
+          site_title: string | null
+          slug: string
+          template_id: string | null
+          theme_overrides: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          about_description?: string | null
+          about_image_url?: string | null
+          about_title?: string | null
+          business_hours?: Json | null
+          created_at?: string | null
+          custom_scripts?: string | null
+          delivery_message?: string | null
+          delivery_min_order?: number | null
+          favicon_url?: string | null
+          gallery_images?: Json | null
+          google_analytics_id?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          id?: string
+          is_published?: boolean | null
+          meta_description?: string | null
+          reservation_advance_days?: number | null
+          reservation_available_times?: Json | null
+          reservation_max_party_size?: number | null
+          reservation_slot_duration?: number | null
+          show_about?: boolean | null
+          show_contact?: boolean | null
+          show_delivery?: boolean | null
+          show_gallery?: boolean | null
+          show_loyalty?: boolean | null
+          show_menu?: boolean | null
+          show_reservations?: boolean | null
+          show_reviews?: boolean | null
+          site_title?: string | null
+          slug: string
+          template_id?: string | null
+          theme_overrides?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          about_description?: string | null
+          about_image_url?: string | null
+          about_title?: string | null
+          business_hours?: Json | null
+          created_at?: string | null
+          custom_scripts?: string | null
+          delivery_message?: string | null
+          delivery_min_order?: number | null
+          favicon_url?: string | null
+          gallery_images?: Json | null
+          google_analytics_id?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          id?: string
+          is_published?: boolean | null
+          meta_description?: string | null
+          reservation_advance_days?: number | null
+          reservation_available_times?: Json | null
+          reservation_max_party_size?: number | null
+          reservation_slot_duration?: number | null
+          show_about?: boolean | null
+          show_contact?: boolean | null
+          show_delivery?: boolean | null
+          show_gallery?: boolean | null
+          show_loyalty?: boolean | null
+          show_menu?: boolean | null
+          show_reservations?: boolean | null
+          show_reviews?: boolean | null
+          site_title?: string | null
+          slug?: string
+          template_id?: string | null
+          theme_overrides?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_websites_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "website_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_zones: {
         Row: {
           amenities: Json | null
@@ -4766,6 +4894,63 @@ export type Database = {
         }
         Relationships: []
       }
+      table_reservations: {
+        Row: {
+          confirmation_code: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          id: string
+          notes: string | null
+          party_size: number
+          reminder_sent: boolean | null
+          reservation_date: string
+          reservation_time: string
+          source: string | null
+          special_requests: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confirmation_code?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          id?: string
+          notes?: string | null
+          party_size: number
+          reminder_sent?: boolean | null
+          reservation_date: string
+          reservation_time: string
+          source?: string | null
+          special_requests?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confirmation_code?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          notes?: string | null
+          party_size?: number
+          reminder_sent?: boolean | null
+          reservation_date?: string
+          reservation_time?: string
+          source?: string | null
+          special_requests?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ticket_messages: {
         Row: {
           attachments: Json | null
@@ -5065,6 +5250,39 @@ export type Database = {
           status?: Database["public"]["Enums"]["brand_status"] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      website_templates: {
+        Row: {
+          created_at: string | null
+          default_config: Json | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          layout_type: string
+          name: string
+          preview_image: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_config?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          layout_type?: string
+          name: string
+          preview_image?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_config?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          layout_type?: string
+          name?: string
+          preview_image?: string | null
         }
         Relationships: []
       }
