@@ -59,8 +59,8 @@ export const AppHeader: React.FC = () => {
   }, [user, userType]);
 
   const handleLogout = async () => {
+    // signOut now handles navigation internally with a hard refresh
     await signOut();
-    navigate('/');
   };
 
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
