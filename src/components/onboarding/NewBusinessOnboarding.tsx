@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { OpeningProjectWizard } from '@/components/opening/OpeningProjectWizard';
-import { PhaseAnalysisCard } from '@/components/opening/PhaseAnalysisCard';
+import { AutomaticProcessingScreen } from '@/components/opening/AutomaticProcessingScreen';
+import { OpeningResultsDashboard } from '@/components/opening/OpeningResultsDashboard';
 import { useBusinessOpening, PHASES, PhaseId } from '@/hooks/useBusinessOpening';
 import { useBusinessProject, useProjectAnalyses, useProjectChecklist, BusinessProject } from '@/hooks/useBusinessProject';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,17 +13,13 @@ import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { pushDebugEvent } from '@/lib/debugEvents';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutGrid, ListChecks, MessageSquare } from 'lucide-react';
-import { OpeningChecklist } from '@/components/opening/OpeningChecklist';
-import { OpeningChat } from '@/components/opening/OpeningChat';
 
 interface NewBusinessOnboardingProps {
   onBack: () => void;
-  resumeProjectId?: string; // Optional: if provided, resume this project instead of creating new
+  resumeProjectId?: string;
 }
 
-type OnboardingStep = 'create' | 'setup' | 'complete';
+type OnboardingStep = 'create' | 'processing' | 'results' | 'complete';
 
 export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ onBack, resumeProjectId }) => {
   const navigate = useNavigate();
@@ -32,37 +28,23 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const { refreshUserType } = useUserType();
   const { toast } = useToast();
 
-  // Prefer URL param for persistence across refresh; fallback to resumeProjectId
   const projectIdFromUrl = searchParams.get('projectId');
   const initialProjectId = projectIdFromUrl || resumeProjectId || null;
 
-  // If resuming, start in setup step directly
-  const [step, setStep] = useState<OnboardingStep>(initialProjectId ? 'setup' : 'create');
+  // Determine initial step based on project state
+  const [step, setStep] = useState<OnboardingStep>('create');
   const [projectId, setProjectIdState] = useState<string | null>(initialProjectId);
-  const [analyzingPhase, setAnalyzingPhase] = useState<PhaseId | null>(null);
-  const [activeTab, setActiveTab] = useState('phases');
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
-
-  // Deterministic checklist generation (avoid "random" regeneration)
-  const pendingAutoChecklistRef = useRef(false);
-  const autoChecklistGeneratedForProjectsRef = useRef<Set<string>>(new Set());
+  const hasInitializedRef = useRef(false);
 
   const trace = (action: string, data?: Record<string, unknown>) => {
-    const payload = {
-      ...data,
-      step,
-      activeTab,
-      projectId,
-      projectIdFromUrl,
-      resumeProjectId,
-      ts: new Date().toISOString(),
-    };
+    const payload = { ...data, step, projectId, ts: new Date().toISOString() };
     console.debug(`[opening_onboarding] ${action}`, payload);
     void pushDebugEvent(user?.id, 'opening_onboarding', action, payload);
   };
 
   const setProjectId = (id: string | null) => {
-    trace('set_project_id', { nextProjectId: id, prevProjectId: projectId });
+    trace('set_project_id', { nextProjectId: id });
     setProjectIdState(id);
     if (id) setSearchParams({ projectId: id });
     else setSearchParams({});
@@ -71,158 +53,86 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const {
     createProject,
     analyzePhase,
-    askAssistant,
     generateChecklist,
     toggleChecklistItem,
-    isAnalyzing,
   } = useBusinessOpening();
 
-  // Use dedicated hooks for project data - these are proper React hooks
   const { data: project } = useBusinessProject(projectId);
   const analysesQuery = useProjectAnalyses(projectId);
   const checklistQuery = useProjectChecklist(projectId);
-  const analyses = analysesQuery.data;
-  const checklist = checklistQuery.data;
+  const analyses = analysesQuery.data ?? [];
+  const checklist = checklistQuery.data ?? [];
 
-  // Lightweight state-change telemetry
-  useEffect(() => {
-    trace('state_change');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, activeTab, projectId]);
+  // Determine if project has completed analyses
+  const completedPhases = analyses
+    .filter(a => a.status === 'completed')
+    .map(a => a.phase as PhaseId);
 
-  // If resuming and we have a project, show a toast
+  // Initialize step based on project state (only once)
   useEffect(() => {
-    if ((resumeProjectId || projectIdFromUrl) && project) {
-      toast({
-        title: "Continuando tu proyecto",
-        description: `Retomando "${project.project_name}"`,
-      });
-      trace('resume_detected', { projectName: project.project_name, projectId: project.id });
+    if (hasInitializedRef.current) return;
+    if (!initialProjectId) return;
+    if (!project || !analysesQuery.isFetched) return;
+
+    hasInitializedRef.current = true;
+
+    // Determine where to resume
+    if (project.progress_percentage >= 100) {
+      // Already completed, show results
+      setStep('results');
+    } else if (completedPhases.length === PHASES.length) {
+      // All phases done, show results
+      setStep('results');
+    } else if (completedPhases.length > 0) {
+      // Some phases done, continue processing
+      setStep('processing');
+    } else {
+      // No progress, start processing
+      setStep('processing');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeProjectId, projectIdFromUrl, project?.id]);
-
-  // Keep local state in sync if URL changes (e.g. user opens a shared link)
-  useEffect(() => {
-    if (projectIdFromUrl && projectIdFromUrl !== projectId) {
-      trace('url_project_id_changed', { nextProjectId: projectIdFromUrl });
-      setProjectIdState(projectIdFromUrl);
-      setStep('setup');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectIdFromUrl]);
-
-  const getPhaseAnalysis = (phaseId: PhaseId) => {
-    return analyses?.find((a) => a.phase === phaseId);
-  };
-
-  const calculateProgress = () => {
-    if (!analyses) return 0;
-    const completedPhases = PHASES.filter((p) =>
-      analyses.some((a) => a.phase === p.id && a.status === 'completed')
-    ).length;
-    return (completedPhases / PHASES.length) * 100;
-  };
-
-  // Resolve pending auto-checklist once checklist query is actually fetched
-  useEffect(() => {
-    if (!project) return;
-    if (!pendingAutoChecklistRef.current) return;
-    if (!checklistQuery.isFetched) return;
-
-    pendingAutoChecklistRef.current = false;
-
-    const count = checklist?.length ?? 0;
-    if (count > 0) {
-      trace('checklist_autogen_skipped_existing', { count });
-      return;
-    }
-
-    if (autoChecklistGeneratedForProjectsRef.current.has(project.id)) return;
-    autoChecklistGeneratedForProjectsRef.current.add(project.id);
 
     toast({
-      title: 'Generando checklist',
-      description: 'Creando tu lista de tareas personalizada...',
+      title: "Continuando tu proyecto",
+      description: `Retomando "${project.project_name}"`,
     });
+  }, [initialProjectId, project, analysesQuery.isFetched, completedPhases.length]);
 
-    trace('checklist_autogen_start', { reason: 'post_first_analysis_deferred' });
-    void generateChecklist(project).finally(() => {
-      trace('checklist_autogen_end', { reason: 'post_first_analysis_deferred' });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project?.id, checklistQuery.isFetched, checklist?.length]);
-
-  const handleAnalyzePhase = async (phaseId: PhaseId) => {
-    if (!project) return;
-
-    // Prevent concurrent analyses (this was causing state to "jump" and appear to lose progress)
-    if (isAnalyzing || analyzingPhase) {
-      toast({
-        title: 'Análisis en progreso',
-        description: 'Espera a que termine el análisis actual antes de iniciar otro.',
-      });
-      trace('analyze_blocked', { phaseId, isAnalyzing, analyzingPhase });
-      return;
-    }
-
-    setAnalyzingPhase(phaseId);
-    const t0 = Date.now();
-    trace('analyze_start', { phaseId });
-
-    const res = await analyzePhase(project, phaseId);
-
-    trace('analyze_end', { phaseId, ok: !!res, ms: Date.now() - t0 });
-    setAnalyzingPhase(null);
-
-    // Deterministic checklist generation: only after query is fetched & confirmed empty
-    const checklistCount = checklist?.length ?? 0;
-    const alreadyDone = autoChecklistGeneratedForProjectsRef.current.has(project.id);
-
-    if (!alreadyDone && checklistCount === 0) {
-      if (checklistQuery.isFetched) {
-        autoChecklistGeneratedForProjectsRef.current.add(project.id);
-
-        toast({
-          title: 'Generando checklist',
-          description: 'Creando tu lista de tareas personalizada...',
-        });
-
-        trace('checklist_autogen_start', { reason: 'post_first_analysis', phaseId });
-        await generateChecklist(project);
-        trace('checklist_autogen_end', { reason: 'post_first_analysis', phaseId });
-      } else {
-        pendingAutoChecklistRef.current = true;
-        trace('checklist_autogen_pending', { phaseId });
-      }
+  // Handle project creation
+  const handleProjectCreated = async (data: any) => {
+    const newProject = await createProject.mutateAsync(data);
+    if (newProject) {
+      setProjectId(newProject.id);
+      setStep('processing');
     }
   };
 
-  const handleAskQuestion = async (question: string) => {
-    if (!project) return null;
-    trace('chat_question', { length: question.length });
-    return await askAssistant(project, question);
+  // Handle processing completion
+  const handleProcessingComplete = () => {
+    trace('processing_complete');
+    setStep('results');
   };
 
-  const handleGenerateChecklist = async () => {
-    if (!project) return;
-    trace('checklist_manual_generate');
-    await generateChecklist(project);
+  // Handle cancel processing
+  const handleCancelProcessing = () => {
+    trace('processing_cancelled');
+    // Go back to create step, clear project
+    setProjectId(null);
+    setStep('create');
   };
 
+  // Handle checklist item toggle
   const handleToggleChecklistItem = (itemId: string, isCompleted: boolean) => {
-    trace('checklist_toggle', { itemId, isCompleted });
     toggleChecklistItem.mutate({ itemId, isCompleted });
   };
 
-  // Complete the setup and create the restaurant + baseline maturity
+  // Complete the setup and create the restaurant
   const handleCompleteSetup = async () => {
     if (!user || !project) return;
     
     setIsCompletingSetup(true);
     
     try {
-      // 1. Create the restaurant business from project data with target opening date
+      // 1. Create the restaurant business
       const { data: business, error: businessError } = await (supabase as any)
         .from('restaurant_businesses')
         .insert({
@@ -233,18 +143,18 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
           city: project.city,
           state: project.country,
           address: project.neighborhood || '',
-          opening_date: project.target_opening_date || null, // Use the planned opening date
+          opening_date: project.target_opening_date || null,
         })
         .select()
         .single();
 
       if (businessError) throw businessError;
 
-      // 2. Generate baseline maturity scores from the opening process
-      const baselineScores = generateBaselineMaturityFromProject(project, analyses || []);
+      // 2. Generate baseline maturity scores
+      const baselineScores = generateBaselineMaturityFromProject(project, analyses);
       
-      // 3. Create the maturity diagnosis with baseline
-      const { data: diagnosis, error: diagnosisError } = await supabase
+      // 3. Create the maturity diagnosis
+      const { error: diagnosisError } = await supabase
         .from('maturity_diagnoses')
         .insert({
           user_id: user.id,
@@ -259,14 +169,12 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             isNewBusiness: true,
             openingProjectId: project.id,
           },
-        } as any)
-        .select()
-        .single();
+        } as any);
 
       if (diagnosisError) throw diagnosisError;
 
-      // 4. Generate AI action plan for the new business
-      const { error: aiError } = await supabase.functions.invoke('maturity-ai-engine', {
+      // 4. Generate AI action plan
+      await supabase.functions.invoke('maturity-ai-engine', {
         body: {
           action: 'generate_action_plan',
           diagnosisData: {
@@ -282,19 +190,15 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             isNewBusiness: true,
           },
         },
-      });
+      }).catch(err => console.warn('AI action plan error:', err));
 
-      if (aiError) {
-        console.warn('Could not generate AI action plan:', aiError);
-      }
-
-      // 5. Mark project as 100% complete
+      // 5. Mark project as complete
       await supabase
         .from('business_opening_projects')
         .update({ progress_percentage: 100, current_phase: 'completed' })
         .eq('id', project.id);
 
-      // 6. Refresh user type cache so OnboardingGuard knows onboarding is complete
+      // 6. Refresh user type
       await refreshUserType();
 
       toast({
@@ -315,11 +219,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     }
   };
 
-  // Navigate to dashboard after completion - ensure user type is refreshed
   const handleGoToDashboard = async () => {
-    // Double-check the user type is refreshed before navigating
     await refreshUserType();
-    // Small delay to ensure React Query has propagated the update
     await new Promise(resolve => setTimeout(resolve, 100));
     navigate('/r/dashboard', { replace: true });
   };
@@ -345,14 +246,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             </div>
           </div>
 
-           <OpeningProjectWizard
-            onSubmit={async (data) => {
-              const newProject = await createProject.mutateAsync(data);
-              if (newProject) {
-                setProjectId(newProject.id);
-                setStep('setup');
-              }
-            }}
+          <OpeningProjectWizard
+            onSubmit={handleProjectCreated}
             isSubmitting={createProject.isPending}
           />
         </div>
@@ -360,149 +255,48 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     );
   }
 
-  // Step 2: Setup & Analysis
-  if (step === 'setup' && project) {
-    const progress = calculateProgress();
-    // Allow completion after at least 1 phase analyzed OR if resuming a project
-    const hasAnyAnalysis = analyses && analyses.length > 0;
-    const canComplete = hasAnyAnalysis || progress > 0;
+  // Step 2: Automatic Processing
+  if (step === 'processing' && project) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AutomaticProcessingScreen
+          project={project}
+          onComplete={handleProcessingComplete}
+          onCancel={handleCancelProcessing}
+          analyzePhase={analyzePhase}
+          generateChecklist={generateChecklist}
+          completedPhases={completedPhases}
+        />
+      </div>
+    );
+  }
 
+  // Step 3: Results Dashboard
+  if (step === 'results' && project) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={onBack}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <Rocket className="h-6 w-6 text-primary" />
-                  {project.project_name}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {project.business_type} • {project.city}, {project.country}
-                </p>
-              </div>
-            </div>
-
-            {/* Single action button - clearer UX */}
-            <Button 
-              onClick={handleCompleteSetup}
-              disabled={isCompletingSetup}
-              className="gap-2"
-            >
-              {isCompletingSetup ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creando tu restaurante...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  {hasAnyAnalysis ? 'Finalizar y crear restaurante' : 'Crear restaurante ahora'}
-                </>
-              )}
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <Button variant="ghost" onClick={onBack} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Volver
             </Button>
           </div>
 
-          {/* Progress */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Progreso del proyecto</span>
-                <span className="text-sm text-muted-foreground">
-                  {analyses?.filter(a => a.status === 'completed').length || 0} / {PHASES.length} fases analizadas
-                </span>
-              </div>
-              <Progress value={progress} className="h-3" />
-              <p className="text-xs text-muted-foreground mt-2">
-                {hasAnyAnalysis 
-                  ? "Puedes finalizar cuando quieras o continuar analizando más fases para obtener mejores recomendaciones"
-                  : "Analiza las fases que necesites o crea tu restaurante directamente con el botón superior"
-                }
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="phases" className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                Fases de Análisis
-              </TabsTrigger>
-              <TabsTrigger value="checklist" className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                Checklist
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Asistente
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="phases" className="mt-6" forceMount>
-              <div className="grid gap-4 md:grid-cols-2">
-                {PHASES.map((phase) => (
-                  <PhaseAnalysisCard
-                    key={phase.id}
-                    phaseId={phase.id}
-                    analysis={getPhaseAnalysis(phase.id)}
-                    onAnalyze={() => handleAnalyzePhase(phase.id)}
-                    isAnalyzing={analyzingPhase === phase.id}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="checklist" className="mt-6" forceMount>
-              {checklist && checklist.length > 0 ? (
-                <OpeningChecklist 
-                  items={checklist} 
-                  onToggle={handleToggleChecklistItem}
-                />
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <ListChecks className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No hay checklist generado</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Genera un checklist personalizado para tu proyecto de apertura
-                    </p>
-                    <Button onClick={handleGenerateChecklist} disabled={isAnalyzing}>
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Generando...
-                        </>
-                      ) : (
-                        <>
-                          <ListChecks className="h-4 w-4 mr-2" />
-                          Generar Checklist
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="chat" className="mt-6" forceMount>
-              <OpeningChat 
-                project={project}
-                onAskQuestion={handleAskQuestion}
-                isLoading={isAnalyzing}
-              />
-            </TabsContent>
-          </Tabs>
+          <OpeningResultsDashboard
+            project={project}
+            analyses={analyses}
+            checklist={checklist}
+            onToggleChecklistItem={handleToggleChecklistItem}
+            onComplete={handleCompleteSetup}
+            isCompleting={isCompletingSetup}
+          />
         </div>
       </div>
     );
   }
 
-  // Step 3: Complete
+  // Step 4: Complete
   if (step === 'complete') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -552,10 +346,19 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     );
   }
 
+  // Loading state
+  if (projectId && !project) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return null;
 };
 
-// Helper function to generate baseline maturity scores from the opening project
+// Helper function to generate baseline maturity scores
 function generateBaselineMaturityFromProject(
   project: BusinessProject,
   analyses: any[]
@@ -565,7 +368,6 @@ function generateBaselineMaturityFromProject(
   overallScore: number;
   level: 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto';
 } {
-  // Map opening phases to maturity pillars
   const phaseToMaturityPillar: Record<string, string> = {
     'legal_requirements': 'legal_compliance',
     'location_analysis': 'operations',
@@ -576,48 +378,37 @@ function generateBaselineMaturityFromProject(
     'financial_projection': 'finances',
   };
 
-  // Calculate scores based on completed phases and their quality
   const pillarScores: Record<string, number> = {
-    'finances': 2.0,      // Base score for new business
+    'finances': 2.0,
     'operations': 2.0,
     'talent': 2.0,
     'marketing': 2.0,
     'supply_chain': 2.0,
-    'technology': 1.5,    // Lower base for tech
+    'technology': 1.5,
     'customer_experience': 1.5,
     'sustainability': 1.0,
   };
 
-  // Boost scores based on completed analyses
   analyses.forEach(analysis => {
     const maturityPillar = phaseToMaturityPillar[analysis.phase];
     if (maturityPillar && pillarScores[maturityPillar] !== undefined) {
-      // Add 0.5 for each completed phase analysis
       pillarScores[maturityPillar] = Math.min(pillarScores[maturityPillar] + 0.5, 3.5);
     }
   });
 
-  // Calculate overall score
   const scores = Object.values(pillarScores);
   const overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-  // Determine level
   let level: 'inicial' | 'basico' | 'intermedio' | 'avanzado' | 'experto' = 'inicial';
   if (overallScore >= 4) level = 'experto';
   else if (overallScore >= 3) level = 'avanzado';
   else if (overallScore >= 2.5) level = 'intermedio';
   else if (overallScore >= 2) level = 'basico';
 
-  // Generate placeholder answers (we'll use the pillar scores instead)
   const answers: Record<number, number> = {};
   for (let i = 0; i < 8; i++) {
     answers[i] = Math.round(overallScore);
   }
 
-  return {
-    answers,
-    pillarScores,
-    overallScore,
-    level,
-  };
+  return { answers, pillarScores, overallScore, level };
 }
