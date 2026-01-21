@@ -477,6 +477,7 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
       body: JSON.stringify({
         model: 'gpt-5-nano',
         tools: [{ type: 'web_search_preview' }],
+        reasoning: { effort: 'low' },
         input: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
