@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, parseISO, format } from 'date-fns';
+import { BUSINESS_TYPES, CUISINE_TYPES } from '@/data/constants';
 
 interface ExistingBusinessOnboardingProps {
   onBack: () => void;
@@ -157,45 +159,23 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="business_type">Tipo de negocio *</Label>
-                  <Select
+                  <SelectWithOther
+                    options={BUSINESS_TYPES}
                     value={formData.business_type}
-                    onValueChange={(value) => handleInputChange('business_type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="restaurant">Restaurante</SelectItem>
-                      <SelectItem value="cafe">Cafetería</SelectItem>
-                      <SelectItem value="bar">Bar</SelectItem>
-                      <SelectItem value="food_truck">Food Truck</SelectItem>
-                      <SelectItem value="ghost_kitchen">Dark Kitchen</SelectItem>
-                      <SelectItem value="catering">Catering</SelectItem>
-                      <SelectItem value="bakery">Panadería</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => handleInputChange('business_type', value)}
+                    placeholder="Selecciona el tipo"
+                    otherPlaceholder="Especifica el tipo de negocio..."
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cuisine_type">Tipo de cocina</Label>
-                  <Select
+                  <SelectWithOther
+                    options={CUISINE_TYPES}
                     value={formData.cuisine_type}
-                    onValueChange={(value) => handleInputChange('cuisine_type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona la cocina" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mexican">Mexicana</SelectItem>
-                      <SelectItem value="italian">Italiana</SelectItem>
-                      <SelectItem value="japanese">Japonesa</SelectItem>
-                      <SelectItem value="chinese">China</SelectItem>
-                      <SelectItem value="american">Americana</SelectItem>
-                      <SelectItem value="french">Francesa</SelectItem>
-                      <SelectItem value="spanish">Española</SelectItem>
-                      <SelectItem value="fusion">Fusión</SelectItem>
-                      <SelectItem value="other">Otra</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => handleInputChange('cuisine_type', value)}
+                    placeholder="Selecciona la cocina"
+                    otherPlaceholder="Especifica el tipo de cocina..."
+                  />
                 </div>
               </CardContent>
             </>

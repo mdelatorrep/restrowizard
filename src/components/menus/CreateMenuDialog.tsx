@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMenus } from '@/hooks/useMenus';
 import { Database } from '@/integrations/supabase/types';
+import { CUISINE_TYPES, getCuisineTypeLabel } from '@/data/constants';
 
 type CuisineType = Database['public']['Enums']['cuisine_type'];
 
@@ -25,21 +26,6 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
     description: '',
     cuisine_type: '' as CuisineType | '',
   });
-
-  const cuisineTypes = [
-    { value: 'italian', label: 'Italiana' },
-    { value: 'mexican', label: 'Mexicana' },
-    { value: 'chinese', label: 'China' },
-    { value: 'japanese', label: 'Japonesa' },
-    { value: 'indian', label: 'India' },
-    { value: 'french', label: 'Francesa' },
-    { value: 'spanish', label: 'Española' },
-    { value: 'american', label: 'Americana' },
-    { value: 'mediterranean', label: 'Mediterránea' },
-    { value: 'thai', label: 'Tailandesa' },
-    { value: 'fusion', label: 'Fusión' },
-    { value: 'other', label: 'Otra' }
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,22 +94,13 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
 
               <div>
                 <Label htmlFor="cuisine_type">Tipo de Cocina *</Label>
-                <Select 
-                  value={formData.cuisine_type} 
-                  onValueChange={(value: CuisineType) => setFormData(prev => ({ ...prev, cuisine_type: value }))}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona el tipo de cocina" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cuisineTypes.map((cuisine) => (
-                      <SelectItem key={cuisine.value} value={cuisine.value}>
-                        {cuisine.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SelectWithOther
+                  options={CUISINE_TYPES}
+                  value={formData.cuisine_type}
+                  onChange={(value) => setFormData(prev => ({ ...prev, cuisine_type: value as CuisineType }))}
+                  placeholder="Selecciona el tipo de cocina"
+                  otherPlaceholder="Especifica el tipo de cocina..."
+                />
               </div>
             </div>
 
@@ -145,7 +122,7 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
                         {template.name}
                       </CardTitle>
                       <Badge variant="outline" className="w-fit text-xs">
-                        {cuisineTypes.find(c => c.value === template.cuisine_type)?.label || template.cuisine_type}
+                        {getCuisineTypeLabel(template.cuisine_type || '')}
                       </Badge>
                     </CardHeader>
                     <CardContent className="pt-0">
