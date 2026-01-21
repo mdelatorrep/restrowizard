@@ -475,7 +475,7 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-nano',
+        model: 'gpt-5-nano',
         tools: [{ type: 'web_search_preview' }],
         input: [
           { role: 'system', content: systemPrompt },
