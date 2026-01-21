@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes, faStar, faArrowRight } from '@fortawesome/free-solid-svg-icons';
@@ -107,10 +107,7 @@ const Header = () => {
                 Dashboard
               </Button>
               <Button 
-                onClick={async () => {
-                  await signOut();
-                  navigate('/');
-                }}
+                onClick={() => signOut()}
                 variant="outline"
                 className={`font-lato-bold ${
                   isScrolled 
@@ -183,10 +180,9 @@ const Header = () => {
                     Dashboard
                   </button>
                   <button 
-                    onClick={async () => {
+                    onClick={() => {
                       setIsMenuOpen(false);
-                      await signOut();
-                      navigate('/');
+                      signOut();
                     }}
                     className="block w-full text-center px-4 py-3 rounded-lg bg-purple-intense text-white font-lato-bold hover:opacity-90 transition-all"
                   >

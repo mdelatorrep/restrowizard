@@ -292,9 +292,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
 
   const stageInfo = getStageInfo(lifecycle.stage);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
+  const handleLogout = () => {
+    // signOut now handles navigation + cache clearing internally
+    signOut();
   };
 
   return (
