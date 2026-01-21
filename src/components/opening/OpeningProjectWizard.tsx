@@ -7,7 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { CreateProjectData } from '@/hooks/useBusinessOpening';
+import { 
+  BUSINESS_TYPES, 
+  CUISINE_TYPES, 
+  COUNTRIES,
+  getBusinessTypeLabel,
+  getCuisineTypeLabel,
+  getCurrencySymbol,
+} from '@/data/constants';
 import { Building2, ChefHat, MapPin, DollarSign, Calendar, ArrowRight, ArrowLeft, Rocket } from 'lucide-react';
 
 const formSchema = z.object({
@@ -21,46 +30,11 @@ const formSchema = z.object({
   targetOpeningDate: z.string().optional(),
 });
 
-const BUSINESS_TYPES = [
-  { value: 'restaurante', label: 'Restaurante' },
-  { value: 'cafeteria', label: 'Cafetería' },
-  { value: 'bar', label: 'Bar' },
-  { value: 'food_truck', label: 'Food Truck' },
-  { value: 'ghost_kitchen', label: 'Cocina Fantasma (Ghost Kitchen)' },
-  { value: 'panaderia', label: 'Panadería' },
-  { value: 'heladeria', label: 'Heladería' },
-  { value: 'taqueria', label: 'Taquería' },
-];
-
-const CUISINE_TYPES = [
-  { value: 'mexicana', label: 'Mexicana' },
-  { value: 'italiana', label: 'Italiana' },
-  { value: 'japonesa', label: 'Japonesa' },
-  { value: 'china', label: 'China' },
-  { value: 'americana', label: 'Americana' },
-  { value: 'francesa', label: 'Francesa' },
-  { value: 'peruana', label: 'Peruana' },
-  { value: 'arabe', label: 'Árabe' },
-  { value: 'fusion', label: 'Fusión' },
-  { value: 'mariscos', label: 'Mariscos' },
-  { value: 'vegetariana', label: 'Vegetariana/Vegana' },
-  { value: 'otra', label: 'Otra' },
-];
-
-const COUNTRIES = [
-  { value: 'México', label: 'México' },
-  { value: 'Colombia', label: 'Colombia' },
-  { value: 'Argentina', label: 'Argentina' },
-  { value: 'Chile', label: 'Chile' },
-  { value: 'Perú', label: 'Perú' },
-  { value: 'España', label: 'España' },
-  { value: 'Estados Unidos', label: 'Estados Unidos' },
-];
-
 interface OpeningProjectWizardProps {
   onSubmit: (data: CreateProjectData) => void;
   isSubmitting?: boolean;
 }
+
 
 export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectWizardProps) {
   const [step, setStep] = useState(1);
@@ -168,20 +142,15 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Negocio</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona el tipo de negocio" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {BUSINESS_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SelectWithOther
+                          options={BUSINESS_TYPES}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Selecciona el tipo de negocio"
+                          otherPlaceholder="Especifica el tipo de negocio..."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -193,20 +162,15 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Cocina (opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona el tipo de cocina" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CUISINE_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SelectWithOther
+                          options={CUISINE_TYPES}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          placeholder="Selecciona el tipo de cocina"
+                          otherPlaceholder="Especifica el tipo de cocina..."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -336,12 +300,12 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
                   </h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li><strong>Nombre:</strong> {form.watch('projectName') || '-'}</li>
-                    <li><strong>Tipo:</strong> {BUSINESS_TYPES.find(t => t.value === form.watch('businessType'))?.label || '-'}</li>
-                    <li><strong>Cocina:</strong> {CUISINE_TYPES.find(t => t.value === form.watch('cuisineType'))?.label || 'No especificada'}</li>
+                    <li><strong>Tipo:</strong> {getBusinessTypeLabel(form.watch('businessType'))}</li>
+                    <li><strong>Cocina:</strong> {getCuisineTypeLabel(form.watch('cuisineType') || '')}</li>
                     <li><strong>Ubicación:</strong> {form.watch('city') ? `${form.watch('city')}, ${form.watch('country')}` : '-'}</li>
                     {form.watch('neighborhood') && <li><strong>Zona:</strong> {form.watch('neighborhood')}</li>}
                     {form.watch('estimatedBudget') && (
-                      <li><strong>Presupuesto:</strong> ${parseInt(form.watch('estimatedBudget') || '0').toLocaleString()} MXN</li>
+                      <li><strong>Presupuesto:</strong> {getCurrencySymbol(form.watch('country'))}{parseInt(form.watch('estimatedBudget') || '0').toLocaleString()}</li>
                     )}
                   </ul>
                 </div>
