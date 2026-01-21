@@ -461,22 +461,23 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
 
     console.log(`Processing ${action} for ${projectData.businessType} in ${projectData.city}, ${projectData.country}`);
 
-    // Use Lovable AI Gateway with web search capability
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    // Use OpenAI Responses API with web search capability
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-nano',
-        messages: [
+        model: 'gpt-4.1-nano',
+        tools: [{ type: 'web_search_preview' }],
+        input: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
@@ -485,35 +486,44 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI Gateway error:', response.status, errorText);
+      console.error('OpenAI API error:', response.status, errorText);
       
       if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
       }
-      if (response.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable workspace.');
+      if (response.status === 401) {
+        throw new Error('Invalid OpenAI API key.');
       }
       
-      throw new Error(`AI Gateway error: ${response.status} - ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('AI Response received:', JSON.stringify(data).substring(0, 200));
+    console.log('OpenAI Response received:', JSON.stringify(data).substring(0, 300));
     
-    // Extract the text response from chat completions format
+    // Extract the text response from Responses API format
     let analysisText = '';
     let sources: string[] = [];
     
-    if (data.choices && data.choices.length > 0) {
-      const choice = data.choices[0];
-      if (choice.message && choice.message.content) {
-        analysisText = choice.message.content;
+    if (data.output) {
+      for (const item of data.output) {
+        if (item.type === 'message' && item.content) {
+          for (const content of item.content) {
+            if (content.type === 'output_text') {
+              analysisText = content.text;
+            }
+          }
+        }
+        // Extract web search sources if available
+        if (item.type === 'web_search_call') {
+          console.log('Web search performed:', item.id);
+        }
       }
     }
     
     if (!analysisText) {
-      console.error('No content in AI response:', JSON.stringify(data));
-      throw new Error('AI response was empty');
+      console.error('No content in OpenAI response:', JSON.stringify(data));
+      throw new Error('OpenAI response was empty');
     }
 
     // Try to parse JSON from the response (only for checklist action)
