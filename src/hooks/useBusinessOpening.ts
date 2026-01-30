@@ -166,6 +166,9 @@ export function useBusinessOpening() {
 
       console.log('[useBusinessOpening] Analysis saved, updating cache for project:', project.id);
 
+      // Clear old cache completely to avoid stale empty arrays
+      queryClient.removeQueries({ queryKey: ['project-analyses', project.id], exact: true });
+      
       // Update the cache immediately with the new analysis
       queryClient.setQueryData(['project-analyses', project.id], (old: PhaseAnalysis[] | undefined) => {
         const newAnalysis = analysis as PhaseAnalysis;
@@ -211,8 +214,9 @@ export function useBusinessOpening() {
         console.warn('[useBusinessOpening] Progress persistence failed:', e);
       }
 
-      // Also invalidate to ensure fresh data on next navigation
+      // Aggressive cache invalidation to ensure fresh data
       await queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
+      await queryClient.refetchQueries({ queryKey: ['project-analyses', project.id], type: 'active' });
 
       toast({
         title: 'Análisis completado',
