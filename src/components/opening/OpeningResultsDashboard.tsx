@@ -11,7 +11,7 @@ import {
   Rocket, DollarSign, Calendar, TrendingUp, Clock, 
   CheckCircle2, ListChecks, FileText, ChevronRight,
   Scale, MapPin, ChefHat, Truck, Users, Megaphone,
-  AlertTriangle, Sparkles, ArrowRight
+  AlertTriangle, Sparkles, ArrowRight, RefreshCcw, Loader2
 } from 'lucide-react';
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { PHASES, PhaseId } from '@/hooks/useBusinessOpening';
@@ -26,6 +26,8 @@ interface OpeningResultsDashboardProps {
   onToggleChecklistItem: (itemId: string, isCompleted: boolean) => void;
   onGenerateChecklist?: () => Promise<unknown> | void;
   isGeneratingChecklist?: boolean;
+  onRefreshData?: () => Promise<unknown> | void;
+  isRefreshing?: boolean;
   onComplete: () => void;
   isCompleting?: boolean;
 }
@@ -57,6 +59,8 @@ export function OpeningResultsDashboard({
   onToggleChecklistItem,
   onGenerateChecklist,
   isGeneratingChecklist,
+  onRefreshData,
+  isRefreshing,
   onComplete,
   isCompleting,
 }: OpeningResultsDashboardProps) {
@@ -229,7 +233,30 @@ export function OpeningResultsDashboard({
   return (
     <div className="space-y-6">
       {/* Success Header */}
-      <div className="text-center py-8 bg-gradient-to-b from-primary/5 to-transparent rounded-xl">
+      <div className="relative text-center py-8 bg-gradient-to-b from-primary/5 to-transparent rounded-xl">
+        {onRefreshData && (
+          <div className="absolute right-4 top-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void onRefreshData()}
+              disabled={!!isRefreshing}
+              className="gap-2"
+            >
+              {isRefreshing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Recargando…
+                </>
+              ) : (
+                <>
+                  <RefreshCcw className="h-4 w-4" />
+                  Recargar
+                </>
+              )}
+            </Button>
+          </div>
+        )}
         <div className="inline-flex items-center justify-center p-4 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
           <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
         </div>

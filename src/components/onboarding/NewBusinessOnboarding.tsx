@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
+import { ArrowLeft, Rocket, CheckCircle2, Loader2, PartyPopper, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OpeningProjectWizard } from '@/components/opening/OpeningProjectWizard';
@@ -50,7 +50,9 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
   // Track if project was just created in this session (to prevent auto-skip)
   const [isNewlyCreated, setIsNewlyCreated] = useState(false);
+  const [isRefreshingResults, setIsRefreshingResults] = useState(false);
   const hasInitializedRef = useRef(false);
+  const hasAutoRefreshedResultsRef = useRef(false);
 
   const trace = (action: string, data?: Record<string, unknown>) => {
     const payload = { ...data, step, projectId, ts: new Date().toISOString() };
@@ -91,6 +93,18 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const checklistQuery = useProjectChecklist(projectId);
   const analyses = analysesQuery.data ?? [];
   const checklist = checklistQuery.data ?? [];
+
+  const refreshResultsData = async () => {
+    if (!projectId) return;
+    setIsRefreshingResults(true);
+    trace('results_refetch_start');
+    try {
+      await Promise.all([analysesQuery.refetch(), checklistQuery.refetch()]);
+    } finally {
+      setIsRefreshingResults(false);
+      trace('results_refetch_end');
+    }
+  };
 
   // Determine if project has completed analyses
   const completedPhases = analyses
@@ -138,8 +152,20 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   // Handle processing completion
   const handleProcessingComplete = () => {
     trace('processing_complete');
+    // When we land on Results, force a fresh pull of analyses/checklist.
+    hasAutoRefreshedResultsRef.current = false;
     setStep('results');
   };
+
+  // Auto-refresh data once when entering Results (prevents blank UI on stale cache / silent query errors)
+  useEffect(() => {
+    if (step !== 'results') return;
+    if (!projectId) return;
+    if (hasAutoRefreshedResultsRef.current) return;
+    hasAutoRefreshedResultsRef.current = true;
+    void refreshResultsData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, projectId]);
 
   // Handle cancel processing
   const handleCancelProcessing = () => {
@@ -313,6 +339,73 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   // Step 3: Results Dashboard
   if (step === 'results' && project) {
+    const analysesErrorMsg = analysesQuery.isError
+      ? String((analysesQuery.error as any)?.message ?? analysesQuery.error)
+      : null;
+    const checklistErrorMsg = checklistQuery.isError
+      ? String((checklistQuery.error as any)?.message ?? checklistQuery.error)
+      : null;
+
+    if (analysesErrorMsg || checklistErrorMsg) {
+      return (
+        <div className="min-h-screen bg-background p-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-6">
+              <Button variant="ghost" onClick={onBack} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-primary" />
+                  <CardTitle>No se pudo cargar tu plan</CardTitle>
+                </div>
+                <CardDescription>
+                  Se generaron acciones, pero la app no puede leer el análisis/checklist. Esto suele ser permisos (RLS) o sesión.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {analysesErrorMsg && (
+                  <div className="text-sm">
+                    <p className="font-medium">Error cargando análisis:</p>
+                    <p className="text-muted-foreground break-words">{analysesErrorMsg}</p>
+                  </div>
+                )}
+                {checklistErrorMsg && (
+                  <div className="text-sm">
+                    <p className="font-medium">Error cargando checklist:</p>
+                    <p className="text-muted-foreground break-words">{checklistErrorMsg}</p>
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void refreshResultsData()}
+                  disabled={isRefreshingResults}
+                >
+                  {isRefreshingResults ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Reintentando…
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2" />
+                      Reintentar carga
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto">
@@ -330,6 +423,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             onToggleChecklistItem={handleToggleChecklistItem}
             onGenerateChecklist={handleGenerateChecklist}
             isGeneratingChecklist={isGeneratingChecklist}
+            onRefreshData={refreshResultsData}
+            isRefreshing={isRefreshingResults || analysesQuery.isFetching || checklistQuery.isFetching}
             onComplete={handleCompleteSetup}
             isCompleting={isCompletingSetup}
           />
