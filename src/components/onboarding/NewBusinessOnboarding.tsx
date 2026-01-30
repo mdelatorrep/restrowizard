@@ -32,9 +32,12 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const initialProjectId = projectIdFromUrl || resumeProjectId || null;
 
   // Determine initial step based on project state
-  const [step, setStep] = useState<OnboardingStep>('create');
+  // If we have an initial project ID from URL/resume, we'll determine the step after fetching
+  const [step, setStep] = useState<OnboardingStep>(initialProjectId ? 'processing' : 'create');
   const [projectId, setProjectIdState] = useState<string | null>(initialProjectId);
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
+  // Track if project was just created in this session (to prevent auto-skip)
+  const [isNewlyCreated, setIsNewlyCreated] = useState(false);
   const hasInitializedRef = useRef(false);
 
   const trace = (action: string, data?: Record<string, unknown>) => {
@@ -68,10 +71,12 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     .filter(a => a.status === 'completed')
     .map(a => a.phase as PhaseId);
 
-  // Initialize step based on project state (only once)
+  // Initialize step based on project state (only once, for RESUMED projects)
   useEffect(() => {
     if (hasInitializedRef.current) return;
+    // Only run for projects being resumed, NOT for newly created ones
     if (!initialProjectId) return;
+    if (isNewlyCreated) return; // Skip if we just created this project
     if (!project || !analysesQuery.isFetched) return;
 
     hasInitializedRef.current = true;
@@ -83,11 +88,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     } else if (completedPhases.length === PHASES.length) {
       // All phases done, show results
       setStep('results');
-    } else if (completedPhases.length > 0) {
-      // Some phases done, continue processing
-      setStep('processing');
     } else {
-      // No progress, start processing
+      // Resume processing (some or no phases done)
       setStep('processing');
     }
 
@@ -95,12 +97,13 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
       title: "Continuando tu proyecto",
       description: `Retomando "${project.project_name}"`,
     });
-  }, [initialProjectId, project, analysesQuery.isFetched, completedPhases.length]);
+  }, [initialProjectId, project, analysesQuery.isFetched, completedPhases.length, isNewlyCreated]);
 
   // Handle project creation
   const handleProjectCreated = async (data: any) => {
     const newProject = await createProject.mutateAsync(data);
     if (newProject) {
+      setIsNewlyCreated(true); // Mark as newly created to prevent useEffect from overriding step
       setProjectId(newProject.id);
       setStep('processing');
     }

@@ -127,7 +127,7 @@ export function SelectWithOther({
           onBlur={handleCustomInputBlur}
           placeholder={otherPlaceholder}
           disabled={disabled}
-          autoFocus
+          className="mt-2"
         />
       )}
     </div>
