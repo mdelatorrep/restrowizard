@@ -7,6 +7,7 @@ export interface BusinessProject {
   project_name: string;
   business_type: string;
   cuisine_type?: string;
+  description?: string;
   city: string;
   country: string;
   neighborhood?: string;

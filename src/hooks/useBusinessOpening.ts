@@ -12,6 +12,7 @@ export interface CreateProjectData {
   projectName: string;
   businessType: string;
   cuisineType?: string;
+  description?: string;
   city: string;
   country: string;
   neighborhood?: string;
@@ -68,6 +69,7 @@ export function useBusinessOpening() {
           project_name: data.projectName,
           business_type: data.businessType,
           cuisine_type: data.cuisineType,
+          description: data.description,
           city: data.city,
           country: data.country,
           neighborhood: data.neighborhood,
@@ -118,6 +120,7 @@ export function useBusinessOpening() {
             projectName: project.project_name,
             businessType: project.business_type,
             cuisineType: project.cuisine_type,
+            description: (project as any).description,
             city: project.city,
             country: project.country,
             neighborhood: project.neighborhood,
@@ -262,6 +265,7 @@ export function useBusinessOpening() {
             projectName: project.project_name,
             businessType: project.business_type,
             cuisineType: project.cuisine_type,
+            description: (project as any).description,
             city: project.city,
             country: project.country,
             neighborhood: project.neighborhood,
@@ -315,6 +319,7 @@ export function useBusinessOpening() {
             projectName: project.project_name,
             businessType: project.business_type,
             cuisineType: project.cuisine_type,
+            description: (project as any).description,
             city: project.city,
             country: project.country,
             neighborhood: project.neighborhood,

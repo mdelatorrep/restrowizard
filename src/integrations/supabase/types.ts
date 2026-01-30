@@ -282,6 +282,7 @@ export type Database = {
           created_at: string | null
           cuisine_type: string | null
           current_phase: string | null
+          description: string | null
           estimated_budget: number | null
           id: string
           neighborhood: string | null
@@ -298,6 +299,7 @@ export type Database = {
           created_at?: string | null
           cuisine_type?: string | null
           current_phase?: string | null
+          description?: string | null
           estimated_budget?: number | null
           id?: string
           neighborhood?: string | null
@@ -314,6 +316,7 @@ export type Database = {
           created_at?: string | null
           cuisine_type?: string | null
           current_phase?: string | null
+          description?: string | null
           estimated_budget?: number | null
           id?: string
           neighborhood?: string | null
