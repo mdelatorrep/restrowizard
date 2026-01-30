@@ -139,11 +139,25 @@ export function OpeningResultsDashboard({
 
   // Extract text content from analysis_data
   const getAnalysisContent = (analysis: PhaseAnalysis): string => {
+    // Handle various data structures from the API
     if (typeof analysis.analysis_data === 'string') {
       return analysis.analysis_data;
     }
     if (analysis.analysis_data?.text) {
       return analysis.analysis_data.text;
+    }
+    // If the analysis_data is an object with structured content, try to extract meaningful text
+    if (typeof analysis.analysis_data === 'object' && analysis.analysis_data !== null) {
+      // Check if there's any string property we can use
+      const keys = Object.keys(analysis.analysis_data);
+      for (const key of keys) {
+        const value = analysis.analysis_data[key];
+        if (typeof value === 'string' && value.length > 50) {
+          return value;
+        }
+      }
+      // Last resort: stringify for debugging
+      return JSON.stringify(analysis.analysis_data, null, 2);
     }
     return 'Sin contenido de análisis disponible.';
   };
@@ -155,6 +169,16 @@ export function OpeningResultsDashboard({
     }
     if (analysis.analysis_data?.structured?.recommendations) {
       return analysis.analysis_data.structured.recommendations;
+    }
+    // Try to extract key points from the text content
+    const textContent = getAnalysisContent(analysis);
+    if (textContent && textContent.length > 100) {
+      // Extract first few bullet points or headers as recommendations preview
+      const lines = textContent.split('\n').filter(line => 
+        (line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().startsWith('##')) && 
+        line.length > 10 && line.length < 150
+      );
+      return lines.slice(0, 3).map(l => l.replace(/^[-•#]+\s*/, '').trim());
     }
     return [];
   };

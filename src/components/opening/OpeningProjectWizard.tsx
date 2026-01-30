@@ -23,6 +23,7 @@ const formSchema = z.object({
   projectName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   businessType: z.string().min(1, 'Selecciona un tipo de negocio'),
   cuisineType: z.string().optional(),
+  description: z.string().optional(),
   city: z.string().min(2, 'Ingresa una ciudad válida'),
   country: z.string().min(2, 'Ingresa un país válido'),
   neighborhood: z.string().optional(),
@@ -46,6 +47,7 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
       projectName: '',
       businessType: '',
       cuisineType: '',
+      description: '',
       city: '',
       country: 'México',
       neighborhood: '',
@@ -59,6 +61,7 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
       projectName: values.projectName,
       businessType: values.businessType,
       cuisineType: values.cuisineType || undefined,
+      description: values.description || undefined,
       city: values.city,
       country: values.country,
       neighborhood: values.neighborhood || undefined,
@@ -171,6 +174,27 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
                           otherPlaceholder="Especifica el tipo de cocina..."
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción del Negocio (opcional pero recomendado)</FormLabel>
+                      <FormControl>
+                        <textarea
+                          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Describe tu concepto: estilo de servicio, público objetivo, diferenciadores, inspiración, etc. Entre más detallado, mejor será el análisis de IA."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Una descripción detallada ayuda a la IA a darte recomendaciones más precisas
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

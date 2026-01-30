@@ -12,6 +12,7 @@ interface BusinessOpeningRequest {
     projectName: string;
     businessType: string;
     cuisineType?: string;
+    description?: string;
     city: string;
     country: string;
     neighborhood?: string;
@@ -30,12 +31,20 @@ Ciudad: ${data.city}
 País: ${data.country}
 ${data.neighborhood ? `Zona/Barrio: ${data.neighborhood}` : 'Zona: Por definir'}
 
+Tipo de negocio: ${data.businessType}
+${data.cuisineType ? `Tipo de cocina: ${data.cuisineType}` : ''}
+${data.description ? `
+📝 DESCRIPCIÓN DEL CONCEPTO (MUY IMPORTANTE - USA ESTA INFORMACIÓN):
+${data.description}
+` : ''}
+
 ⚠️ REGLA CRÍTICA: TODA la información DEBE ser ESPECÍFICA para ${data.city}, ${data.country}.
 - NO proporciones información genérica del país
 - Busca datos LOCALES de ${data.city}
 - Menciona direcciones, zonas y referencias de ${data.city}
 - Usa precios y costos del mercado de ${data.city}
 ${data.neighborhood ? `- Enfócate especialmente en la zona de ${data.neighborhood}` : ''}
+${data.description ? `- ADAPTA tus recomendaciones al concepto descrito por el usuario` : ''}
 ═══════════════════════════════════════════════════════════════
 `;
 
