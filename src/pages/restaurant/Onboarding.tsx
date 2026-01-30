@@ -45,14 +45,21 @@ const RestaurantOnboarding: React.FC = () => {
       return;
     }
     
-    // If user has an incomplete project, resume it
-    if (existingProject && (existingProject.progress_percentage ?? 0) < 100) {
+    // Check if user explicitly wants to create a new project (via URL param)
+    const forceNew = searchParams.get('new') === 'true';
+    if (forceNew) {
+      setFlow('new');
+      return;
+    }
+    
+    // If user has an incomplete project and hasn't selected a flow yet, resume it
+    if (existingProject && (existingProject.progress_percentage ?? 0) < 100 && flow === null) {
       console.log('📋 Found existing project to resume:', existingProject.project_name);
       setFlow('resume');
     } else if (flow === null) {
       setFlow('select');
     }
-  }, [existingProject, loadingProject, user, flow, projectIdFromUrl]);
+  }, [existingProject, loadingProject, user, flow, projectIdFromUrl, searchParams]);
 
   // Loading state
   if (authLoading || typeLoading || loadingProject || flow === null) {
@@ -77,7 +84,13 @@ const RestaurantOnboarding: React.FC = () => {
   if (flow === 'select') {
     return (
       <BusinessTypeSelector
-        onSelect={(type) => setFlow(type === 'new' ? 'new' : 'existing')}
+        onSelect={(type) => {
+          if (type === 'new') {
+            // Clear any existing projectId from URL and set new=true
+            setSearchParams({ new: 'true' });
+          }
+          setFlow(type === 'new' ? 'new' : 'existing');
+        }}
       />
     );
   }

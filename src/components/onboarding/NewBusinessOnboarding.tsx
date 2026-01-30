@@ -29,11 +29,23 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const { toast } = useToast();
 
   const projectIdFromUrl = searchParams.get('projectId');
-  const initialProjectId = projectIdFromUrl || resumeProjectId || null;
+  // Check if URL explicitly has a "new" parameter to force creation mode
+  const forceNewProject = searchParams.get('new') === 'true';
+  const initialProjectId = forceNewProject ? null : (projectIdFromUrl || resumeProjectId || null);
+
+  console.debug('[NewBusinessOnboarding] Init', { 
+    forceNewProject, 
+    projectIdFromUrl, 
+    resumeProjectId, 
+    initialProjectId 
+  });
 
   // Determine initial step based on project state
-  // If we have an initial project ID from URL/resume, we'll determine the step after fetching
-  const [step, setStep] = useState<OnboardingStep>(initialProjectId ? 'processing' : 'create');
+  // Only start in 'processing' if we have a project ID AND it's not a forced new project
+  const [step, setStep] = useState<OnboardingStep>(() => {
+    if (forceNewProject) return 'create';
+    return initialProjectId ? 'processing' : 'create';
+  });
   const [projectId, setProjectIdState] = useState<string | null>(initialProjectId);
   const [isCompletingSetup, setIsCompletingSetup] = useState(false);
   // Track if project was just created in this session (to prevent auto-skip)
@@ -49,9 +61,21 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const setProjectId = (id: string | null) => {
     trace('set_project_id', { nextProjectId: id });
     setProjectIdState(id);
-    if (id) setSearchParams({ projectId: id });
-    else setSearchParams({});
+    if (id) {
+      // Clear the "new" param and set the projectId
+      setSearchParams({ projectId: id });
+    } else {
+      setSearchParams({});
+    }
   };
+
+  // Clear URL params if forcing new project creation
+  useEffect(() => {
+    if (forceNewProject && projectIdFromUrl) {
+      // Clear the old projectId from URL when creating a new project
+      setSearchParams({ new: 'true' });
+    }
+  }, [forceNewProject, projectIdFromUrl, setSearchParams]);
 
   const {
     createProject,
