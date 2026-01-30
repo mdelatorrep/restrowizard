@@ -43,7 +43,19 @@ export function SelectWithOther({
   
   // Check if value is an "other" trigger
   const isOtherTrigger = otherTriggerValues.includes(value);
+
+  const otherOptionValue =
+    options.find((o) => otherTriggerValues.includes(o.value))?.value ?? '';
   
+  // Local select state: we must NOT derive select "value" only from the external `value`
+  // because when user chooses "other" we intentionally clear external value until they type.
+  const [selectValue, setSelectValue] = useState(() => {
+    if (!value) return '';
+    if (isKnownOption) return value;
+    if (isOtherTrigger) return value;
+    return otherOptionValue;
+  });
+
   // Show custom input if: value is an other trigger, OR value exists but isn't a known option
   const [showCustomInput, setShowCustomInput] = useState(
     isOtherTrigger || (!!value && !isKnownOption)
@@ -51,10 +63,6 @@ export function SelectWithOther({
   const [customValue, setCustomValue] = useState(
     isOtherTrigger ? '' : (!isKnownOption && value ? value : '')
   );
-  
-  // The select value should be the actual value if it's a known option,
-  // otherwise show "otro" or similar
-  const selectValue = isKnownOption ? value : (options.find(o => otherTriggerValues.includes(o.value))?.value || '');
 
   // Sync state when value prop changes externally
   useEffect(() => {
@@ -62,6 +70,18 @@ export function SelectWithOther({
       (opt) => opt.value === value && !otherTriggerValues.includes(opt.value)
     );
     const isTrigger = otherTriggerValues.includes(value);
+
+    // Keep select UI in sync with external value.
+    // IMPORTANT: if external value is empty, show placeholder (""), unless we're currently in "other" mode.
+    if (!value) {
+      if (!showCustomInput) setSelectValue('');
+    } else if (known) {
+      setSelectValue(value);
+    } else if (isTrigger) {
+      setSelectValue(value);
+    } else {
+      setSelectValue(otherOptionValue);
+    }
     
     if (known) {
       setShowCustomInput(false);
@@ -73,7 +93,7 @@ export function SelectWithOther({
       setShowCustomInput(true);
       setCustomValue(value);
     }
-  }, [value, options, otherTriggerValues]);
+  }, [value, options, otherTriggerValues, otherOptionValue, showCustomInput]);
 
   // Focus and scroll to input when it appears (after a short delay for mobile)
   useEffect(() => {
@@ -88,10 +108,12 @@ export function SelectWithOther({
   }, [showCustomInput]);
 
   const handleSelectChange = (newValue: string) => {
+    setSelectValue(newValue);
     if (otherTriggerValues.includes(newValue)) {
       setShowCustomInput(true);
       setCustomValue('');
-      // Don't call onChange yet - wait for custom input
+      // Clear external value: user MUST type the custom value.
+      onChange('');
     } else {
       setShowCustomInput(false);
       setCustomValue('');
@@ -102,10 +124,8 @@ export function SelectWithOther({
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCustomValue = e.target.value;
     setCustomValue(newCustomValue);
-    // Only update parent if there's actual content
-    if (newCustomValue.trim()) {
-      onChange(newCustomValue.trim());
-    }
+    // Keep parent always in sync (empty string included)
+    onChange(newCustomValue.trim());
   };
 
   const handleCustomInputBlur = () => {
@@ -118,7 +138,7 @@ export function SelectWithOther({
   return (
     <div className={cn('space-y-2', className)}>
       <Select
-        value={selectValue}
+        value={selectValue || undefined}
         onValueChange={handleSelectChange}
         disabled={disabled}
       >
