@@ -24,6 +24,8 @@ interface OpeningResultsDashboardProps {
   analyses: PhaseAnalysis[];
   checklist: ChecklistItem[];
   onToggleChecklistItem: (itemId: string, isCompleted: boolean) => void;
+  onGenerateChecklist?: () => Promise<unknown> | void;
+  isGeneratingChecklist?: boolean;
   onComplete: () => void;
   isCompleting?: boolean;
 }
@@ -53,6 +55,8 @@ export function OpeningResultsDashboard({
   analyses,
   checklist,
   onToggleChecklistItem,
+  onGenerateChecklist,
+  isGeneratingChecklist,
   onComplete,
   isCompleting,
 }: OpeningResultsDashboardProps) {
@@ -137,6 +141,10 @@ export function OpeningResultsDashboard({
     }).format(value);
   };
 
+  const hasChecklist = checklist.length > 0;
+  const investmentLabel = metrics.totalInvestment > 0 ? formatCurrency(metrics.totalInvestment) : 'Por definir';
+  const roiLabel = metrics.totalInvestment > 0 ? `${metrics.roi.toFixed(0)}%` : '—';
+
   // Extract text content from analysis_data
   const getAnalysisContent = (analysis: PhaseAnalysis): string => {
     // Handle various data structures from the API
@@ -209,7 +217,7 @@ export function OpeningResultsDashboard({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Inversión Estimada</p>
-                <p className="text-2xl font-bold">{formatCurrency(metrics.totalInvestment)}</p>
+                <p className="text-2xl font-bold">{investmentLabel}</p>
               </div>
             </div>
           </CardContent>
@@ -223,7 +231,7 @@ export function OpeningResultsDashboard({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">ROI Anual Estimado</p>
-                <p className="text-2xl font-bold">{metrics.roi.toFixed(0)}%</p>
+                <p className="text-2xl font-bold">{roiLabel}</p>
               </div>
             </div>
           </CardContent>
@@ -291,32 +299,50 @@ export function OpeningResultsDashboard({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {urgentItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
-                  >
-                    <Badge variant="outline" className="mt-0.5">
-                      {index + 1}
-                    </Badge>
-                    <div className="flex-1">
-                      <p className="font-medium">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {item.description}
-                        </p>
-                      )}
+              {urgentItems.length > 0 ? (
+                <div className="space-y-3">
+                  {urgentItems.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
+                    >
+                      <Badge variant="outline" className="mt-0.5">
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <p className="font-medium">{item.title}</p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <Checkbox
+                        checked={item.is_completed}
+                        onCheckedChange={(checked) =>
+                          onToggleChecklistItem(item.id, checked as boolean)
+                        }
+                      />
                     </div>
-                    <Checkbox
-                      checked={item.is_completed}
-                      onCheckedChange={(checked) => 
-                        onToggleChecklistItem(item.id, checked as boolean)
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Aún no se generó el checklist para este proyecto.
+                  </p>
+                  {onGenerateChecklist && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void onGenerateChecklist()}
+                      disabled={!!isGeneratingChecklist}
+                      className="w-full"
+                    >
+                      {isGeneratingChecklist ? 'Generando checklist…' : 'Generar checklist ahora'}
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -390,71 +416,89 @@ export function OpeningResultsDashboard({
               <Progress value={checklistProgress} className="h-2 mt-2" />
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
-                <Accordion type="multiple" className="space-y-2">
-                  {Object.entries(groupedChecklist).map(([phase, items]) => {
-                    const phaseInfo = PHASES.find(p => p.id === phase);
-                    const completedInPhase = items.filter(i => i.is_completed).length;
-                    const Icon = PHASE_ICONS[phase as PhaseId] || ListChecks;
+              {!hasChecklist ? (
+                <div className="space-y-3 py-6">
+                  <p className="text-sm text-muted-foreground">
+                    No hay tareas aún. Genera un checklist para empezar con acciones concretas.
+                  </p>
+                  {onGenerateChecklist && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void onGenerateChecklist()}
+                      disabled={!!isGeneratingChecklist}
+                      className="w-full"
+                    >
+                      {isGeneratingChecklist ? 'Generando checklist…' : 'Generar checklist'}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px] pr-4">
+                  <Accordion type="multiple" className="space-y-2">
+                    {Object.entries(groupedChecklist).map(([phase, items]) => {
+                      const phaseInfo = PHASES.find(p => p.id === phase);
+                      const completedInPhase = items.filter(i => i.is_completed).length;
+                      const Icon = PHASE_ICONS[phase as PhaseId] || ListChecks;
 
-                    return (
-                      <AccordionItem
-                        key={phase}
-                        value={phase}
-                        className="border rounded-lg px-4"
-                      >
-                        <AccordionTrigger className="hover:no-underline">
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-5 w-5 text-primary" />
-                            <span className="font-medium">
-                              {phaseInfo?.name || 'General'}
-                            </span>
-                            <Badge variant="secondary">
-                              {completedInPhase}/{items.length}
-                            </Badge>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2 pt-2">
-                            {items.map(item => (
-                              <div
-                                key={item.id}
-                                className={cn(
-                                  "flex items-start gap-3 p-3 rounded-lg transition-colors",
-                                  item.is_completed 
-                                    ? "bg-green-50 dark:bg-green-950/20" 
-                                    : "bg-muted/50 hover:bg-muted"
-                                )}
-                              >
-                                <Checkbox
-                                  checked={item.is_completed}
-                                  onCheckedChange={(checked) => 
-                                    onToggleChecklistItem(item.id, checked as boolean)
-                                  }
-                                  className="mt-0.5"
-                                />
-                                <div className="flex-1">
-                                  <p className={cn(
-                                    "font-medium",
-                                    item.is_completed && "line-through text-muted-foreground"
-                                  )}>
-                                    {item.title}
-                                  </p>
-                                  {item.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      {item.description}
-                                    </p>
+                      return (
+                        <AccordionItem
+                          key={phase}
+                          value={phase}
+                          className="border rounded-lg px-4"
+                        >
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-5 w-5 text-primary" />
+                              <span className="font-medium">
+                                {phaseInfo?.name || 'General'}
+                              </span>
+                              <Badge variant="secondary">
+                                {completedInPhase}/{items.length}
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-2 pt-2">
+                              {items.map(item => (
+                                <div
+                                  key={item.id}
+                                  className={cn(
+                                    "flex items-start gap-3 p-3 rounded-lg transition-colors",
+                                    item.is_completed
+                                      ? "bg-green-50 dark:bg-green-950/20"
+                                      : "bg-muted/50 hover:bg-muted"
                                   )}
+                                >
+                                  <Checkbox
+                                    checked={item.is_completed}
+                                    onCheckedChange={(checked) =>
+                                      onToggleChecklistItem(item.id, checked as boolean)
+                                    }
+                                    className="mt-0.5"
+                                  />
+                                  <div className="flex-1">
+                                    <p className={cn(
+                                      "font-medium",
+                                      item.is_completed && "line-through text-muted-foreground"
+                                    )}>
+                                      {item.title}
+                                    </p>
+                                    {item.description && (
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {item.description}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              </ScrollArea>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

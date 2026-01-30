@@ -302,16 +302,6 @@ export function useBusinessOpening() {
     setIsAnalyzing(true);
 
     try {
-      // First, delete existing checklist items for this project to avoid duplicates
-      const { error: deleteError } = await supabase
-        .from('opening_checklist_items')
-        .delete()
-        .eq('project_id', project.id);
-
-      if (deleteError) {
-        console.warn('Could not clear existing checklist:', deleteError);
-      }
-
       const response = await supabase.functions.invoke('business-opening-assistant', {
         body: {
           action: 'generate_checklist',
@@ -344,6 +334,10 @@ export function useBusinessOpening() {
         items = result.structured_data;
       }
 
+      if (!items || items.length === 0) {
+        throw new Error('Checklist vacío o con formato inválido');
+      }
+
       if (items.length > 0) {
         // Deduplicate items by title (case-insensitive)
         const seenTitles = new Set<string>();
@@ -355,6 +349,16 @@ export function useBusinessOpening() {
           seenTitles.add(normalizedTitle);
           return true;
         });
+
+        // Only clear existing items AFTER we have a valid new checklist
+        const { error: deleteError } = await supabase
+          .from('opening_checklist_items')
+          .delete()
+          .eq('project_id', project.id);
+
+        if (deleteError) {
+          console.warn('Could not clear existing checklist:', deleteError);
+        }
 
         // Save checklist items to database
         const checklistItems = uniqueItems.map((item: any, index: number) => ({
@@ -374,6 +378,7 @@ export function useBusinessOpening() {
 
         // Update the cache
         queryClient.setQueryData(['project-checklist', project.id], savedItems);
+        await queryClient.invalidateQueries({ queryKey: ['project-checklist', project.id] });
         
         toast({
           title: 'Checklist generado',
@@ -388,7 +393,7 @@ export function useBusinessOpening() {
       console.error('Error generating checklist:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo generar el checklist.',
+        description: (error as any)?.message || 'No se pudo generar el checklist.',
         variant: 'destructive',
       });
       return null;

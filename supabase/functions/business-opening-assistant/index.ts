@@ -3,8 +3,45 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+function extractJsonFromResponse(responseText: string): unknown {
+  // Remove markdown fences
+  let cleaned = responseText
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+    throw new Error('No se encontró un objeto JSON en la respuesta.');
+  }
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    // Try to fix common issues (trailing commas, control chars)
+    const fixed = cleaned
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/[\x00-\x1F\x7F]/g, '');
+    return JSON.parse(fixed);
+  }
+}
+
+function detectTruncation(responseText: string): boolean {
+  const text = responseText.trim();
+  const openBraces = (text.match(/{/g) || []).length;
+  const closeBraces = (text.match(/}/g) || []).length;
+  if (openBraces !== closeBraces) return true;
+
+  const truncationPatterns = [/\.\.\.$/, /\u2026$/, /\[truncated\]/i, /\[continued\]/i];
+  return truncationPatterns.some((p) => p.test(text));
+}
 
 interface BusinessOpeningRequest {
   action: 'analyze_phase' | 'ask_question' | 'generate_checklist';
@@ -399,18 +436,28 @@ serve(async (req) => {
   try {
     const { action, projectData, phase, question }: BusinessOpeningRequest = await req.json();
 
-    let systemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos en Latinoamérica.
+    const baseSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos en Latinoamérica.
 Tienes acceso a información actualizada a través de búsqueda web.
 
 REGLAS CRÍTICAS:
 1. SIEMPRE responde en ESPAÑOL
 2. SIEMPRE responde en formato MARKDOWN legible, con encabezados (##), listas (-), y tablas (|)
-3. NUNCA respondas en formato JSON
-4. SIEMPRE incluye información ESPECÍFICA de la ciudad mencionada, no del país en general
-5. Incluye nombres reales de negocios, direcciones y precios cuando sea posible
-6. Sé práctico y accionable, no teórico
+3. SIEMPRE incluye información ESPECÍFICA de la ciudad mencionada, no del país en general
+4. Incluye nombres reales de negocios, direcciones y precios cuando sea posible
+5. Sé práctico y accionable, no teórico
 
 Tu respuesta debe ser fácil de leer y aplicar inmediatamente.`;
+
+    const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
+Debes generar un checklist estructurado.
+
+REGLAS CRÍTICAS:
+1. Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra)
+2. El JSON debe seguir EXACTAMENTE el esquema solicitado
+3. No incluyas comentarios ni trailing commas
+4. El contenido debe ser ESPECÍFICO de la ciudad y el tipo de negocio`;
+
+    const systemPrompt = action === 'generate_checklist' ? checklistSystemPrompt : baseSystemPrompt;
 
     let userPrompt = '';
 
@@ -540,15 +587,26 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
     let structuredData = null;
     if (action === 'generate_checklist') {
       try {
-        // Look for JSON in the response
-        const jsonMatch = analysisText.match(/```json\n?([\s\S]*?)\n?```/) || 
-                         analysisText.match(/\{[\s\S]*"items"[\s\S]*\}/);
-        if (jsonMatch) {
-          const jsonStr = jsonMatch[1] || jsonMatch[0];
-          structuredData = JSON.parse(jsonStr);
+        if (detectTruncation(analysisText)) {
+          throw new Error('La respuesta del checklist parece truncada. Intenta nuevamente.');
         }
+
+        const parsed = extractJsonFromResponse(analysisText);
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Checklist: JSON inválido');
+        }
+
+        const obj = parsed as Record<string, unknown>;
+        const items = obj.items;
+        if (!Array.isArray(items) || items.length === 0) {
+          throw new Error('Checklist: JSON sin items');
+        }
+
+        structuredData = parsed;
       } catch (e) {
-        console.log('Could not parse JSON from checklist response');
+        console.log('Could not parse JSON from checklist response:', (e as Error)?.message ?? String(e));
+        // Return a failure so the frontend doesn't silently accept an empty checklist
+        throw e;
       }
     }
 
