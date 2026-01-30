@@ -60,6 +60,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
     toggleChecklistItem,
   } = useBusinessOpening();
 
+  const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false);
+
   const { data: project } = useBusinessProject(projectId);
   const analysesQuery = useProjectAnalyses(projectId);
   const checklistQuery = useProjectChecklist(projectId);
@@ -126,6 +128,17 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   // Handle checklist item toggle
   const handleToggleChecklistItem = (itemId: string, isCompleted: boolean) => {
     toggleChecklistItem.mutate({ itemId, isCompleted });
+  };
+
+  const handleGenerateChecklist = async () => {
+    if (!project) return;
+    setIsGeneratingChecklist(true);
+    try {
+      await generateChecklist(project);
+      await checklistQuery.refetch();
+    } finally {
+      setIsGeneratingChecklist(false);
+    }
   };
 
   // Complete the setup and create the restaurant
@@ -291,6 +304,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             analyses={analyses}
             checklist={checklist}
             onToggleChecklistItem={handleToggleChecklistItem}
+            onGenerateChecklist={handleGenerateChecklist}
+            isGeneratingChecklist={isGeneratingChecklist}
             onComplete={handleCompleteSetup}
             isCompleting={isCompletingSetup}
           />
