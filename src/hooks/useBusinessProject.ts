@@ -111,5 +111,8 @@ export function useProjectChecklist(projectId: string | null) {
       return data as ChecklistItem[];
     },
     enabled: !!projectId && projectId.length > 0,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
