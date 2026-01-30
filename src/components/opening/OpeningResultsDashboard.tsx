@@ -11,13 +11,15 @@ import {
   Rocket, DollarSign, Calendar, TrendingUp, Clock, 
   CheckCircle2, ListChecks, FileText, ChevronRight,
   Scale, MapPin, ChefHat, Truck, Users, Megaphone,
-  AlertTriangle, Sparkles, ArrowRight, RefreshCcw, Loader2
+  AlertTriangle, Sparkles, ArrowRight, RefreshCcw, Loader2,
+  Pencil, RotateCw
 } from 'lucide-react';
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { PHASES, PhaseId } from '@/hooks/useBusinessOpening';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { EditProjectDetailsDialog } from './EditProjectDetailsDialog';
 
 interface OpeningResultsDashboardProps {
   project: BusinessProject;
@@ -30,6 +32,10 @@ interface OpeningResultsDashboardProps {
   isRefreshing?: boolean;
   onComplete: () => void;
   isCompleting?: boolean;
+  onUpdateProject?: (data: Partial<BusinessProject>) => Promise<void>;
+  onRegenerateAll?: () => Promise<void>;
+  isRegenerating?: boolean;
+  needsRegeneration?: boolean;
 }
 
 const PHASE_ICONS: Record<PhaseId, React.ElementType> = {
@@ -63,8 +69,13 @@ export function OpeningResultsDashboard({
   isRefreshing,
   onComplete,
   isCompleting,
+  onUpdateProject,
+  onRegenerateAll,
+  isRegenerating,
+  needsRegeneration,
 }: OpeningResultsDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Debug logging for analyses data
   console.debug('[OpeningResultsDashboard] Render', {
@@ -232,10 +243,31 @@ export function OpeningResultsDashboard({
 
   return (
     <div className="space-y-6">
+      {/* Edit Dialog */}
+      {onUpdateProject && (
+        <EditProjectDetailsDialog
+          project={project}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSave={onUpdateProject}
+        />
+      )}
+
       {/* Success Header */}
       <div className="relative text-center py-8 bg-gradient-to-b from-primary/5 to-transparent rounded-xl">
-        {onRefreshData && (
-          <div className="absolute right-4 top-4">
+        <div className="absolute right-4 top-4 flex gap-2">
+          {onUpdateProject && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Button>
+          )}
+          {onRefreshData && (
             <Button
               variant="outline"
               size="sm"
@@ -255,8 +287,8 @@ export function OpeningResultsDashboard({
                 </>
               )}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
         <div className="inline-flex items-center justify-center p-4 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
           <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
         </div>
@@ -267,6 +299,30 @@ export function OpeningResultsDashboard({
           Hemos analizado todos los aspectos de tu proyecto <strong>{project.project_name}</strong> y 
           generado un plan personalizado para {project.city}, {project.country}.
         </p>
+
+        {/* Regenerate Plan Banner */}
+        {needsRegeneration && onRegenerateAll && (
+          <div className="mt-4 inline-flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 px-4 py-2 rounded-lg">
+            <RotateCw className="h-4 w-4" />
+            <span className="text-sm font-medium">Has editado los datos del proyecto.</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void onRegenerateAll()}
+              disabled={isRegenerating}
+              className="ml-2 bg-amber-200 dark:bg-amber-800 border-amber-300 dark:border-amber-700"
+            >
+              {isRegenerating ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Regenerando…
+                </>
+              ) : (
+                'Regenerar Plan'
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Key Metrics */}

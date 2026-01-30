@@ -75,20 +75,26 @@ export function useProjectAnalyses(projectId: string | null) {
     queryFn: async () => {
       if (!projectId) return [];
       
-      console.log('[useProjectAnalyses] Fetching analyses for project:', projectId);
+      console.log('[useProjectAnalyses] Fetching for:', projectId);
       const { data, error } = await supabase
         .from('opening_phase_analyses')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      console.log('[useProjectAnalyses] Fetched analyses:', data?.length);
+      if (error) {
+        console.error('[useProjectAnalyses] Error:', error);
+        throw error;
+      }
+      
+      console.log('[useProjectAnalyses] Result count:', data?.length, 'First item:', data?.[0]?.phase);
       return data as PhaseAnalysis[];
     },
     enabled: !!projectId && projectId.length > 0,
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0, // No cache stale data
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 

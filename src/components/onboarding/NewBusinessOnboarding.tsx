@@ -51,6 +51,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   // Track if project was just created in this session (to prevent auto-skip)
   const [isNewlyCreated, setIsNewlyCreated] = useState(false);
   const [isRefreshingResults, setIsRefreshingResults] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [needsRegeneration, setNeedsRegeneration] = useState(false);
   const hasInitializedRef = useRef(false);
   const hasAutoRefreshedResultsRef = useRef(false);
 
@@ -188,6 +190,88 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
       await checklistQuery.refetch();
     } finally {
       setIsGeneratingChecklist(false);
+    }
+  };
+
+  // Update project details
+  const handleUpdateProject = async (data: Partial<BusinessProject>) => {
+    if (!project) return;
+    
+    const { error } = await supabase
+      .from('business_opening_projects')
+      .update({
+        target_opening_date: data.target_opening_date ?? null,
+        estimated_budget: data.estimated_budget ?? null,
+        description: data.description ?? null,
+      })
+      .eq('id', project.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar los cambios",
+        variant: "destructive",
+      });
+      throw error;
+    }
+
+    // Mark that we need to regenerate
+    setNeedsRegeneration(true);
+
+    toast({
+      title: "Cambios guardados",
+      description: "Puedes regenerar el plan con los nuevos datos.",
+    });
+
+    // Refresh project data
+    await analysesQuery.refetch();
+  };
+
+  // Regenerate all phases
+  const handleRegenerateAll = async () => {
+    if (!project) return;
+    
+    setIsRegenerating(true);
+    try {
+      // Refresh project to get latest data
+      const { data: freshProject, error: refreshError } = await supabase
+        .from('business_opening_projects')
+        .select('*')
+        .eq('id', project.id)
+        .single();
+      
+      if (refreshError || !freshProject) {
+        throw refreshError || new Error('Proyecto no encontrado');
+      }
+
+      const projectForAnalysis = freshProject as BusinessProject;
+
+      // Re-analyze all phases sequentially
+      for (const phase of PHASES) {
+        await analyzePhase(projectForAnalysis, phase.id);
+      }
+
+      // Regenerate checklist
+      await generateChecklist(projectForAnalysis);
+
+      // Refresh data
+      await Promise.all([analysesQuery.refetch(), checklistQuery.refetch()]);
+
+      setNeedsRegeneration(false);
+
+      toast({
+        title: "Plan regenerado",
+        description: "Todas las fases han sido actualizadas con los nuevos datos.",
+      });
+    } catch (error) {
+      console.error('Error regenerating plan:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo regenerar el plan completo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -427,6 +511,10 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
             isRefreshing={isRefreshingResults || analysesQuery.isFetching || checklistQuery.isFetching}
             onComplete={handleCompleteSetup}
             isCompleting={isCompletingSetup}
+            onUpdateProject={handleUpdateProject}
+            onRegenerateAll={handleRegenerateAll}
+            isRegenerating={isRegenerating}
+            needsRegeneration={needsRegeneration}
           />
         </div>
       </div>
