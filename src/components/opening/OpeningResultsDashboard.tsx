@@ -62,6 +62,14 @@ export function OpeningResultsDashboard({
 }: OpeningResultsDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Debug logging for analyses data
+  console.debug('[OpeningResultsDashboard] Render', {
+    projectId: project?.id,
+    analysesCount: analyses?.length,
+    checklistCount: checklist?.length,
+    analysesPhases: analyses?.map(a => ({ phase: a.phase, status: a.status, hasData: !!a.analysis_data })),
+  });
+
   // Calculate metrics from analyses
   const metrics = useMemo(() => {
     let totalInvestment = 0;
@@ -145,28 +153,55 @@ export function OpeningResultsDashboard({
   const investmentLabel = metrics.totalInvestment > 0 ? formatCurrency(metrics.totalInvestment) : 'Por definir';
   const roiLabel = metrics.totalInvestment > 0 ? `${metrics.roi.toFixed(0)}%` : '—';
 
-  // Extract text content from analysis_data
+  // Extract text content from analysis_data - robust extraction
   const getAnalysisContent = (analysis: PhaseAnalysis): string => {
-    // Handle various data structures from the API
-    if (typeof analysis.analysis_data === 'string') {
-      return analysis.analysis_data;
+    const data = analysis?.analysis_data;
+    
+    // Debug logging for troubleshooting
+    console.debug('[getAnalysisContent]', { phase: analysis?.phase, dataType: typeof data, hasData: !!data });
+    
+    if (!data) {
+      return 'Sin contenido de análisis disponible.';
     }
-    if (analysis.analysis_data?.text) {
-      return analysis.analysis_data.text;
+    
+    // Direct string format
+    if (typeof data === 'string') {
+      return data;
     }
-    // If the analysis_data is an object with structured content, try to extract meaningful text
-    if (typeof analysis.analysis_data === 'object' && analysis.analysis_data !== null) {
-      // Check if there's any string property we can use
-      const keys = Object.keys(analysis.analysis_data);
+    
+    // Object with text property (most common format from our edge function)
+    if (typeof data === 'object' && data !== null) {
+      // Check for text property first (primary format)
+      if ('text' in data && typeof data.text === 'string' && data.text.length > 0) {
+        return data.text;
+      }
+      
+      // Check for analysis property
+      if ('analysis' in data && typeof data.analysis === 'string' && data.analysis.length > 0) {
+        return data.analysis;
+      }
+      
+      // Check in structured object
+      if ('structured' in data && data.structured && typeof data.structured === 'object') {
+        const structured = data.structured as Record<string, unknown>;
+        if ('text' in structured && typeof structured.text === 'string') {
+          return structured.text;
+        }
+      }
+      
+      // Try to find any string property with substantial content
+      const keys = Object.keys(data);
       for (const key of keys) {
-        const value = analysis.analysis_data[key];
-        if (typeof value === 'string' && value.length > 50) {
+        const value = (data as Record<string, unknown>)[key];
+        if (typeof value === 'string' && value.length > 100) {
           return value;
         }
       }
+      
       // Last resort: stringify for debugging
-      return JSON.stringify(analysis.analysis_data, null, 2);
+      return JSON.stringify(data, null, 2);
     }
+    
     return 'Sin contenido de análisis disponible.';
   };
 
