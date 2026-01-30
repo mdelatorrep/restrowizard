@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,8 @@ export function SelectWithOther({
   disabled = false,
   otherTriggerValues = ['otro', 'otra', 'other'],
 }: SelectWithOtherProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   // Check if current value is a predefined option (excluding "other" triggers)
   const isKnownOption = options.some(
     (opt) => opt.value === value && !otherTriggerValues.includes(opt.value)
@@ -73,6 +75,18 @@ export function SelectWithOther({
     }
   }, [value, options, otherTriggerValues]);
 
+  // Focus and scroll to input when it appears (after a short delay for mobile)
+  useEffect(() => {
+    if (showCustomInput && inputRef.current) {
+      // Small delay to ensure the Select dropdown is fully closed
+      const timer = setTimeout(() => {
+        inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        inputRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [showCustomInput]);
+
   const handleSelectChange = (newValue: string) => {
     if (otherTriggerValues.includes(newValue)) {
       setShowCustomInput(true);
@@ -111,7 +125,7 @@ export function SelectWithOther({
         <SelectTrigger>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" sideOffset={4}>
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
@@ -122,6 +136,7 @@ export function SelectWithOther({
       
       {showCustomInput && (
         <Input
+          ref={inputRef}
           value={customValue}
           onChange={handleCustomInputChange}
           onBlur={handleCustomInputBlur}
