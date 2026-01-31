@@ -12,13 +12,15 @@ import {
   CheckCircle2, ListChecks, FileText, ChevronRight,
   Scale, MapPin, ChefHat, Truck, Users, Megaphone,
   AlertTriangle, Sparkles, ArrowRight, RefreshCcw, Loader2,
-  Pencil, RotateCw, Target, Zap, Award, BarChart3
+  Pencil, RotateCw, Target, Zap, Award, BarChart3, Download
 } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { PHASES, PhaseId } from '@/hooks/useBusinessOpening';
 import { cn } from '@/lib/utils';
 import { EditProjectDetailsDialog } from './EditProjectDetailsDialog';
 import { AnalysisContentRenderer } from './AnalysisContentRenderer';
+import { OpeningPlanPDF } from './OpeningPlanPDF';
 import { formatCurrencyByCountry, getCurrencySymbol, getCurrencyCode } from '@/data/constants';
 import { LinkifyText } from '@/lib/linkifyText';
 
@@ -384,6 +386,40 @@ export function OpeningResultsDashboard({
       {/* Success Header */}
       <div className="relative text-center py-8 bg-gradient-to-b from-primary/5 to-transparent rounded-xl">
         <div className="absolute right-4 top-4 flex gap-2">
+          {/* PDF Download Button */}
+          <PDFDownloadLink
+            document={
+              <OpeningPlanPDF
+                project={project}
+                analyses={analyses}
+                checklist={checklist}
+                metrics={metrics}
+              />
+            }
+            fileName={`Plan-Apertura-${project.project_name.replace(/\s+/g, '-')}.pdf`}
+          >
+            {({ loading }) => (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                className="gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Descargar PDF
+                  </>
+                )}
+              </Button>
+            )}
+          </PDFDownloadLink>
+          
           {onUpdateProject && (
             <Button
               variant="outline"
