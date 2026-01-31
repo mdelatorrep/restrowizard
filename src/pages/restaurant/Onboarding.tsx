@@ -4,26 +4,28 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { BusinessTypeSelector } from '@/components/onboarding/BusinessTypeSelector';
+import { ResumeOrNewSelector } from '@/components/onboarding/ResumeOrNewSelector';
 import { NewBusinessOnboarding } from '@/components/onboarding/NewBusinessOnboarding';
 import { ExistingBusinessOnboarding } from '@/components/onboarding/ExistingBusinessOnboarding';
 import { supabase } from '@/integrations/supabase/client';
 
-type OnboardingFlow = 'select' | 'new' | 'existing' | 'resume';
+type OnboardingFlow = 'select' | 'resume-or-new' | 'new' | 'existing' | 'resume';
 
 const RestaurantOnboarding: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { hasCompletedOnboarding, loading: typeLoading } = useUserType();
   const [searchParams, setSearchParams] = useSearchParams();
   const projectIdFromUrl = searchParams.get('projectId');
+  const forceNew = searchParams.get('new') === 'true';
   const [flow, setFlow] = useState<OnboardingFlow | null>(null);
 
-  // Check if user has an existing opening project to resume
+  // Check if user has an existing opening project
   const { data: existingProject, isLoading: loadingProject } = useQuery({
     queryKey: ['existing-opening-project', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('business_opening_projects')
-        .select('id, project_name, progress_percentage')
+        .select('id, project_name, progress_percentage, city, country, target_opening_date, current_phase, updated_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -39,27 +41,30 @@ const RestaurantOnboarding: React.FC = () => {
   useEffect(() => {
     if (loadingProject || !user) return;
 
-    // If a projectId is in the URL, always resume that project (prevents "losing" progress on refresh)
+    // If a projectId is in the URL, always resume that specific project
     if (projectIdFromUrl) {
       setFlow('resume');
       return;
     }
     
-    // Check if user explicitly wants to create a new project (via URL param)
-    const forceNew = searchParams.get('new') === 'true';
+    // If URL explicitly has new=true, go straight to new project creation
     if (forceNew) {
       setFlow('new');
       return;
     }
-    
-    // If user has an incomplete project and hasn't selected a flow yet, resume it
-    if (existingProject && (existingProject.progress_percentage ?? 0) < 100 && flow === null) {
-      console.log('📋 Found existing project to resume:', existingProject.project_name);
-      setFlow('resume');
-    } else if (flow === null) {
+
+    // If user has an existing project (complete or not), ask what they want to do
+    if (existingProject && flow === null) {
+      console.log('📋 Found existing project, showing resume-or-new selector:', existingProject.project_name);
+      setFlow('resume-or-new');
+      return;
+    }
+
+    // No existing project - show type selector
+    if (flow === null) {
       setFlow('select');
     }
-  }, [existingProject, loadingProject, user, flow, projectIdFromUrl, searchParams]);
+  }, [existingProject, loadingProject, user, flow, projectIdFromUrl, forceNew]);
 
   // Loading state
   if (authLoading || typeLoading || loadingProject || flow === null) {
@@ -80,16 +85,37 @@ const RestaurantOnboarding: React.FC = () => {
     return <Navigate to="/r/dashboard" replace />;
   }
 
-  // Flow selection
+  // Ask user if they want to resume existing project or start new
+  if (flow === 'resume-or-new' && existingProject) {
+    return (
+      <ResumeOrNewSelector
+        existingProject={existingProject}
+        onResume={() => {
+          setSearchParams({ projectId: existingProject.id });
+          setFlow('resume');
+        }}
+        onStartNew={() => {
+          setSearchParams({ new: 'true' });
+          setFlow('new');
+        }}
+        onBack={() => {
+          setFlow('select');
+        }}
+      />
+    );
+  }
+
+  // Flow selection (new vs existing business)
   if (flow === 'select') {
     return (
       <BusinessTypeSelector
         onSelect={(type) => {
           if (type === 'new') {
-            // Clear any existing projectId from URL and set new=true
             setSearchParams({ new: 'true' });
+            setFlow('new');
+          } else {
+            setFlow('existing');
           }
-          setFlow(type === 'new' ? 'new' : 'existing');
         }}
       />
     );
@@ -101,7 +127,7 @@ const RestaurantOnboarding: React.FC = () => {
       <NewBusinessOnboarding 
         onBack={() => {
           setSearchParams({});
-          setFlow('select');
+          setFlow(existingProject ? 'resume-or-new' : 'select');
         }} 
         resumeProjectId={flow === 'resume' ? (projectIdFromUrl || existingProject?.id) : undefined}
       />
