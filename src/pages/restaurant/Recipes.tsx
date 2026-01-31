@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useRecipes, RecipeWithIngredients } from '@/hooks/useRecipes';
 import { useToast } from '@/hooks/use-toast';
+import { PublishRecipeToMenuDialog } from '@/components/recipes/PublishRecipeToMenuDialog';
 import { 
   ChefHat, Plus, Loader2, Clock, Users, DollarSign, Lock, 
-  Trash2, Edit, Eye, Sparkles, Search
+  Trash2, Edit, Eye, Sparkles, Search, Link2
 } from 'lucide-react';
 
 const DifficultyBadge = ({ difficulty }: { difficulty: string | null }) => {
@@ -30,6 +31,7 @@ const Recipes = () => {
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeWithIngredients | null>(null);
+  const [publishRecipe, setPublishRecipe] = useState<RecipeWithIngredients | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
@@ -332,6 +334,14 @@ const Recipes = () => {
                     {recipe.ingredients.length} ingredientes
                   </Badge>
                   <div className="flex gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setPublishRecipe(recipe)}
+                      title="Publicar en Menú"
+                    >
+                      <Link2 className="h-4 w-4 text-primary" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => setSelectedRecipe(recipe)}>
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -344,6 +354,22 @@ const Recipes = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Publish Recipe Dialog */}
+      {publishRecipe && (
+        <PublishRecipeToMenuDialog
+          open={!!publishRecipe}
+          onOpenChange={(open) => !open && setPublishRecipe(null)}
+          recipe={{
+            id: publishRecipe.id,
+            name: publishRecipe.name,
+            cost_per_portion: Number(publishRecipe.cost_per_portion) || 0,
+            menu_item_id: publishRecipe.menu_item_id,
+            portions_per_batch: publishRecipe.portions
+          }}
+          onSuccess={() => setPublishRecipe(null)}
+        />
       )}
 
       {/* Recipe Detail Dialog */}

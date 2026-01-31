@@ -1019,6 +1019,7 @@ export type Database = {
           food_rating: number | null
           id: string
           key_topics: Json | null
+          order_id: string | null
           rating: number | null
           responded: boolean | null
           responded_at: string | null
@@ -1042,6 +1043,7 @@ export type Database = {
           food_rating?: number | null
           id?: string
           key_topics?: Json | null
+          order_id?: string | null
           rating?: number | null
           responded?: boolean | null
           responded_at?: string | null
@@ -1065,6 +1067,7 @@ export type Database = {
           food_rating?: number | null
           id?: string
           key_topics?: Json | null
+          order_id?: string | null
           rating?: number | null
           responded?: boolean | null
           responded_at?: string | null
@@ -1082,6 +1085,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "feedback_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1624,6 +1634,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurant_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_deductions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
           },
           {
             foreignKeyName: "inventory_deductions_recipe_id_fkey"
@@ -2501,6 +2518,7 @@ export type Database = {
         Row: {
           ai_description: string | null
           allergens: string[] | null
+          bcg_category: string | null
           category: string
           created_at: string
           description: string | null
@@ -2521,6 +2539,7 @@ export type Database = {
         Insert: {
           ai_description?: string | null
           allergens?: string[] | null
+          bcg_category?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -2541,6 +2560,7 @@ export type Database = {
         Update: {
           ai_description?: string | null
           allergens?: string[] | null
+          bcg_category?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -3370,6 +3390,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quotation_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "quotation_menu_items_quotation_id_fkey"
             columns: ["quotation_id"]
             isOneToOne: false
@@ -3487,6 +3514,13 @@ export type Database = {
             foreignKeyName: "recipe_ingredients_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
             referencedRelation: "recipes"
             referencedColumns: ["id"]
           },
@@ -3524,6 +3558,13 @@ export type Database = {
           version_number?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "recipe_versions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
           {
             foreignKeyName: "recipe_versions_recipe_id_fkey"
             columns: ["recipe_id"]
@@ -3597,6 +3638,13 @@ export type Database = {
             columns: ["menu_item_id"]
             isOneToOne: false
             referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
             referencedColumns: ["id"]
           },
         ]
@@ -4691,6 +4739,65 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_shifts: {
+        Row: {
+          actual_end_time: string | null
+          actual_start_time: string | null
+          break_minutes: number | null
+          created_at: string | null
+          end_time: string
+          hourly_rate_override: number | null
+          id: string
+          notes: string | null
+          shift_date: string
+          staff_member_id: string | null
+          start_time: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          break_minutes?: number | null
+          created_at?: string | null
+          end_time: string
+          hourly_rate_override?: number | null
+          id?: string
+          notes?: string | null
+          shift_date: string
+          staff_member_id?: string | null
+          start_time: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          break_minutes?: number | null
+          created_at?: string | null
+          end_time?: string
+          hourly_rate_override?: number | null
+          id?: string
+          notes?: string | null
+          shift_date?: string
+          staff_member_id?: string | null
+          start_time?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_shifts_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_analysis: {
         Row: {
           alternatives: Json | null
@@ -4967,6 +5074,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id: string
+          loyalty_customer_id: string | null
           notes: string | null
           party_size: number
           reminder_sent: boolean | null
@@ -4985,6 +5093,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id?: string
+          loyalty_customer_id?: string | null
           notes?: string | null
           party_size: number
           reminder_sent?: boolean | null
@@ -5003,6 +5112,7 @@ export type Database = {
           customer_name?: string
           customer_phone?: string
           id?: string
+          loyalty_customer_id?: string | null
           notes?: string | null
           party_size?: number
           reminder_sent?: boolean | null
@@ -5014,7 +5124,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "table_reservations_loyalty_customer_id_fkey"
+            columns: ["loyalty_customer_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ticket_messages: {
         Row: {
@@ -5353,15 +5471,77 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      menu_items_with_costs: {
+        Row: {
+          allergens: string[] | null
+          bcg_category: string | null
+          category: string | null
+          description: string | null
+          dietary_tags: string[] | null
+          id: string | null
+          image_url: string | null
+          is_available: boolean | null
+          is_featured: boolean | null
+          margin_percent: number | null
+          menu_id: string | null
+          name: string | null
+          popularity_score: number | null
+          price: number | null
+          profitability_score: number | null
+          recipe_cost: number | null
+          recipe_id: string | null
+          recipe_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      calculate_menu_item_scores: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: undefined
+      }
       claim_consultant_client: {
         Args: { p_invitation_token: string }
         Returns: Json
       }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       generate_redemption_code: { Args: never; Returns: string }
+      get_aggregated_daily_sales: {
+        Args: { p_date: string; p_user_id: string }
+        Returns: {
+          avg_ticket: number
+          covers_count: number
+          food_cost: number
+          labor_cost: number
+          order_count: number
+          total_revenue: number
+        }[]
+      }
+      get_customer_profile: {
+        Args: { p_email: string; p_user_id: string }
+        Returns: {
+          avg_rating: number
+          avg_ticket: number
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          feedback_count: number
+          last_visit: string
+          loyalty_points: number
+          loyalty_tier: string
+          total_orders: number
+          total_reservations: number
+          total_spent: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

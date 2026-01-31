@@ -1,6 +1,40 @@
 
 # Plan de Integración Lógica de Módulos - RestroWizard
 
+## Estado: ✅ IMPLEMENTADO
+
+### Cambios Completados
+
+#### Base de Datos (Migraciones)
+- ✅ Tabla `staff_shifts` para gestión de turnos y cálculo de labor cost
+- ✅ Columnas `popularity_score`, `profitability_score`, `bcg_category` en `menu_items`
+- ✅ Columna `order_id` en `customer_feedback` para vincular feedback con órdenes
+- ✅ Columna `loyalty_customer_id` en `table_reservations`
+- ✅ Vista `menu_items_with_costs` que une productos con costos de recetas
+- ✅ Función `get_aggregated_daily_sales()` para calcular finanzas desde órdenes
+- ✅ Función `calculate_menu_item_scores()` para actualizar popularidad/rentabilidad
+- ✅ Función `get_customer_profile()` para vista 360° del cliente
+- ✅ Trigger `trigger_menu_scores_on_order` para actualizar scores automáticamente
+
+#### Hooks Creados
+- ✅ `useAggregatedFinances` - Finanzas calculadas desde órdenes reales
+- ✅ `useMenuEngineeringData` - Matriz BCG con datos de ventas reales
+- ✅ `useCustomerProfile` - Vista 360° del cliente
+- ✅ `useStaffSchedule` - Gestión de turnos y labor cost
+- ✅ `useRecipeMenuLink` - Vincular recetas con productos del menú
+
+#### Componentes Creados
+- ✅ `PublishRecipeToMenuDialog` - Dialog para publicar recetas en menú
+- ✅ `BCGMatrixView` - Visualización de matriz BCG con datos reales
+- ✅ `AggregatedFinancesDashboard` - Dashboard financiero en tiempo real
+
+#### Páginas Actualizadas
+- ✅ `Recipes.tsx` - Botón "Publicar en Menú" agregado
+- ✅ `StaffSchedule.tsx` - Nueva página de gestión de turnos
+- ✅ Rutas agregadas en `App.tsx`
+
+---
+
 ## Resumen Ejecutivo
 
 Este plan conecta todos los módulos de la plataforma para crear un flujo de datos coherente donde **recetas crean productos, productos afectan inventarios, habilitan menús, generan ventas, y estas afectan finanzas**. El objetivo es eliminar la entrada manual de datos y hacer que la información fluya automáticamente entre módulos.
