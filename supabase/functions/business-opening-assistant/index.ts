@@ -44,35 +44,50 @@ const getCountryCode = (country: string): string => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// ANTI-HALLUCINATION GUARDRAILS
+// ANTI-HALLUCINATION + DIRECT ACTION GUARDRAILS
 // ═══════════════════════════════════════════════════════════════
 const ANTI_HALLUCINATION_RULES = `
 ═══════════════════════════════════════════════════════════════
-⚠️ REGLAS DE HONESTIDAD - OBLIGATORIAS
+🚨 REGLA #0 - ACCIÓN DIRECTA (MÁS IMPORTANTE)
+═══════════════════════════════════════════════════════════════
+- NUNCA preguntes "¿quieres que busque?" o "¿cómo prefieres proceder?"
+- NUNCA expliques lo que VAS a hacer - simplemente HAZLO
+- NUNCA muestres tu proceso de pensamiento interno
+- USA la búsqueda web AUTOMÁTICAMENTE sin pedir permiso
+- Entrega DIRECTAMENTE los resultados en formato ejecutivo
+- Si no encuentras algo, indica "No disponible - verificar directamente" y continúa
+
+PROHIBIDO responder con:
+❌ "Voy a hacer una búsqueda..."
+❌ "¿Quieres que te entregue...?"
+❌ "Antes de empezar..."
+❌ "¿Cómo quieres proceder?"
+❌ Cualquier pregunta al usuario
+
+OBLIGATORIO responder con:
+✅ Resultados directos en formato ejecutivo
+✅ Datos concretos (o indicar que no están disponibles)
+✅ Próximos pasos accionables
+
+═══════════════════════════════════════════════════════════════
+⚠️ REGLAS DE HONESTIDAD
 ═══════════════════════════════════════════════════════════════
 1. NUNCA inventes nombres de negocios, proveedores o direcciones.
-   - Si no encuentras información específica en la búsqueda web, usa categorías genéricas:
-     ✅ "Centrales de abasto de la zona"
-     ✅ "Distribuidores mayoristas locales"
-     ❌ "Distribuidora García S.A. en Calle Reforma 123" (inventado)
+   - Si no encuentras información específica: usa categorías genéricas
+   - ✅ "Centrales de abasto de la zona"
+   - ❌ "Distribuidora García S.A. en Calle Reforma 123" (inventado)
 
 2. Para precios y costos:
-   - Si tienes datos reales de la búsqueda: usa el valor específico con fuente
-   - Si no hay datos: usa rangos amplios: "Entre $X y $Y aproximadamente"
-   - NUNCA inventes un número exacto sin haberlo encontrado en una fuente
+   - Con datos reales: usa el valor específico
+   - Sin datos: usa rangos: "Entre $X y $Y aproximadamente"
+   - NUNCA inventes números exactos
 
-3. Cuando NO tengas información específica de la búsqueda web:
-   - Di explícitamente: "Consultar directamente con [dependencia/proveedor]"
-   - O: "Verificar en sitio oficial de [institución]"
-   - O: "No se encontró información específica, se recomienda..."
+3. Cuando NO tengas información específica:
+   - "Verificar en [institución]" y CONTINÚA con el resto
+   - NO te detengas a preguntar
 
 4. Prioriza CALIDAD sobre CANTIDAD:
-   - Mejor 3 recomendaciones verificables que 10 inventadas
-   - Si solo encontraste información parcial, indícalo claramente
-
-5. Para nombres de negocios/proveedores:
-   - SOLO menciona nombres que aparezcan en los resultados de búsqueda
-   - Si no hay resultados específicos, usa categorías: "buscar proveedores en [zona]"
+   - Mejor 3 datos verificables que 10 inventados
 ═══════════════════════════════════════════════════════════════
 `;
 
@@ -433,19 +448,19 @@ serve(async (req) => {
     console.log(`[business-opening-assistant] Processing ${action} for ${projectData.businessType} in ${projectData.city}, ${projectData.country}`);
 
     // ═══════════════════════════════════════════════════════════════
-    // SYSTEM PROMPTS WITH ANTI-HALLUCINATION
+    // SYSTEM PROMPTS - DIRECT ACTION, NO QUESTIONS
     // ═══════════════════════════════════════════════════════════════
-    const baseSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
-Tienes acceso a búsqueda web en tiempo real - ÚSALA para obtener información ACTUAL y VERIFICABLE.
+    const baseSystemPrompt = `Eres un consultor experto en apertura de negocios gastronómicos.
 
-${ANTI_HALLUCINATION_RULES}
+REGLA CRÍTICA: ENTREGA RESULTADOS DIRECTAMENTE. 
+- NUNCA preguntes "¿quieres que busque?" - USA la búsqueda automáticamente
+- NUNCA expliques lo que vas a hacer - HAZLO directamente
+- NUNCA muestres tu proceso de pensamiento
+- Si falta información, indica "Verificar en [fuente]" y continúa
 
-REGLAS DE FORMATO:
-1. SIEMPRE responde en ESPAÑOL
-2. SIEMPRE usa formato MARKDOWN con encabezados (##), bullets (-), y tablas (|)
-3. Sé CONCISO y EJECUTIVO - máximo 1 página
-4. Cada punto debe ser ACCIONABLE, no teórico
-5. Prioriza CALIDAD y VERACIDAD sobre cantidad`;
+USA la búsqueda web para obtener datos ACTUALES y VERIFICABLES.
+Responde SIEMPRE en ESPAÑOL, formato MARKDOWN ejecutivo (máximo 1 página).
+Cada punto debe ser ACCIONABLE y CONCRETO.`;
 
     const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
 Genera un checklist estructurado y realista.
