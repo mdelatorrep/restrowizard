@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users, Star, Clock, Search, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function Events() {
@@ -19,55 +19,6 @@ export default function Events() {
   const [dialogType, setDialogType] = useState<'event' | 'venue' | 'service'>('event');
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Mock data - replace with real data from Supabase
-  const venues = [
-    {
-      id: "1",
-      name: "Restaurante El Jardín",
-      location: "Zona Rosa, Bogotá",
-      capacity: 150,
-      pricePerHour: 250000,
-      rating: 4.8,
-      images: ["/placeholder.svg"],
-      amenities: ["parking", "sound_system", "wifi", "air_conditioning"]
-    },
-    {
-      id: "2", 
-      name: "Terraza Vista",
-      location: "Chapinero, Bogotá",
-      capacity: 80,
-      pricePerHour: 180000,
-      rating: 4.6,
-      images: ["/placeholder.svg"],
-      amenities: ["outdoor_space", "wifi", "catering_kitchen"]
-    }
-  ];
-
-  const services = [
-    {
-      id: "1",
-      providerName: "Banda Los Alegres",
-      serviceName: "Música en Vivo - Vallenato",
-      category: "music",
-      price: 800000,
-      priceType: "fixed",
-      rating: 4.9,
-      location: "Bogotá",
-      images: ["/placeholder.svg"]
-    },
-    {
-      id: "2",
-      providerName: "DJ Pro Events",
-      serviceName: "DJ para Eventos Corporativos",
-      category: "music", 
-      price: 150000,
-      priceType: "per_hour",
-      rating: 4.7,
-      location: "Bogotá",
-      images: ["/placeholder.svg"]
-    }
-  ];
 
   const eventCategories = [
     { id: "all", name: "Todos", color: "bg-gray-100 text-gray-800" },
@@ -87,14 +38,12 @@ export default function Events() {
   };
 
   const handleDialogAction = () => {
-    // Based on user type, navigate to appropriate section
     setCreateDialogOpen(false);
     
     if (dialogType === 'event') {
       toast.info("Para organizar eventos, contacta con un restaurante o consultor");
-      // Could redirect to contact form or show contact info
     } else if (dialogType === 'venue') {
-      navigate("/r/settings"); // Restaurant settings where they can manage their venue
+      navigate("/r/settings");
       toast.success("Configura tu espacio desde la configuración de tu restaurante");
     } else if (dialogType === 'service') {
       toast.info("Próximamente: Marketplace de servicios para eventos");
@@ -228,58 +177,15 @@ export default function Events() {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {venues.map((venue) => (
-                <Card key={venue.id} className="hover:shadow-lg transition-shadow">
-                  <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
-                    <img 
-                      src={venue.images[0]} 
-                      alt={venue.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="flex justify-between items-start">
-                      <span>{venue.name}</span>
-                      <div className="flex items-center text-sm">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                        {venue.rating}
-                      </div>
-                    </CardTitle>
-                    <CardDescription className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {venue.location}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Capacidad:</span>
-                        <span className="font-medium">{venue.capacity} personas</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Precio por hora:</span>
-                        <span className="font-medium">${venue.pricePerHour.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {venue.amenities.slice(0, 3).map((amenity) => (
-                        <Badge key={amenity} variant="secondary" className="text-xs">
-                          {amenity.replace("_", " ")}
-                        </Badge>
-                      ))}
-                      {venue.amenities.length > 3 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{venue.amenities.length - 3} más
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <Button className="w-full">Ver Detalles</Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-12">
+              <MapPin className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Próximamente</h3>
+              <p className="text-muted-foreground mb-6">
+                Los espacios para eventos estarán disponibles pronto. ¡Sé el primero en publicar!
+              </p>
+              <Button onClick={() => handleAction('venue')} size="lg">
+                Publicar mi espacio
+              </Button>
             </div>
           </TabsContent>
 
@@ -292,51 +198,15 @@ export default function Events() {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => (
-                <Card key={service.id} className="hover:shadow-lg transition-shadow">
-                  <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
-                    <img 
-                      src={service.images[0]} 
-                      alt={service.serviceName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="flex justify-between items-start">
-                      <span className="text-lg">{service.serviceName}</span>
-                      <div className="flex items-center text-sm">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                        {service.rating}
-                      </div>
-                    </CardTitle>
-                    <CardDescription>
-                      Por: {service.providerName}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Ubicación:</span>
-                        <span className="font-medium">{service.location}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Precio:</span>
-                        <span className="font-medium">
-                          ${service.price.toLocaleString()}
-                          {service.priceType === "per_hour" && "/hora"}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Badge className="mb-4" variant="outline">
-                      {service.category === "music" ? "Música" : service.category}
-                    </Badge>
-                    
-                    <Button className="w-full">Contactar</Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Próximamente</h3>
+              <p className="text-muted-foreground mb-6">
+                El marketplace de servicios estará disponible pronto. ¡Regístrate para ser notificado!
+              </p>
+              <Button onClick={() => handleAction('service')} size="lg">
+                Ofrecer mis servicios
+              </Button>
             </div>
           </TabsContent>
 

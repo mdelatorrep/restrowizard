@@ -89,10 +89,10 @@ const OperationsAIModule: React.FC = () => {
         }
     };
 
-    // Build satisfaction chart from feedback data
-    const satisfactionData = feedbackData?.slice(0, 7).map(f => f.rating || 4) || [4, 4.2, 4.1, 4.3, 4.5, 4.4, 4.6];
+    // Build satisfaction chart from real feedback data only
+    const satisfactionData = feedbackData?.slice(0, 7).map(f => f.rating || 0) || [];
     const satisfactionChart = {
-        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7'],
+        labels: feedbackData?.slice(0, 7).map((_, i) => `Sem ${i + 1}`) || [],
         datasets: [{
             label: 'Satisfacción del Cliente',
             data: satisfactionData,
@@ -103,27 +103,27 @@ const OperationsAIModule: React.FC = () => {
         }]
     };
 
-    // Build customer flow chart from real KPIs
+    // Build customer flow chart from real KPIs only
     const customerFlowChart = {
-        labels: kpis?.peakHours || ['12:00', '13:00', '14:00', '19:00', '20:00', '21:00'],
+        labels: kpis?.peakHours || [],
         datasets: [
             {
                 label: 'Pedidos por Hora',
-                data: kpis?.peakHours?.map(() => Math.floor(Math.random() * 30) + 10) || [15, 25, 20, 35, 45, 30],
+                data: kpis?.peakHours?.map(() => kpis?.ordersToday ? Math.ceil(kpis.ordersToday / (kpis.peakHours?.length || 1)) : 0) || [],
                 backgroundColor: 'hsl(var(--primary))',
                 yAxisID: 'y'
             }
         ]
     };
 
-    // Build loyalty distribution from real data
+    // Build loyalty distribution from real data only (no fallbacks)
     const loyaltyDistributionChart = {
         labels: ['VIP', 'Regulares', 'Ocasionales'],
         datasets: [{
             data: [
-                loyaltyStats?.vipMembers || 50,
-                loyaltyStats?.regularMembers || 150,
-                loyaltyStats?.occasionalMembers || 100
+                loyaltyStats?.vipMembers || 0,
+                loyaltyStats?.regularMembers || 0,
+                loyaltyStats?.occasionalMembers || 0
             ],
             backgroundColor: [
                 'hsl(var(--primary))',
