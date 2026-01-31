@@ -259,14 +259,68 @@ export function OpeningResultsDashboard({
     // Try to extract key points from the text content
     const textContent = getAnalysisContent(analysis);
     if (textContent && textContent.length > 100) {
-      // Extract first few bullet points or headers as recommendations preview
-      const lines = textContent.split('\n').filter(line => 
-        (line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().startsWith('##')) && 
-        line.length > 10 && line.length < 150
+      // Extract bullet points that contain actual content (not just headers)
+      const lines = textContent.split('\n').filter(line => {
+        const trimmed = line.trim();
+        // Skip empty lines and short headers
+        if (trimmed.length < 15) return false;
+        // Skip lines that are just section headers
+        if (trimmed.match(/^#+\s*(Resumen|Puntos|Próximo|Inversión|Costos|Métricas|---)/i)) return false;
+        // Include bullet points with actual content
+        if (trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('→')) {
+          return trimmed.length > 20 && trimmed.length < 200;
+        }
+        return false;
+      });
+      return lines.slice(0, 4).map(l => 
+        l.replace(/^[-•→]+\s*/, '')
+         .replace(/\*\*/g, '')
+         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove markdown links but keep text
+         .trim()
       );
-      return lines.slice(0, 3).map(l => l.replace(/^[-•#]+\s*/, '').trim());
     }
     return [];
+  };
+
+  // Extract a key metric or highlight from analysis for display
+  const getPhaseHighlight = (analysis: PhaseAnalysis, phaseId: PhaseId): { label: string; value: string } | null => {
+    const textContent = getAnalysisContent(analysis);
+    
+    // Try to find key numbers/metrics based on phase type
+    const patterns: Record<PhaseId, RegExp[]> = {
+      legal_requirements: [/(\d+)\s*(permisos?|licencias?|días?)/i, /(RUT|NIT|Sayco)/i],
+      location_analysis: [/(\d+)\s*(m²|metros)/i, /arriendos?\s*[:\s]*\$?\s*([\d,.]+)/i],
+      equipment_setup: [/\$([\d,.]+)\s*[–-]\s*\$([\d,.]+)/i, /(\d+[-–]\d+)\s*(indispensables|equipos)/i],
+      supplier_network: [/(\d+)\s*(proveedores?|días?)/i, /margen\s*[:\s]*(\d+%)/i],
+      staffing_plan: [/(\d+)\s*(FTE|empleados?|personas?)/i, /nómina\s*[:\s]*\$?([\d,.]+)/i],
+      marketing_launch: [/(\d+)\s*(días?|semanas?)/i, /WhatsApp|Instagram|redes/i],
+      financial_projection: [/≥?(\d+)\s*tickets?\/día/i, /ROI\s*[:\s]*(\d+%)/i, /break.?even\s*[:\s]*(\d+)/i],
+    };
+
+    const phasePatterns = patterns[phaseId] || [];
+    for (const pattern of phasePatterns) {
+      const match = textContent.match(pattern);
+      if (match) {
+        // Return a formatted highlight based on phase
+        switch (phaseId) {
+          case 'legal_requirements':
+            return { label: 'Trámites', value: match[0].includes('días') ? match[0] : `${match[1]} requeridos` };
+          case 'location_analysis':
+            return { label: 'Referencia', value: match[0].substring(0, 30) };
+          case 'equipment_setup':
+            return { label: 'Inversión', value: match[0].substring(0, 25) };
+          case 'supplier_network':
+            return { label: 'Red', value: match[0].substring(0, 25) };
+          case 'staffing_plan':
+            return { label: 'Equipo', value: match[1] + ' ' + (match[2] || 'personas') };
+          case 'marketing_launch':
+            return { label: 'Estrategia', value: match[0].substring(0, 25) };
+          case 'financial_projection':
+            return { label: 'Meta', value: match[0].substring(0, 25) };
+        }
+      }
+    }
+    return null;
   };
 
   return (
@@ -516,6 +570,7 @@ export function OpeningResultsDashboard({
               if (!analysis) return null;
 
               const recommendations = getRecommendations(analysis);
+              const highlight = getPhaseHighlight(analysis, phase.id);
               const timeEstimate = analysis.estimated_time_days;
               const costEstimate = analysis.estimated_cost;
 
@@ -529,12 +584,12 @@ export function OpeningResultsDashboard({
                   onClick={() => setActiveTab('details')}
                 >
                   {/* Gradient overlay */}
-                  <div className={cn("absolute inset-0 opacity-50", colors.bg)} />
+                  <div className={cn("absolute inset-0 opacity-30", colors.bg)} />
                   
                   <CardHeader className="pb-2 relative">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={cn("p-2.5 rounded-xl", colors.bg)}>
+                        <div className={cn("p-2.5 rounded-xl shadow-sm", colors.bg)}>
                           <Icon className={cn("h-5 w-5", colors.text)} />
                         </div>
                         <div>
@@ -544,16 +599,24 @@ export function OpeningResultsDashboard({
                       </div>
                       <div className="flex items-center gap-1">
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <Award className="h-4 w-4 text-amber-500" />
                       </div>
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="relative pt-0">
-                    {/* Key metrics row */}
-                    <div className="flex gap-2 mb-3 flex-wrap">
+                  <CardContent className="relative pt-0 space-y-3">
+                    {/* Key highlight metric */}
+                    {highlight && (
+                      <div className={cn("p-2.5 rounded-lg border", colors.bg, colors.border)}>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{highlight.label}</p>
+                        <p className={cn("text-sm font-semibold mt-0.5", colors.text)}>{highlight.value}</p>
+                      </div>
+                    )}
+                    
+                    {/* Key metrics badges */}
+                    <div className="flex gap-2 flex-wrap">
                       {costEstimate && (
                         <Badge variant="outline" className={cn("text-xs", colors.text, colors.border)}>
+                          <DollarSign className="h-3 w-3 mr-0.5" />
                           {currencySymbol}{costEstimate.toLocaleString()}
                         </Badge>
                       )}
@@ -565,25 +628,29 @@ export function OpeningResultsDashboard({
                       )}
                     </div>
                     
-                    {/* Strategic insights */}
-                    {recommendations.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {recommendations.slice(0, 2).map((rec, i) => (
+                    {/* Strategic insights - show up to 3 */}
+                    {recommendations.length > 0 && (
+                      <div className="space-y-2 pt-1">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Puntos Clave</p>
+                        {recommendations.slice(0, 3).map((rec, i) => (
                           <div key={i} className="flex items-start gap-2 text-xs">
-                            <Sparkles className={cn("h-3 w-3 flex-shrink-0 mt-0.5", colors.text)} />
-                            <span className="text-muted-foreground line-clamp-2">{rec}</span>
+                            <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5", colors.text.replace('text-', 'bg-'))} />
+                            <span className="text-foreground/80 line-clamp-2">{rec}</span>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Haz clic para ver el análisis completo
+                    )}
+                    
+                    {/* Fallback if no recommendations */}
+                    {recommendations.length === 0 && !highlight && (
+                      <p className="text-xs text-muted-foreground italic">
+                        Análisis completado. Haz clic para ver detalles.
                       </p>
                     )}
                     
                     {/* Hover indicator */}
-                    <div className="flex items-center justify-end mt-3 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Ver detalles</span>
+                    <div className="flex items-center justify-end pt-2 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span>Ver análisis completo</span>
                       <ChevronRight className="h-3 w-3 ml-1" />
                     </div>
                   </CardContent>
