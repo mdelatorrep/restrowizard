@@ -138,19 +138,20 @@ export function linkifyMarkdown(content: string): string {
       (_, url) => url
     );
   
-  // 2) Handle existing markdown links [text](url) -> keep as icon-only
+  // 2) Handle existing markdown links [text](url) -> convert to simple link format
   processed = processed.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
     (_, text, url) => {
       const cleanUrl = stripUtm(url);
-      return `[🔗](${cleanUrl})`;
+      // Use a simple placeholder that ReactMarkdown will render as a link
+      return `[↗](${cleanUrl})`;
     }
   );
 
-  // 3) If the markdown link itself is wrapped, unwrap it: ([🔗](url)) / [[🔗](url)]
+  // 3) If the markdown link itself is wrapped, unwrap it
   processed = processed
-    .replace(/\(\s*\[🔗\]\(([^)]+)\)\s*\)/g, `[🔗]($1)`)
-    .replace(/\[\s*\[🔗\]\(([^)]+)\)\s*\]/g, `[🔗]($1)`);
+    .replace(/\(\s*\[↗\]\(([^)]+)\)\s*\)/g, '[↗]($1)')
+    .replace(/\[\s*\[↗\]\(([^)]+)\)\s*\]/g, '[↗]($1)');
   
   // 4) Match URLs that are NOT already in markdown link format
   processed = processed.replace(
@@ -160,12 +161,12 @@ export function linkifyMarkdown(content: string): string {
       const href = cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
       const cleanHref = stripUtm(href);
       const trailing = raw.slice(cleaned.length);
-      return `[🔗](${cleanHref})${trailing}`;
+      return `[↗](${cleanHref})${trailing}`;
     }
   );
 
-  // 5) Final unwrap pass for cases like "([🔗](...))" produced in step 4
-  processed = processed.replace(/\(\s*\[🔗\]\(([^)]+)\)\s*\)/g, `[🔗]($1)`);
+  // 5) Final unwrap pass for any remaining wrapped links
+  processed = processed.replace(/\(\s*\[↗\]\(([^)]+)\)\s*\)/g, '[↗]($1)');
   
   return processed;
 }
