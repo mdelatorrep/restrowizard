@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Bar, Doughnut, Scatter } from 'react-chartjs-2';
 import { 
     Brain, Package, TrendingUp,
@@ -9,81 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { useToast } from '@/hooks/use-toast';
 import { useMenuItemsData } from '@/hooks/useMenuItemsData';
 import { useInventoryData } from '@/hooks/useInventoryData';
+import { useMenuEngineeringData } from '@/hooks/useMenuEngineeringData';
 import { useActiveClient } from '@/contexts/ActiveClientContext';
+import { EmptyState } from '@/components/ui/empty-state';
 import SupplierAnalyzer from '@/components/SupplierAnalyzer';
-
-// Mock data para el módulo de menú e inventario
-const mockMenuInventoryData = {
-    menuEngineering: {
-        simulation: {
-            currentDish: 'Bandeja Paisa',
-            currentProfit: 15.2,
-            scenarios: [
-                { change: 'Cambiar carne por pollo', newProfit: 18.7, impact: '+23%', savings: 3500 },
-                { change: 'Reducir porción arroz 15%', newProfit: 17.1, impact: '+12%', savings: 1800 },
-                { change: 'Ingrediente premium (aguacate)', newProfit: 13.8, impact: '-9%', cost: 2200 }
-            ]
-        },
-        dishPerformance: [
-            { dish: 'Lomo Saltado', popularity: 85, profitability: 75, category: 'Estrella' },
-            { dish: 'Bandeja Paisa', popularity: 30, profitability: 90, category: 'Vaca Lechera' },
-            { dish: 'Salmón Maracuyá', popularity: 90, profitability: 25, category: 'Incógnita' },
-            { dish: 'Sopa del Día', popularity: 20, profitability: 15, category: 'Perro' },
-            { dish: 'Ajiaco Santafereño', popularity: 65, profitability: 88, category: 'Estrella' },
-            { dish: 'Paella Mixta', popularity: 45, profitability: 55, category: 'Intermedio' }
-        ]
-    },
-    inventoryPredictive: {
-        shortage: 23,
-        predictions: [
-            { item: 'Carne de Res', currentStock: 25, predictedNeed: 18, status: 'Exceso', action: 'Reducir pedido 30%' },
-            { item: 'Pechuga de Pollo', currentStock: 15, predictedNeed: 22, status: 'Faltante', action: 'Aumentar pedido 45%' },
-            { item: 'Camarones', currentStock: 8, predictedNeed: 12, status: 'Bajo', action: 'Pedido urgente 5kg' },
-            { item: 'Aguacate', currentStock: 30, predictedNeed: 35, status: 'Óptimo', action: 'Mantener nivel' }
-        ],
-        wasteReduction: 67,
-        automatedOrders: 89
-    },
-    deliveryOptimization: {
-        packagingInsights: [
-            { dish: 'Lomo Saltado', currentPackage: 'Cartón básico', suggestedPackage: 'Compartimentos térmicos', quality: '+40%', cost: '+8%' },
-            { dish: 'Sopa de Tomate', currentPackage: 'Envase plástico', suggestedPackage: 'Termo-sellado premium', quality: '+65%', cost: '+12%' },
-            { dish: 'Ensalada César', currentPackage: 'Recipiente simple', suggestedPackage: 'Separadores ingredientes', quality: '+30%', cost: '+5%' }
-        ],
-        qualityMetrics: {
-            arrivalQuality: 86,
-            customerSatisfaction: 4.1,
-            willingToPay: 62
-        }
-    },
-    ecommerceEngine: {
-        recommendations: [
-            { customer: 'María González', historial: 'Pescados frecuentes', recommendation: 'Kit Salmón Premium + Salsa Maracuyá', likelihood: '78%' },
-            { customer: 'Carlos Mendoza', historial: 'Fan de carnes', recommendation: 'Kit BBQ Casero + Marinados', likelihood: '84%' },
-            { customer: 'Ana Silva', historial: 'Vegetariana', recommendation: 'Kit Ensaladas Gourmet + Aderezos', likelihood: '91%' }
-        ],
-        newChannels: {
-            kitsRevenue: 2800000,
-            retailProducts: 1200000,
-            merchandise: 450000
-        }
-    },
-    varietyBalance: {
-        customerDesire: 86,
-        current: 24,
-        optimal: 18,
-        recommendations: [
-            'Eliminar: Sopa del Día (baja rotación)',
-            'Añadir: Opción vegana principal',
-            'Rotar: Postre especial mensual',
-            'Simplificar: Menos variaciones de carnes'
-        ]
-    }
-};
+import { BCGMatrixView } from '@/components/menu-engineering/BCGMatrixView';
 
 interface MenuMetricProps {
     icon: React.ReactNode;
@@ -118,35 +53,40 @@ const MenuMetric: React.FC<MenuMetricProps> = ({ icon, title, value, trend, desc
 
 const MenuInventoryAIModule: React.FC = () => {
     const [aiInsights, setAiInsights] = useState<string>('');
-    const [realTimeData, setRealTimeData] = useState(mockMenuInventoryData);
-    const { loading, analyzeMenu } = useAIAgent();
+    const { loading: aiLoading, analyzeMenu } = useAIAgent();
     const { toast } = useToast();
     const { activeClient } = useActiveClient();
-    const { menuItems, hasData: hasMenuData, isViewingClient } = useMenuItemsData();
-    const { inventory, kpis: inventoryKpis, hasData: hasInventoryData } = useInventoryData();
+    const { menuItems, kpis: menuKpis, hasData: hasMenuData, isViewingClient, loading: menuLoading } = useMenuItemsData();
+    const { inventory, kpis: inventoryKpis, hasData: hasInventoryData, loading: inventoryLoading } = useInventoryData();
+    const { menuItems: menuItemsWithCosts, insights: engineeringKpis, loading: engineeringLoading } = useMenuEngineeringData();
     
+    const isLoading = menuLoading || inventoryLoading || engineeringLoading;
     const hasData = hasMenuData || hasInventoryData;
     const lowStockItems = inventory.filter(i => i.current_stock <= (i.reorder_point || 0));
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setRealTimeData(prev => ({
-                ...prev,
-                inventoryPredictive: {
-                    ...prev.inventoryPredictive,
-                    shortage: Math.max(0, prev.inventoryPredictive.shortage + (Math.random() - 0.5) * 2)
-                }
-            }));
-        }, 45000);
-        return () => clearInterval(interval);
-    }, []);
-
     const runAIAnalysis = async () => {
-        const analysis = await analyzeMenu({
-            menuItems: realTimeData.menuEngineering.dishPerformance,
-            inventory: realTimeData.inventoryPredictive.predictions,
-            deliveryData: realTimeData.deliveryOptimization
-        });
+        const analysisData = {
+            menuItems: menuItemsWithCosts.map(item => ({
+                name: item.name,
+                price: item.price,
+                cost: item.recipe_cost || 0,
+                margin: item.margin_percent || 0,
+                category: item.bcg_category
+            })),
+            inventory: inventory.map(item => ({
+                name: item.item_name,
+                stock: item.current_stock,
+                reorderPoint: item.reorder_point,
+                status: item.current_stock <= (item.reorder_point || 0) ? 'Bajo' : 'Normal'
+            })),
+            kpis: {
+                totalItems: menuKpis?.totalItems || 0,
+                avgMargin: engineeringKpis?.avgMargin || 0,
+                lowStockCount: lowStockItems.length
+            }
+        };
+        
+        const analysis = await analyzeMenu(analysisData);
         
         if (analysis) {
             setAiInsights(analysis);
@@ -157,20 +97,21 @@ const MenuInventoryAIModule: React.FC = () => {
         }
     };
 
-    const dishPerformanceChart = {
+    // Build BCG chart from real data
+    const bcgChartData = {
         datasets: [{
             label: 'Rendimiento de Platos',
-            data: mockMenuInventoryData.menuEngineering.dishPerformance.map(dish => ({
-                x: dish.profitability,
-                y: dish.popularity,
-                label: dish.dish
+            data: menuItemsWithCosts.map(item => ({
+                x: item.profitability_score || (item.margin_percent || 50),
+                y: item.popularity_score || 50,
+                label: item.name
             })),
-            backgroundColor: mockMenuInventoryData.menuEngineering.dishPerformance.map(dish => {
-                switch(dish.category) {
-                    case 'Estrella': return 'rgba(34, 197, 94, 0.8)';
-                    case 'Vaca Lechera': return 'rgba(59, 130, 246, 0.8)';
-                    case 'Incógnita': return 'rgba(251, 146, 60, 0.8)';
-                    case 'Perro': return 'rgba(239, 68, 68, 0.8)';
+            backgroundColor: menuItemsWithCosts.map(item => {
+                switch(item.bcg_category) {
+                    case 'star': return 'rgba(34, 197, 94, 0.8)';
+                    case 'cash_cow': return 'rgba(59, 130, 246, 0.8)';
+                    case 'question_mark': return 'rgba(251, 146, 60, 0.8)';
+                    case 'dog': return 'rgba(239, 68, 68, 0.8)';
                     default: return 'rgba(156, 163, 175, 0.8)';
                 }
             }),
@@ -178,37 +119,48 @@ const MenuInventoryAIModule: React.FC = () => {
         }]
     };
 
-    const inventoryPredictionChart = {
-        labels: mockMenuInventoryData.inventoryPredictive.predictions.map(p => p.item),
+    // Inventory chart from real data
+    const inventoryChartData = {
+        labels: inventory.slice(0, 6).map(i => i.item_name),
         datasets: [
             {
                 label: 'Stock Actual',
-                data: mockMenuInventoryData.inventoryPredictive.predictions.map(p => p.currentStock),
+                data: inventory.slice(0, 6).map(i => i.current_stock),
                 backgroundColor: 'hsl(var(--muted))'
             },
             {
-                label: 'Necesidad Predicha IA',
-                data: mockMenuInventoryData.inventoryPredictive.predictions.map(p => p.predictedNeed),
+                label: 'Punto de Reorden',
+                data: inventory.slice(0, 6).map(i => i.reorder_point || 0),
                 backgroundColor: 'hsl(var(--primary))'
             }
         ]
     };
 
-    const newChannelsChart = {
-        labels: ['Kits de Comida', 'Productos Retail', 'Mercancía'],
-        datasets: [{
-            data: [
-                mockMenuInventoryData.ecommerceEngine.newChannels.kitsRevenue,
-                mockMenuInventoryData.ecommerceEngine.newChannels.retailProducts,
-                mockMenuInventoryData.ecommerceEngine.newChannels.merchandise
-            ],
-            backgroundColor: [
-                'hsl(var(--primary))',
-                'hsl(var(--secondary))',
-                'hsl(var(--accent))'
-            ]
-        }]
-    };
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <Skeleton className="h-10 w-96" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <Skeleton key={i} className="h-40" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (!hasData) {
+        return (
+            <EmptyState
+                icon={<PieChart className="h-12 w-12" />}
+                title="Sin datos de menú o inventario"
+                description="Agrega productos a tu menú y registra inventario para ver análisis de ingeniería de menú."
+            />
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -217,27 +169,44 @@ const MenuInventoryAIModule: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-lato-bold text-foreground flex items-center">
                         <Brain className="mr-3 text-primary" size={32} />
-                        Menú, Inventario y Nuevas Fuentes de Ingreso IA
+                        Ingeniería de Menú e Inventario IA
                     </h1>
                     <p className="text-muted-foreground font-lato-light mt-2">
-                        Optimizando la oferta actual y desbloqueando nuevos canales de crecimiento
+                        Optimiza tu oferta basándote en datos reales de rentabilidad y popularidad
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button 
                         onClick={runAIAnalysis} 
-                        disabled={loading}
+                        disabled={aiLoading}
                         className="bg-primary hover:bg-primary/90"
                     >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
                         Análisis IA
                     </Button>
                     <Badge variant="secondary" className="bg-green-100 text-green-700">
                         <Activity className="w-4 h-4 mr-1" />
-                        Activo
+                        Datos Reales
                     </Badge>
                 </div>
             </div>
+
+            {/* AI Insights */}
+            {aiInsights && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-primary">
+                            <Brain className="mr-2" size={20} />
+                            Insights IA - Menú e Inventario
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                            {aiInsights}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Main Tabs */}
             <Tabs defaultValue="menu-engineering" className="w-full">
@@ -248,15 +217,15 @@ const MenuInventoryAIModule: React.FC = () => {
                     </TabsTrigger>
                     <TabsTrigger value="inventory">
                         <Package className="h-4 w-4 mr-2" />
-                        Inventario Predictivo
+                        Inventario
                     </TabsTrigger>
                     <TabsTrigger value="supplier-analyzer">
                         <Search className="h-4 w-4 mr-2" />
                         Analizador Proveedores
                     </TabsTrigger>
-                    <TabsTrigger value="ecommerce">
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        E-commerce
+                    <TabsTrigger value="bcg-matrix">
+                        <Target className="h-4 w-4 mr-2" />
+                        Matriz BCG
                     </TabsTrigger>
                 </TabsList>
 
@@ -265,35 +234,35 @@ const MenuInventoryAIModule: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <MenuMetric
                             icon={<Calculator />}
-                            title="Simulaciones de Menú"
-                            value={mockMenuInventoryData.menuEngineering.simulation.scenarios.length.toString()}
-                            trend="up"
-                            description="Escenarios analizados"
+                            title="Productos en Menú"
+                            value={menuKpis?.totalItems.toString() || '0'}
+                            trend="neutral"
+                            description={`${menuKpis?.categoriesCount || 0} categorías`}
                             colorClass="bg-blue-100 text-blue-600"
                         />
                         <MenuMetric
-                            icon={<Package />}
-                            title="Reducción Escasez"
-                            value={`${realTimeData.inventoryPredictive.shortage.toFixed(0)}%`}
-                            trend="up"
-                            description="vs. gestión manual"
+                            icon={<Target />}
+                            title="Margen Promedio"
+                            value={`${engineeringKpis?.avgMargin?.toFixed(1) || 0}%`}
+                            trend={engineeringKpis?.avgMargin && engineeringKpis.avgMargin > 60 ? 'up' : 'down'}
+                            description="Rentabilidad del menú"
                             colorClass="bg-green-100 text-green-600"
                         />
                         <MenuMetric
-                            icon={<Truck />}
-                            title="Calidad Delivery"
-                            value={`${mockMenuInventoryData.deliveryOptimization.qualityMetrics.arrivalQuality}%`}
+                            icon={<Star />}
+                            title="Productos Estrella"
+                            value={menuItemsWithCosts.filter(i => i.bcg_category === 'star').length.toString()}
                             trend="up"
-                            description="Llegada en condiciones óptimas"
-                            colorClass="bg-orange-100 text-orange-600"
+                            description="Alta popularidad + rentabilidad"
+                            colorClass="bg-yellow-100 text-yellow-600"
                         />
                         <MenuMetric
-                            icon={<ShoppingCart />}
-                            title="Nuevos Canales"
-                            value={`$${(Object.values(mockMenuInventoryData.ecommerceEngine.newChannels).reduce((a, b) => a + b, 0) / 1000000).toFixed(1)}M`}
-                            trend="up"
-                            description="Ingresos mensuales adicionales"
-                            colorClass="bg-purple-100 text-purple-600"
+                            icon={<Package />}
+                            title="Stock Bajo"
+                            value={lowStockItems.length.toString()}
+                            trend={lowStockItems.length > 0 ? 'down' : 'up'}
+                            description="Productos bajo punto de reorden"
+                            colorClass="bg-red-100 text-red-600"
                         />
                     </div>
 
@@ -302,85 +271,62 @@ const MenuInventoryAIModule: React.FC = () => {
                             <CardHeader>
                                 <CardTitle className="flex items-center">
                                     <PieChart className="mr-2 text-primary" />
-                                    Matriz de Rendimiento de Platos
+                                    Rendimiento de Productos (Popularidad vs Rentabilidad)
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="h-80">
-                                    <Scatter 
-                                        data={dishPerformanceChart}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: {
-                                                legend: { display: false },
-                                                tooltip: {
-                                                    callbacks: {
-                                                        label: function(context: any) {
-                                                            const point = mockMenuInventoryData.menuEngineering.dishPerformance.find(
-                                                                p => p.profitability === context.parsed.x && p.popularity === context.parsed.y
-                                                            );
-                                                            return point ? `${point.dish} (${point.category})` : '';
+                                {menuItemsWithCosts.length > 0 ? (
+                                    <div className="h-80">
+                                        <Scatter 
+                                            data={bcgChartData}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: {
+                                                    legend: { display: false },
+                                                    tooltip: {
+                                                        callbacks: {
+                                                            label: function(context: any) {
+                                                                const item = menuItemsWithCosts[context.dataIndex];
+                                                                return item ? `${item.name} - Margen: ${(item.margin_percent || 0).toFixed(1)}%` : '';
+                                                            }
                                                         }
                                                     }
+                                                },
+                                                scales: {
+                                                    x: { title: { display: true, text: 'Rentabilidad (%)' }, min: 0, max: 100 },
+                                                    y: { title: { display: true, text: 'Popularidad (%)' }, min: 0, max: 100 }
                                                 }
-                                            },
-                                            scales: {
-                                                x: { title: { display: true, text: 'Rentabilidad (%)' }, min: 0, max: 100 },
-                                                y: { title: { display: true, text: 'Popularidad (%)' }, min: 0, max: 100 }
-                                            }
-                                        }}
-                                    />
-                                </div>
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="h-80 flex items-center justify-center text-muted-foreground">
+                                        Agrega productos con recetas para ver el análisis BCG
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Simulador de Menú IA</CardTitle>
+                                <CardTitle className="text-lg">Distribución por Categoría</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
-                                    <div className="p-3 bg-muted rounded-lg">
-                                        <h4 className="font-lato-bold text-sm mb-1">Plato Analizado</h4>
-                                        <p className="text-lg font-lato-bold text-primary">
-                                            {mockMenuInventoryData.menuEngineering.simulation.currentDish}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Rentabilidad actual: {mockMenuInventoryData.menuEngineering.simulation.currentProfit}%
-                                        </p>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        <h4 className="font-lato-bold text-sm">Simulaciones IA:</h4>
-                                        {mockMenuInventoryData.menuEngineering.simulation.scenarios.map((scenario, i) => (
-                                            <div key={i} className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-lato-bold">{scenario.change}</span>
-                                                    <Badge variant="outline" className={
-                                                        scenario.impact.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                                                    }>
-                                                        {scenario.impact}
-                                                    </Badge>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-xs text-muted-foreground">Nueva rentabilidad:</span>
-                                                    <span className="text-xs font-lato-bold text-primary">{scenario.newProfit}%</span>
-                                                </div>
-                                                {scenario.savings && (
-                                                    <p className="text-xs text-green-600 font-lato-medium">
-                                                        Ahorro: ${new Intl.NumberFormat().format(scenario.savings)}/mes
-                                                    </p>
-                                                )}
-                                                {scenario.cost && (
-                                                    <p className="text-xs text-red-600 font-lato-medium">
-                                                        Costo adicional: ${new Intl.NumberFormat().format(scenario.cost)}/mes
-                                                    </p>
-                                                )}
+                                {menuKpis?.categoryBreakdown && Object.keys(menuKpis.categoryBreakdown).length > 0 ? (
+                                    <div className="space-y-3">
+                                        {Object.entries(menuKpis.categoryBreakdown).map(([category, count]) => (
+                                            <div key={category} className="flex justify-between items-center p-2 bg-muted rounded">
+                                                <span className="text-sm font-medium">{category}</span>
+                                                <Badge variant="secondary">{count} items</Badge>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        Sin categorías registradas
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -393,123 +339,102 @@ const MenuInventoryAIModule: React.FC = () => {
                             <CardHeader>
                                 <CardTitle className="flex items-center">
                                     <Package className="mr-2 text-primary" />
-                                    Gestión de Inventario Predictivo IA
+                                    Niveles de Inventario
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="h-80">
-                                    <Bar 
-                                        data={inventoryPredictionChart}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'top' as const } },
-                                            scales: { y: { title: { display: true, text: 'Cantidad (kg)' } } }
-                                        }}
-                                    />
-                                </div>
+                                {inventory.length > 0 ? (
+                                    <div className="h-80">
+                                        <Bar 
+                                            data={inventoryChartData}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: { legend: { position: 'top' as const } },
+                                                scales: { y: { title: { display: true, text: 'Cantidad' } } }
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="h-80 flex items-center justify-center text-muted-foreground">
+                                        Registra items de inventario para ver el gráfico
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Recomendaciones de Compra IA</CardTitle>
+                                <CardTitle className="text-lg">Alertas de Inventario</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    {mockMenuInventoryData.inventoryPredictive.predictions.map((pred, i) => (
-                                        <div key={i} className={`p-3 rounded-lg border-l-4 ${
-                                            pred.status === 'Faltante' ? 'bg-red-50 border-red-500' :
-                                            pred.status === 'Exceso' ? 'bg-orange-50 border-orange-500' :
-                                            pred.status === 'Bajo' ? 'bg-yellow-50 border-yellow-500' :
-                                            'bg-green-50 border-green-500'
-                                        }`}>
-                                            <div className="flex items-center justify-between mb-1">
-                                                <h4 className="font-lato-bold text-sm">{pred.item}</h4>
-                                                <Badge variant="outline" className={
-                                                    pred.status === 'Faltante' ? 'text-red-600' :
-                                                    pred.status === 'Exceso' ? 'text-orange-600' :
-                                                    pred.status === 'Bajo' ? 'text-yellow-600' :
-                                                    'text-green-600'
-                                                }>
-                                                    {pred.status}
-                                                </Badge>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-muted-foreground">Stock actual:</span>
-                                                    <span className="font-lato-medium">{pred.currentStock} kg</span>
+                                {lowStockItems.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {lowStockItems.map((item) => (
+                                            <div key={item.id} className="p-3 rounded-lg border-l-4 bg-red-50 border-red-500">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h4 className="font-lato-bold text-sm">{item.item_name}</h4>
+                                                    <Badge variant="outline" className="text-red-600">Stock Bajo</Badge>
                                                 </div>
-                                                <div className="flex justify-between text-xs">
-                                                    <span className="text-muted-foreground">Necesidad predicha:</span>
-                                                    <span className="font-lato-medium">{pred.predictedNeed} kg</span>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-muted-foreground">Stock actual:</span>
+                                                        <span className="font-lato-medium">{item.current_stock} {item.unit}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-muted-foreground">Punto de reorden:</span>
+                                                        <span className="font-lato-medium">{item.reorder_point} {item.unit}</span>
+                                                    </div>
+                                                    {item.supplier_name && (
+                                                        <p className="text-xs text-primary font-lato-bold mt-2">
+                                                            Proveedor: {item.supplier_name}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                <p className="text-xs text-primary font-lato-bold mt-2">
-                                                    IA Sugiere: {pred.action}
-                                                </p>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                        <p>No hay alertas de stock bajo</p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Variety Balance */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Star className="mr-2 text-primary" />
-                                Balance de Variedad vs. Control de Costos
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-muted rounded-lg">
-                                        <h4 className="font-lato-bold text-lg mb-3">Análisis de Variedad IA</h4>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-lato-medium">Demanda de Variedad:</span>
-                                                <span className="font-lato-bold text-primary">{mockMenuInventoryData.varietyBalance.customerDesire}%</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-lato-medium">Opciones Actuales:</span>
-                                                <span className="font-lato-bold">{mockMenuInventoryData.varietyBalance.current}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-sm font-lato-medium">IA Recomienda:</span>
-                                                <span className="font-lato-bold text-green-600">{mockMenuInventoryData.varietyBalance.optimal}</span>
-                                            </div>
-                                        </div>
+                    {/* Inventory Summary */}
+                    {inventoryKpis && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <Calculator className="mr-2 text-primary" />
+                                    Resumen de Inventario
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <p className="text-2xl font-bold">{inventoryKpis.totalItems}</p>
+                                        <p className="text-sm text-muted-foreground">Items Totales</p>
                                     </div>
-                                    
-                                    <div className="space-y-2">
-                                        <h4 className="font-lato-bold text-sm">Impacto Económico</h4>
-                                        <div className="grid grid-cols-2 gap-2 text-center">
-                                            <div className="p-2 bg-green-50 rounded">
-                                                <p className="text-lg font-lato-bold text-green-600">-{mockMenuInventoryData.inventoryPredictive.wasteReduction}%</p>
-                                                <p className="text-xs text-muted-foreground">Reducción merma</p>
-                                            </div>
-                                            <div className="p-2 bg-blue-50 rounded">
-                                                <p className="text-lg font-lato-bold text-blue-600">{mockMenuInventoryData.inventoryPredictive.automatedOrders}%</p>
-                                                <p className="text-xs text-muted-foreground">Órdenes automatizadas</p>
-                                            </div>
-                                        </div>
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <p className="text-2xl font-bold">${inventoryKpis.totalValue.toLocaleString()}</p>
+                                        <p className="text-sm text-muted-foreground">Valor Total</p>
+                                    </div>
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <p className="text-2xl font-bold text-red-600">{inventoryKpis.lowStockItems.length}</p>
+                                        <p className="text-sm text-muted-foreground">Stock Bajo</p>
+                                    </div>
+                                    <div className="text-center p-4 bg-muted rounded-lg">
+                                        <p className="text-2xl font-bold text-orange-600">{inventoryKpis.outOfStockItems.length}</p>
+                                        <p className="text-sm text-muted-foreground">Agotados</p>
                                     </div>
                                 </div>
-                                
-                                <div className="space-y-3">
-                                    <h4 className="font-lato-bold text-sm">Recomendaciones de Optimización IA:</h4>
-                                    {mockMenuInventoryData.varietyBalance.recommendations.map((rec, i) => (
-                                        <div key={i} className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
-                                            <p className="text-sm font-lato-medium">{rec}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    )}
                 </TabsContent>
 
                 {/* Supplier Analyzer Tab */}
@@ -517,127 +442,11 @@ const MenuInventoryAIModule: React.FC = () => {
                     <SupplierAnalyzer />
                 </TabsContent>
 
-                {/* E-commerce Tab */}
-                <TabsContent value="ecommerce" className="space-y-6 mt-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Package className="mr-2 text-primary" />
-                                    Optimización de Empaques IA
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {mockMenuInventoryData.deliveryOptimization.packagingInsights.map((insight, i) => (
-                                        <div key={i} className="p-3 bg-muted rounded-lg">
-                                            <h4 className="font-lato-bold text-sm mb-2">{insight.dish}</h4>
-                                            <div className="space-y-2">
-                                                <div className="text-xs">
-                                                    <span className="text-muted-foreground">Actual: </span>
-                                                    <span className="font-lato-medium">{insight.currentPackage}</span>
-                                                </div>
-                                                <div className="text-xs">
-                                                    <span className="text-muted-foreground">IA Sugiere: </span>
-                                                    <span className="font-lato-medium text-primary">{insight.suggestedPackage}</span>
-                                                </div>
-                                                <div className="flex justify-between text-xs">
-                                                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                                        Calidad {insight.quality}
-                                                    </Badge>
-                                                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                                                        Costo {insight.cost}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Target className="mr-2 text-primary" />
-                                    Motor de Recomendación E-commerce
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {mockMenuInventoryData.ecommerceEngine.recommendations.map((rec, i) => (
-                                        <div key={i} className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="font-lato-bold text-sm">{rec.customer}</h4>
-                                                <Badge variant="outline" className="text-xs text-green-600">
-                                                    {rec.likelihood} conversión
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mb-1">
-                                                Perfil: {rec.historial}
-                                            </p>
-                                            <p className="text-xs font-lato-bold text-primary">
-                                                IA Recomienda: {rec.recommendation}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Nuevos Canales de Ingreso</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="h-48">
-                                        <Doughnut 
-                                            data={newChannelsChart}
-                                            options={{
-                                                responsive: true,
-                                                maintainAspectRatio: false,
-                                                plugins: { legend: { position: 'bottom' as const } }
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Kits de Comida</span>
-                                            <span className="font-lato-bold text-primary">$2.8M</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Productos Retail</span>
-                                            <span className="font-lato-bold text-primary">$1.2M</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Mercancía</span>
-                                            <span className="font-lato-bold text-primary">$450K</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                {/* BCG Matrix Tab */}
+                <TabsContent value="bcg-matrix" className="mt-6">
+                    <BCGMatrixView />
                 </TabsContent>
             </Tabs>
-
-            {/* AI Insights Panel */}
-            {aiInsights && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <Brain className="mr-2 text-primary" />
-                            Insights del Agente IA
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="p-4 bg-primary/5 rounded-lg">
-                            <p className="text-sm whitespace-pre-wrap">{aiInsights}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 };
