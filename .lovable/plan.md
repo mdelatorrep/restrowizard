@@ -1,299 +1,412 @@
 
-
-# Plan: Migrar a GPT-5.2 con Web Search + Guardrails Anti-Alucinación
-
-## Resumen del Problema
-
-El sistema actual genera información **irreal e inventada** porque:
-
-1. Usa el modelo `gpt-5-nano` que es muy básico para tareas de análisis
-2. La herramienta `web_search_preview` está declarada pero no configurada correctamente
-3. No extrae ni utiliza las **sources** de la búsqueda web
-4. No hay instrucciones anti-alucinación en el prompt
-5. El formato de respuesta es extenso y difícil de leer
-
-## Solución Propuesta
-
-Migrar a **GPT-5.2** con la herramienta `web_search` configurada correctamente, agregar guardrails anti-alucinación, y reformatear las respuestas para un estilo ejecutivo.
-
----
-
-## Cambios por Fase
-
-### Fase 1: Actualizar Edge Function con GPT-5.2 + Web Search
-
-**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
-
-**Cambios principales:**
-
-1. Cambiar modelo de `gpt-5-nano` a `gpt-5.2`
-2. Cambiar herramienta de `web_search_preview` a `web_search` (versión completa)
-3. Agregar `user_location` con país, ciudad y región del proyecto
-4. Agregar `include: ["web_search_call.action.sources"]` para obtener fuentes consultadas
-5. Aumentar `reasoning.effort` de `low` a `medium` para mejor análisis
-6. Agregar `search_context_size: "high"` para obtener más contexto de búsqueda
-
-```typescript
-// Configuración corregida
-const response = await fetch('https://api.openai.com/v1/responses', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'gpt-5.2',  // Modelo más avanzado
-    tools: [{
-      type: 'web_search',  // Herramienta completa (no preview)
-      search_context_size: 'high',
-      user_location: {
-        type: 'approximate',
-        country: getCountryCode(projectData.country),  // "MX", "CO", etc.
-        city: projectData.city,
-        region: projectData.neighborhood || projectData.city
-      }
-    }],
-    reasoning: { effort: 'medium' },  // Mejor razonamiento
-    include: ['web_search_call.action.sources'],  // Obtener fuentes
-    input: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-  }),
-});
-```
-
-### Fase 2: Agregar Guardrails Anti-Alucinación
-
-**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
-
-Agregar instrucciones explícitas al sistema para evitar información inventada:
-
-```typescript
-const ANTI_HALLUCINATION_RULES = `
-═══════════════════════════════════════════════════════════════
-⚠️ REGLAS DE HONESTIDAD - OBLIGATORIAS
-═══════════════════════════════════════════════════════════════
-1. NUNCA inventes nombres de negocios, proveedores o direcciones.
-   - Si no encuentras información específica, usa categorías genéricas:
-     ✅ "Centrales de abasto de la zona"
-     ✅ "Distribuidores mayoristas locales"
-     ❌ "Distribuidora García S.A. en Calle Reforma 123"
-
-2. Para precios y costos:
-   - Si tienes datos reales: usa el valor específico
-   - Si no: usa rangos amplios: "Entre $X y $Y aproximadamente"
-   - NUNCA inventes un número exacto sin fuente
-
-3. Cuando no tengas información específica, indica:
-   - "Consultar directamente con [dependencia/proveedor]"
-   - "Verificar en sitio oficial"
-   
-4. Prioriza CALIDAD sobre CANTIDAD:
-   - Mejor 3 recomendaciones sólidas que 10 inventadas
-═══════════════════════════════════════════════════════════════
-`;
-```
-
-### Fase 3: Reformatear Prompts para Estilo Ejecutivo
-
-**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
-
-Cambiar todos los prompts de fase para solicitar formato ejecutivo:
-
-```typescript
-const EXECUTIVE_FORMAT_INSTRUCTION = `
-FORMATO DE RESPUESTA (OBLIGATORIO):
-- Máximo 1 página de contenido
-- Usar bullets cortos (max 15 palabras cada uno)
-- Incluir solo números clave y métricas importantes
-- Terminar cada sección con "Próximo paso:" concreto
-- NO incluir explicaciones extensas ni párrafos largos
-- Usar tablas solo para comparativas numéricas (max 5 filas)
-
-ESTRUCTURA REQUERIDA:
-## Resumen Ejecutivo (3-4 bullets máximo)
-## Puntos Clave (5-7 bullets con datos concretos)
-## Costos Estimados (tabla si aplica)
-## Próximos Pasos (2-3 acciones inmediatas)
-`;
-```
-
-### Fase 4: Extraer Sources de la Respuesta
-
-**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
-
-Mejorar la extracción de sources de la respuesta de OpenAI:
-
-```typescript
-// Extraer sources de web_search_call
-let sources: string[] = [];
-
-if (data.output) {
-  for (const item of data.output) {
-    // Extraer sources del web_search_call
-    if (item.type === 'web_search_call' && item.action?.sources) {
-      sources = item.action.sources
-        .filter((s: any) => s.url && !s.url.includes('oai-'))  // Excluir feeds internos
-        .map((s: any) => s.url);
-    }
-    
-    // También extraer de annotations (citas inline)
-    if (item.type === 'message' && item.content) {
-      for (const content of item.content) {
-        if (content.annotations) {
-          const annotationUrls = content.annotations
-            .filter((a: any) => a.type === 'url_citation')
-            .map((a: any) => a.url);
-          sources = [...sources, ...annotationUrls];
-        }
-      }
-    }
-  }
-}
-
-// Eliminar duplicados
-sources = [...new Set(sources)];
-```
-
-### Fase 5: Agregar Helper para Código de País
-
-**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
-
-```typescript
-// Mapeo de países a códigos ISO para user_location
-const COUNTRY_CODES: Record<string, string> = {
-  'México': 'MX',
-  'Mexico': 'MX',
-  'Colombia': 'CO',
-  'Argentina': 'AR',
-  'Chile': 'CL',
-  'Perú': 'PE',
-  'Peru': 'PE',
-  'Ecuador': 'EC',
-  'España': 'ES',
-  'Spain': 'ES',
-  'Estados Unidos': 'US',
-  'United States': 'US',
-};
-
-const getCountryCode = (country: string): string => {
-  return COUNTRY_CODES[country] || 'MX';  // Default México
-};
-```
-
-### Fase 6: Mejorar Prompts de Cada Fase (Ejecutivo + Anti-Alucinación)
-
-Ejemplo para `legal_requirements`:
-
-```typescript
-legal_requirements: (data) => `
-${ANTI_HALLUCINATION_RULES}
-${EXECUTIVE_FORMAT_INSTRUCTION}
-${getLocationContext(data)}
-
-🎯 TAREA: Requisitos legales para ${data.businessType} en ${data.city}, ${data.country}.
+# Plan de Integración Lógica de Módulos - RestroWizard
 
 ## Resumen Ejecutivo
-- 3-4 bullets con los requisitos más importantes
 
-## Permisos Principales
-Lista los 5-7 permisos OBLIGATORIOS con:
-- Nombre del permiso
-- Costo aproximado (rango si no tienes dato exacto)
-- Tiempo estimado de trámite
-- Dependencia responsable
-
-## Costos Estimados
-| Concepto | Rango de Costo |
-|----------|----------------|
-| ... | $X - $Y |
-
-## Próximos Pasos
-1. Acción inmediata específica
-2. Segunda acción
-3. Tercera acción
-
-IMPORTANTE: Si no encuentras el costo o tiempo exacto para un trámite en ${data.city}, indica "Verificar en oficina local" en lugar de inventar un número.
-`
-```
+Este plan conecta todos los módulos de la plataforma para crear un flujo de datos coherente donde **recetas crean productos, productos afectan inventarios, habilitan menús, generan ventas, y estas afectan finanzas**. El objetivo es eliminar la entrada manual de datos y hacer que la información fluya automáticamente entre módulos.
 
 ---
 
-## Archivos a Modificar
-
-| Archivo | Tipo de Cambio |
-|---------|----------------|
-| `supabase/functions/business-opening-assistant/index.ts` | Reescritura mayor: modelo, herramienta web_search, guardrails, prompts ejecutivos |
-
----
-
-## Detalles Tecnicos
-
-### Comparacion de Configuracion Actual vs Nueva
-
-| Aspecto | Actual | Nuevo |
-|---------|--------|-------|
-| Modelo | `gpt-5-nano` | `gpt-5.2` |
-| Herramienta | `web_search_preview` | `web_search` (completa) |
-| Razonamiento | `effort: "low"` | `effort: "medium"` |
-| User location | No configurado | Ciudad/País del proyecto |
-| Sources | No extraídas | Extraídas de annotations |
-| Guardrails | No existen | Reglas anti-alucinación |
-| Formato | Extenso/markdown largo | Ejecutivo/bullets |
-
-### Flujo de Datos Corregido
+## Arquitectura de Flujos de Datos
 
 ```text
-Usuario inicia análisis de fase
-       │
-       v
-Edge Function recibe request
-       │
-       v
-Construye prompt con:
-├── ANTI_HALLUCINATION_RULES
-├── EXECUTIVE_FORMAT_INSTRUCTION
-├── getLocationContext(data)
-└── Prompt específico de la fase
-       │
-       v
-Llama a OpenAI v1/responses
-├── model: "gpt-5.2"
-├── tools: [{ type: "web_search", user_location, search_context_size }]
-├── reasoning: { effort: "medium" }
-└── include: ["web_search_call.action.sources"]
-       │
-       v
-Extrae respuesta y sources
-├── output_text del mensaje
-└── sources de web_search_call.action.sources + annotations
-       │
-       v
-Guarda en DB con sources[]
-       │
-       v
-Frontend muestra análisis ejecutivo
-(sources guardadas pero ocultas en UI según preferencia)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FLUJO CENTRAL DE PRODUCTOS                          │
+│                                                                              │
+│  RECETAS → PRODUCTOS → MENÚ → POS/ÓRDENES → FINANZAS                        │
+│     ↓           ↓         ↓         ↓            ↓                          │
+│  Costos    Inventario  Precios   Ventas    Reportes                        │
+│     ↓           ↓         ↓         ↓            ↓                          │
+│  Márgenes   Alertas   Ingeniería Clientes  Proyecciones                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FLUJO DE CLIENTES                                   │
+│                                                                              │
+│  RESERVAS → MESAS → ÓRDENES → LOYALTY → FEEDBACK                            │
+│      ↓         ↓        ↓         ↓          ↓                              │
+│  Capacidad  Rotación  Historial Puntos   Satisfacción                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FLUJO DE OPERACIONES                                │
+│                                                                              │
+│  EMPLEADOS → TURNOS → ÓRDENES → COSTOS → PRODUCTIVIDAD                      │
+│      ↓          ↓         ↓         ↓           ↓                           │
+│  Capacidad   Labor    Eficiencia Finanzas   Performance                     │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Costo Estimado por Analisis
+---
 
-| Modelo | Input (1M tokens) | Output (1M tokens) | Costo por fase (~2K tokens) |
-|--------|-------------------|--------------------|-----------------------------|
-| gpt-5-nano | ~$0.10 | ~$0.40 | ~$0.001 |
-| gpt-5.2 | $1.75 | $14.00 | ~$0.03 |
+## Fase 1: Conexión Recetas ↔ Productos ↔ Menú
 
-El costo aumenta ~30x pero la calidad y confiabilidad mejoran significativamente.
+### 1.1 Crear Producto desde Receta
+Cuando se crea/actualiza una receta, permitir generar automáticamente un ítem de menú vinculado.
+
+**Cambios:**
+- Modificar `useRecipes.ts` para incluir función `createMenuItemFromRecipe()`
+- Agregar botón "Publicar en Menú" en la vista de receta
+- Calcular precio sugerido: `cost_per_portion × markup_factor`
+- Sincronizar actualizaciones de costo de receta al producto
+
+### 1.2 Vincular Producto Existente a Receta
+Permitir asociar un ítem de menú existente con su receta de preparación.
+
+**Cambios:**
+- Agregar selector de `menu_item_id` en formulario de receta
+- Mostrar indicador visual de productos vinculados vs. huérfanos
+
+### 1.3 Costo de Producto Dinámico
+El costo del producto se calcula desde la receta en tiempo real.
+
+**Cambios:**
+- Crear vista SQL `menu_items_with_recipe_cost`
+- Agregar campo calculado `recipe_cost` en hook de menú
+- Mostrar alertas cuando margen cae por debajo de umbral
+
+---
+
+## Fase 2: Productos ↔ Inventario
+
+### 2.1 Deducción Automática Mejorada
+Ya existe `useInventoryDeduction` pero se debe hacer más robusto.
+
+**Cambios:**
+- Validar stock disponible ANTES de confirmar orden
+- Mostrar alertas en tiempo real de stock insuficiente
+- Registrar órdenes que no pudieron deducir inventario
+- Dashboard de "Órdenes sin Receta" (productos sin vincular)
+
+### 2.2 Proyección de Inventario
+Predecir necesidades de inventario basado en ventas históricas.
+
+**Cambios:**
+- Crear función `calculateInventoryProjection(days: number)`
+- Integrar con módulo de Ingeniería de Menú
+- Generar órdenes de compra sugeridas
+
+---
+
+## Fase 3: Ventas ↔ Finanzas
+
+### 3.1 Agregación Automática de Ventas Diarias
+Eliminar entrada manual de `daily_sales`, calcular desde órdenes.
+
+**Cambios:**
+- Crear hook `useAggregatedDailySales`
+- Calcular automáticamente:
+  - `total_revenue`: suma de `restaurant_orders.total`
+  - `covers_count`: suma de `restaurant_orders.guests_count` 
+  - `food_cost`: suma de costos de recetas vendidas
+  - `labor_cost`: calculado desde turnos de empleados
+- Mantener opción de ajuste manual para gastos no capturados
+
+### 3.2 Finanzas en Tiempo Real
+Dashboard financiero que refleja ventas actuales.
+
+**Cambios:**
+- Modificar `useFinancesData.ts` para usar datos agregados
+- Agregar modo "Tiempo Real" vs "Histórico"
+- Integrar con sesiones POS para cuadre de caja
+
+### 3.3 Cálculo de Food Cost Real
+Calcular food cost desde ingredientes reales usados.
+
+**Cambios:**
+- Sumar `inventory_deductions` × `unit_cost`
+- Comparar con food cost teórico (recetas)
+- Identificar varianzas (desperdicio, robo, porciones)
+
+---
+
+## Fase 4: Ingeniería de Menú Basada en Datos Reales
+
+### 4.1 Popularidad desde Ventas
+Calcular `popularity_score` de productos desde órdenes reales.
+
+**Cambios:**
+- Crear función de cálculo periódico (trigger o cron)
+- Fórmula: `cantidad_vendida / total_items_vendidos × 100`
+- Considerar período configurable (7, 30, 90 días)
+
+### 4.2 Rentabilidad Real
+Calcular `profitability_score` desde márgenes reales.
+
+**Cambios:**
+- Fórmula: `(precio_venta - costo_receta) / precio_venta × 100`
+- Actualizar cuando cambia precio o costo de ingredientes
+
+### 4.3 Matriz BCG Dinámica
+Clasificar productos automáticamente.
+
+**Cambios:**
+- **Estrella**: Alta popularidad + Alta rentabilidad
+- **Vaca**: Baja popularidad + Alta rentabilidad  
+- **Incógnita**: Alta popularidad + Baja rentabilidad
+- **Perro**: Baja popularidad + Baja rentabilidad
+- Generar recomendaciones automáticas de IA
+
+---
+
+## Fase 5: Clientes ↔ Órdenes ↔ Loyalty
+
+### 5.1 Historial de Cliente Unificado
+Consolidar información de cliente desde múltiples fuentes.
+
+**Cambios:**
+- Crear tabla `customer_profiles` que agrupa:
+  - Datos de `loyalty_customers`
+  - Datos de `table_reservations`
+  - Historial de `restaurant_orders`
+  - Feedback de `customer_feedback`
+- Mostrar vista 360° del cliente en POS
+
+### 5.2 Preferencias Automáticas
+Detectar preferencias de cliente desde historial.
+
+**Cambios:**
+- Analizar órdenes para detectar:
+  - Productos favoritos
+  - Horarios preferidos
+  - Ticket promedio
+  - Frecuencia de visita
+- Actualizar `preferred_items` automáticamente
+
+### 5.3 Feedback Vinculado a Órdenes
+Permitir asociar feedback con orden específica.
+
+**Cambios:**
+- Agregar `order_id` a `customer_feedback`
+- Generar código QR único por orden
+- Correlacionar ratings con productos consumidos
+
+---
+
+## Fase 6: Empleados ↔ Operaciones ↔ Finanzas
+
+### 6.1 Turnos y Costos de Labor
+Crear módulo de turnos que alimente costos.
+
+**Cambios:**
+- Crear tabla `staff_shifts`:
+  ```sql
+  staff_member_id, shift_date, start_time, end_time, 
+  break_minutes, hourly_rate_override, status
+  ```
+- Calcular labor_cost diario desde turnos trabajados
+- Integrar con proyección de finanzas
+
+### 6.2 Productividad por Empleado
+Medir ventas/cubiertos por empleado.
+
+**Cambios:**
+- Vincular `restaurant_orders.waiter_id` con `staff_members`
+- Calcular KPIs por empleado:
+  - Ventas totales atendidas
+  - Ticket promedio
+  - Número de mesas atendidas
+  - Propinas recibidas
+
+### 6.3 Performance Score Dinámico
+Calcular `performance_score` desde métricas reales.
+
+**Cambios:**
+- Fórmula ponderada:
+  - 40% Ventas vs objetivo
+  - 30% Satisfacción de clientes
+  - 20% Puntualidad
+  - 10% Capacitación completada
+
+---
+
+## Fase 7: Reservaciones ↔ Mesas ↔ Capacidad
+
+### 7.1 Ocupación en Tiempo Real
+Integrar reservaciones con gestión de mesas.
+
+**Cambios:**
+- Mostrar disponibilidad basada en:
+  - Reservaciones confirmadas
+  - Mesas actualmente ocupadas
+  - Tiempo estimado de rotación
+- Bloquear horarios cuando capacidad esté llena
+
+### 7.2 Predicción de Demanda
+Proyectar ocupación futura.
+
+**Cambios:**
+- Analizar patrones históricos por:
+  - Día de semana
+  - Hora del día
+  - Eventos especiales
+- Sugerir promociones para horas de baja demanda
+
+---
+
+## Cambios Técnicos Requeridos
+
+### Base de Datos (Migraciones)
+
+```sql
+-- 1. Vista de productos con costo de receta
+CREATE VIEW menu_items_with_costs AS
+SELECT 
+  mi.*,
+  r.cost_per_portion as recipe_cost,
+  (mi.price - COALESCE(r.cost_per_portion, 0)) / NULLIF(mi.price, 0) * 100 as margin_percent
+FROM menu_items mi
+LEFT JOIN recipes r ON r.menu_item_id = mi.id;
+
+-- 2. Tabla de turnos de empleados
+CREATE TABLE staff_shifts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_member_id UUID REFERENCES staff_members(id),
+  shift_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  break_minutes INTEGER DEFAULT 0,
+  hourly_rate_override NUMERIC(10,2),
+  status VARCHAR(20) DEFAULT 'scheduled',
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Agregar order_id a feedback
+ALTER TABLE customer_feedback 
+ADD COLUMN order_id UUID REFERENCES restaurant_orders(id);
+
+-- 4. Agregar cliente unificado a reservaciones
+ALTER TABLE table_reservations
+ADD COLUMN loyalty_customer_id UUID REFERENCES loyalty_customers(id);
+
+-- 5. Función para calcular ventas diarias agregadas
+CREATE OR REPLACE FUNCTION get_aggregated_daily_sales(
+  p_user_id UUID,
+  p_date DATE
+) RETURNS TABLE (
+  total_revenue NUMERIC,
+  order_count INTEGER,
+  covers_count INTEGER,
+  food_cost NUMERIC,
+  avg_ticket NUMERIC
+) AS $$
+  SELECT 
+    COALESCE(SUM(total), 0) as total_revenue,
+    COUNT(*)::INTEGER as order_count,
+    COALESCE(SUM(guests_count), 0)::INTEGER as covers_count,
+    -- food_cost calculado desde deductions
+    (SELECT COALESCE(SUM(id.quantity_deducted * ii.unit_cost), 0)
+     FROM inventory_deductions id
+     JOIN inventory_items ii ON ii.id = id.inventory_item_id
+     WHERE id.user_id = p_user_id 
+     AND DATE(id.deducted_at) = p_date) as food_cost,
+    CASE WHEN COUNT(*) > 0 THEN SUM(total) / COUNT(*) ELSE 0 END as avg_ticket
+  FROM restaurant_orders
+  WHERE user_id = p_user_id
+  AND DATE(created_at) = p_date
+  AND status != 'cancelled';
+$$ LANGUAGE sql;
+
+-- 6. Trigger para actualizar popularity/profitability
+CREATE OR REPLACE FUNCTION update_menu_item_scores() 
+RETURNS TRIGGER AS $$
+DECLARE
+  v_total_sold INTEGER;
+  v_item_sold INTEGER;
+  v_recipe_cost NUMERIC;
+  v_item_price NUMERIC;
+BEGIN
+  -- Solo procesar si la orden está completada
+  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+    -- Obtener ventas totales del período
+    SELECT COUNT(*) INTO v_total_sold
+    FROM restaurant_orders, jsonb_array_elements(items::jsonb) AS item
+    WHERE user_id = NEW.user_id
+    AND created_at >= NOW() - INTERVAL '30 days'
+    AND status = 'completed';
+    
+    -- Actualizar cada producto vendido
+    FOR item IN SELECT * FROM jsonb_array_elements(NEW.items::jsonb)
+    LOOP
+      -- Actualizar popularity
+      SELECT COUNT(*) INTO v_item_sold
+      FROM restaurant_orders, jsonb_array_elements(items::jsonb) AS i
+      WHERE user_id = NEW.user_id
+      AND i->>'menu_item_id' = item->>'menu_item_id'
+      AND created_at >= NOW() - INTERVAL '30 days'
+      AND status = 'completed';
+      
+      -- Obtener costo y precio
+      SELECT r.cost_per_portion, mi.price INTO v_recipe_cost, v_item_price
+      FROM menu_items mi
+      LEFT JOIN recipes r ON r.menu_item_id = mi.id
+      WHERE mi.id = (item->>'menu_item_id')::UUID;
+      
+      -- Actualizar scores
+      UPDATE menu_items SET
+        popularity_score = (v_item_sold::NUMERIC / NULLIF(v_total_sold, 0)) * 100,
+        profitability_score = ((v_item_price - COALESCE(v_recipe_cost, 0)) / NULLIF(v_item_price, 0)) * 100,
+        updated_at = NOW()
+      WHERE id = (item->>'menu_item_id')::UUID;
+    END LOOP;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_menu_scores
+AFTER UPDATE ON restaurant_orders
+FOR EACH ROW EXECUTE FUNCTION update_menu_item_scores();
+```
+
+### Nuevos Hooks
+
+| Hook | Propósito |
+|------|-----------|
+| `useAggregatedFinances` | Finanzas calculadas desde órdenes reales |
+| `useMenuEngineeringData` | Matriz BCG con datos de ventas reales |
+| `useCustomerProfile` | Vista 360° del cliente |
+| `useStaffSchedule` | Gestión de turnos y labor cost |
+| `useInventoryProjections` | Predicción de necesidades de inventario |
+| `useTableOccupancy` | Ocupación en tiempo real |
+
+### Componentes Modificados
+
+| Componente | Cambios |
+|------------|---------|
+| `Recipes.tsx` | Agregar "Publicar en Menú", selector de producto vinculado |
+| `FinancesAIModule.tsx` | Modo tiempo real, datos agregados |
+| `MenuInventoryAIModule.tsx` | Matriz BCG con datos reales |
+| `POS.tsx` | Validación de stock, vista de cliente |
+| `TalentAIModule.tsx` | KPIs de productividad por empleado |
+| `Reservations.tsx` | Integración con disponibilidad de mesas |
+
+---
+
+## Orden de Implementación
+
+| Prioridad | Fase | Complejidad | Impacto |
+|-----------|------|-------------|---------|
+| 1 | Fase 3.1 - Agregación Ventas | Media | Alto |
+| 2 | Fase 4.1/4.2 - Popularidad y Rentabilidad | Media | Alto |
+| 3 | Fase 1.1 - Recetas → Productos | Baja | Alto |
+| 4 | Fase 2.1 - Deducción Mejorada | Media | Medio |
+| 5 | Fase 5.1 - Historial Cliente | Alta | Medio |
+| 6 | Fase 6.1 - Turnos | Alta | Medio |
+| 7 | Fase 7.1 - Ocupación | Media | Bajo |
 
 ---
 
 ## Resultado Esperado
 
-1. Los análisis contendrán **información real** basada en búsqueda web actual
-2. El modelo **no inventará** nombres, direcciones ni precios específicos sin fuente
-3. El formato será **ejecutivo**: 1 página, bullets, números clave
-4. Cuando no haya datos específicos, se indicará claramente en lugar de inventar
-5. Las **sources** se guardarán en DB (disponibles para futuras referencias aunque no se muestren)
-6. La búsqueda se optimizará para la **ciudad y país específicos** del proyecto
+Al completar esta integración:
 
+1. **Cero Entrada Manual**: Las finanzas se calculan automáticamente
+2. **Decisiones Basadas en Datos**: Ingeniería de menú usa ventas reales
+3. **Alertas Proactivas**: Stock bajo, márgenes bajos, clientes en riesgo
+4. **Vista 360°**: Cliente unificado con historial completo
+5. **Productividad Medible**: Performance de empleados basado en datos
+6. **Capacidad Optimizada**: Reservaciones inteligentes con disponibilidad real
