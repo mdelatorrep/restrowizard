@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
   Font,
+  Link,
 } from '@react-pdf/renderer';
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { formatCurrencyByCountry, getCurrencyCode } from '@/data/constants';
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
   analysisBullet: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 3,
+    marginBottom: 4,
     paddingLeft: 4,
   },
   bulletDot: {
@@ -402,14 +403,23 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: COLORS.primary,
-    marginTop: 3,
+    marginTop: 4,
     marginRight: 6,
   },
   bulletText: {
     fontSize: 8,
     color: COLORS.textMuted,
     flex: 1,
-    lineHeight: 1.4,
+    lineHeight: 1.5,
+  },
+  // Links
+  link: {
+    color: COLORS.primary,
+    textDecoration: 'none',
+  },
+  linkIcon: {
+    fontSize: 8,
+    color: COLORS.primary,
   },
   // Checklist
   checklistPhase: {
@@ -611,7 +621,7 @@ function parseSections(content: string): Array<{ title: string; bullets: string[
 // Get key recommendations from analysis
 function getRecommendations(analysis: PhaseAnalysis): string[] {
   if (Array.isArray(analysis.recommendations)) {
-    return analysis.recommendations.slice(0, 3);
+    return analysis.recommendations.slice(0, 4);
   }
   const content = getAnalysisText(analysis);
   if (!content) return [];
@@ -619,10 +629,10 @@ function getRecommendations(analysis: PhaseAnalysis): string[] {
   const bullets = content.split('\n')
     .filter(line => {
       const t = line.trim();
-      return (t.startsWith('•') || t.startsWith('-') || t.startsWith('→')) && t.length > 20 && t.length < 150;
+      return (t.startsWith('•') || t.startsWith('-') || t.startsWith('→')) && t.length > 20 && t.length < 250;
     })
     .map(l => l.replace(/^[•\-→]\s*/, '').replace(/\*\*/g, '').trim())
-    .slice(0, 3);
+    .slice(0, 4);
   
   return bullets;
 }
@@ -648,17 +658,51 @@ function getPhaseHighlight(analysis: PhaseAnalysis, phaseId: string): { label: s
     if (match) {
       return {
         label: PHASE_DESCRIPTIONS[phaseId]?.split(' ')[0] || 'Referencia',
-        value: match[0].substring(0, 30),
+        value: match[0].substring(0, 50),
       };
     }
   }
   return null;
 }
 
-// Truncate text
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  return text.substring(0, max - 3) + '...';
+// Extract URLs from text
+function extractUrls(text: string): Array<{ url: string; display: string }> {
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/g;
+  const matches = text.match(urlRegex) || [];
+  return matches.map(url => {
+    try {
+      const hostname = new URL(url).hostname;
+      return { url, display: hostname };
+    } catch {
+      return { url, display: url.substring(0, 30) };
+    }
+  });
+}
+
+// Render text with links - splits text and renders links as clickable
+function renderTextWithLinks(text: string, textStyle: any, linkStyle: any): React.ReactNode[] {
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (part.match(/^https?:\/\//)) {
+      try {
+        const hostname = new URL(part).hostname;
+        return (
+          <Link key={index} src={part} style={linkStyle}>
+            🔗 {hostname}
+          </Link>
+        );
+      } catch {
+        return (
+          <Link key={index} src={part} style={linkStyle}>
+            🔗 Link
+          </Link>
+        );
+      }
+    }
+    return <Text key={index} style={textStyle}>{part}</Text>;
+  });
 }
 
 export function OpeningPlanPDF({ project, analyses, checklist, metrics }: OpeningPlanPDFProps) {
@@ -820,7 +864,7 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
                   <View style={styles.urgentActionContent}>
                     <Text style={styles.urgentActionTitle}>{item.title}</Text>
                     {item.description && (
-                      <Text style={styles.urgentActionDesc}>{truncate(item.description, 100)}</Text>
+                      <Text style={styles.urgentActionDesc}>{item.description}</Text>
                     )}
                   </View>
                 </View>
@@ -897,10 +941,10 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
 
                 {recommendations.length > 0 && (
                   <View style={styles.phaseSummaryPoints}>
-                    {recommendations.slice(0, 2).map((rec, i) => (
+                    {recommendations.slice(0, 3).map((rec, i) => (
                       <View key={i} style={styles.phasePoint}>
                         <View style={[styles.phasePointDot, { backgroundColor: phaseStyle.border }]} />
-                        <Text style={styles.phasePointText}>{truncate(rec, 60)}</Text>
+                        <Text style={styles.phasePointText}>{rec}</Text>
                       </View>
                     ))}
                   </View>
@@ -938,12 +982,13 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
           const phaseStyle = PHASE_STYLES[phaseId] || PHASE_STYLES.legal_requirements;
           const content = getAnalysisText(analysis);
           const sections = parseSections(content);
+          const urls = extractUrls(content);
 
           return (
             <View 
               key={analysis.id} 
               style={[styles.analysisCard, { borderLeftColor: phaseStyle.border }]}
-              wrap={false}
+              wrap
             >
               <View style={styles.analysisHeader}>
                 <View style={[styles.analysisIcon, { backgroundColor: phaseStyle.bg }]}>
@@ -967,22 +1012,35 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
                 )}
               </View>
 
-              {sections.slice(0, 3).map((section, idx) => (
+              {/* Render ALL sections, not just first 3 */}
+              {sections.map((section, idx) => (
                 <View key={idx} style={styles.analysisSection}>
                   <Text style={styles.analysisSectionTitle}>{section.title}</Text>
-                  {section.bullets.slice(0, 4).map((bullet, bIdx) => (
+                  {section.bullets.map((bullet, bIdx) => (
                     <View key={bIdx} style={styles.analysisBullet}>
                       <View style={[styles.bulletDot, { backgroundColor: phaseStyle.border }]} />
-                      <Text style={styles.bulletText}>{truncate(bullet, 120)}</Text>
+                      <Text style={styles.bulletText}>{bullet}</Text>
                     </View>
                   ))}
                 </View>
               ))}
 
               {sections.length === 0 && content && (
-                <Text style={styles.analysisContent}>
-                  {truncate(content, 500)}
-                </Text>
+                <Text style={styles.analysisContent}>{content}</Text>
+              )}
+
+              {/* Render extracted links */}
+              {urls.length > 0 && (
+                <View style={[styles.analysisSection, { marginTop: 8 }]}>
+                  <Text style={styles.analysisSectionTitle}>🔗 Enlaces de Referencia</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {urls.slice(0, 5).map((linkInfo, lIdx) => (
+                      <Link key={lIdx} src={linkInfo.url} style={styles.link}>
+                        <Text style={{ fontSize: 7, color: COLORS.primary }}>🌐 {linkInfo.display}</Text>
+                      </Link>
+                    ))}
+                  </View>
+                </View>
               )}
             </View>
           );
