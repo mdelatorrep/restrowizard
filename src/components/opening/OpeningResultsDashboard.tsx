@@ -21,6 +21,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { EditProjectDetailsDialog } from './EditProjectDetailsDialog';
 import { formatCurrencyByCountry, getCurrencySymbol, getCurrencyCode } from '@/data/constants';
+import { LinkifyText } from '@/lib/linkifyText';
 
 interface OpeningResultsDashboardProps {
   project: BusinessProject;
@@ -608,7 +609,9 @@ export function OpeningResultsDashboard({
                     {highlight && (
                       <div className={cn("p-2.5 rounded-lg border", colors.bg, colors.border)}>
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{highlight.label}</p>
-                        <p className={cn("text-sm font-semibold mt-0.5", colors.text)}>{highlight.value}</p>
+                        <LinkifyText className={cn("text-sm font-semibold mt-0.5 block", colors.text)}>
+                          {highlight.value}
+                        </LinkifyText>
                       </div>
                     )}
                     
@@ -635,7 +638,9 @@ export function OpeningResultsDashboard({
                         {recommendations.slice(0, 3).map((rec, i) => (
                           <div key={i} className="flex items-start gap-2 text-xs">
                             <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5", colors.text.replace('text-', 'bg-'))} />
-                            <span className="text-foreground/80 line-clamp-2">{rec}</span>
+                            <LinkifyText className="text-foreground/80 line-clamp-2 block">
+                              {rec}
+                            </LinkifyText>
                           </div>
                         ))}
                       </div>
