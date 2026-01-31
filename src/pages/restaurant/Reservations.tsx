@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { 
   Calendar, Clock, Users, Phone, Mail, CheckCircle, XCircle, 
-  AlertCircle, Loader2, Plus, Search, Filter
+  AlertCircle, Loader2, Plus, Search, Filter, Sparkles
 } from 'lucide-react';
 import { format, isToday, isTomorrow, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -274,6 +276,9 @@ export default function ReservationsPage() {
   const { reservations, kpis, loading, updateReservationStatus, createReservation } = useReservations();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  
+  const { predictNoShows, optimizeCapacity, loading: aiLoading } = useAIAgent();
 
   const filteredReservations = reservations.filter(r => {
     const matchesSearch = r.customer_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -296,6 +301,25 @@ export default function ReservationsPage() {
   const upcomingReservations = filteredReservations.filter(r => r.reservation_date > todayStr);
   const pastReservations = filteredReservations.filter(r => r.reservation_date < todayStr);
 
+  const handleAnalyzeNoShows = async () => {
+    const reservationData = {
+      reservations: reservations.map(r => ({
+        customerName: r.customer_name,
+        date: r.reservation_date,
+        time: r.reservation_time,
+        partySize: r.party_size,
+        status: r.status,
+        source: r.source
+      })),
+      kpis: kpis,
+      noShowHistory: reservations.filter(r => r.status === 'no_show').length,
+      totalReservations: reservations.length
+    };
+    
+    const result = await predictNoShows(reservationData);
+    if (result) setAiInsights(result);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -311,8 +335,23 @@ export default function ReservationsPage() {
           <h1 className="text-3xl font-bold">Reservaciones</h1>
           <p className="text-muted-foreground">Gestiona las reservas de tu restaurante</p>
         </div>
-        <CreateReservationDialog onCreate={createReservation} />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleAnalyzeNoShows} disabled={aiLoading || reservations.length === 0}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            {aiLoading ? 'Analizando...' : 'Predecir No-Shows'}
+          </Button>
+          <CreateReservationDialog onCreate={createReservation} />
+        </div>
       </div>
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        title="Predicción de No-Shows IA"
+        description="Identifica reservaciones en riesgo y estrategias de confirmación"
+        insights={aiInsights}
+        loading={aiLoading}
+        onAnalyze={handleAnalyzeNoShows}
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

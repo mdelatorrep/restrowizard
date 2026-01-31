@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useFeedbackData, CustomerFeedback, FeedbackCampaign } from '@/hooks/useFeedbackData';
 import { FeedbackQRDialog } from '@/components/feedback/FeedbackQRDialog';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { useToast } from '@/hooks/use-toast';
 import { 
   MessageSquare, Star, TrendingUp, TrendingDown, AlertTriangle, 
@@ -56,6 +58,9 @@ const Feedback = () => {
   const [selectedFeedback, setSelectedFeedback] = useState<CustomerFeedback | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<FeedbackCampaign | null>(null);
   const [responseText, setResponseText] = useState('');
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  
+  const { analyzeFeedbackTrends, getImprovementPriorities, loading: aiLoading } = useAIAgent();
 
   const [feedbackForm, setFeedbackForm] = useState({
     customer_name: '',
@@ -93,6 +98,29 @@ const Feedback = () => {
     setResponseText('');
   };
 
+  const handleAnalyzeTrends = async () => {
+    const feedbackData = {
+      feedback: feedback.map(f => ({
+        customerName: f.customer_name,
+        rating: f.rating,
+        comment: f.comment,
+        sentiment: f.sentiment_label,
+        source: f.source,
+        date: f.created_at,
+        foodRating: f.food_rating,
+        serviceRating: f.service_rating,
+        ambianceRating: f.ambiance_rating
+      })),
+      kpis: kpis,
+      positiveCount: feedback.filter(f => f.sentiment_label === 'positive').length,
+      negativeCount: feedback.filter(f => f.sentiment_label === 'negative').length,
+      neutralCount: feedback.filter(f => f.sentiment_label === 'neutral').length
+    };
+    
+    const result = await analyzeFeedbackTrends(feedbackData);
+    if (result) setAiInsights(result);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -109,6 +137,10 @@ const Feedback = () => {
           <p className="text-muted-foreground">Gestiona y analiza las opiniones de tus clientes</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleAnalyzeTrends} disabled={aiLoading || feedback.length === 0}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            {aiLoading ? 'Analizando...' : 'Analizar Tendencias'}
+          </Button>
           <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -252,6 +284,15 @@ const Feedback = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        title="Análisis de Tendencias IA"
+        description="Patrones en el feedback, prioridades de mejora y oportunidades"
+        insights={aiInsights}
+        loading={aiLoading}
+        onAnalyze={handleAnalyzeTrends}
+      />
 
       <Tabs defaultValue="feedback">
         <TabsList>

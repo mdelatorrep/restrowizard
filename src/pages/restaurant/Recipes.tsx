@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useRecipes, RecipeWithIngredients } from '@/hooks/useRecipes';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { useToast } from '@/hooks/use-toast';
 import { PublishRecipeToMenuDialog } from '@/components/recipes/PublishRecipeToMenuDialog';
 import { 
@@ -34,6 +36,9 @@ const Recipes = () => {
   const [publishRecipe, setPublishRecipe] = useState<RecipeWithIngredients | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  
+  const { optimizeRecipeCosts, getIngredientSubstitutes, loading: aiLoading } = useAIAgent();
 
   const [recipeForm, setRecipeForm] = useState({
     name: '',
@@ -86,6 +91,30 @@ const Recipes = () => {
 
   const categories = [...new Set(recipes.map(r => r.category))].filter(Boolean);
 
+  const handleAnalyzeRecipes = async () => {
+    const recipeData = {
+      recipes: recipes.map(r => ({
+        name: r.name,
+        category: r.category,
+        costPerPortion: r.cost_per_portion,
+        totalCost: r.total_cost,
+        portions: r.portions,
+        preparationTime: r.preparation_time_minutes,
+        ingredients: r.ingredients.map(i => ({
+          name: i.ingredient_name,
+          quantity: i.quantity,
+          unit: i.unit,
+          costPerUnit: i.cost_per_unit
+        }))
+      })),
+      kpis: kpis,
+      avgCostPerPortion: kpis?.avgCostPerPortion || 0
+    };
+    
+    const result = await optimizeRecipeCosts(recipeData);
+    if (result) setAiInsights(result);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -101,14 +130,19 @@ const Recipes = () => {
           <h1 className="text-3xl font-bold">Gestión de Recetas</h1>
           <p className="text-muted-foreground">Administra las recetas y costeos de tu restaurante</p>
         </div>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Receta
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleAnalyzeRecipes} disabled={aiLoading || recipes.length === 0}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            {aiLoading ? 'Analizando...' : 'Optimizar Costos'}
+          </Button>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Receta
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Crear Nueva Receta</DialogTitle>
             </DialogHeader>
@@ -209,6 +243,7 @@ const Recipes = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -258,6 +293,15 @@ const Recipes = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        title="Optimización de Recetas IA"
+        description="Análisis de costos, sustitutos de ingredientes y maridajes"
+        insights={aiInsights}
+        loading={aiLoading}
+        onAnalyze={handleAnalyzeRecipes}
+      />
 
       {/* Filters */}
       <div className="flex gap-4">

@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStaffSchedule, StaffShift } from '@/hooks/useStaffSchedule';
 import { useTalentData } from '@/hooks/useTalentData';
+import { useAIAgent } from '@/hooks/useAIAgent';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { 
   Calendar, Clock, Users, DollarSign, Plus, 
   Play, Square, Loader2, ChevronLeft, ChevronRight,
-  AlertCircle, CheckCircle
+  AlertCircle, CheckCircle, Sparkles
 } from 'lucide-react';
 import { format, addWeeks, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,6 +33,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 const StaffSchedule: React.FC = () => {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
   
   const { 
     shifts, 
@@ -45,6 +48,7 @@ const StaffSchedule: React.FC = () => {
   } = useStaffSchedule(weekStart);
   
   const { staff } = useTalentData();
+  const { optimizeSchedule, forecastLaborCost, loading: aiLoading } = useAIAgent();
 
   const [shiftForm, setShiftForm] = useState({
     staff_member_id: '',
@@ -96,6 +100,35 @@ const StaffSchedule: React.FC = () => {
     );
   }
 
+  const handleAnalyzeSchedule = async () => {
+    const scheduleData = {
+      shifts: shifts.map(s => ({
+        staffName: s.staff_member_name,
+        date: s.shift_date,
+        start: s.start_time,
+        end: s.end_time,
+        status: s.status,
+        hoursWorked: s.hours_worked,
+        cost: s.cost
+      })),
+      kpis: kpis,
+      staffSummary: staffWithShifts.map(s => ({
+        name: s.name,
+        position: s.position,
+        totalHours: s.total_hours,
+        totalCost: s.total_cost,
+        shiftsCount: s.shifts.length
+      })),
+      weekRange: {
+        start: format(weekStart, 'yyyy-MM-dd'),
+        end: format(weekDays[6], 'yyyy-MM-dd')
+      }
+    };
+    
+    const result = await optimizeSchedule(scheduleData);
+    if (result) setAiInsights(result);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -104,13 +137,18 @@ const StaffSchedule: React.FC = () => {
           <h1 className="text-3xl font-bold">Gestión de Turnos</h1>
           <p className="text-muted-foreground">Programa y rastrea los turnos de tu equipo</p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Turno
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleAnalyzeSchedule} disabled={aiLoading || shifts.length === 0}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            {aiLoading ? 'Analizando...' : 'Optimizar con IA'}
+          </Button>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Turno
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Agregar Turno</DialogTitle>
@@ -180,6 +218,16 @@ const StaffSchedule: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        title="Optimización de Turnos IA"
+        description="Recomendaciones de horarios, predicción de horas extra y análisis de cobertura"
+        insights={aiInsights}
+        loading={aiLoading}
+        onAnalyze={handleAnalyzeSchedule}
+      />
       </div>
 
       {/* Week Navigation */}

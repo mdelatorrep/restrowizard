@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AIAgentRequest {
-  module: 'finances' | 'talent' | 'operations' | 'menu-inventory' | 'sustainability' | 'suppliers' | 'inventory' | 'delivery' | 'loyalty' | 'reservations' | 'staff-schedule' | 'recipes';
+  module: 'finances' | 'talent' | 'operations' | 'menu-inventory' | 'sustainability' | 'suppliers' | 'inventory' | 'delivery' | 'loyalty' | 'reservations' | 'staff-schedule' | 'recipes' | 'feedback' | 'pos' | 'kitchen';
   action: string;
   data: any;
 }
@@ -239,6 +239,172 @@ export const useAIAgent = () => {
     });
   };
 
+  // ====== RESERVATIONS MODULE ======
+  const predictNoShows = async (reservationData: any) => {
+    return await callAIAgent({
+      module: 'reservations',
+      action: 'no_show_prediction',
+      data: reservationData
+    });
+  };
+
+  const optimizeCapacity = async (reservationData: any) => {
+    return await callAIAgent({
+      module: 'reservations',
+      action: 'capacity_optimization',
+      data: reservationData
+    });
+  };
+
+  const generateConfirmationTemplates = async (reservationData: any) => {
+    return await callAIAgent({
+      module: 'reservations',
+      action: 'confirmation_templates',
+      data: reservationData
+    });
+  };
+
+  // ====== STAFF SCHEDULE MODULE ======
+  const optimizeSchedule = async (scheduleData: any) => {
+    return await callAIAgent({
+      module: 'staff-schedule',
+      action: 'schedule_optimization',
+      data: scheduleData
+    });
+  };
+
+  const predictOvertime = async (scheduleData: any) => {
+    return await callAIAgent({
+      module: 'staff-schedule',
+      action: 'overtime_prediction',
+      data: scheduleData
+    });
+  };
+
+  const analyzeCoverage = async (scheduleData: any) => {
+    return await callAIAgent({
+      module: 'staff-schedule',
+      action: 'coverage_analysis',
+      data: scheduleData
+    });
+  };
+
+  const forecastLaborCost = async (scheduleData: any) => {
+    return await callAIAgent({
+      module: 'staff-schedule',
+      action: 'labor_cost_forecast',
+      data: scheduleData
+    });
+  };
+
+  // ====== FEEDBACK MODULE ======
+  const analyzeFeedbackTrends = async (feedbackData: any) => {
+    return await callAIAgent({
+      module: 'feedback',
+      action: 'feedback_trends',
+      data: feedbackData
+    });
+  };
+
+  const getImprovementPriorities = async (feedbackData: any) => {
+    return await callAIAgent({
+      module: 'feedback',
+      action: 'improvement_priorities',
+      data: feedbackData
+    });
+  };
+
+  const generateResponseTemplates = async (feedbackData: any) => {
+    return await callAIAgent({
+      module: 'feedback',
+      action: 'response_templates',
+      data: feedbackData
+    });
+  };
+
+  // ====== RECIPES MODULE ======
+  const optimizeRecipeCosts = async (recipeData: any) => {
+    return await callAIAgent({
+      module: 'recipes',
+      action: 'recipe_optimization',
+      data: recipeData
+    });
+  };
+
+  const getIngredientSubstitutes = async (recipeData: any) => {
+    return await callAIAgent({
+      module: 'recipes',
+      action: 'ingredient_substitution',
+      data: recipeData
+    });
+  };
+
+  const getMenuPairings = async (recipeData: any) => {
+    return await callAIAgent({
+      module: 'recipes',
+      action: 'menu_pairing',
+      data: recipeData
+    });
+  };
+
+  const analyzeNutrition = async (recipeData: any) => {
+    return await callAIAgent({
+      module: 'recipes',
+      action: 'nutritional_analysis',
+      data: recipeData
+    });
+  };
+
+  // ====== POS/SALES MODULE ======
+  const analyzeSalesPatterns = async (salesData: any) => {
+    return await callAIAgent({
+      module: 'pos',
+      action: 'sales_pattern_analysis',
+      data: salesData
+    });
+  };
+
+  const analyzePeakHours = async (salesData: any) => {
+    return await callAIAgent({
+      module: 'pos',
+      action: 'peak_hour_analysis',
+      data: salesData
+    });
+  };
+
+  const analyzePayments = async (salesData: any) => {
+    return await callAIAgent({
+      module: 'pos',
+      action: 'payment_analysis',
+      data: salesData
+    });
+  };
+
+  // ====== KITCHEN/KDS MODULE ======
+  const predictPreparationTime = async (orderData: any) => {
+    return await callAIAgent({
+      module: 'kitchen',
+      action: 'preparation_time_prediction',
+      data: orderData
+    });
+  };
+
+  const analyzeKitchenEfficiency = async (kitchenData: any) => {
+    return await callAIAgent({
+      module: 'kitchen',
+      action: 'kitchen_efficiency',
+      data: kitchenData
+    });
+  };
+
+  const optimizeQueue = async (queueData: any) => {
+    return await callAIAgent({
+      module: 'kitchen',
+      action: 'queue_optimization',
+      data: queueData
+    });
+  };
+
   return {
     loading,
     callAIAgent,
@@ -273,6 +439,32 @@ export const useAIAgent = () => {
     preventChurn,
     getLoyaltyRecommendations,
     generatePersonalizedOffers,
-    optimizeLTV
+    optimizeLTV,
+    // Reservations
+    predictNoShows,
+    optimizeCapacity,
+    generateConfirmationTemplates,
+    // Staff Schedule
+    optimizeSchedule,
+    predictOvertime,
+    analyzeCoverage,
+    forecastLaborCost,
+    // Feedback
+    analyzeFeedbackTrends,
+    getImprovementPriorities,
+    generateResponseTemplates,
+    // Recipes
+    optimizeRecipeCosts,
+    getIngredientSubstitutes,
+    getMenuPairings,
+    analyzeNutrition,
+    // POS
+    analyzeSalesPatterns,
+    analyzePeakHours,
+    analyzePayments,
+    // Kitchen
+    predictPreparationTime,
+    analyzeKitchenEfficiency,
+    optimizeQueue
   };
 };
