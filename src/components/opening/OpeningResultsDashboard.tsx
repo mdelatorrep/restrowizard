@@ -98,39 +98,57 @@ export function OpeningResultsDashboard({
 
   // Calculate metrics from analyses
   const metrics = useMemo(() => {
-    let totalInvestment = 0;
+    // Use project's estimated budget as the primary investment source
+    let totalInvestment = project.estimated_budget || 0;
     let monthlyOperatingCost = 0;
     let estimatedRevenue = 0;
-    let breakEvenMonths = 0;
 
+    // If we have phase analyses with estimated_cost, add them up
     analyses.forEach(analysis => {
       if (analysis.estimated_cost) {
-        if (analysis.phase === 'financial_projection') {
-          // Financial projections might have different structure
-          totalInvestment += analysis.estimated_cost * 0.4;
-          monthlyOperatingCost += analysis.estimated_cost * 0.1;
-          estimatedRevenue += analysis.estimated_cost * 0.15;
-        } else {
-          totalInvestment += analysis.estimated_cost;
+        if (!project.estimated_budget) {
+          // Only use analysis costs if no project budget was set
+          if (analysis.phase === 'financial_projection') {
+            totalInvestment += analysis.estimated_cost * 0.4;
+            monthlyOperatingCost += analysis.estimated_cost * 0.1;
+            estimatedRevenue += analysis.estimated_cost * 0.15;
+          } else {
+            totalInvestment += analysis.estimated_cost;
+          }
         }
       }
     });
 
-    // Estimate break-even (simplified calculation)
-    if (estimatedRevenue > monthlyOperatingCost && monthlyOperatingCost > 0) {
-      breakEvenMonths = Math.ceil(totalInvestment / (estimatedRevenue - monthlyOperatingCost));
-    } else {
-      breakEvenMonths = 12; // Default estimate
+    // Calculate operating costs and revenue based on investment (industry benchmarks)
+    // For restaurants: monthly operating cost is typically 8-12% of total investment
+    // Monthly revenue target is typically 12-18% of investment to be profitable
+    if (monthlyOperatingCost === 0 && totalInvestment > 0) {
+      monthlyOperatingCost = totalInvestment * 0.10; // 10% of investment
     }
+    if (estimatedRevenue === 0 && totalInvestment > 0) {
+      estimatedRevenue = totalInvestment * 0.15; // 15% of investment as target
+    }
+
+    // Calculate break-even months
+    const monthlyProfit = estimatedRevenue - monthlyOperatingCost;
+    let breakEvenMonths = 12;
+    if (monthlyProfit > 0 && totalInvestment > 0) {
+      breakEvenMonths = Math.ceil(totalInvestment / monthlyProfit);
+    }
+
+    // Calculate annual ROE (Return on Equity)
+    // ROE = (Annual Net Profit / Total Investment) * 100
+    const annualProfit = monthlyProfit * 12;
+    const roi = totalInvestment > 0 ? (annualProfit / totalInvestment) * 100 : 0;
 
     return {
       totalInvestment,
-      monthlyOperatingCost: monthlyOperatingCost || totalInvestment * 0.08,
-      estimatedRevenue: estimatedRevenue || totalInvestment * 0.12,
-      breakEvenMonths: Math.min(breakEvenMonths, 24),
-      roi: estimatedRevenue > 0 ? ((estimatedRevenue - monthlyOperatingCost) / totalInvestment * 12 * 100) : 25,
+      monthlyOperatingCost,
+      estimatedRevenue,
+      breakEvenMonths: Math.min(Math.max(breakEvenMonths, 6), 36), // Between 6-36 months
+      roi: Math.max(roi, 0), // Ensure non-negative
     };
-  }, [analyses]);
+  }, [analyses, project.estimated_budget]);
 
   // Group checklist by phase
   const groupedChecklist = useMemo(() => {
