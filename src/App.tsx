@@ -52,6 +52,7 @@ import RestaurantKitchen from "./pages/restaurant/KitchenDisplay";
 import RestaurantPOSReports from "./pages/restaurant/POSReports";
 import RestaurantWebsite from "./pages/restaurant/Website";
 import RestaurantReservations from "./pages/restaurant/Reservations";
+import RestaurantStaffSchedule from "./pages/restaurant/StaffSchedule";
 import PublicRestaurant from "./pages/PublicRestaurant";
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
@@ -140,6 +141,7 @@ const App = () => (
                 <Route path="kitchen" element={<RestaurantKitchen />} />
                 <Route path="website" element={<RestaurantWebsite />} />
                 <Route path="reservations" element={<RestaurantReservations />} />
+                <Route path="staff-schedule" element={<RestaurantStaffSchedule />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 
