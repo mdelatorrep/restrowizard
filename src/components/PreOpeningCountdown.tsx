@@ -11,7 +11,17 @@ import {
   ClipboardCheck,
   AlertTriangle,
   Sparkles,
-  Loader2
+  Loader2,
+  ArrowRight,
+  Package,
+  Utensils,
+  Truck,
+  Globe,
+  Palette,
+  FileText,
+  Calendar,
+  DollarSign,
+  BookOpen
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,12 +43,111 @@ interface PreOpeningCountdownProps {
   projectId?: string;
 }
 
+// Mapping of task keywords/phases to module routes and labels
+interface ModuleAction {
+  path: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const getTaskModuleAction = (task: PreOpeningTask): ModuleAction | null => {
+  const titleLower = task.title.toLowerCase();
+  const descLower = (task.description || '').toLowerCase();
+  const phase = task.phase.toLowerCase();
+  
+  // Team/Staff related
+  if (titleLower.includes('personal') || titleLower.includes('empleado') || 
+      titleLower.includes('contratar') || titleLower.includes('capacita') ||
+      titleLower.includes('equipo') || phase === 'staffing' || phase === 'staffing_plan' ||
+      titleLower.includes('staff') || descLower.includes('personal')) {
+    return { path: '/r/talent', label: 'Gestionar Equipo', icon: Users };
+  }
+  
+  // Suppliers
+  if (titleLower.includes('proveedor') || titleLower.includes('supplier') ||
+      phase === 'suppliers' || phase === 'supplier_network' ||
+      titleLower.includes('insumo') || titleLower.includes('compra')) {
+    return { path: '/r/suppliers', label: 'Gestionar Proveedores', icon: Truck };
+  }
+  
+  // Inventory
+  if (titleLower.includes('inventario') || titleLower.includes('stock') ||
+      titleLower.includes('almacén') || descLower.includes('ingredientes')) {
+    return { path: '/r/inventory', label: 'Gestionar Inventario', icon: Package };
+  }
+  
+  // Menu/Recipes
+  if (titleLower.includes('menú') || titleLower.includes('menu') ||
+      titleLower.includes('receta') || titleLower.includes('plato') ||
+      titleLower.includes('carta') || descLower.includes('menú')) {
+    return { path: '/r/menus', label: 'Crear Menú', icon: Utensils };
+  }
+  
+  // Recipes specifically
+  if (titleLower.includes('receta') || titleLower.includes('recipe') ||
+      descLower.includes('receta')) {
+    return { path: '/r/recipes', label: 'Crear Recetas', icon: BookOpen };
+  }
+  
+  // Marketing/Social
+  if (titleLower.includes('marketing') || titleLower.includes('redes') ||
+      titleLower.includes('social') || titleLower.includes('publicidad') ||
+      titleLower.includes('prensa') || phase === 'marketing' || phase === 'marketing_launch' ||
+      titleLower.includes('promoción') || titleLower.includes('anuncio')) {
+    return { path: '/r/website', label: 'Configurar Marketing', icon: Globe };
+  }
+  
+  // Brand
+  if (titleLower.includes('marca') || titleLower.includes('logo') ||
+      titleLower.includes('identidad') || titleLower.includes('brand') ||
+      titleLower.includes('diseño')) {
+    return { path: '/r/brand', label: 'Configurar Marca', icon: Palette };
+  }
+  
+  // Legal/Permits
+  if (titleLower.includes('permiso') || titleLower.includes('licencia') ||
+      titleLower.includes('legal') || titleLower.includes('sanitari') ||
+      phase === 'legal' || phase === 'legal_requirements' ||
+      titleLower.includes('registro') || titleLower.includes('bombero')) {
+    // Legal tasks don't have a module, but we can link to the opening plan
+    return { path: '/r/new-business', label: 'Ver Requisitos', icon: FileText };
+  }
+  
+  // Equipment
+  if (titleLower.includes('equipo') || titleLower.includes('equipment') ||
+      phase === 'equipment' || phase === 'equipment_setup' ||
+      titleLower.includes('cocina') || titleLower.includes('maquinaria')) {
+    return { path: '/r/inventory', label: 'Registrar Equipos', icon: Package };
+  }
+  
+  // Financial
+  if (titleLower.includes('financi') || titleLower.includes('presupuesto') ||
+      titleLower.includes('costo') || titleLower.includes('precio') ||
+      phase === 'financial_projection') {
+    return { path: '/r/finances', label: 'Ver Finanzas', icon: DollarSign };
+  }
+  
+  // Reservations/Soft Opening
+  if (titleLower.includes('reserva') || titleLower.includes('soft opening') ||
+      titleLower.includes('invitacion')) {
+    return { path: '/r/reservations', label: 'Gestionar Reservas', icon: Calendar };
+  }
+  
+  // Default for operations category
+  if (task.category === 'operations') {
+    return { path: '/r/operations', label: 'Ver Operaciones', icon: ChefHat };
+  }
+  
+  return null;
+};
+
 const getCategoryIcon = (category: PreOpeningTask['category']) => {
   switch (category) {
     case 'operations': return ChefHat;
     case 'marketing': return Megaphone;
     case 'team': return Users;
     case 'legal': return ClipboardCheck;
+    default: return ClipboardCheck;
   }
 };
 
@@ -48,6 +157,7 @@ const getCategoryColor = (category: PreOpeningTask['category']) => {
     case 'marketing': return 'bg-info/10 text-info';
     case 'team': return 'bg-warning/10 text-warning';
     case 'legal': return 'bg-destructive/10 text-destructive';
+    default: return 'bg-muted text-muted-foreground';
   }
 };
 
@@ -350,36 +460,64 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, isOverdue }) => {
+  const navigate = useNavigate();
   const Icon = getCategoryIcon(task.category);
   const shouldBeDone = task.days_before_opening >= daysUntilOpening;
+  const moduleAction = getTaskModuleAction(task);
+  
+  const handleActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (moduleAction) {
+      navigate(moduleAction.path);
+    }
+  };
   
   return (
     <div 
-      className={`flex items-center gap-4 p-4 rounded-lg border transition-all cursor-pointer
+      className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border transition-all
         ${task.is_completed ? 'bg-muted/50 border-muted' : shouldBeDone ? 'bg-warning/5 border-warning/30' : 'bg-card border-border hover:border-primary/50'}
       `}
-      onClick={onToggle}
     >
-      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
-        ${task.is_completed ? 'bg-success border-success' : 'border-muted-foreground'}
-      `}>
-        {task.is_completed && <CheckCircle2 className="h-4 w-4 text-success-foreground" />}
+      <div className="flex items-center gap-4 flex-1">
+        <div 
+          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer flex-shrink-0
+            ${task.is_completed ? 'bg-success border-success' : 'border-muted-foreground hover:border-primary'}
+          `}
+          onClick={onToggle}
+        >
+          {task.is_completed && <CheckCircle2 className="h-4 w-4 text-success-foreground" />}
+        </div>
+        
+        <div className={`p-2 rounded-lg ${getCategoryColor(task.category)} flex-shrink-0`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+            {task.title}
+          </p>
+          <p className="text-sm text-muted-foreground truncate">{task.description}</p>
+        </div>
       </div>
       
-      <div className={`p-2 rounded-lg ${getCategoryColor(task.category)}`}>
-        <Icon className="h-4 w-4" />
+      <div className="flex items-center gap-2 sm:gap-3 ml-10 sm:ml-0">
+        <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'} className="flex-shrink-0">
+          {task.days_before_opening} días antes
+        </Badge>
+        
+        {moduleAction && !task.is_completed && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleActionClick}
+            className="gap-1 text-xs whitespace-nowrap"
+          >
+            <moduleAction.icon className="h-3 w-3" />
+            <span className="hidden md:inline">{moduleAction.label}</span>
+            <ArrowRight className="h-3 w-3" />
+          </Button>
+        )}
       </div>
-      
-      <div className="flex-1">
-        <p className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-          {task.title}
-        </p>
-        <p className="text-sm text-muted-foreground">{task.description}</p>
-      </div>
-      
-      <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'}>
-        {task.days_before_opening} días antes
-      </Badge>
     </div>
   );
 };
