@@ -1,206 +1,221 @@
 
-# Plan de Corrección: Onboarding de Apertura de Nuevo Restaurante
+
+# Plan: Migrar a GPT-5.2 con Web Search + Guardrails Anti-Alucinación
 
 ## Resumen del Problema
 
-El flujo de onboarding para "Bubble Lab" (proyecto `eb2535fa-fce2-4fe8-a3be-189cba9d551e`) presenta **tres problemas estructurales**:
+El sistema actual genera información **irreal e inventada** porque:
 
-1. **La pantalla de Fecha/Presupuesto se salta**: El wizard de 3 pasos muestra el paso 3 por 2 segundos y luego pasa al procesamiento IA sin permitir que el usuario ingrese los datos
-2. **El análisis no se muestra en el dashboard**: Los datos existen en la base de datos (7 análisis, 25+ checklist items) pero el frontend muestra 0 resultados
-3. **El checklist aparece vacío**: A pesar de que los items fueron creados correctamente
+1. Usa el modelo `gpt-5-nano` que es muy básico para tareas de análisis
+2. La herramienta `web_search_preview` está declarada pero no configurada correctamente
+3. No extrae ni utiliza las **sources** de la búsqueda web
+4. No hay instrucciones anti-alucinación en el prompt
+5. El formato de respuesta es extenso y difícil de leer
 
-## Hallazgos Clave del Análisis
+## Solución Propuesta
 
-### Datos en Base de Datos (CONFIRMADOS)
-- Proyecto `eb2535fa-fce2-4fe8-a3be-189cba9d551e` existe con `user_id = d6a9577a-5c0d-4ef8-9f97-743f8c57157d`
-- 7 análisis de fase en `opening_phase_analyses` con contenido válido
-- 25+ items de checklist en `opening_checklist_items`
-- **Campos vacíos**: `estimated_budget = null`, `target_opening_date = null`
-
-### Logs de Debug (CONFIRMADOS)
-- Todas las fases se analizaron exitosamente (debug_events registra `analyze_phase_success` para las 7 fases)
-- El procesamiento completó y se llamó `results_refetch_start` y `results_refetch_end`
-
-### Logs del Cliente (PROBLEMA IDENTIFICADO)
-```
-[useProjectAnalyses] Fetched analyses: 0
-```
-Se repite 6 veces consecutivas. **El query devuelve 0 resultados aunque existen en la DB.**
-
-### Peticiones de Red (ANOMALÍA)
-```
-GET /opening_phase_analyses?project_id=eq.eb2535fa-...
-Status: 200
-Response Body: []
-```
-**La API devuelve array vacío aunque los datos existen.**
-
-### Políticas RLS (VERIFICADAS)
-Las políticas son correctas:
-- SELECT en `opening_phase_analyses`: `EXISTS (SELECT 1 FROM business_opening_projects WHERE id = opening_phase_analyses.project_id AND user_id = auth.uid())`
-- El proyecto pertenece al usuario autenticado
-
-### Causa Raíz Identificada
-
-**El problema NO es de RLS ni de código frontend, sino de SINCRONIZACIÓN DE CACHE:**
-
-1. El usuario crea proyecto y navega inmediatamente a "processing"
-2. El hook `useProjectAnalyses` se inicializa con `projectId` antes de que React Query reciba el ID correcto
-3. React Query cachea un resultado vacío (`[]`) para el `projectId`
-4. Cuando los análisis se guardan, la invalidación no fuerza un refetch efectivo porque el componente ya tiene datos cacheados
-5. `staleTime: 0` no es suficiente si `refetchOnMount` solo se ejecuta una vez al montar
-
-**Problema adicional - Wizard Step 3:**
-El wizard tiene 3 pasos pero cuando `forceNewProject` o `resumeProjectId` existen, el código salta directamente a `step='processing'` sin mostrar el paso 3 (fecha/presupuesto).
+Migrar a **GPT-5.2** con la herramienta `web_search` configurada correctamente, agregar guardrails anti-alucinación, y reformatear las respuestas para un estilo ejecutivo.
 
 ---
 
-## Plan de Corrección
+## Cambios por Fase
 
-### Fase 1: Corregir el Salto del Paso 3 (Fecha/Presupuesto)
+### Fase 1: Actualizar Edge Function con GPT-5.2 + Web Search
 
-**Archivo**: `src/components/opening/OpeningProjectWizard.tsx`
+**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
 
-**Cambio**: El wizard ya tiene 3 pasos. El problema es que después de completar el paso 3, `handleSubmit` llama `onSubmit` que inmediatamente navega. Vamos a añadir validación visual para que el paso 3 sea más prominente.
+**Cambios principales:**
 
-**Archivo**: `src/components/onboarding/NewBusinessOnboarding.tsx`
-
-**Cambios**:
-1. Añadir estado `isWizardCompleted` que solo se activa cuando el wizard devuelve datos
-2. Eliminar lógica que salta a `processing` antes de que el wizard complete
-3. Asegurar que `forceNewProject=true` siempre muestre el wizard completo
-
-```text
-Antes:
-const [step, setStep] = useState<OnboardingStep>(() => {
-  if (forceNewProject) return 'create';
-  return initialProjectId ? 'processing' : 'create';
-});
-
-Después:
-const [step, setStep] = useState<OnboardingStep>('create');
-// Solo navegar a 'processing' cuando el wizard complete O cuando se resume
-```
-
-### Fase 2: Forzar Refetch Correcto de Datos
-
-**Archivo**: `src/hooks/useBusinessProject.ts`
-
-**Cambios**:
-1. Añadir `gcTime: 0` (garbage collection inmediata) para evitar cache stale
-2. Cambiar `refetchOnMount: true` a `refetchOnMount: 'always'` 
-3. Añadir log de debugging con el resultado real de Supabase
+1. Cambiar modelo de `gpt-5-nano` a `gpt-5.2`
+2. Cambiar herramienta de `web_search_preview` a `web_search` (versión completa)
+3. Agregar `user_location` con país, ciudad y región del proyecto
+4. Agregar `include: ["web_search_call.action.sources"]` para obtener fuentes consultadas
+5. Aumentar `reasoning.effort` de `low` a `medium` para mejor análisis
+6. Agregar `search_context_size: "high"` para obtener más contexto de búsqueda
 
 ```typescript
-export function useProjectAnalyses(projectId: string | null) {
-  return useQuery({
-    queryKey: ['project-analyses', projectId],
-    queryFn: async () => {
-      if (!projectId) return [];
-      
-      console.log('[useProjectAnalyses] Fetching for:', projectId);
-      const { data, error } = await supabase
-        .from('opening_phase_analyses')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[useProjectAnalyses] Error:', error);
-        throw error;
+// Configuración corregida
+const response = await fetch('https://api.openai.com/v1/responses', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'gpt-5.2',  // Modelo más avanzado
+    tools: [{
+      type: 'web_search',  // Herramienta completa (no preview)
+      search_context_size: 'high',
+      user_location: {
+        type: 'approximate',
+        country: getCountryCode(projectData.country),  // "MX", "CO", etc.
+        city: projectData.city,
+        region: projectData.neighborhood || projectData.city
       }
-      
-      console.log('[useProjectAnalyses] Result count:', data?.length, 'First item:', data?.[0]?.phase);
-      return data as PhaseAnalysis[];
-    },
-    enabled: !!projectId && projectId.length > 0,
-    staleTime: 0,
-    gcTime: 0, // No cachear resultados vacíos
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-  });
-}
+    }],
+    reasoning: { effort: 'medium' },  // Mejor razonamiento
+    include: ['web_search_call.action.sources'],  // Obtener fuentes
+    input: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+  }),
+});
 ```
 
-### Fase 3: Invalidación Agresiva Post-Análisis
+### Fase 2: Agregar Guardrails Anti-Alucinación
 
-**Archivo**: `src/hooks/useBusinessOpening.ts`
+**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
 
-**Cambios** en `analyzePhase`:
-1. Después de guardar el análisis, invalidar Y remover el cache anterior:
+Agregar instrucciones explícitas al sistema para evitar información inventada:
 
 ```typescript
-// Después de guardar analysis en DB:
-queryClient.removeQueries({ queryKey: ['project-analyses', project.id] });
-await queryClient.invalidateQueries({ queryKey: ['project-analyses', project.id] });
-await queryClient.refetchQueries({ queryKey: ['project-analyses', project.id] });
+const ANTI_HALLUCINATION_RULES = `
+═══════════════════════════════════════════════════════════════
+⚠️ REGLAS DE HONESTIDAD - OBLIGATORIAS
+═══════════════════════════════════════════════════════════════
+1. NUNCA inventes nombres de negocios, proveedores o direcciones.
+   - Si no encuentras información específica, usa categorías genéricas:
+     ✅ "Centrales de abasto de la zona"
+     ✅ "Distribuidores mayoristas locales"
+     ❌ "Distribuidora García S.A. en Calle Reforma 123"
+
+2. Para precios y costos:
+   - Si tienes datos reales: usa el valor específico
+   - Si no: usa rangos amplios: "Entre $X y $Y aproximadamente"
+   - NUNCA inventes un número exacto sin fuente
+
+3. Cuando no tengas información específica, indica:
+   - "Consultar directamente con [dependencia/proveedor]"
+   - "Verificar en sitio oficial"
+   
+4. Prioriza CALIDAD sobre CANTIDAD:
+   - Mejor 3 recomendaciones sólidas que 10 inventadas
+═══════════════════════════════════════════════════════════════
+`;
 ```
 
-### Fase 4: Pantalla de Edición de Fecha/Presupuesto
+### Fase 3: Reformatear Prompts para Estilo Ejecutivo
 
-**Archivo**: `src/components/opening/OpeningResultsDashboard.tsx`
+**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
 
-**Cambios**:
-1. Añadir botón "Editar detalles" junto al header que abre un modal
-2. El modal permite editar: `target_opening_date`, `estimated_budget`, `description`
-3. Al guardar, mostrar botón "Regenerar Plan" (no auto-regenerar)
-
-**Nuevo componente**: `src/components/opening/EditProjectDetailsDialog.tsx`
+Cambiar todos los prompts de fase para solicitar formato ejecutivo:
 
 ```typescript
-interface Props {
-  project: BusinessProject;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (data: Partial<BusinessProject>) => Promise<void>;
-}
+const EXECUTIVE_FORMAT_INSTRUCTION = `
+FORMATO DE RESPUESTA (OBLIGATORIO):
+- Máximo 1 página de contenido
+- Usar bullets cortos (max 15 palabras cada uno)
+- Incluir solo números clave y métricas importantes
+- Terminar cada sección con "Próximo paso:" concreto
+- NO incluir explicaciones extensas ni párrafos largos
+- Usar tablas solo para comparativas numéricas (max 5 filas)
+
+ESTRUCTURA REQUERIDA:
+## Resumen Ejecutivo (3-4 bullets máximo)
+## Puntos Clave (5-7 bullets con datos concretos)
+## Costos Estimados (tabla si aplica)
+## Próximos Pasos (2-3 acciones inmediatas)
+`;
 ```
 
-### Fase 5: Botón "Regenerar Plan" en Dashboard
+### Fase 4: Extraer Sources de la Respuesta
 
-**Archivo**: `src/components/opening/OpeningResultsDashboard.tsx`
+**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
 
-**Cambios**:
-1. Añadir prop `onRegenerateAll?: () => Promise<void>`
-2. Mostrar badge "Regenerar plan" cuando fecha/presupuesto fueron editados
-3. Al hacer clic, re-ejecutar todas las fases con los nuevos datos
-
-**Archivo**: `src/components/onboarding/NewBusinessOnboarding.tsx`
-
-**Cambios**:
-1. Implementar `handleRegenerateAll` que llama `analyzePhase` para cada fase secuencialmente
-2. Después regenerar checklist
-
-### Fase 6: Validación de Datos No Vacíos en Dashboard
-
-**Archivo**: `src/components/opening/OpeningResultsDashboard.tsx`
-
-**Cambios** en `getAnalysisContent`:
-1. Añadir log detallado del objeto completo
-2. Manejar caso donde `analysis_data` es objeto pero `.text` está anidado diferente
+Mejorar la extracción de sources de la respuesta de OpenAI:
 
 ```typescript
-const getAnalysisContent = (analysis: PhaseAnalysis): string => {
-  const data = analysis?.analysis_data;
-  console.debug('[getAnalysisContent] Raw data:', JSON.stringify(data).slice(0, 200));
-  
-  if (!data) return 'Sin contenido.';
-  if (typeof data === 'string') return data;
-  
-  // Orden de prioridad de campos
-  const textFields = ['text', 'analysis', 'content', 'markdown'];
-  for (const field of textFields) {
-    if (data[field] && typeof data[field] === 'string' && data[field].length > 10) {
-      return data[field];
+// Extraer sources de web_search_call
+let sources: string[] = [];
+
+if (data.output) {
+  for (const item of data.output) {
+    // Extraer sources del web_search_call
+    if (item.type === 'web_search_call' && item.action?.sources) {
+      sources = item.action.sources
+        .filter((s: any) => s.url && !s.url.includes('oai-'))  // Excluir feeds internos
+        .map((s: any) => s.url);
+    }
+    
+    // También extraer de annotations (citas inline)
+    if (item.type === 'message' && item.content) {
+      for (const content of item.content) {
+        if (content.annotations) {
+          const annotationUrls = content.annotations
+            .filter((a: any) => a.type === 'url_citation')
+            .map((a: any) => a.url);
+          sources = [...sources, ...annotationUrls];
+        }
+      }
     }
   }
-  
-  // Buscar en structured
-  if (data.structured?.text) return data.structured.text;
-  
-  // Stringify como fallback
-  return JSON.stringify(data, null, 2);
+}
+
+// Eliminar duplicados
+sources = [...new Set(sources)];
+```
+
+### Fase 5: Agregar Helper para Código de País
+
+**Archivo:** `supabase/functions/business-opening-assistant/index.ts`
+
+```typescript
+// Mapeo de países a códigos ISO para user_location
+const COUNTRY_CODES: Record<string, string> = {
+  'México': 'MX',
+  'Mexico': 'MX',
+  'Colombia': 'CO',
+  'Argentina': 'AR',
+  'Chile': 'CL',
+  'Perú': 'PE',
+  'Peru': 'PE',
+  'Ecuador': 'EC',
+  'España': 'ES',
+  'Spain': 'ES',
+  'Estados Unidos': 'US',
+  'United States': 'US',
 };
+
+const getCountryCode = (country: string): string => {
+  return COUNTRY_CODES[country] || 'MX';  // Default México
+};
+```
+
+### Fase 6: Mejorar Prompts de Cada Fase (Ejecutivo + Anti-Alucinación)
+
+Ejemplo para `legal_requirements`:
+
+```typescript
+legal_requirements: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
+${getLocationContext(data)}
+
+🎯 TAREA: Requisitos legales para ${data.businessType} en ${data.city}, ${data.country}.
+
+## Resumen Ejecutivo
+- 3-4 bullets con los requisitos más importantes
+
+## Permisos Principales
+Lista los 5-7 permisos OBLIGATORIOS con:
+- Nombre del permiso
+- Costo aproximado (rango si no tienes dato exacto)
+- Tiempo estimado de trámite
+- Dependencia responsable
+
+## Costos Estimados
+| Concepto | Rango de Costo |
+|----------|----------------|
+| ... | $X - $Y |
+
+## Próximos Pasos
+1. Acción inmediata específica
+2. Segunda acción
+3. Tercera acción
+
+IMPORTANTE: Si no encuentras el costo o tiempo exacto para un trámite en ${data.city}, indica "Verificar en oficina local" en lugar de inventar un número.
+`
 ```
 
 ---
@@ -209,106 +224,76 @@ const getAnalysisContent = (analysis: PhaseAnalysis): string => {
 
 | Archivo | Tipo de Cambio |
 |---------|----------------|
-| `src/hooks/useBusinessProject.ts` | Configuración de cache agresiva |
-| `src/hooks/useBusinessOpening.ts` | Invalidación forzada post-mutación |
-| `src/components/onboarding/NewBusinessOnboarding.tsx` | Lógica de navegación de pasos |
-| `src/components/opening/OpeningResultsDashboard.tsx` | Extracción de contenido + botón regenerar |
-| `src/components/opening/EditProjectDetailsDialog.tsx` | **Nuevo**: Modal de edición |
+| `supabase/functions/business-opening-assistant/index.ts` | Reescritura mayor: modelo, herramienta web_search, guardrails, prompts ejecutivos |
 
 ---
 
 ## Detalles Tecnicos
 
-### Configuracion de React Query
+### Comparacion de Configuracion Actual vs Nueva
 
-El problema principal es que React Query cachea resultados vacios. La solucion es:
+| Aspecto | Actual | Nuevo |
+|---------|--------|-------|
+| Modelo | `gpt-5-nano` | `gpt-5.2` |
+| Herramienta | `web_search_preview` | `web_search` (completa) |
+| Razonamiento | `effort: "low"` | `effort: "medium"` |
+| User location | No configurado | Ciudad/País del proyecto |
+| Sources | No extraídas | Extraídas de annotations |
+| Guardrails | No existen | Reglas anti-alucinación |
+| Formato | Extenso/markdown largo | Ejecutivo/bullets |
 
-```typescript
-{
-  staleTime: 0,        // Datos siempre considerados obsoletos
-  gcTime: 0,           // No mantener cache de queries inactivas
-  refetchOnMount: 'always',  // Siempre refetch al montar
-  refetchOnWindowFocus: true,
-}
-```
-
-### Flujo Corregido de Onboarding
+### Flujo de Datos Corregido
 
 ```text
-Usuario entra a /r/onboarding
-       |
+Usuario inicia análisis de fase
+       │
        v
-   forceNew=true? -----> Mostrar Wizard (3 pasos)
-       |                         |
-       No                        v
-       |                 Usuario completa wizard
-       v                         |
-   projectId en URL?             v
-       |                 createProject.mutateAsync()
-       v                         |
-   Proyecto existente            v
-   < 100% progreso?      setProjectId(nuevo)
-       |                         |
-       v                         v
-   Resume processing      Iniciar processing
-       |                         |
-       +----------+--------------+
-                  |
-                  v
-         AutomaticProcessingScreen
-                  |
-                  v
-         analyzePhase (x7)
-                  |
-                  v
-         generateChecklist
-                  |
-                  v
-         setStep('results')
-                  |
-                  v
-         refreshResultsData()  <-- Aqui debe forzar refetch real
-                  |
-                  v
-         OpeningResultsDashboard (muestra datos)
+Edge Function recibe request
+       │
+       v
+Construye prompt con:
+├── ANTI_HALLUCINATION_RULES
+├── EXECUTIVE_FORMAT_INSTRUCTION
+├── getLocationContext(data)
+└── Prompt específico de la fase
+       │
+       v
+Llama a OpenAI v1/responses
+├── model: "gpt-5.2"
+├── tools: [{ type: "web_search", user_location, search_context_size }]
+├── reasoning: { effort: "medium" }
+└── include: ["web_search_call.action.sources"]
+       │
+       v
+Extrae respuesta y sources
+├── output_text del mensaje
+└── sources de web_search_call.action.sources + annotations
+       │
+       v
+Guarda en DB con sources[]
+       │
+       v
+Frontend muestra análisis ejecutivo
+(sources guardadas pero ocultas en UI según preferencia)
 ```
 
-### Patron de Invalidacion Post-Mutacion
+### Costo Estimado por Analisis
 
-```typescript
-// En useBusinessOpening.ts - analyzePhase()
+| Modelo | Input (1M tokens) | Output (1M tokens) | Costo por fase (~2K tokens) |
+|--------|-------------------|--------------------|-----------------------------|
+| gpt-5-nano | ~$0.10 | ~$0.40 | ~$0.001 |
+| gpt-5.2 | $1.75 | $14.00 | ~$0.03 |
 
-// 1. Guardar en DB
-const { data: analysis } = await supabase
-  .from('opening_phase_analyses')
-  .upsert({...})
-  .select()
-  .single();
-
-// 2. Limpiar cache anterior (evita mezclar con resultados vacios)
-queryClient.removeQueries({ 
-  queryKey: ['project-analyses', project.id],
-  exact: true 
-});
-
-// 3. Invalidar para marcar como stale
-await queryClient.invalidateQueries({ 
-  queryKey: ['project-analyses', project.id] 
-});
-
-// 4. Refetch activo
-await queryClient.refetchQueries({ 
-  queryKey: ['project-analyses', project.id],
-  type: 'active'
-});
-```
+El costo aumenta ~30x pero la calidad y confiabilidad mejoran significativamente.
 
 ---
 
 ## Resultado Esperado
 
-1. El wizard muestra los 3 pasos completos (incluyendo fecha/presupuesto opcionales)
-2. El usuario puede omitir fecha/presupuesto (quedan como "Por definir")
-3. Despues del procesamiento IA, el dashboard muestra todos los analisis
-4. El checklist se muestra correctamente con las 25+ tareas
-5. Existe boton para editar fecha/presupuesto y regenerar plan manualmente
+1. Los análisis contendrán **información real** basada en búsqueda web actual
+2. El modelo **no inventará** nombres, direcciones ni precios específicos sin fuente
+3. El formato será **ejecutivo**: 1 página, bullets, números clave
+4. Cuando no haya datos específicos, se indicará claramente en lugar de inventar
+5. Las **sources** se guardarán en DB (disponibles para futuras referencias aunque no se muestren)
+6. La búsqueda se optimizará para la **ciudad y país específicos** del proyecto
+
