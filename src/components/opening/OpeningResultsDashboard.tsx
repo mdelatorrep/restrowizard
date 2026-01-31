@@ -12,7 +12,7 @@ import {
   CheckCircle2, ListChecks, FileText, ChevronRight,
   Scale, MapPin, ChefHat, Truck, Users, Megaphone,
   AlertTriangle, Sparkles, ArrowRight, RefreshCcw, Loader2,
-  Pencil, RotateCw
+  Pencil, RotateCw, Target, Zap, Award, BarChart3
 } from 'lucide-react';
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { PHASES, PhaseId } from '@/hooks/useBusinessOpening';
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { EditProjectDetailsDialog } from './EditProjectDetailsDialog';
+import { formatCurrencyByCountry, getCurrencySymbol, getCurrencyCode } from '@/data/constants';
 
 interface OpeningResultsDashboardProps {
   project: BusinessProject;
@@ -46,6 +47,16 @@ const PHASE_ICONS: Record<PhaseId, React.ElementType> = {
   staffing_plan: Users,
   marketing_launch: Megaphone,
   financial_projection: TrendingUp,
+};
+
+const PHASE_COLORS: Record<PhaseId, { bg: string; text: string; border: string }> = {
+  legal_requirements: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/30' },
+  location_analysis: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
+  equipment_setup: { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/30' },
+  supplier_network: { bg: 'bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-500/30' },
+  staffing_plan: { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
+  marketing_launch: { bg: 'bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-500/30' },
+  financial_projection: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
 };
 
 const PHASE_DESCRIPTIONS: Record<PhaseId, string> = {
@@ -155,14 +166,13 @@ export function OpeningResultsDashboard({
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }, [project.target_opening_date]);
 
+  // Use dynamic currency based on project country
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    return formatCurrencyByCountry(value, project.country);
   };
+
+  const currencySymbol = getCurrencySymbol(project.country);
+  const currencyCode = getCurrencyCode(project.country);
 
   const hasChecklist = checklist.length > 0;
   const investmentLabel = metrics.totalInvestment > 0 ? formatCurrency(metrics.totalInvestment) : 'Por definir';
@@ -325,60 +335,74 @@ export function OpeningResultsDashboard({
         )}
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics - Enhanced with WOW effect */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardContent className="pt-6">
+        <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-colors" />
+          <CardContent className="pt-6 relative">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <DollarSign className="h-6 w-6 text-primary" />
+              <div className="p-3 bg-primary/20 rounded-xl shadow-inner">
+                <DollarSign className="h-7 w-7 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Inversión Estimada</p>
-                <p className="text-2xl font-bold">{investmentLabel}</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Inversión Total</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  {investmentLabel}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{currencyCode}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="relative overflow-hidden border-green-500/30 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-green-500/10 blur-2xl group-hover:bg-green-500/20 transition-colors" />
+          <CardContent className="pt-6 relative">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="p-3 bg-green-500/20 rounded-xl shadow-inner">
+                <TrendingUp className="h-7 w-7 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">ROI Anual Estimado</p>
-                <p className="text-2xl font-bold">{roiLabel}</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">ROI Anual</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{roiLabel}</p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-0.5 flex items-center gap-1">
+                  <Zap className="h-3 w-3" /> Retorno proyectado
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="relative overflow-hidden border-blue-500/30 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/10 blur-2xl group-hover:bg-blue-500/20 transition-colors" />
+          <CardContent className="pt-6 relative">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-blue-500/20 rounded-xl shadow-inner">
+                <Target className="h-7 w-7 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Punto de Equilibrio</p>
-                <p className="text-2xl font-bold">{metrics.breakEvenMonths} meses</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Break-Even</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{metrics.breakEvenMonths} meses</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-0.5">Punto de equilibrio</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="relative overflow-hidden border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-500/10 blur-2xl group-hover:bg-orange-500/20 transition-colors" />
+          <CardContent className="pt-6 relative">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-3 bg-orange-500/20 rounded-xl shadow-inner">
+                <Calendar className="h-7 w-7 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Días hasta Apertura</p>
-                <p className="text-2xl font-bold">
-                  {daysUntilOpening !== null ? `${daysUntilOpening} días` : 'Por definir'}
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Countdown</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {daysUntilOpening !== null ? `${daysUntilOpening}` : '—'}
+                </p>
+                <p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-0.5">
+                  {daysUntilOpening !== null ? 'días hasta apertura' : 'Fecha por definir'}
                 </p>
               </div>
             </div>
@@ -464,49 +488,86 @@ export function OpeningResultsDashboard({
             </CardContent>
           </Card>
 
-          {/* Phase Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* Phase Summary Cards - Enhanced Strategic Layout */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {PHASES.map(phase => {
               const analysis = analyses.find(a => a.phase === phase.id);
               const Icon = PHASE_ICONS[phase.id];
+              const colors = PHASE_COLORS[phase.id];
               
               if (!analysis) return null;
 
               const recommendations = getRecommendations(analysis);
+              const timeEstimate = analysis.estimated_time_days;
+              const costEstimate = analysis.estimated_cost;
 
               return (
-                <Card key={phase.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Icon className="h-5 w-5 text-primary" />
+                <Card 
+                  key={phase.id} 
+                  className={cn(
+                    "relative overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer",
+                    colors.border
+                  )}
+                  onClick={() => setActiveTab('details')}
+                >
+                  {/* Gradient overlay */}
+                  <div className={cn("absolute inset-0 opacity-50", colors.bg)} />
+                  
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("p-2.5 rounded-xl", colors.bg)}>
+                          <Icon className={cn("h-5 w-5", colors.text)} />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold">{phase.name}</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">{PHASE_DESCRIPTIONS[phase.id]}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-base">{phase.name}</CardTitle>
-                        {analysis.estimated_cost && (
-                          <Badge variant="secondary" className="mt-1">
-                            {formatCurrency(analysis.estimated_cost)}
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <Award className="h-4 w-4 text-amber-500" />
                       </div>
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  
+                  <CardContent className="relative pt-0">
+                    {/* Key metrics row */}
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                      {costEstimate && (
+                        <Badge variant="outline" className={cn("text-xs", colors.text, colors.border)}>
+                          {currencySymbol}{costEstimate.toLocaleString()}
+                        </Badge>
+                      )}
+                      {timeEstimate && (
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {timeEstimate} días
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Strategic insights */}
                     {recommendations.length > 0 ? (
-                      <ul className="space-y-1.5">
-                        {recommendations.slice(0, 3).map((rec, i) => (
-                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <ChevronRight className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                            <span>{rec}</span>
-                          </li>
+                      <div className="space-y-1.5">
+                        {recommendations.slice(0, 2).map((rec, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs">
+                            <Sparkles className={cn("h-3 w-3 flex-shrink-0 mt-0.5", colors.text)} />
+                            <span className="text-muted-foreground line-clamp-2">{rec}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Análisis completado. Ver detalles en la pestaña "Análisis Detallado".
+                      <p className="text-xs text-muted-foreground">
+                        Haz clic para ver el análisis completo
                       </p>
                     )}
+                    
+                    {/* Hover indicator */}
+                    <div className="flex items-center justify-end mt-3 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span>Ver detalles</span>
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </div>
                   </CardContent>
                 </Card>
               );

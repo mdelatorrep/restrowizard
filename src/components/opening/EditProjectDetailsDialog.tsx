@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { BusinessProject } from '@/hooks/useBusinessProject';
+import { getCurrencyCode, getCurrencySymbol } from '@/data/constants';
 
 interface EditProjectDetailsDialogProps {
   project: BusinessProject;
@@ -73,14 +74,20 @@ export function EditProjectDetailsDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="budget">Presupuesto Estimado (MXN)</Label>
-            <Input
-              id="budget"
-              type="number"
-              placeholder="Ej: 500000"
-              value={estimatedBudget}
-              onChange={(e) => setEstimatedBudget(e.target.value)}
-            />
+            <Label htmlFor="budget">Presupuesto Estimado ({getCurrencyCode(project.country)})</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                {getCurrencySymbol(project.country)}
+              </span>
+              <Input
+                id="budget"
+                type="number"
+                placeholder="Ej: 500000"
+                className="pl-8"
+                value={estimatedBudget}
+                onChange={(e) => setEstimatedBudget(e.target.value)}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Descripción del Concepto</Label>

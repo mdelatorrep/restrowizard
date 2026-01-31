@@ -282,22 +282,35 @@ export function OpeningProjectWizard({ onSubmit, isSubmitting }: OpeningProjectW
                 <FormField
                   control={form.control}
                   name="estimatedBudget"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Presupuesto Estimado (MXN)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Ej: 500000" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Tu inversión estimada total (opcional pero recomendado)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedCountry = form.watch('country');
+                    const countryInfo = COUNTRIES.find(c => c.value === selectedCountry);
+                    const currencyCode = countryInfo?.currency || 'MXN';
+                    const currencySymbol = countryInfo?.currencySymbol || '$';
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Presupuesto Estimado ({currencyCode})</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                              {currencySymbol}
+                            </span>
+                            <Input 
+                              type="number" 
+                              placeholder="Ej: 500000" 
+                              className="pl-8"
+                              {...field} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Tu inversión estimada total en {currencyCode} (opcional pero recomendado)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField
