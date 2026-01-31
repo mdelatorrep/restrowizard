@@ -102,21 +102,52 @@ export function LinkifyText({ children, className, iconOnly = true }: LinkifyTex
 /**
  * Function to preprocess markdown content and convert plain URLs to markdown links
  * This ensures ReactMarkdown renders them as clickable links
+ * Also strips UTM parameters and cleans up surrounding brackets/parentheses
  */
 export function linkifyMarkdown(content: string): string {
   if (!content) return content;
   
-  // Match URLs that are NOT already in markdown link format [text](url) or <url>
-  // Also skip URLs that are already part of a markdown link
-  return content.replace(
-    /(?<!\]\(|<|@)(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)(?!\))/gi,
+  // Helper to strip UTM parameters from URLs
+  const stripUtm = (url: string): string => {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+      const params = urlObj.searchParams;
+      // Remove UTM and common tracking parameters
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ref'].forEach(p => params.delete(p));
+      // Reconstruct URL without tracking params
+      const cleanUrl = urlObj.origin + urlObj.pathname + (params.toString() ? '?' + params.toString() : '');
+      return cleanUrl;
+    } catch {
+      return url;
+    }
+  };
+  
+  // First, handle existing markdown links [text](url) - just keep the link icon format
+  let processed = content.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    (_, text, url) => {
+      const cleanUrl = stripUtm(url);
+      return `[🔗](${cleanUrl})`;
+    }
+  );
+  
+  // Remove leftover parentheses around URLs: (url) -> url
+  processed = processed.replace(
+    /\((?:https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+)\)/gi,
+    (match) => match.slice(1, -1)
+  );
+  
+  // Match URLs that are NOT already in markdown link format
+  processed = processed.replace(
+    /(?<!\]\(|<|@|\[)(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)(?!\))/gi,
     (raw) => {
       const cleaned = raw.replace(TRAILING_PUNCTUATION_REGEX, '');
       const href = cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
+      const cleanHref = stripUtm(href);
       const trailing = raw.slice(cleaned.length);
-      // Keep full text for domains; truncate only huge URLs
-      const displayText = cleaned.length > 60 ? `${cleaned.substring(0, 57)}...` : cleaned;
-      return `[${displayText}](${href})${trailing}`;
+      return `[🔗](${cleanHref})${trailing}`;
     }
   );
+  
+  return processed;
 }
