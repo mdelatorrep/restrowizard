@@ -41,185 +41,114 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       currentPath 
     });
 
-    // Best-effort: if user came with a client invitation token, claim it now.
-    // This prevents "invite → login/signup → nothing happens" loops.
-    const claimPendingClientInvite = async () => {
+    // Skip if already in protected routes
+    const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
+    const isInProtectedRoute = protectedPrefixes.some(prefix => currentPath.startsWith(prefix));
+    
+    if (!session?.user || isInProtectedRoute) {
+      console.log('❌ Navigation skipped:', { currentPath, hasUser: !!session?.user, isInProtectedRoute });
+      return;
+    }
+
+    console.log('📍 Checking user type for navigation...');
+
+    try {
+      // Best-effort: claim pending client invite
       const token = localStorage.getItem('clientInviteToken');
-      if (!token) return;
-
-      try {
-        const { error } = await supabase.rpc('claim_consultant_client', {
-          p_invitation_token: token,
-        });
-
-        if (!error) {
-          localStorage.removeItem('clientInviteToken');
-          console.log('🔗 Client invite claimed successfully');
-        } else {
-          console.warn('⚠️ Could not claim client invite:', error);
+      if (token) {
+        try {
+          const { error } = await supabase.rpc('claim_consultant_client', { p_invitation_token: token });
+          if (!error) {
+            localStorage.removeItem('clientInviteToken');
+            console.log('🔗 Client invite claimed successfully');
+          }
+        } catch (e) {
+          console.warn('⚠️ Could not claim client invite:', e);
         }
-      } catch (e) {
-        console.warn('⚠️ Could not claim client invite (exception):', e);
       }
-    };
 
-    // Ensure a public.profiles row exists for this user.
-    // Some historical signups are missing it, which breaks user_type + onboarding routing.
-    const ensureProfileRow = async () => {
-      const meta = (session.user.user_metadata ?? {}) as Record<string, any>;
+      // Small delay to ensure profile trigger has completed
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      const { data: existing, error: existingError } = await supabase
+      // Get user profile
+      console.log('🔍 Fetching profile...');
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('user_type')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (existingError) throw existingError;
+      console.log('📋 Profile result:', { profile, profileError });
 
-       if (!existing) {
-         const { error: upsertError } = await supabase
-           .from('profiles')
-           .upsert(
-             {
-               user_id: session.user.id,
-               full_name: typeof meta.full_name === 'string' ? meta.full_name : null,
-               restaurant_name:
-                 typeof meta.restaurant_name === 'string' ? meta.restaurant_name : null,
-               user_type:
-                 meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner'
-                   ? meta.user_type
-                   : null,
-             },
-             { onConflict: 'user_id' }
-           );
-
-         if (upsertError) throw upsertError;
-         return;
-       }
-
-      // If the row exists but user_type is missing, hydrate from metadata when possible.
-      if (
-        !existing.user_type &&
-        (meta.user_type === 'consultant' || meta.user_type === 'restaurant_owner')
-      ) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ user_type: meta.user_type })
-          .eq('user_id', session.user.id);
-
-        if (updateError) throw updateError;
+      if (profileError) {
+        console.error('❌ Profile fetch error:', profileError);
+        throw profileError;
       }
-    };
-    
-    // Skip if already in protected routes
-    const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
-    const isInProtectedRoute = protectedPrefixes.some(prefix => currentPath.startsWith(prefix));
-    
-    if (session?.user && !isInProtectedRoute) {
-      console.log('📍 Checking user type for navigation...');
 
-      // Attempt invite claim without blocking the rest of navigation
-      await claimPendingClientInvite();
-      
-       // Small delay to ensure profile trigger has completed
-       await new Promise(resolve => setTimeout(resolve, 500));
-       
-       try {
-         // Make sure profiles row exists (some accounts were created without it)
-         await ensureProfileRow();
+      if (!profile?.user_type) {
+        console.log('🎯 No user type, navigating to /onboarding');
+        navigate('/onboarding', { replace: true });
+        return;
+      }
 
-         // Get user profile to determine type (retry logic for new users)
-         let profile = null;
-         let retries = 3;
-         
-         while (retries > 0 && !profile) {
-           const { data, error } = await supabase
-             .from('profiles')
-             .select('user_type')
-             .eq('user_id', session.user.id)
-             .maybeSingle();
-           
-           if (error) throw error;
+      const userType = profile.user_type;
+      console.log('👤 User type:', userType);
 
-           if (data) {
-             profile = data;
-             break;
-           }
+      if (userType === 'consultant') {
+        console.log('🔍 Fetching consultant profile...');
+        const { data: consultantProfile, error: cpError } = await supabase
+          .from('consultant_profiles')
+          .select('id, company_name')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
 
-           // No row yet; wait briefly and retry
-           if (retries > 1) {
-             console.log('⏳ Profile not found yet, retrying...', retries - 1);
-             await new Promise(resolve => setTimeout(resolve, 300));
-           }
+        console.log('📋 Consultant profile result:', { consultantProfile, cpError });
 
-           retries--;
-         }
+        if (!consultantProfile || !consultantProfile.company_name) {
+          console.log('🎯 Navigating to /c/onboarding');
+          navigate('/c/onboarding', { replace: true });
+        } else {
+          console.log('🎯 Navigating to /c/dashboard');
+          navigate('/c/dashboard', { replace: true });
+        }
+      } else {
+        // Restaurant owner
+        console.log('🔍 Fetching restaurant business...');
+        const { data: business, error: bizError } = await supabase
+          .from('restaurant_businesses')
+          .select('id')
+          .eq('owner_id', session.user.id)
+          .maybeSingle();
 
-        console.log('🔍 User profile:', profile);
+        console.log('📋 Business result:', { business, bizError });
 
-        if (!profile?.user_type) {
-          // No profile yet, go to type selection onboarding
-          console.log('🎯 No user type, navigating to /onboarding');
-          navigate('/onboarding', { replace: true });
+        if (!business) {
+          console.log('🎯 Navigating to /r/onboarding');
+          navigate('/r/onboarding', { replace: true });
           return;
         }
 
-        const userType = profile.user_type;
+        // Check for maturity diagnosis
+        console.log('🔍 Fetching diagnosis...');
+        const { data: diagnosis, error: diagError } = await supabase
+          .from('maturity_diagnoses')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
 
-        // Check if user has completed type-specific onboarding
-        if (userType === 'consultant') {
-          const { data: consultantProfile } = await supabase
-            .from('consultant_profiles')
-            .select('id, company_name')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+        console.log('📋 Diagnosis result:', { diagnosis, diagError });
 
-          if (!consultantProfile || !consultantProfile.company_name) {
-            console.log('🎯 Consultant without complete profile, navigating to /c/onboarding');
-            navigate('/c/onboarding', { replace: true });
-          } else {
-            console.log('🎯 Consultant with profile, navigating to /c/dashboard');
-            navigate('/c/dashboard', { replace: true });
-          }
+        if (!diagnosis) {
+          console.log('🎯 Navigating to /diagnosis');
+          navigate('/diagnosis', { replace: true });
         } else {
-          // Restaurant owner - check for business first
-          const { data: business } = await supabase
-            .from('restaurant_businesses')
-            .select('id')
-            .eq('owner_id', session.user.id)
-            .maybeSingle();
-
-          if (!business) {
-            console.log('🎯 Restaurant owner without business, navigating to /r/onboarding');
-            navigate('/r/onboarding', { replace: true });
-            return;
-          }
-
-          // Check for maturity diagnosis
-          const { data: diagnosis } = await supabase
-            .from('maturity_diagnoses')
-            .select('id')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-
-          if (!diagnosis) {
-            console.log('🎯 Restaurant owner without diagnosis, navigating to /diagnosis');
-            navigate('/diagnosis', { replace: true });
-          } else {
-            console.log('🎯 Restaurant owner with diagnosis, navigating to /r/dashboard');
-            navigate('/r/dashboard', { replace: true });
-          }
+          console.log('🎯 Navigating to /r/dashboard');
+          navigate('/r/dashboard', { replace: true });
         }
-      } catch (error) {
-        console.error('💥 Error during navigation:', error);
-        navigate('/onboarding', { replace: true });
       }
-    } else {
-      console.log('❌ Navigation skipped:', {
-        currentPath,
-        hasUser: !!session?.user,
-        isInProtectedRoute
-      });
+    } catch (error) {
+      console.error('💥 Error during navigation:', error);
+      navigate('/onboarding', { replace: true });
     }
   };
 
