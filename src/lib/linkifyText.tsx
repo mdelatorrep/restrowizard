@@ -122,51 +122,68 @@ export function linkifyMarkdown(content: string): string {
     }
   };
 
-  // URL matcher (same shape as URL_REGEX but safe for markdown preprocessing)
-  const URL_IN_TEXT_REGEX =
-    /(?<!\]\(|<|@|\[)\b(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)(?!\w)/gi;
+  // Full URL pattern for matching
+  const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
 
-  // 1) Clean wrappers around URLs: (url) / [url] / ([url]) / ([url])
-  //    This avoids rendering leftover "(" ")" "[" "]" around the link icon.
-  let processed = content
-    .replace(
-      /\(\s*(\[)?\s*(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)\s*(\])?\s*\)/gi,
-      (_, __, url) => url
-    )
-    .replace(
-      /\[\s*(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)\s*\]/gi,
-      (_, url) => url
-    );
-  
-  // 2) Handle existing markdown links [text](url) -> convert to simple link format
+  let processed = content;
+
+  // 1) First, handle existing markdown links [text](url) - convert to icon format
   processed = processed.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_, text, url) => {
+    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    (_, _text, url) => {
       const cleanUrl = stripUtm(url);
-      // Use a simple placeholder that ReactMarkdown will render as a link
       return `[↗](${cleanUrl})`;
     }
   );
 
-  // 3) If the markdown link itself is wrapped, unwrap it
+  // 2) Remove parentheses/brackets wrapping around our icon links
   processed = processed
-    .replace(/\(\s*\[↗\]\(([^)]+)\)\s*\)/g, '[↗]($1)')
-    .replace(/\[\s*\[↗\]\(([^)]+)\)\s*\]/g, '[↗]($1)');
-  
-  // 4) Match URLs that are NOT already in markdown link format
+    .replace(/\(\[↗\]\(([^)]+)\)\)/g, '[↗]($1)')
+    .replace(/\[\[↗\]\(([^)]+)\)\]/g, '[↗]($1)');
+
+  // 3) Clean parenthesized URLs: (https://...) -> https://...
   processed = processed.replace(
-    URL_IN_TEXT_REGEX,
-    (raw) => {
-      const cleaned = raw.replace(TRAILING_PUNCTUATION_REGEX, '');
-      const href = cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
-      const cleanHref = stripUtm(href);
-      const trailing = raw.slice(cleaned.length);
-      return `[↗](${cleanHref})${trailing}`;
+    /\((https?:\/\/[^\s<>"{}|\\^`[\]()]+)\)/g,
+    (_, url) => {
+      const cleanUrl = stripUtm(url);
+      return `[↗](${cleanUrl})`;
     }
   );
 
-  // 5) Final unwrap pass for any remaining wrapped links
-  processed = processed.replace(/\(\s*\[↗\]\(([^)]+)\)\s*\)/g, '[↗]($1)');
+  // 4) Clean bracketed URLs: [https://...] -> icon link
+  processed = processed.replace(
+    /\[(https?:\/\/[^\]]+)\]/g,
+    (_, url) => {
+      const cleanUrl = stripUtm(url);
+      return `[↗](${cleanUrl})`;
+    }
+  );
+
+  // 5) Match bare URLs that are NOT already in markdown link format
+  // Use negative lookbehind to avoid matching URLs already in [↗](url) format
+  processed = processed.replace(
+    /(?<!\]\()(?<!\[↗\]\()(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/g,
+    (url) => {
+      const cleanUrl = stripUtm(url);
+      return `[↗](${cleanUrl})`;
+    }
+  );
+
+  // 6) Handle www. URLs
+  processed = processed.replace(
+    /(?<!\]\()(?<!\[↗\]\()\b(www\.[^\s<>"{}|\\^`[\]()]+)/gi,
+    (url) => {
+      const cleanUrl = stripUtm(`https://${url}`);
+      return `[↗](${cleanUrl})`;
+    }
+  );
+
+  // 7) Final cleanup - remove any leftover artifacts like (://) or [:// 
+  processed = processed
+    .replace(/\(\s*:\/\/\s*\)/g, '')
+    .replace(/\[\s*:\/\/\s*\]/g, '')
+    .replace(/\(:\/\/\)/g, '')
+    .replace(/\[:\/\/\]/g, '');
   
   return processed;
 }
