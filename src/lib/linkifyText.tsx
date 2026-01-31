@@ -163,8 +163,8 @@ export function linkifyMarkdown(content: string): string {
   // Use negative lookbehind to avoid matching URLs already in [↗](url) format
   processed = processed.replace(
     /(?<!\]\()(?<!\[↗\]\()(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/g,
-    (url) => {
-      const cleanUrl = stripUtm(url);
+    (_match, capturedUrl) => {
+      const cleanUrl = stripUtm(capturedUrl);
       return `[↗](${cleanUrl})`;
     }
   );
@@ -172,8 +172,8 @@ export function linkifyMarkdown(content: string): string {
   // 6) Handle www. URLs
   processed = processed.replace(
     /(?<!\]\()(?<!\[↗\]\()\b(www\.[^\s<>"{}|\\^`[\]()]+)/gi,
-    (url) => {
-      const cleanUrl = stripUtm(`https://${url}`);
+    (_match, capturedUrl) => {
+      const cleanUrl = stripUtm(`https://${capturedUrl}`);
       return `[↗](${cleanUrl})`;
     }
   );
