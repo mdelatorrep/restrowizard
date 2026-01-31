@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PhaseAnalysis, PhaseId, PHASES } from '@/hooks/useBusinessOpening';
+import { formatCurrencyByCountry, getCurrencyCode } from '@/data/constants';
 import { 
   Scale, MapPin, ChefHat, Truck, Users, Megaphone, TrendingUp,
   Loader2, ChevronDown, ChevronUp, ExternalLink, RefreshCw, CheckCircle2, Clock, Sparkles, Eye
@@ -27,15 +28,17 @@ interface PhaseAnalysisCardProps {
   analysis?: PhaseAnalysis;
   onAnalyze: () => void;
   isAnalyzing: boolean;
+  country?: string; // For dynamic currency
 }
 
-export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }: PhaseAnalysisCardProps) {
+export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing, country = 'México' }: PhaseAnalysisCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const prevAnalysisRef = useRef<PhaseAnalysis | undefined>(undefined);
   const phaseInfo = PHASES.find(p => p.id === phaseId);
 
   const hasAnalysis = !!analysis && analysis.status === 'completed';
+  const currencyCode = getCurrencyCode(country);
   
   // Extract text from various possible formats - comprehensive extraction
   const extractAnalysisText = (): string | null => {
@@ -180,7 +183,7 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing }:
                 <div className="flex gap-4 mb-4 flex-wrap">
                   {analysis.estimated_cost && (
                     <Badge variant="secondary" className="text-sm">
-                      💰 Costo estimado: ${analysis.estimated_cost.toLocaleString()} MXN
+                      💰 Costo estimado: {formatCurrencyByCountry(analysis.estimated_cost, country)}
                     </Badge>
                   )}
                   {analysis.estimated_time_days && (

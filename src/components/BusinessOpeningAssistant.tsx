@@ -327,6 +327,7 @@ export function BusinessOpeningAssistant({ userType }: BusinessOpeningAssistantP
                 analysis={getPhaseAnalysis(phase.id)}
                 onAnalyze={() => handleAnalyzePhase(phase.id)}
                 isAnalyzing={analyzingPhase === phase.id}
+                country={selectedProject?.country}
               />
             ))}
           </div>
