@@ -121,25 +121,40 @@ export function linkifyMarkdown(content: string): string {
       return url;
     }
   };
+
+  // URL matcher (same shape as URL_REGEX but safe for markdown preprocessing)
+  const URL_IN_TEXT_REGEX =
+    /(?<!\]\(|<|@|\[)\b(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)(?!\w)/gi;
+
+  // 1) Clean wrappers around URLs: (url) / [url] / ([url]) / ([url])
+  //    This avoids rendering leftover "(" ")" "[" "]" around the link icon.
+  let processed = content
+    .replace(
+      /\(\s*(\[)?\s*(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)\s*(\])?\s*\)/gi,
+      (_, __, url) => url
+    )
+    .replace(
+      /\[\s*(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)\s*\]/gi,
+      (_, url) => url
+    );
   
-  // First, handle existing markdown links [text](url) - just keep the link icon format
-  let processed = content.replace(
+  // 2) Handle existing markdown links [text](url) -> keep as icon-only
+  processed = processed.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
     (_, text, url) => {
       const cleanUrl = stripUtm(url);
       return `[🔗](${cleanUrl})`;
     }
   );
+
+  // 3) If the markdown link itself is wrapped, unwrap it: ([🔗](url)) / [[🔗](url)]
+  processed = processed
+    .replace(/\(\s*\[🔗\]\(([^)]+)\)\s*\)/g, `[🔗]($1)`)
+    .replace(/\[\s*\[🔗\]\(([^)]+)\)\s*\]/g, `[🔗]($1)`);
   
-  // Remove leftover parentheses around URLs: (url) -> url
+  // 4) Match URLs that are NOT already in markdown link format
   processed = processed.replace(
-    /\((?:https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+)\)/gi,
-    (match) => match.slice(1, -1)
-  );
-  
-  // Match URLs that are NOT already in markdown link format
-  processed = processed.replace(
-    /(?<!\]\(|<|@|\[)(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)(?!\))/gi,
+    URL_IN_TEXT_REGEX,
     (raw) => {
       const cleaned = raw.replace(TRAILING_PUNCTUATION_REGEX, '');
       const href = cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
@@ -148,6 +163,9 @@ export function linkifyMarkdown(content: string): string {
       return `[🔗](${cleanHref})${trailing}`;
     }
   );
+
+  // 5) Final unwrap pass for cases like "([🔗](...))" produced in step 4
+  processed = processed.replace(/\(\s*\[🔗\]\(([^)]+)\)\s*\)/g, `[🔗]($1)`);
   
   return processed;
 }
