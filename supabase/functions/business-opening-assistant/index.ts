@@ -6,8 +6,104 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// ═══════════════════════════════════════════════════════════════
+// COUNTRY CODE MAPPING FOR USER_LOCATION
+// ═══════════════════════════════════════════════════════════════
+const COUNTRY_CODES: Record<string, string> = {
+  'México': 'MX',
+  'Mexico': 'MX',
+  'Colombia': 'CO',
+  'Argentina': 'AR',
+  'Chile': 'CL',
+  'Perú': 'PE',
+  'Peru': 'PE',
+  'Ecuador': 'EC',
+  'España': 'ES',
+  'Spain': 'ES',
+  'Estados Unidos': 'US',
+  'United States': 'US',
+  'Guatemala': 'GT',
+  'Costa Rica': 'CR',
+  'Panamá': 'PA',
+  'Panama': 'PA',
+  'Uruguay': 'UY',
+  'Paraguay': 'PY',
+  'Bolivia': 'BO',
+  'Venezuela': 'VE',
+  'Honduras': 'HN',
+  'El Salvador': 'SV',
+  'Nicaragua': 'NI',
+  'República Dominicana': 'DO',
+  'Dominican Republic': 'DO',
+  'Puerto Rico': 'PR',
+  'Cuba': 'CU',
+};
+
+const getCountryCode = (country: string): string => {
+  return COUNTRY_CODES[country] || 'MX';
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ANTI-HALLUCINATION GUARDRAILS
+// ═══════════════════════════════════════════════════════════════
+const ANTI_HALLUCINATION_RULES = `
+═══════════════════════════════════════════════════════════════
+⚠️ REGLAS DE HONESTIDAD - OBLIGATORIAS
+═══════════════════════════════════════════════════════════════
+1. NUNCA inventes nombres de negocios, proveedores o direcciones.
+   - Si no encuentras información específica en la búsqueda web, usa categorías genéricas:
+     ✅ "Centrales de abasto de la zona"
+     ✅ "Distribuidores mayoristas locales"
+     ❌ "Distribuidora García S.A. en Calle Reforma 123" (inventado)
+
+2. Para precios y costos:
+   - Si tienes datos reales de la búsqueda: usa el valor específico con fuente
+   - Si no hay datos: usa rangos amplios: "Entre $X y $Y aproximadamente"
+   - NUNCA inventes un número exacto sin haberlo encontrado en una fuente
+
+3. Cuando NO tengas información específica de la búsqueda web:
+   - Di explícitamente: "Consultar directamente con [dependencia/proveedor]"
+   - O: "Verificar en sitio oficial de [institución]"
+   - O: "No se encontró información específica, se recomienda..."
+
+4. Prioriza CALIDAD sobre CANTIDAD:
+   - Mejor 3 recomendaciones verificables que 10 inventadas
+   - Si solo encontraste información parcial, indícalo claramente
+
+5. Para nombres de negocios/proveedores:
+   - SOLO menciona nombres que aparezcan en los resultados de búsqueda
+   - Si no hay resultados específicos, usa categorías: "buscar proveedores en [zona]"
+═══════════════════════════════════════════════════════════════
+`;
+
+// ═══════════════════════════════════════════════════════════════
+// EXECUTIVE FORMAT INSTRUCTION
+// ═══════════════════════════════════════════════════════════════
+const EXECUTIVE_FORMAT_INSTRUCTION = `
+FORMATO DE RESPUESTA (OBLIGATORIO - ESTILO EJECUTIVO):
+- Máximo 1 página de contenido (NO más de 600 palabras)
+- Usar bullets cortos (máximo 15 palabras cada uno)
+- Incluir SOLO números clave y métricas importantes
+- Terminar cada sección con "→ Próximo paso:" concreto
+- NO incluir explicaciones extensas ni párrafos largos
+- Usar tablas SOLO para comparativas numéricas (máximo 5 filas)
+- Cada bullet debe ser ACCIONABLE, no teórico
+
+ESTRUCTURA REQUERIDA (SIGUE ESTE ORDEN):
+## Resumen Ejecutivo
+3-4 bullets con lo más importante
+
+## Puntos Clave
+5-7 bullets con datos concretos y verificables
+
+## Costos Estimados (si aplica)
+Tabla concisa con rangos realistas
+
+## Próximos Pasos
+2-3 acciones inmediatas y específicas
+`;
+
 function extractJsonFromResponse(responseText: string): unknown {
-  // Remove markdown fences
   let cleaned = responseText
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
@@ -24,7 +120,6 @@ function extractJsonFromResponse(responseText: string): unknown {
   try {
     return JSON.parse(cleaned);
   } catch (_e) {
-    // Try to fix common issues (trailing commas, control chars)
     const fixed = cleaned
       .replace(/,\s*}/g, '}')
       .replace(/,\s*]/g, ']')
@@ -61,370 +156,269 @@ interface BusinessOpeningRequest {
 
 // Helper to create strong location context
 const getLocationContext = (data: BusinessOpeningRequest['projectData']) => `
-═══════════════════════════════════════════════════════════════
-📍 CONTEXTO GEOGRÁFICO OBLIGATORIO - LEE ESTO PRIMERO
-═══════════════════════════════════════════════════════════════
-Ciudad: ${data.city}
-País: ${data.country}
-${data.neighborhood ? `Zona/Barrio: ${data.neighborhood}` : 'Zona: Por definir'}
-
-Tipo de negocio: ${data.businessType}
-${data.cuisineType ? `Tipo de cocina: ${data.cuisineType}` : ''}
-${data.description ? `
-📝 DESCRIPCIÓN DEL CONCEPTO (MUY IMPORTANTE - USA ESTA INFORMACIÓN):
-${data.description}
-` : ''}
-
-⚠️ REGLA CRÍTICA: TODA la información DEBE ser ESPECÍFICA para ${data.city}, ${data.country}.
-- NO proporciones información genérica del país
-- Busca datos LOCALES de ${data.city}
-- Menciona direcciones, zonas y referencias de ${data.city}
-- Usa precios y costos del mercado de ${data.city}
-${data.neighborhood ? `- Enfócate especialmente en la zona de ${data.neighborhood}` : ''}
-${data.description ? `- ADAPTA tus recomendaciones al concepto descrito por el usuario` : ''}
-═══════════════════════════════════════════════════════════════
+📍 CONTEXTO GEOGRÁFICO:
+• Ciudad: ${data.city}, ${data.country}
+${data.neighborhood ? `• Zona/Barrio: ${data.neighborhood}` : ''}
+• Tipo de negocio: ${data.businessType}
+${data.cuisineType ? `• Cocina: ${data.cuisineType}` : ''}
+${data.description ? `• Concepto: ${data.description}` : ''}
+${data.estimatedBudget ? `• Presupuesto: $${data.estimatedBudget.toLocaleString()}` : ''}
 `;
 
+// ═══════════════════════════════════════════════════════════════
+// PHASE PROMPTS - EXECUTIVE FORMAT WITH ANTI-HALLUCINATION
+// ═══════════════════════════════════════════════════════════════
 const PHASE_PROMPTS: Record<string, (data: BusinessOpeningRequest['projectData']) => string> = {
   legal_requirements: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Requisitos legales ESPECÍFICOS para abrir un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Requisitos legales para ${data.businessType} en ${data.city}, ${data.country}.
 
-Busca información ACTUAL y REAL. Responde en MARKDOWN legible, NO en JSON.
+USA LA BÚSQUEDA WEB para encontrar información REAL y ACTUAL.
 
-## 1. Permisos Municipales de ${data.city}
-- Licencia de funcionamiento municipal de ${data.city}
-- Costo aproximado y tiempo de trámite
-- Oficina/dependencia donde se tramita (con dirección en ${data.city})
-- Certificado de uso de suelo
-- Dictamen de protección civil
+## Resumen Ejecutivo
+- 3-4 bullets con los requisitos MÁS críticos
 
-## 2. Requisitos Sanitarios Locales
-${data.country === 'México' ? `- Aviso de funcionamiento COFEPRIS (delegación en ${data.city})` : '- Requisitos sanitarios locales'}
-- Licencia sanitaria estatal/municipal
-- Análisis de agua
-- Control de plagas certificado
-- Cursos de manejo de alimentos
+## Permisos Principales
+Lista los 5-7 permisos OBLIGATORIOS:
+- Nombre del permiso
+- Costo aproximado (rango si no hay dato exacto)
+- Tiempo estimado
+- Dependencia responsable
 
-## 3. Registro Fiscal
-${data.country === 'México' ? '- RFC y obligaciones SAT' : '- Registro tributario local'}
-- Requisitos de facturación electrónica
-- Oficina local para trámites
+## Costos Estimados
+| Concepto | Rango de Costo |
+|----------|----------------|
 
-## 4. Licencia de Bebidas Alcohólicas (si aplica en ${data.city})
-- Tipos de licencias disponibles en el estado/municipio
-- Costos y requisitos específicos
-- Restricciones de horario en ${data.city}
+## Próximos Pasos
+1. Primera acción inmediata
+2. Segunda acción
+3. Tercera acción
 
-## 5. Otros Requisitos
-- Seguros obligatorios
-- Registro de marca
-- Alta patronal
-
-Para cada trámite incluye:
-✅ Costo aproximado actual
-✅ Tiempo estimado de obtención  
-✅ Documentos necesarios
-✅ Dirección/contacto de la dependencia en ${data.city}
+⚠️ Si no encuentras el costo o tiempo exacto para un trámite en ${data.city}, indica "Verificar en oficina local" en lugar de inventar.
 `,
 
   location_analysis: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Análisis de ubicación para abrir un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
-${data.neighborhood ? `El cliente tiene interés en la zona de ${data.neighborhood}.` : ''}
+🎯 TAREA: Análisis de ubicación para ${data.businessType} en ${data.city}, ${data.country}.
+${data.neighborhood ? `Interés específico en: ${data.neighborhood}` : ''}
 
-Responde en MARKDOWN legible, NO en JSON.
+USA LA BÚSQUEDA WEB para encontrar información REAL sobre zonas comerciales.
 
-## 1. Mejores Zonas en ${data.city} para este Negocio
-Recomienda las **5 mejores colonias/zonas** de ${data.city} para un ${data.businessType}:
+## Resumen Ejecutivo
+- 3-4 bullets sobre las mejores opciones de ubicación
 
-Para cada zona incluye:
-- Nombre de la colonia/zona
-- Por qué es buena para este tipo de negocio
-- Perfil del público que frecuenta esa zona
-- Nivel de competencia
-${data.neighborhood ? `\n### Análisis especial de ${data.neighborhood}\nIncluye un análisis detallado de esta zona específica.` : ''}
+## Zonas Recomendadas
+Lista 3-5 zonas de ${data.city} ideales para este negocio:
+- Nombre de zona
+- Por qué es adecuada
+- Rango de renta por m²
+${data.neighborhood ? `\n### Análisis de ${data.neighborhood}\nEvalúa esta zona específica.` : ''}
 
-## 2. Costos de Renta en ${data.city}
-- Precio promedio por m² en cada zona recomendada
-- Rango para locales de 50-150 m²
-- Tendencia actual del mercado inmobiliario en ${data.city}
+## Costos de Renta
+| Zona | Renta/m² mensual |
+|------|------------------|
 
-## 3. Competencia Local
-- Restaurantes similares exitosos en ${data.city} (nombres reales)
-- Densidad de competencia por zona
-- Oportunidades de diferenciación
+## Próximos Pasos
+1. Visitar zonas recomendadas
+2. Contactar inmobiliarias
+3. Verificar uso de suelo
 
-## 4. Factores de Éxito por Zona
-- Flujo peatonal
-- Estacionamiento
-- Transporte público cercano
-- Negocios complementarios
-
-## 5. Uso de Suelo
-- Zonas con uso comercial permitido en ${data.city}
-- Restricciones específicas del municipio
-
-${data.estimatedBudget ? `\n💰 Presupuesto del cliente: $${data.estimatedBudget.toLocaleString()} MXN - ajusta las recomendaciones a este presupuesto.` : ''}
+⚠️ Solo menciona zonas y precios que encuentres en la búsqueda web. Si no hay datos específicos, indica rangos generales del mercado.
 `,
 
   equipment_setup: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Equipamiento necesario para un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Equipamiento para ${data.businessType}${data.cuisineType ? ` de cocina ${data.cuisineType}` : ''} en ${data.city}.
 
-Responde en MARKDOWN legible, NO en JSON.
+USA LA BÚSQUEDA WEB para encontrar precios REALES de equipo en ${data.country}.
 
-## 1. Equipo de Cocina Esencial
-Lista detallada con precios del mercado de ${data.city}:
-- Estufas industriales
-- Refrigeradores/congeladores comerciales
-- Campanas de extracción
-- Mesas de trabajo
-- Equipo específico para ${data.cuisineType || 'cocina general'}
+## Resumen Ejecutivo
+- 3-4 bullets con equipo esencial y rangos de inversión
 
-## 2. Equipo de Servicio
-- Mobiliario (mesas, sillas)
-- Cristalería, loza, cubiertos
-- Sistema POS
-- Decoración
+## Equipo Esencial
+Lista los 6-8 equipos INDISPENSABLES:
+- Nombre del equipo
+- Rango de precio (nuevo)
+- Alternativa (usado si aplica)
 
-## 3. Proveedores de Equipo en ${data.city}
-Lista proveedores REALES con:
-- **Nombre del proveedor**
-- Dirección en ${data.city}
-- Teléfono/contacto
-- Especialidad (nuevo/usado)
-- Rango de precios
+## Inversión Estimada
+| Categoría | Rango de Inversión |
+|-----------|-------------------|
+| Cocina | $ - $ |
+| Refrigeración | $ - $ |
+| Mobiliario | $ - $ |
+| **Total estimado** | **$ - $** |
 
-## 4. Opciones de Compra
-- Equipo nuevo vs usado
-- Financiamiento disponible
-- Arrendamiento de equipo
+## Próximos Pasos
+1. Cotizar equipo prioritario
+2. Evaluar opciones usadas
+3. Revisar financiamiento
 
-## 5. Presupuesto de Equipamiento
-| Categoría | Inversión Mínima | Inversión Recomendada |
-|-----------|------------------|----------------------|
-| Cocina | $ | $ |
-| Servicio | $ | $ |
-| Otros | $ | $ |
-| **Total** | **$** | **$** |
-
-${data.estimatedBudget ? `\n💰 Presupuesto total del cliente: $${data.estimatedBudget.toLocaleString()} MXN` : ''}
+⚠️ Los precios deben basarse en búsquedas reales. Si no hay datos específicos, indica "precio a cotizar".
 `,
 
   supplier_network: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Red de proveedores para un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Red de proveedores para ${data.businessType}${data.cuisineType ? ` de cocina ${data.cuisineType}` : ''} en ${data.city}.
 
-Responde en MARKDOWN legible, NO en JSON. Incluye NOMBRES y DIRECCIONES REALES de ${data.city}.
+USA LA BÚSQUEDA WEB para encontrar información sobre mercados y proveedores en ${data.city}.
 
-## 1. Centrales de Abasto y Mercados Mayoristas en ${data.city}
-Para cada uno incluye:
-- Nombre del mercado/central
-- Dirección completa en ${data.city}
-- Días y horarios de operación
-- Productos principales
+## Resumen Ejecutivo
+- 3-4 bullets sobre dónde conseguir insumos
 
-## 2. Distribuidores de Alimentos en ${data.city}
-### Carnes
-- Nombre del proveedor, dirección, teléfono
-- Si tiene certificación TIF
+## Mercados y Centrales de Abasto
+Lista los principales puntos de compra en ${data.city}:
+- Nombre (si lo encuentras en búsqueda)
+- Tipo de productos
+- Ubicación general
 
-### Mariscos
-- Proveedores locales con dirección
+## Categorías de Proveedores
+### Insumos prioritarios:
+- Proteínas: dónde buscar
+- Vegetales/frutas: opciones
+- Abarrotes: mayoristas
+- Especialidades: según tipo de cocina
 
-### Frutas y Verduras
-- Proveedores mayoristas en ${data.city}
+## Costos de Referencia
+| Producto | Precio aproximado |
+|----------|-------------------|
 
-### Lácteos
-- Distribuidores locales
+## Próximos Pasos
+1. Visitar mercados principales
+2. Solicitar listas de precios
+3. Negociar condiciones
 
-### Abarrotes y Secos
-- Mayoristas en la zona
-
-## 3. Proveedores Especializados para ${data.cuisineType || 'cocina general'}
-- Ingredientes especiales
-- Importadores en ${data.city}
-
-## 4. Servicios de Entrega
-- Proveedores que entregan a domicilio en ${data.city}
-- Frecuencia de entregas
-
-## 5. Comparativa de Precios Promedio en ${data.city}
-| Producto | Precio Mayoreo | Precio Menudeo |
-|----------|----------------|----------------|
-| ... | $ | $ |
-
-## 6. Insumos No Alimentarios
-- Desechables
-- Productos de limpieza
-- Uniformes
-- Proveedores en ${data.city}
+⚠️ SOLO incluye nombres de proveedores que encuentres en la búsqueda. Si no hay resultados específicos, indica categorías genéricas.
 `,
 
   staffing_plan: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Plan de personal para un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Plan de personal para ${data.businessType} en ${data.city}, ${data.country}.
 
-Responde en MARKDOWN legible, NO en JSON. Usa datos del mercado laboral de ${data.city}.
+USA LA BÚSQUEDA WEB para encontrar salarios actuales del sector en ${data.city}.
 
-## 1. Organigrama Recomendado
-(Incluye un diagrama de organigrama con los puestos del equipo)
-- Puestos necesarios
-- Cantidad por turno
-- Estructura de mandos
+## Resumen Ejecutivo
+- 3-4 bullets sobre estructura de personal recomendada
 
-## 2. Salarios Promedio en ${data.city}
-| Puesto | Salario Mensual | Salario Semanal |
-|--------|-----------------|-----------------|
-| Chef ejecutivo | $ | $ |
-| Cocinero de línea | $ | $ |
-| Ayudante de cocina | $ | $ |
-| Mesero | $ | $ |
-| Cajero/Hostess | $ | $ |
-| Personal de limpieza | $ | $ |
-| Gerente | $ | $ |
+## Puestos Esenciales
+Lista 5-7 puestos clave:
+- Nombre del puesto
+- Cantidad necesaria
+- Rango salarial mensual
 
-*Salarios basados en el mercado actual de ${data.city}*
+## Salarios en ${data.city}
+| Puesto | Salario mensual |
+|--------|-----------------|
+| Chef/Cocinero principal | $ - $ |
+| Cocinero de línea | $ - $ |
+| Ayudante de cocina | $ - $ |
+| Mesero | $ - $ |
+| Cajero | $ - $ |
 
-## 3. Dónde Reclutar en ${data.city}
-- Plataformas de empleo que funcionan en ${data.city}
-- Escuelas de gastronomía locales (nombres y direcciones)
-- Grupos de Facebook/WhatsApp del sector en ${data.city}
-- Bolsas de trabajo especializadas
+## Costo Total de Nómina
+- Estimado mensual (incluyendo cargas): $ - $
 
-## 4. Requisitos Laborales en ${data.country}
-- Alta en seguro social
-- Contratos recomendados
-- Prestaciones de ley
-- Costo patronal (% sobre salario)
+## Próximos Pasos
+1. Definir organigrama final
+2. Publicar vacantes en plataformas locales
+3. Calcular carga patronal exacta
 
-## 5. Capacitación
-- Cursos obligatorios (manejo de alimentos)
-- Dónde tomarlos en ${data.city}
-- Costos aproximados
-
-## 6. Turnos y Horarios Típicos
-- Estructura de turnos
-- Consideraciones legales
+⚠️ Los salarios deben basarse en datos encontrados. Si no hay información específica de ${data.city}, usa referencias nacionales e indícalo.
 `,
 
   marketing_launch: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Estrategia de lanzamiento para un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Estrategia de lanzamiento para ${data.businessType} en ${data.city}.
 
-Responde en MARKDOWN legible, NO en JSON.
+USA LA BÚSQUEDA WEB para encontrar información sobre plataformas de delivery y marketing en ${data.city}.
 
-## 1. Pre-apertura (4-6 semanas antes)
-- Estrategia de expectativa en redes
-- Creación de perfiles sociales
-- Contenido teaser
+## Resumen Ejecutivo
+- 3-4 bullets sobre estrategia de lanzamiento
 
-## 2. Plataformas de Delivery Activas en ${data.city}
-| Plataforma | Comisión | Disponible en ${data.city} |
-|------------|----------|---------------------------|
-| Uber Eats | % | Sí/No |
-| Rappi | % | Sí/No |
-| DiDi Food | % | Sí/No |
+## Plataformas de Delivery
+| Plataforma | Disponible en ${data.city} | Comisión |
+|------------|---------------------------|----------|
 
-- Proceso de alta en cada plataforma
-- Cuál recomiendas para ${data.city}
+## Estrategia Digital
+- Redes prioritarias para ${data.businessType}
+- Tipo de contenido recomendado
+- Frecuencia sugerida
 
-## 3. Marketing Digital Local
-### Agencias de Marketing Gastronómico en ${data.city}
-- Nombre, contacto, rango de precios
+## Presupuesto de Lanzamiento
+| Concepto | Inversión sugerida |
+|----------|-------------------|
+| Fotografía profesional | $ - $ |
+| Publicidad inicial | $ - $ |
+| Evento de apertura | $ - $ |
 
-### Food Bloggers e Influencers de ${data.city}
-- Nombres de influencers locales relevantes
-- Número de seguidores
-- Tipo de colaboraciones
+## Próximos Pasos
+1. Crear perfiles en redes sociales
+2. Registrarse en plataformas de delivery
+3. Planificar evento de apertura
 
-### Fotógrafos de Alimentos en ${data.city}
-- Recomendaciones con contacto
-
-## 4. Estrategia de Redes Sociales
-- Instagram: tipo de contenido, frecuencia
-- TikTok: tendencias locales
-- Facebook: grupos relevantes de ${data.city}
-
-## 5. Evento de Inauguración
-- Ideas para soft opening
-- Gran apertura
-- Promociones de lanzamiento efectivas
-
-## 6. Alianzas Estratégicas en ${data.city}
-- Colaboraciones con negocios locales
-- Convenios corporativos con empresas de la zona
-- Programas de lealtad
-
-${data.estimatedBudget ? `\n💰 Presupuesto de marketing sugerido (5-10%): $${(data.estimatedBudget * 0.05).toLocaleString()} - $${(data.estimatedBudget * 0.1).toLocaleString()} MXN` : ''}
+⚠️ Solo incluye plataformas confirmadas para ${data.city}. Las comisiones deben ser verificables.
 `,
 
   financial_projection: (data) => `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(data)}
 
-🎯 TAREA: Proyección financiera para un ${data.businessType} ${data.cuisineType ? `de cocina ${data.cuisineType}` : ''} en ${data.city}, ${data.country}.
+🎯 TAREA: Proyección financiera para ${data.businessType} en ${data.city}.
+${data.estimatedBudget ? `Inversión estimada: $${data.estimatedBudget.toLocaleString()}` : ''}
 
-${data.estimatedBudget ? `💰 Inversión inicial estimada por el cliente: $${data.estimatedBudget.toLocaleString()} MXN` : ''}
+USA LA BÚSQUEDA WEB para encontrar benchmarks financieros del sector en ${data.country}.
 
-Responde en MARKDOWN legible con tablas claras, NO en JSON. Usa costos reales del mercado de ${data.city}.
+## Resumen Ejecutivo
+- 3-4 bullets sobre viabilidad financiera
 
-## 1. Inversión Inicial Detallada
-| Concepto | Monto Estimado |
+## Inversión Inicial
+| Concepto | Rango estimado |
 |----------|----------------|
-| Adecuación del local | $ |
-| Equipamiento | $ |
-| Inventario inicial | $ |
-| Capital de trabajo (3-6 meses) | $ |
-| Permisos y licencias | $ |
-| Marketing de lanzamiento | $ |
-| Contingencias (10-15%) | $ |
-| **TOTAL** | **$** |
+| Adecuación local | $ - $ |
+| Equipamiento | $ - $ |
+| Capital de trabajo | $ - $ |
+| Permisos y legal | $ - $ |
+| **Total** | **$ - $** |
 
-## 2. Costos Fijos Mensuales en ${data.city}
-| Concepto | Monto Mensual |
-|----------|---------------|
-| Renta (basado en zonas de ${data.city}) | $ |
-| Nómina y cargas sociales | $ |
-| Servicios (luz, agua, gas, internet) | $ |
-| Software/sistemas | $ |
-| Seguros | $ |
-| Mantenimiento | $ |
-| **TOTAL FIJOS** | **$** |
+## Costos Operativos Mensuales
+| Concepto | Monto estimado |
+|----------|----------------|
+| Renta | $ |
+| Nómina | $ |
+| Insumos (% ventas) | % |
+| Servicios | $ |
+| **Total fijos** | **$** |
 
-## 3. Costos Variables (% sobre ventas)
-- Costo de alimentos: XX%
-- Comisiones delivery: XX%
-- Insumos desechables: XX%
+## Métricas Clave
+- Food cost objetivo: 28-35%
+- Labor cost objetivo: 25-35%
+- Punto de equilibrio: $ ventas/mes
 
-## 4. Proyección de Ingresos
-- Ticket promedio esperado: $
-- Capacidad del local: XX personas
-- Rotación de mesas esperada: X veces/día
-- Ingreso diario proyectado: $
-- Ingreso mensual proyectado: $
+## Próximos Pasos
+1. Validar costos con cotizaciones reales
+2. Definir ticket promedio objetivo
+3. Proyectar escenarios (pesimista/optimista)
 
-## 5. Métricas Clave para ${data.country}
-- Food cost objetivo: XX%
-- Labor cost objetivo: XX%
-- Margen de utilidad típico: XX%
-
-## 6. Punto de Equilibrio
-- Ventas mensuales necesarias: $
-- Comensales por día: XX
-
-## 7. Retorno de Inversión
-- ROI estimado: XX%
-- Periodo de recuperación: XX meses
-
----
-*Proyección basada en el mercado actual de ${data.city}, ${data.country}*
+⚠️ Estos son rangos referenciales. Los números finales dependen de cotizaciones específicas y modelo de negocio.
 `
 };
 
@@ -436,26 +430,33 @@ serve(async (req) => {
   try {
     const { action, projectData, phase, question }: BusinessOpeningRequest = await req.json();
 
-    const baseSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos en Latinoamérica.
-Tienes acceso a información actualizada a través de búsqueda web.
+    console.log(`[business-opening-assistant] Processing ${action} for ${projectData.businessType} in ${projectData.city}, ${projectData.country}`);
 
-REGLAS CRÍTICAS:
+    // ═══════════════════════════════════════════════════════════════
+    // SYSTEM PROMPTS WITH ANTI-HALLUCINATION
+    // ═══════════════════════════════════════════════════════════════
+    const baseSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
+Tienes acceso a búsqueda web en tiempo real - ÚSALA para obtener información ACTUAL y VERIFICABLE.
+
+${ANTI_HALLUCINATION_RULES}
+
+REGLAS DE FORMATO:
 1. SIEMPRE responde en ESPAÑOL
-2. SIEMPRE responde en formato MARKDOWN legible, con encabezados (##), listas (-), y tablas (|)
-3. SIEMPRE incluye información ESPECÍFICA de la ciudad mencionada, no del país en general
-4. Incluye nombres reales de negocios, direcciones y precios cuando sea posible
-5. Sé práctico y accionable, no teórico
-
-Tu respuesta debe ser fácil de leer y aplicar inmediatamente.`;
+2. SIEMPRE usa formato MARKDOWN con encabezados (##), bullets (-), y tablas (|)
+3. Sé CONCISO y EJECUTIVO - máximo 1 página
+4. Cada punto debe ser ACCIONABLE, no teórico
+5. Prioriza CALIDAD y VERACIDAD sobre cantidad`;
 
     const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
-Debes generar un checklist estructurado.
+Genera un checklist estructurado y realista.
 
-REGLAS CRÍTICAS:
-1. Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra)
+${ANTI_HALLUCINATION_RULES}
+
+REGLAS:
+1. Responde ÚNICAMENTE con un objeto JSON válido
 2. El JSON debe seguir EXACTAMENTE el esquema solicitado
-3. No incluyas comentarios ni trailing commas
-4. El contenido debe ser ESPECÍFICO de la ciudad y el tipo de negocio`;
+3. Máximo 25-30 tareas (calidad sobre cantidad)
+4. Cada tarea debe ser ESPECÍFICA y ACCIONABLE`;
 
     const systemPrompt = action === 'generate_checklist' ? checklistSystemPrompt : baseSystemPrompt;
 
@@ -465,64 +466,56 @@ REGLAS CRÍTICAS:
       userPrompt = PHASE_PROMPTS[phase](projectData);
     } else if (action === 'ask_question' && question) {
       userPrompt = `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
 ${getLocationContext(projectData)}
-
-El usuario está planeando abrir un ${projectData.businessType} ${projectData.cuisineType ? `de cocina ${projectData.cuisineType}` : ''}.
-${projectData.estimatedBudget ? `Su presupuesto estimado es de $${projectData.estimatedBudget.toLocaleString()} MXN.` : ''}
 
 **PREGUNTA DEL USUARIO:** ${question}
 
-Responde en MARKDOWN legible. Busca información ACTUAL y ESPECÍFICA de ${projectData.city}, ${projectData.country}.
+Responde de forma concisa y ejecutiva. USA LA BÚSQUEDA WEB para información actual de ${projectData.city}.
 `;
     } else if (action === 'generate_checklist') {
       userPrompt = `
 ${getLocationContext(projectData)}
 
-Genera un checklist para abrir un ${projectData.businessType} ${projectData.cuisineType ? `de cocina ${projectData.cuisineType}` : ''}.
+Genera un checklist para abrir un ${projectData.businessType}${projectData.cuisineType ? ` de cocina ${projectData.cuisineType}` : ''}.
 
-REGLAS IMPORTANTES:
-1. Cada tarea debe ser ÚNICA y ESPECÍFICA - NO repitas conceptos similares
-2. Máximo 25-30 tareas en total (calidad sobre cantidad)
-3. Las tareas deben ser ACCIONABLES, no genéricas
-4. Incluye referencias a ${projectData.city} cuando sea relevante
+REGLAS:
+1. Cada tarea ÚNICA y ESPECÍFICA - NO repitas conceptos
+2. Máximo 25-30 tareas total
+3. Tareas ACCIONABLES, no genéricas
 
-Organiza por fases:
-- planning (Planeación)
-- legal (Legal y Permisos)
-- location (Ubicación)
-- equipment (Equipamiento)
-- suppliers (Proveedores)
-- staffing (Personal)
-- marketing (Marketing)
-- pre_opening (Pre-apertura)
-- opening (Apertura)
+Fases:
+- planning, legal, location, equipment, suppliers, staffing, marketing, pre_opening, opening
 
-Responde ÚNICAMENTE en este formato JSON (sin texto adicional):
+Responde ÚNICAMENTE en JSON:
 {
   "items": [
     {
       "phase": "planning",
       "title": "Título claro y específico",
-      "description": "Descripción breve de qué hacer",
+      "description": "Descripción breve",
       "sortOrder": 1
     }
   ]
 }
-
-IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aportar valor único.
 `;
     } else {
       throw new Error('Invalid action or missing parameters');
     }
 
-    console.log(`Processing ${action} for ${projectData.businessType} in ${projectData.city}, ${projectData.country}`);
-
-    // Use OpenAI Responses API with web search capability
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
     if (!OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY not configured');
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // OPENAI RESPONSES API WITH GPT-5.2 + WEB SEARCH
+    // ═══════════════════════════════════════════════════════════════
+    const countryCode = getCountryCode(projectData.country);
+    
+    console.log(`[business-opening-assistant] Using model gpt-5.2 with web_search for ${projectData.city}, ${countryCode}`);
 
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -531,9 +524,18 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano',
-        tools: [{ type: 'web_search_preview' }],
-        reasoning: { effort: 'low' },
+        model: 'gpt-5.2',
+        tools: [{
+          type: 'web_search',
+          search_context_size: 'high',
+          user_location: {
+            type: 'approximate',
+            country: countryCode,
+            city: projectData.city,
+            region: projectData.neighborhood || projectData.city
+          }
+        }],
+        reasoning: { effort: 'medium' },
         input: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -543,7 +545,7 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
+      console.error('[business-opening-assistant] OpenAI API error:', response.status, errorText);
       
       if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
@@ -556,34 +558,58 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
     }
 
     const data = await response.json();
-    console.log('OpenAI Response received:', JSON.stringify(data).substring(0, 300));
+    console.log('[business-opening-assistant] OpenAI Response received, extracting content...');
     
-    // Extract the text response from Responses API format
+    // ═══════════════════════════════════════════════════════════════
+    // EXTRACT RESPONSE TEXT AND SOURCES
+    // ═══════════════════════════════════════════════════════════════
     let analysisText = '';
     let sources: string[] = [];
     
     if (data.output) {
       for (const item of data.output) {
+        // Extract main text content
         if (item.type === 'message' && item.content) {
           for (const content of item.content) {
             if (content.type === 'output_text') {
               analysisText = content.text;
+              
+              // Extract URL citations from annotations
+              if (content.annotations) {
+                const annotationUrls = content.annotations
+                  .filter((a: { type: string; url?: string }) => a.type === 'url_citation' && a.url)
+                  .map((a: { url: string }) => a.url);
+                sources = [...sources, ...annotationUrls];
+              }
             }
           }
         }
-        // Extract web search sources if available
+        
+        // Extract sources from web_search_call
         if (item.type === 'web_search_call') {
-          console.log('Web search performed:', item.id);
+          console.log('[business-opening-assistant] Web search performed:', item.id);
+          
+          if (item.action?.sources) {
+            const searchSources = item.action.sources
+              .filter((s: { url?: string }) => s.url && !s.url.includes('oai-'))
+              .map((s: { url: string }) => s.url);
+            sources = [...sources, ...searchSources];
+          }
         }
       }
     }
     
+    // Remove duplicate sources
+    sources = [...new Set(sources)];
+    
+    console.log(`[business-opening-assistant] Extracted ${analysisText.length} chars, ${sources.length} sources`);
+    
     if (!analysisText) {
-      console.error('No content in OpenAI response:', JSON.stringify(data));
+      console.error('[business-opening-assistant] No content in OpenAI response:', JSON.stringify(data).substring(0, 500));
       throw new Error('OpenAI response was empty');
     }
 
-    // Try to parse JSON from the response (only for checklist action)
+    // Parse JSON for checklist action
     let structuredData = null;
     if (action === 'generate_checklist') {
       try {
@@ -604,8 +630,7 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
 
         structuredData = parsed;
       } catch (e) {
-        console.log('Could not parse JSON from checklist response:', (e as Error)?.message ?? String(e));
-        // Return a failure so the frontend doesn't silently accept an empty checklist
+        console.log('[business-opening-assistant] Could not parse JSON from checklist:', (e as Error)?.message ?? String(e));
         throw e;
       }
     }
@@ -624,7 +649,7 @@ IMPORTANTE: No incluyas tareas duplicadas o muy similares. Cada tarea debe aport
     );
 
   } catch (error) {
-    console.error('Error in business-opening-assistant:', error);
+    console.error('[business-opening-assistant] Error:', error);
     return new Response(
       JSON.stringify({
         success: false,
