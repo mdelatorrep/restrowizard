@@ -1,15 +1,15 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
-  MapPin, Users, TrendingUp, AlertTriangle, CheckCircle2, 
-  Target, Lightbulb, DollarSign, Clock, Star, Building2,
+  MapPin, Users, TrendingUp, CheckCircle2, 
+  Lightbulb, DollarSign, Clock,
   FileText, BarChart3, Utensils, Megaphone, Shield, Truck,
-  ChevronRight, Globe, ArrowRight
+  ChevronRight, Globe
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { linkifyMarkdown } from '@/lib/linkifyText';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 interface AnalysisContentRendererProps {
   content: string;
@@ -159,15 +159,15 @@ const createMarkdownComponents = (isInsideSection: boolean) => ({
   em: ({ children }: any) => (
     <em className="text-primary/80 not-italic font-medium">{children}</em>
   ),
-  a: ({ href, children }: any) => (
+  a: ({ href }: any) => (
     <a 
       href={href} 
       target="_blank" 
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium transition-colors"
+      title={href}
+      className="inline-flex items-center text-primary hover:text-primary/80 transition-colors mx-0.5"
     >
       <Globe className="h-3.5 w-3.5" />
-      <span className="underline underline-offset-2">{children}</span>
     </a>
   ),
   table: ({ children }: any) => (
@@ -204,88 +204,90 @@ const createMarkdownComponents = (isInsideSection: boolean) => ({
   ),
 });
 
-// Section card component
-const SectionCard = ({ section, index }: { section: Section; index: number }) => {
+// Collapsible Section component
+const CollapsibleSection = ({ section, index, defaultOpen }: { section: Section; index: number; defaultOpen: boolean }) => {
   const style = SECTION_STYLES[index % SECTION_STYLES.length];
   const hasContent = section.content.trim().length > 0;
   
   return (
-    <div className={`rounded-xl border ${style.border} ${style.bg} overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
-      {/* Section header */}
-      <div className="px-5 py-4 border-b border-border/30 flex items-center gap-3 bg-gradient-to-r from-transparent to-background/50">
-        <div className={`p-2 rounded-lg ${style.icon} shadow-sm`}>
-          {getSectionIcon(section.title)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground text-base leading-tight">
+    <AccordionItem
+      value={`section-${index}`}
+      className={cn(
+        "rounded-xl border-l-4 overflow-hidden transition-all",
+        style.border,
+        style.bg
+      )}
+    >
+      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-background/50 data-[state=open]:bg-background/30">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-lg shadow-sm", style.icon)}>
+            {getSectionIcon(section.title)}
+          </div>
+          <h3 className="font-semibold text-foreground text-sm leading-tight text-left">
             {section.title}
           </h3>
         </div>
-        <Badge variant="secondary" className="text-xs font-medium px-2.5 py-1">
-          Sección {index + 1}
-        </Badge>
-      </div>
+      </AccordionTrigger>
       
-      {/* Section content */}
       {hasContent && (
-        <div className="px-5 py-4 bg-background/40">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
-            components={createMarkdownComponents(true)}
-          >
-            {linkifyMarkdown(section.content.trim())}
-          </ReactMarkdown>
-        </div>
+        <AccordionContent>
+          <div className="px-4 pb-4 pt-2 bg-background/40">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={createMarkdownComponents(true)}
+            >
+              {linkifyMarkdown(section.content.trim())}
+            </ReactMarkdown>
+          </div>
+        </AccordionContent>
       )}
-    </div>
+    </AccordionItem>
   );
 };
 
 export function AnalysisContentRenderer({ content, phaseId }: AnalysisContentRendererProps) {
   const sections = parseMarkdownSections(content);
   
-  // If we found sections, render as cards
+  // Find which section should be open by default (Resumen or first one)
+  const defaultOpenIndex = sections.findIndex(s => 
+    s.title.toLowerCase().includes('resumen') || 
+    s.title.toLowerCase().includes('ejecutivo')
+  );
+  const defaultOpenValue = defaultOpenIndex >= 0 ? [`section-${defaultOpenIndex}`] : ['section-0'];
+  
+  // If we found sections, render as collapsible accordion
   if (sections.length > 1) {
     return (
-      <div className="space-y-4">
-        {/* Header with section count */}
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Target className="h-4 w-4 text-primary" />
-            <span className="font-medium">Análisis Estructurado</span>
-          </div>
-          <Badge variant="outline" className="text-xs font-medium">
-            {sections.length} secciones
-          </Badge>
-        </div>
-        
-        {/* Section cards */}
-        <div className="space-y-4">
+      <div className="space-y-3">
+        <Accordion type="multiple" defaultValue={defaultOpenValue} className="space-y-2">
           {sections.map((section, idx) => (
-            <SectionCard key={idx} section={section} index={idx} />
+            <CollapsibleSection 
+              key={idx} 
+              section={section} 
+              index={idx} 
+              defaultOpen={idx === (defaultOpenIndex >= 0 ? defaultOpenIndex : 0)}
+            />
           ))}
-        </div>
+        </Accordion>
         
         {/* Footer */}
-        <div className="flex items-center gap-2 pt-3 mt-3 border-t border-border/40 text-xs text-muted-foreground">
-          <Lightbulb className="h-4 w-4 text-amber-500" />
+        <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">
+          <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
           <span>Análisis generado con datos locales del mercado</span>
         </div>
       </div>
     );
   }
   
-  // Fallback: Simple clean markdown rendering with better styling
+  // Fallback: Simple clean markdown rendering
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border bg-card/50 p-5 shadow-sm">
-        <ReactMarkdown 
-          remarkPlugins={[remarkGfm]}
-          components={createMarkdownComponents(false)}
-        >
-          {linkifyMarkdown(content)}
-        </ReactMarkdown>
-      </div>
+    <div className="rounded-xl border bg-card/50 p-5 shadow-sm">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={createMarkdownComponents(false)}
+      >
+        {linkifyMarkdown(content)}
+      </ReactMarkdown>
     </div>
   );
 }
