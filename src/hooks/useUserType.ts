@@ -9,27 +9,15 @@ type UserTypeQueryData = {
   hasCompletedOnboarding: boolean;
 };
 
-const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => {
-  console.log('📊 [useUserType] fetchUserTypeData called for userId:', userId);
+const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise<UserTypeQueryData> => {
+  console.log('📊 [useUserType] fetchUserTypeData called for userId:', userId, 'metaUserType:', metaUserType);
   
-  // Fetch profile - should always exist due to trigger
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('user_type')
-    .eq('user_id', userId)
-    .maybeSingle();
+  // First, try to use metadata if available (avoids DB call)
+  const type: UserType = metaUserType === 'restaurant_owner' || metaUserType === 'consultant' 
+    ? metaUserType 
+    : null;
 
-  console.log('📊 [useUserType] profiles query result:', { profile, profileError });
-
-  if (profileError) throw profileError;
-
-  const type = (profile?.user_type as UserType) ?? null;
-
-  if (!type) {
-    console.log('📊 [useUserType] No user_type found, returning incomplete');
-    return { userType: null, hasCompletedOnboarding: false };
-  }
-
+  // If we have a type from metadata, check onboarding status
   if (type === 'restaurant_owner') {
     const { data: business, error } = await supabase
       .from('restaurant_businesses')
@@ -39,52 +27,105 @@ const fetchUserTypeData = async (userId: string): Promise<UserTypeQueryData> => 
 
     console.log('📊 [useUserType] restaurant_businesses query result:', { business, error });
 
-    if (error) throw error;
+    if (error) {
+      console.error('📊 [useUserType] Error fetching business:', error);
+      // Don't throw - return incomplete status
+      return { userType: type, hasCompletedOnboarding: false };
+    }
 
-    const result = { userType: type, hasCompletedOnboarding: !!business };
-    console.log('📊 [useUserType] Returning for restaurant_owner:', result);
-    return result;
+    return { userType: type, hasCompletedOnboarding: !!business };
   }
 
-  // Consultant - check if they have a company_name set
-  const { data: consultantProfile, error } = await supabase
+  if (type === 'consultant') {
+    const { data: consultantProfile, error } = await supabase
+      .from('consultant_profiles')
+      .select('id, company_name')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    console.log('📊 [useUserType] consultant_profiles query result:', { consultantProfile, error });
+
+    if (error) {
+      console.error('📊 [useUserType] Error fetching consultant profile:', error);
+      return { userType: type, hasCompletedOnboarding: false };
+    }
+
+    return {
+      userType: type,
+      hasCompletedOnboarding: !!consultantProfile?.company_name,
+    };
+  }
+
+  // No type in metadata - fall back to checking profiles table
+  console.log('📊 [useUserType] No type in metadata, checking profiles table...');
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('user_type')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  console.log('📊 [useUserType] profiles query result:', { profile, profileError });
+
+  if (profileError) {
+    console.error('📊 [useUserType] Error fetching profile:', profileError);
+    return { userType: null, hasCompletedOnboarding: false };
+  }
+
+  const profileType = (profile?.user_type as UserType) ?? null;
+
+  if (!profileType) {
+    console.log('📊 [useUserType] No user_type found, returning incomplete');
+    return { userType: null, hasCompletedOnboarding: false };
+  }
+
+  // Check onboarding for the type found in profile
+  if (profileType === 'restaurant_owner') {
+    const { data: business } = await supabase
+      .from('restaurant_businesses')
+      .select('id')
+      .eq('owner_id', userId)
+      .maybeSingle();
+
+    return { userType: profileType, hasCompletedOnboarding: !!business };
+  }
+
+  const { data: consultantProfile } = await supabase
     .from('consultant_profiles')
     .select('id, company_name')
     .eq('user_id', userId)
     .maybeSingle();
 
-  console.log('📊 [useUserType] consultant_profiles query result:', { consultantProfile, error });
-
-  if (error) throw error;
-
-  const result = {
-    userType: type,
+  return {
+    userType: profileType,
     hasCompletedOnboarding: !!consultantProfile?.company_name,
   };
-  console.log('📊 [useUserType] Returning for consultant:', result);
-  return result;
 };
 
 export const useUserType = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Extract user_type from metadata if available
+  const metaUserType = (user?.user_metadata as Record<string, any>)?.user_type;
+
   const queryKey = ['userType', user?.id] as const;
 
-  const { data, isLoading, isFetched } = useQuery({
+  const { data, isLoading, isFetched, isError } = useQuery({
     queryKey,
     enabled: Boolean(user?.id),
-    queryFn: () => fetchUserTypeData(user!.id),
+    queryFn: () => fetchUserTypeData(user!.id, metaUserType),
     staleTime: 5_000,
     refetchOnWindowFocus: false,
     retry: 1,
+    // Add a timeout to prevent hanging forever
+    gcTime: 30_000,
   });
 
   const userType: UserType = data?.userType ?? null;
   const hasCompletedOnboarding = data?.hasCompletedOnboarding ?? false;
 
-  // isReady means we have fetched at least once (even if result is null)
-  const isReady = Boolean(user?.id) ? isFetched : true;
+  // isReady means we have fetched at least once (even if result is null) OR there was an error
+  const isReady = Boolean(user?.id) ? (isFetched || isError) : true;
 
   const updateUserType = async (type: UserType) => {
     if (!user) return;
