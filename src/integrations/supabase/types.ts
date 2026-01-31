@@ -2667,6 +2667,68 @@ export type Database = {
         }
         Relationships: []
       }
+      opening_analysis_runs: {
+        Row: {
+          checklist_generated: boolean | null
+          completed_at: string | null
+          created_at: string
+          current_phase: string | null
+          error_message: string | null
+          id: string
+          include_checklist: boolean | null
+          phases_completed: string[] | null
+          phases_failed: string[] | null
+          project_id: string
+          started_at: string | null
+          status: string
+          total_phases: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_generated?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: string | null
+          error_message?: string | null
+          id?: string
+          include_checklist?: boolean | null
+          phases_completed?: string[] | null
+          phases_failed?: string[] | null
+          project_id: string
+          started_at?: string | null
+          status?: string
+          total_phases?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_generated?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: string | null
+          error_message?: string | null
+          id?: string
+          include_checklist?: boolean | null
+          phases_completed?: string[] | null
+          phases_failed?: string[] | null
+          project_id?: string
+          started_at?: string | null
+          status?: string
+          total_phases?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_analysis_runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "business_opening_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opening_checklist_items: {
         Row: {
           completed_at: string | null

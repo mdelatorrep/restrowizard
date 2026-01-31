@@ -413,9 +413,6 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
           project={project}
           onComplete={handleProcessingComplete}
           onCancel={handleCancelProcessing}
-          analyzePhase={analyzePhase}
-          generateChecklist={generateChecklist}
-          completedPhases={completedPhases}
         />
       </div>
     );
