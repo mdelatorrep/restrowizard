@@ -136,6 +136,7 @@ export const useModulePrerequisites = () => {
       'brand': { enabled: true },
       'recipes': { enabled: true },
       'inventory': { enabled: true },
+      'suppliers': { enabled: true },
       'staff-schedule': { enabled: true },
       'talent': { enabled: true },
       

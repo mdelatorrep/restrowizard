@@ -121,6 +121,13 @@ const baseConfigItems: MenuItem[] = [
     moduleKey: 'inventory'
   },
   { 
+    title: 'Proveedores', 
+    icon: Truck, 
+    path: '/r/suppliers',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    moduleKey: 'suppliers'
+  },
+  { 
     title: 'Menús Digitales', 
     icon: Utensils, 
     path: '/r/menus',
