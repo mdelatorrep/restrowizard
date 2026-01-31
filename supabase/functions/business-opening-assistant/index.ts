@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,41 +8,35 @@ const corsHeaders = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// PHASES DEFINITION
+// ═══════════════════════════════════════════════════════════════
+const PHASES = [
+  'legal_requirements',
+  'location_analysis', 
+  'equipment_setup',
+  'supplier_network',
+  'staffing_plan',
+  'marketing_launch',
+  'financial_projection',
+] as const;
+
+type PhaseId = typeof PHASES[number];
+
+// ═══════════════════════════════════════════════════════════════
 // COUNTRY CODE MAPPING FOR USER_LOCATION
 // ═══════════════════════════════════════════════════════════════
 const COUNTRY_CODES: Record<string, string> = {
-  'México': 'MX',
-  'Mexico': 'MX',
-  'Colombia': 'CO',
-  'Argentina': 'AR',
-  'Chile': 'CL',
-  'Perú': 'PE',
-  'Peru': 'PE',
-  'Ecuador': 'EC',
-  'España': 'ES',
-  'Spain': 'ES',
-  'Estados Unidos': 'US',
-  'United States': 'US',
-  'Guatemala': 'GT',
-  'Costa Rica': 'CR',
-  'Panamá': 'PA',
-  'Panama': 'PA',
-  'Uruguay': 'UY',
-  'Paraguay': 'PY',
-  'Bolivia': 'BO',
-  'Venezuela': 'VE',
-  'Honduras': 'HN',
-  'El Salvador': 'SV',
-  'Nicaragua': 'NI',
-  'República Dominicana': 'DO',
-  'Dominican Republic': 'DO',
-  'Puerto Rico': 'PR',
-  'Cuba': 'CU',
+  'México': 'MX', 'Mexico': 'MX', 'Colombia': 'CO', 'Argentina': 'AR',
+  'Chile': 'CL', 'Perú': 'PE', 'Peru': 'PE', 'Ecuador': 'EC',
+  'España': 'ES', 'Spain': 'ES', 'Estados Unidos': 'US', 'United States': 'US',
+  'Guatemala': 'GT', 'Costa Rica': 'CR', 'Panamá': 'PA', 'Panama': 'PA',
+  'Uruguay': 'UY', 'Paraguay': 'PY', 'Bolivia': 'BO', 'Venezuela': 'VE',
+  'Honduras': 'HN', 'El Salvador': 'SV', 'Nicaragua': 'NI',
+  'República Dominicana': 'DO', 'Dominican Republic': 'DO',
+  'Puerto Rico': 'PR', 'Cuba': 'CU',
 };
 
-const getCountryCode = (country: string): string => {
-  return COUNTRY_CODES[country] || 'MX';
-};
+const getCountryCode = (country: string): string => COUNTRY_CODES[country] || 'MX';
 
 // ═══════════════════════════════════════════════════════════════
 // ANTI-HALLUCINATION + DIRECT ACTION GUARDRAILS
@@ -91,9 +86,6 @@ OBLIGATORIO responder con:
 ═══════════════════════════════════════════════════════════════
 `;
 
-// ═══════════════════════════════════════════════════════════════
-// EXECUTIVE FORMAT INSTRUCTION
-// ═══════════════════════════════════════════════════════════════
 const EXECUTIVE_FORMAT_INSTRUCTION = `
 FORMATO DE RESPUESTA (OBLIGATORIO - ESTILO EJECUTIVO):
 - Máximo 1 página de contenido (NO más de 600 palabras)
@@ -119,26 +111,17 @@ Tabla concisa con rangos realistas
 `;
 
 function extractJsonFromResponse(responseText: string): unknown {
-  let cleaned = responseText
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
+  let cleaned = responseText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const jsonStart = cleaned.indexOf('{');
   const jsonEnd = cleaned.lastIndexOf('}');
   if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
     throw new Error('No se encontró un objeto JSON en la respuesta.');
   }
-
   cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-
   try {
     return JSON.parse(cleaned);
-  } catch (_e) {
-    const fixed = cleaned
-      .replace(/,\s*}/g, '}')
-      .replace(/,\s*]/g, ']')
-      .replace(/[\x00-\x1F\x7F]/g, '');
+  } catch {
+    const fixed = cleaned.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']').replace(/[\x00-\x1F\x7F]/g, '');
     return JSON.parse(fixed);
   }
 }
@@ -148,29 +131,32 @@ function detectTruncation(responseText: string): boolean {
   const openBraces = (text.match(/{/g) || []).length;
   const closeBraces = (text.match(/}/g) || []).length;
   if (openBraces !== closeBraces) return true;
-
   const truncationPatterns = [/\.\.\.$/, /\u2026$/, /\[truncated\]/i, /\[continued\]/i];
   return truncationPatterns.some((p) => p.test(text));
 }
 
-interface BusinessOpeningRequest {
-  action: 'analyze_phase' | 'ask_question' | 'generate_checklist';
-  projectData: {
-    projectName: string;
-    businessType: string;
-    cuisineType?: string;
-    description?: string;
-    city: string;
-    country: string;
-    neighborhood?: string;
-    estimatedBudget?: number;
-  };
-  phase?: string;
-  question?: string;
+interface ProjectData {
+  id?: string;
+  projectName: string;
+  businessType: string;
+  cuisineType?: string;
+  description?: string;
+  city: string;
+  country: string;
+  neighborhood?: string;
+  estimatedBudget?: number;
 }
 
-// Helper to create strong location context
-const getLocationContext = (data: BusinessOpeningRequest['projectData']) => `
+interface BusinessOpeningRequest {
+  action: 'analyze_phase' | 'ask_question' | 'generate_checklist' | 'start_full_analysis' | 'continue_analysis';
+  projectData: ProjectData;
+  phase?: string;
+  question?: string;
+  runId?: string;
+  projectId?: string;
+}
+
+const getLocationContext = (data: ProjectData) => `
 📍 CONTEXTO GEOGRÁFICO:
 • Ciudad: ${data.city}, ${data.country}
 ${data.neighborhood ? `• Zona/Barrio: ${data.neighborhood}` : ''}
@@ -183,7 +169,7 @@ ${data.estimatedBudget ? `• Presupuesto: $${data.estimatedBudget.toLocaleStrin
 // ═══════════════════════════════════════════════════════════════
 // PHASE PROMPTS - EXECUTIVE FORMAT WITH ANTI-HALLUCINATION
 // ═══════════════════════════════════════════════════════════════
-const PHASE_PROMPTS: Record<string, (data: BusinessOpeningRequest['projectData']) => string> = {
+const PHASE_PROMPTS: Record<string, (data: ProjectData) => string> = {
   legal_requirements: (data) => `
 ${ANTI_HALLUCINATION_RULES}
 ${EXECUTIVE_FORMAT_INSTRUCTION}
@@ -437,20 +423,98 @@ USA LA BÚSQUEDA WEB para encontrar benchmarks financieros del sector en ${data.
 `
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+// ═══════════════════════════════════════════════════════════════
+// HELPER: CALL OPENAI API
+// ═══════════════════════════════════════════════════════════════
+async function callOpenAI(systemPrompt: string, userPrompt: string, projectData: ProjectData): Promise<{ text: string; sources: string[] }> {
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+
+  const countryCode = getCountryCode(projectData.country);
+  
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-5.2',
+      tools: [{
+        type: 'web_search',
+        search_context_size: 'high',
+        user_location: {
+          type: 'approximate',
+          country: countryCode,
+          city: projectData.city,
+          region: projectData.neighborhood || projectData.city
+        }
+      }],
+      reasoning: { effort: 'medium' },
+      input: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[business-opening-assistant] OpenAI API error:', response.status, errorText);
+    if (response.status === 429) throw new Error('Rate limit exceeded. Please try again later.');
+    if (response.status === 401) throw new Error('Invalid OpenAI API key.');
+    throw new Error(`OpenAI API error: ${response.status}`);
   }
 
-  try {
-    const { action, projectData, phase, question }: BusinessOpeningRequest = await req.json();
+  const data = await response.json();
+  
+  let analysisText = '';
+  let sources: string[] = [];
+  
+  if (data.output) {
+    for (const item of data.output) {
+      if (item.type === 'message' && item.content) {
+        for (const content of item.content) {
+          if (content.type === 'output_text') {
+            analysisText = content.text;
+            if (content.annotations) {
+              const annotationUrls = content.annotations
+                .filter((a: { type: string; url?: string }) => a.type === 'url_citation' && a.url)
+                .map((a: { url: string }) => a.url);
+              sources = [...sources, ...annotationUrls];
+            }
+          }
+        }
+      }
+      if (item.type === 'web_search_call' && item.action?.sources) {
+        const searchSources = item.action.sources
+          .filter((s: { url?: string }) => s.url && !s.url.includes('oai-'))
+          .map((s: { url: string }) => s.url);
+        sources = [...sources, ...searchSources];
+      }
+    }
+  }
+  
+  sources = [...new Set(sources)];
+  
+  if (!analysisText) throw new Error('OpenAI response was empty');
+  
+  return { text: analysisText, sources };
+}
 
-    console.log(`[business-opening-assistant] Processing ${action} for ${projectData.businessType} in ${projectData.city}, ${projectData.country}`);
-
-    // ═══════════════════════════════════════════════════════════════
-    // SYSTEM PROMPTS - DIRECT ACTION, NO QUESTIONS
-    // ═══════════════════════════════════════════════════════════════
-    const baseSystemPrompt = `Eres un consultor experto en apertura de negocios gastronómicos.
+// ═══════════════════════════════════════════════════════════════
+// BACKGROUND JOB PROCESSOR - SELF-CHAINING
+// ═══════════════════════════════════════════════════════════════
+async function processBackgroundAnalysis(
+  supabase: ReturnType<typeof createClient>,
+  runId: string,
+  projectId: string,
+  projectData: ProjectData,
+  includeChecklist: boolean
+) {
+  console.log(`[background-job] Starting processing for run ${runId}`);
+  
+  const baseSystemPrompt = `Eres un consultor experto en apertura de negocios gastronómicos.
 
 REGLA CRÍTICA: ENTREGA RESULTADOS DIRECTAMENTE. 
 - NUNCA preguntes "¿quieres que busque?" - USA la búsqueda automáticamente
@@ -462,7 +526,157 @@ USA la búsqueda web para obtener datos ACTUALES y VERIFICABLES.
 Responde SIEMPRE en ESPAÑOL, formato MARKDOWN ejecutivo (máximo 1 página).
 Cada punto debe ser ACCIONABLE y CONCRETO.`;
 
-    const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
+  // Get current run status
+  const { data: run, error: runError } = await supabase
+    .from('opening_analysis_runs')
+    .select('*')
+    .eq('id', runId)
+    .single();
+  
+  if (runError || !run) {
+    console.error('[background-job] Run not found:', runError);
+    return;
+  }
+  
+  if (run.status === 'cancelled') {
+    console.log('[background-job] Run was cancelled, stopping');
+    return;
+  }
+  
+  const completedPhases: string[] = run.phases_completed || [];
+  const failedPhases: string[] = run.phases_failed || [];
+  
+  // Find next phase to process
+  const remainingPhases = PHASES.filter(p => !completedPhases.includes(p));
+  
+  if (remainingPhases.length === 0) {
+    // All phases done, generate checklist if needed
+    if (includeChecklist && !run.checklist_generated) {
+      await processChecklist(supabase, runId, projectId, projectData);
+    } else {
+      // Mark as completed
+      await supabase
+        .from('opening_analysis_runs')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', runId);
+    }
+    return;
+  }
+  
+  const currentPhase = remainingPhases[0];
+  console.log(`[background-job] Processing phase: ${currentPhase}`);
+  
+  // Update run status
+  await supabase
+    .from('opening_analysis_runs')
+    .update({
+      status: 'processing',
+      current_phase: currentPhase,
+      started_at: run.started_at || new Date().toISOString(),
+    })
+    .eq('id', runId);
+  
+  try {
+    // Analyze the phase
+    const userPrompt = PHASE_PROMPTS[currentPhase](projectData);
+    const { text: analysisText, sources } = await callOpenAI(baseSystemPrompt, userPrompt, projectData);
+    
+    // Save analysis to database IMMEDIATELY
+    await supabase
+      .from('opening_phase_analyses')
+      .upsert(
+        {
+          project_id: projectId,
+          phase: currentPhase,
+          analysis_data: { text: analysisText, structured: null },
+          sources,
+          status: 'completed',
+        },
+        { onConflict: 'project_id,phase', ignoreDuplicates: false }
+      );
+    
+    console.log(`[background-job] Phase ${currentPhase} saved successfully`);
+    
+    // Update run with completed phase
+    const newCompleted = [...completedPhases, currentPhase];
+    const progress = Math.round((newCompleted.length / PHASES.length) * 100);
+    
+    await supabase
+      .from('opening_analysis_runs')
+      .update({
+        phases_completed: newCompleted,
+        current_phase: remainingPhases.length > 1 ? remainingPhases[1] : null,
+      })
+      .eq('id', runId);
+    
+    // Update project progress
+    await supabase
+      .from('business_opening_projects')
+      .update({
+        progress_percentage: progress,
+        current_phase: currentPhase,
+      })
+      .eq('id', projectId);
+      
+  } catch (error) {
+    console.error(`[background-job] Error processing phase ${currentPhase}:`, error);
+    
+    // Mark phase as failed but continue
+    await supabase
+      .from('opening_analysis_runs')
+      .update({
+        phases_failed: [...failedPhases, currentPhase],
+      })
+      .eq('id', runId);
+  }
+  
+  // Check if cancelled before continuing
+  const { data: checkRun } = await supabase
+    .from('opening_analysis_runs')
+    .select('status')
+    .eq('id', runId)
+    .single();
+  
+  if (checkRun?.status === 'cancelled') {
+    console.log('[background-job] Run cancelled during processing');
+    return;
+  }
+  
+  // Self-chain: trigger next phase
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+  
+  // Fire-and-forget the next invocation
+  fetch(`${SUPABASE_URL}/functions/v1/business-opening-assistant`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      action: 'continue_analysis',
+      runId,
+      projectId,
+      projectData,
+    }),
+  }).catch(err => console.error('[background-job] Self-chain failed:', err));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHECKLIST PROCESSOR
+// ═══════════════════════════════════════════════════════════════
+async function processChecklist(
+  supabase: ReturnType<typeof createClient>,
+  runId: string,
+  projectId: string,
+  projectData: ProjectData
+) {
+  console.log(`[background-job] Generating checklist for run ${runId}`);
+  
+  const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
 Genera un checklist estructurado y realista.
 
 ${ANTI_HALLUCINATION_RULES}
@@ -473,24 +687,7 @@ REGLAS:
 3. Máximo 25-30 tareas (calidad sobre cantidad)
 4. Cada tarea debe ser ESPECÍFICA y ACCIONABLE`;
 
-    const systemPrompt = action === 'generate_checklist' ? checklistSystemPrompt : baseSystemPrompt;
-
-    let userPrompt = '';
-
-    if (action === 'analyze_phase' && phase && PHASE_PROMPTS[phase]) {
-      userPrompt = PHASE_PROMPTS[phase](projectData);
-    } else if (action === 'ask_question' && question) {
-      userPrompt = `
-${ANTI_HALLUCINATION_RULES}
-${EXECUTIVE_FORMAT_INSTRUCTION}
-${getLocationContext(projectData)}
-
-**PREGUNTA DEL USUARIO:** ${question}
-
-Responde de forma concisa y ejecutiva. USA LA BÚSQUEDA WEB para información actual de ${projectData.city}.
-`;
-    } else if (action === 'generate_checklist') {
-      userPrompt = `
+  const checklistPrompt = `
 ${getLocationContext(projectData)}
 
 Genera un checklist para abrir un ${projectData.businessType}${projectData.cuisineType ? ` de cocina ${projectData.cuisineType}` : ''}.
@@ -506,162 +703,311 @@ Fases:
 Responde ÚNICAMENTE en JSON:
 {
   "items": [
-    {
-      "phase": "planning",
-      "title": "Título claro y específico",
-      "description": "Descripción breve",
-      "sortOrder": 1
-    }
+    { "phase": "planning", "title": "Título", "description": "Descripción", "sortOrder": 1 }
   ]
 }
 `;
-    } else {
-      throw new Error('Invalid action or missing parameters');
-    }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  try {
+    const { text: analysisText } = await callOpenAI(checklistSystemPrompt, checklistPrompt, projectData);
     
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY not configured');
+    if (detectTruncation(analysisText)) {
+      throw new Error('Checklist truncado');
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // OPENAI RESPONSES API WITH GPT-5.2 + WEB SEARCH
-    // ═══════════════════════════════════════════════════════════════
-    const countryCode = getCountryCode(projectData.country);
     
-    console.log(`[business-opening-assistant] Using model gpt-5.2 with web_search for ${projectData.city}, ${countryCode}`);
-
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5.2',
-        tools: [{
-          type: 'web_search',
-          search_context_size: 'high',
-          user_location: {
-            type: 'approximate',
-            country: countryCode,
-            city: projectData.city,
-            region: projectData.neighborhood || projectData.city
-          }
-        }],
-        reasoning: { effort: 'medium' },
-        input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-      }),
+    const parsed = extractJsonFromResponse(analysisText) as { items?: unknown[] };
+    if (!parsed?.items || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+      throw new Error('Checklist vacío');
+    }
+    
+    // Deduplicate
+    const seenTitles = new Set<string>();
+    const uniqueItems = parsed.items.filter((item: any) => {
+      const normalized = item.title?.toLowerCase().trim();
+      if (seenTitles.has(normalized)) return false;
+      seenTitles.add(normalized);
+      return true;
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[business-opening-assistant] OpenAI API error:', response.status, errorText);
+    
+    // Delete old checklist
+    await supabase
+      .from('opening_checklist_items')
+      .delete()
+      .eq('project_id', projectId);
+    
+    // Insert new
+    const checklistItems = uniqueItems.map((item: any, index: number) => ({
+      project_id: projectId,
+      phase: item.phase || 'planning',
+      title: item.title,
+      description: item.description,
+      sort_order: item.sortOrder || index,
+    }));
+    
+    await supabase
+      .from('opening_checklist_items')
+      .insert(checklistItems);
+    
+    console.log(`[background-job] Checklist saved with ${checklistItems.length} items`);
+    
+    // Mark run as completed
+    await supabase
+      .from('opening_analysis_runs')
+      .update({
+        status: 'completed',
+        checklist_generated: true,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', runId);
       
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (response.status === 401) {
-        throw new Error('Invalid OpenAI API key.');
-      }
-      
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-    }
+  } catch (error) {
+    console.error('[background-job] Checklist error:', error);
+    
+    // Still mark as completed (phases done)
+    await supabase
+      .from('opening_analysis_runs')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        error_message: `Checklist error: ${(error as Error).message}`,
+      })
+      .eq('id', runId);
+  }
+}
 
-    const data = await response.json();
-    console.log('[business-opening-assistant] OpenAI Response received, extracting content...');
+// ═══════════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ═══════════════════════════════════════════════════════════════
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body: BusinessOpeningRequest = await req.json();
+    const { action, projectData, phase, question, runId, projectId } = body;
+    
+    console.log(`[business-opening-assistant] Action: ${action}`);
+    
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
     // ═══════════════════════════════════════════════════════════════
-    // EXTRACT RESPONSE TEXT AND SOURCES
+    // START FULL ANALYSIS - Creates a run and starts background job
     // ═══════════════════════════════════════════════════════════════
-    let analysisText = '';
-    let sources: string[] = [];
-    
-    if (data.output) {
-      for (const item of data.output) {
-        // Extract main text content
-        if (item.type === 'message' && item.content) {
-          for (const content of item.content) {
-            if (content.type === 'output_text') {
-              analysisText = content.text;
-              
-              // Extract URL citations from annotations
-              if (content.annotations) {
-                const annotationUrls = content.annotations
-                  .filter((a: { type: string; url?: string }) => a.type === 'url_citation' && a.url)
-                  .map((a: { url: string }) => a.url);
-                sources = [...sources, ...annotationUrls];
-              }
-            }
-          }
-        }
+    if (action === 'start_full_analysis') {
+      if (!projectId) throw new Error('projectId required');
+      
+      // Check for existing incomplete run
+      const { data: existingRun } = await supabase
+        .from('opening_analysis_runs')
+        .select('*')
+        .eq('project_id', projectId)
+        .in('status', ['pending', 'processing'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (existingRun) {
+        // Resume existing run
+        console.log(`[business-opening-assistant] Resuming existing run ${existingRun.id}`);
         
-        // Extract sources from web_search_call
-        if (item.type === 'web_search_call') {
-          console.log('[business-opening-assistant] Web search performed:', item.id);
-          
-          if (item.action?.sources) {
-            const searchSources = item.action.sources
-              .filter((s: { url?: string }) => s.url && !s.url.includes('oai-'))
-              .map((s: { url: string }) => s.url);
-            sources = [...sources, ...searchSources];
-          }
-        }
+        // Trigger continuation
+        EdgeRuntime.waitUntil(
+          processBackgroundAnalysis(supabase, existingRun.id, projectId, projectData, existingRun.include_checklist)
+        );
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            runId: existingRun.id,
+            status: 'resumed',
+            phases_completed: existingRun.phases_completed,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      
+      // Get user from project
+      const { data: project } = await supabase
+        .from('business_opening_projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+      
+      if (!project) throw new Error('Project not found');
+      
+      // Create new run
+      const { data: newRun, error: createError } = await supabase
+        .from('opening_analysis_runs')
+        .insert({
+          project_id: projectId,
+          user_id: project.user_id,
+          status: 'pending',
+          include_checklist: true,
+        })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+      
+      console.log(`[business-opening-assistant] Created new run ${newRun.id}`);
+      
+      // Start background processing
+      EdgeRuntime.waitUntil(
+        processBackgroundAnalysis(supabase, newRun.id, projectId, projectData, true)
+      );
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          runId: newRun.id,
+          status: 'started',
+          message: 'Análisis iniciado en background',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
-    // Remove duplicate sources
-    sources = [...new Set(sources)];
-    
-    console.log(`[business-opening-assistant] Extracted ${analysisText.length} chars, ${sources.length} sources`);
-    
-    if (!analysisText) {
-      console.error('[business-opening-assistant] No content in OpenAI response:', JSON.stringify(data).substring(0, 500));
-      throw new Error('OpenAI response was empty');
+    // ═══════════════════════════════════════════════════════════════
+    // CONTINUE ANALYSIS - Self-chaining endpoint
+    // ═══════════════════════════════════════════════════════════════
+    if (action === 'continue_analysis') {
+      if (!runId || !projectId) throw new Error('runId and projectId required');
+      
+      EdgeRuntime.waitUntil(
+        processBackgroundAnalysis(supabase, runId, projectId, projectData, true)
+      );
+      
+      return new Response(
+        JSON.stringify({ success: true, status: 'continuing' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // LEGACY: SINGLE PHASE ANALYSIS (for manual retry)
+    // ═══════════════════════════════════════════════════════════════
+    if (action === 'analyze_phase' && phase && PHASE_PROMPTS[phase]) {
+      const baseSystemPrompt = `Eres un consultor experto en apertura de negocios gastronómicos.
 
-    // Parse JSON for checklist action
-    let structuredData = null;
+REGLA CRÍTICA: ENTREGA RESULTADOS DIRECTAMENTE. 
+- NUNCA preguntes "¿quieres que busque?" - USA la búsqueda automáticamente
+- NUNCA expliques lo que vas a hacer - HAZLO directamente
+- NUNCA muestres tu proceso de pensamiento
+- Si falta información, indica "Verificar en [fuente]" y continúa
+
+USA la búsqueda web para obtener datos ACTUALES y VERIFICABLES.
+Responde SIEMPRE en ESPAÑOL, formato MARKDOWN ejecutivo (máximo 1 página).
+Cada punto debe ser ACCIONABLE y CONCRETO.`;
+
+      const userPrompt = PHASE_PROMPTS[phase](projectData);
+      const { text: analysisText, sources } = await callOpenAI(baseSystemPrompt, userPrompt, projectData);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          action,
+          phase,
+          analysis: analysisText,
+          sources,
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // ASK QUESTION
+    // ═══════════════════════════════════════════════════════════════
+    if (action === 'ask_question' && question) {
+      const baseSystemPrompt = `Eres un consultor experto en apertura de negocios gastronómicos.
+USA la búsqueda web para obtener datos ACTUALES.
+Responde de forma CONCRETA y EJECUTIVA en ESPAÑOL.`;
+
+      const userPrompt = `
+${ANTI_HALLUCINATION_RULES}
+${EXECUTIVE_FORMAT_INSTRUCTION}
+${getLocationContext(projectData)}
+
+**PREGUNTA DEL USUARIO:** ${question}
+
+Responde de forma concisa y ejecutiva. USA LA BÚSQUEDA WEB para información actual de ${projectData.city}.
+`;
+      
+      const { text: analysisText, sources } = await callOpenAI(baseSystemPrompt, userPrompt, projectData);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          action,
+          analysis: analysisText,
+          sources,
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // GENERATE CHECKLIST (standalone)
+    // ═══════════════════════════════════════════════════════════════
     if (action === 'generate_checklist') {
-      try {
-        if (detectTruncation(analysisText)) {
-          throw new Error('La respuesta del checklist parece truncada. Intenta nuevamente.');
-        }
+      const checklistSystemPrompt = `Eres un experto consultor en apertura de negocios gastronómicos.
+Genera un checklist estructurado y realista.
 
-        const parsed = extractJsonFromResponse(analysisText);
-        if (!parsed || typeof parsed !== 'object') {
-          throw new Error('Checklist: JSON inválido');
-        }
+${ANTI_HALLUCINATION_RULES}
 
-        const obj = parsed as Record<string, unknown>;
-        const items = obj.items;
-        if (!Array.isArray(items) || items.length === 0) {
-          throw new Error('Checklist: JSON sin items');
-        }
+REGLAS:
+1. Responde ÚNICAMENTE con un objeto JSON válido
+2. El JSON debe seguir EXACTAMENTE el esquema solicitado
+3. Máximo 25-30 tareas (calidad sobre cantidad)
+4. Cada tarea debe ser ESPECÍFICA y ACCIONABLE`;
 
-        structuredData = parsed;
-      } catch (e) {
-        console.log('[business-opening-assistant] Could not parse JSON from checklist:', (e as Error)?.message ?? String(e));
-        throw e;
+      const checklistPrompt = `
+${getLocationContext(projectData)}
+
+Genera un checklist para abrir un ${projectData.businessType}${projectData.cuisineType ? ` de cocina ${projectData.cuisineType}` : ''}.
+
+REGLAS:
+1. Cada tarea ÚNICA y ESPECÍFICA - NO repitas conceptos
+2. Máximo 25-30 tareas total
+3. Tareas ACCIONABLES, no genéricas
+
+Fases:
+- planning, legal, location, equipment, suppliers, staffing, marketing, pre_opening, opening
+
+Responde ÚNICAMENTE en JSON:
+{
+  "items": [
+    { "phase": "planning", "title": "Título", "description": "Descripción", "sortOrder": 1 }
+  ]
+}
+`;
+      
+      const { text: analysisText, sources } = await callOpenAI(checklistSystemPrompt, checklistPrompt, projectData);
+      
+      if (detectTruncation(analysisText)) {
+        throw new Error('La respuesta del checklist parece truncada. Intenta nuevamente.');
       }
+      
+      const parsed = extractJsonFromResponse(analysisText);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          action,
+          analysis: analysisText,
+          structured_data: parsed,
+          sources,
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        action,
-        phase,
-        analysis: analysisText,
-        structured_data: structuredData,
-        sources,
-        timestamp: new Date().toISOString(),
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    
+    throw new Error('Invalid action or missing parameters');
 
   } catch (error) {
     console.error('[business-opening-assistant] Error:', error);
