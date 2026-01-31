@@ -51,6 +51,8 @@ import {
   LucideIcon,
   UtensilsCrossed,
   BarChart3,
+  Truck,
+  Package,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 
@@ -159,6 +161,18 @@ const lifecycleExtraItems: MenuItem[] = [
     stages: ['first_90_days', 'normal_operation']
   },
   { 
+    title: 'Inventarios', 
+    icon: Package, 
+    path: '/r/inventory',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Domicilios', 
+    icon: Truck, 
+    path: '/r/delivery',
+    stages: ['first_90_days', 'normal_operation']
+  },
+  { 
     title: 'Feedback', 
     icon: MessageSquare, 
     path: '/r/feedback',
@@ -223,6 +237,12 @@ const lifecycleExtraItems: MenuItem[] = [
     icon: CalendarCheck, 
     path: '/r/reservations',
     stages: ['pre_opening', 'first_90_days', 'normal_operation']
+  },
+  { 
+    title: 'Turnos', 
+    icon: CalendarDays, 
+    path: '/r/staff-schedule',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation']
   },
 ];
 
