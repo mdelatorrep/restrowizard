@@ -151,16 +151,62 @@ export function OpeningResultsDashboard({
     };
   }, [analyses, project.estimated_budget]);
 
+  // Phase order and labels for checklist display
+  const CHECKLIST_PHASE_ORDER = [
+    'planning',
+    'legal',
+    'location',
+    'equipment',
+    'suppliers',
+    'staffing',
+    'marketing',
+    'pre_opening',
+    'opening',
+  ];
+
+  const CHECKLIST_PHASE_LABELS: Record<string, string> = {
+    planning: 'Planeación',
+    legal: 'Legal y Permisos',
+    location: 'Ubicación',
+    equipment: 'Equipamiento',
+    suppliers: 'Proveedores',
+    staffing: 'Personal',
+    marketing: 'Marketing',
+    pre_opening: 'Pre-Apertura',
+    opening: 'Apertura',
+  };
+
+  const CHECKLIST_PHASE_ICONS: Record<string, React.ElementType> = {
+    planning: TrendingUp,
+    legal: Scale,
+    location: MapPin,
+    equipment: ChefHat,
+    suppliers: Truck,
+    staffing: Users,
+    marketing: Megaphone,
+    pre_opening: Clock,
+    opening: Rocket,
+  };
+
   // Group checklist by phase
   const groupedChecklist = useMemo(() => {
     const groups: Record<string, ChecklistItem[]> = {};
     checklist.forEach(item => {
-      const phase = item.phase || 'general';
+      const phase = item.phase || 'planning';
       if (!groups[phase]) groups[phase] = [];
       groups[phase].push(item);
     });
+    // Sort items within each phase by sort_order
+    Object.keys(groups).forEach(phase => {
+      groups[phase].sort((a, b) => a.sort_order - b.sort_order);
+    });
     return groups;
   }, [checklist]);
+
+  // Get ordered phases that have items
+  const orderedChecklistPhases = useMemo(() => {
+    return CHECKLIST_PHASE_ORDER.filter(phase => groupedChecklist[phase]?.length > 0);
+  }, [groupedChecklist]);
 
   // Calculate checklist progress
   const checklistProgress = useMemo(() => {
@@ -703,25 +749,43 @@ export function OpeningResultsDashboard({
                 </div>
               ) : (
                 <ScrollArea className="h-[500px] pr-4">
-                  <Accordion type="multiple" className="space-y-2">
-                    {Object.entries(groupedChecklist).map(([phase, items]) => {
-                      const phaseInfo = PHASES.find(p => p.id === phase);
+                  <Accordion type="multiple" defaultValue={orderedChecklistPhases} className="space-y-2">
+                    {orderedChecklistPhases.map((phase, phaseIndex) => {
+                      const items = groupedChecklist[phase];
                       const completedInPhase = items.filter(i => i.is_completed).length;
-                      const Icon = PHASE_ICONS[phase as PhaseId] || ListChecks;
+                      const allCompleted = completedInPhase === items.length;
+                      const Icon = CHECKLIST_PHASE_ICONS[phase] || ListChecks;
+                      const phaseName = CHECKLIST_PHASE_LABELS[phase] || phase;
 
                       return (
                         <AccordionItem
                           key={phase}
                           value={phase}
-                          className="border rounded-lg px-4"
+                          className={cn(
+                            "border rounded-lg px-4 transition-colors",
+                            allCompleted && "bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800"
+                          )}
                         >
                           <AccordionTrigger className="hover:no-underline">
                             <div className="flex items-center gap-3">
-                              <Icon className="h-5 w-5 text-primary" />
+                              <div className={cn(
+                                "flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold",
+                                allCompleted 
+                                  ? "bg-green-500 text-white" 
+                                  : "bg-primary/10 text-primary"
+                              )}>
+                                {phaseIndex + 1}
+                              </div>
+                              <Icon className={cn(
+                                "h-5 w-5",
+                                allCompleted ? "text-green-600" : "text-primary"
+                              )} />
                               <span className="font-medium">
-                                {phaseInfo?.name || 'General'}
+                                {phaseName}
                               </span>
-                              <Badge variant="secondary">
+                              <Badge variant={allCompleted ? "default" : "secondary"} className={cn(
+                                allCompleted && "bg-green-500"
+                              )}>
                                 {completedInPhase}/{items.length}
                               </Badge>
                             </div>
