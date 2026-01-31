@@ -4,7 +4,8 @@ import { Separator } from '@/components/ui/separator';
 import { 
   MapPin, Users, TrendingUp, AlertTriangle, CheckCircle2, 
   Target, Lightbulb, DollarSign, Clock, Star, Building2,
-  FileText, BarChart3, Utensils, Megaphone, Shield, Truck
+  FileText, BarChart3, Utensils, Megaphone, Shield, Truck,
+  ChevronRight, Globe, ArrowRight
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -110,40 +111,43 @@ const createMarkdownComponents = (isInsideSection: boolean) => ({
   h1: () => null,
   h2: () => null,
   h3: ({ children }: any) => (
-    <h4 className="text-sm font-semibold text-foreground mt-4 mb-2 flex items-center gap-2">
-      <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-      {children}
-    </h4>
+    <div className="mt-5 mb-3 pb-2 border-b border-border/40">
+      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <div className="w-1 h-4 rounded-full bg-primary" />
+        {children}
+      </h4>
+    </div>
   ),
   h4: ({ children }: any) => (
-    <h5 className="text-sm font-medium text-foreground/90 mt-3 mb-1.5">
+    <h5 className="text-sm font-medium text-foreground/90 mt-4 mb-2 flex items-center gap-2">
+      <ChevronRight className="h-3.5 w-3.5 text-primary/60" />
       {children}
     </h5>
   ),
   p: ({ children }: any) => (
-    <p className="text-sm text-foreground/80 leading-relaxed mb-2">
+    <p className="text-sm text-foreground/80 leading-relaxed mb-3">
       {children}
     </p>
   ),
   ul: ({ children }: any) => (
-    <ul className="space-y-1.5 my-2 ml-1">
+    <ul className="space-y-2 my-3">
       {children}
     </ul>
   ),
   ol: ({ children }: any) => (
-    <ol className="space-y-1.5 my-2 ml-1 list-none">
+    <ol className="space-y-2 my-3 list-none counter-reset-item">
       {children}
     </ol>
   ),
   li: ({ children, ordered, index }: any) => (
-    <li className="text-sm text-foreground/80 flex items-start gap-2">
-      <span className="mt-1.5 flex-shrink-0">
+    <li className="text-sm text-foreground/80 flex items-start gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+      <span className="mt-0.5 flex-shrink-0">
         {ordered ? (
-          <span className="text-xs font-semibold text-primary bg-primary/10 w-5 h-5 rounded-full flex items-center justify-center">
+          <span className="text-xs font-bold text-primary-foreground bg-primary w-5 h-5 rounded-full flex items-center justify-center">
             {(index || 0) + 1}
           </span>
         ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
         )}
       </span>
       <span className="flex-1 leading-relaxed">{children}</span>
@@ -153,47 +157,48 @@ const createMarkdownComponents = (isInsideSection: boolean) => ({
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   em: ({ children }: any) => (
-    <em className="text-foreground/70 not-italic">{children}</em>
+    <em className="text-primary/80 not-italic font-medium">{children}</em>
   ),
   a: ({ href, children }: any) => (
     <a 
       href={href} 
       target="_blank" 
       rel="noopener noreferrer"
-      className="text-primary hover:underline"
+      className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium transition-colors"
     >
-      {children}
+      <Globe className="h-3.5 w-3.5" />
+      <span className="underline underline-offset-2">{children}</span>
     </a>
   ),
   table: ({ children }: any) => (
-    <div className="overflow-x-auto my-3 rounded-lg border bg-card">
+    <div className="overflow-x-auto my-4 rounded-lg border bg-card shadow-sm">
       <table className="w-full text-sm">
         {children}
       </table>
     </div>
   ),
   thead: ({ children }: any) => (
-    <thead className="bg-muted/50 border-b">
+    <thead className="bg-muted/70 border-b">
       {children}
     </thead>
   ),
   th: ({ children }: any) => (
-    <th className="px-3 py-2 text-left font-medium text-foreground text-xs uppercase tracking-wide">
+    <th className="px-4 py-3 text-left font-semibold text-foreground text-xs uppercase tracking-wide">
       {children}
     </th>
   ),
   td: ({ children }: any) => (
-    <td className="px-3 py-2 border-b border-border/30 text-foreground/80">
+    <td className="px-4 py-3 border-b border-border/30 text-foreground/80">
       {children}
     </td>
   ),
   blockquote: ({ children }: any) => (
-    <blockquote className="border-l-2 border-primary/40 pl-3 py-1 my-2 text-foreground/70 italic text-sm">
+    <blockquote className="border-l-4 border-primary/40 bg-primary/5 pl-4 pr-3 py-3 my-3 rounded-r-lg text-foreground/80 text-sm">
       {children}
     </blockquote>
   ),
   code: ({ children }: any) => (
-    <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+    <code className="bg-muted px-2 py-1 rounded text-xs font-mono text-primary">
       {children}
     </code>
   ),
@@ -205,25 +210,25 @@ const SectionCard = ({ section, index }: { section: Section; index: number }) =>
   const hasContent = section.content.trim().length > 0;
   
   return (
-    <div className={`rounded-lg border-l-4 ${style.border} ${style.bg} overflow-hidden`}>
+    <div className={`rounded-xl border ${style.border} ${style.bg} overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
       {/* Section header */}
-      <div className="px-4 py-3 border-b border-border/20 flex items-center gap-3">
-        <div className={`p-1.5 rounded-md ${style.icon}`}>
+      <div className="px-5 py-4 border-b border-border/30 flex items-center gap-3 bg-gradient-to-r from-transparent to-background/50">
+        <div className={`p-2 rounded-lg ${style.icon} shadow-sm`}>
           {getSectionIcon(section.title)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground text-sm leading-tight">
+          <h3 className="font-semibold text-foreground text-base leading-tight">
             {section.title}
           </h3>
         </div>
-        <Badge variant="outline" className="text-[10px] font-normal bg-background/50">
-          {index + 1}
+        <Badge variant="secondary" className="text-xs font-medium px-2.5 py-1">
+          Sección {index + 1}
         </Badge>
       </div>
       
       {/* Section content */}
       {hasContent && (
-        <div className="px-4 py-3 bg-background/30">
+        <div className="px-5 py-4 bg-background/40">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={createMarkdownComponents(true)}
@@ -242,38 +247,38 @@ export function AnalysisContentRenderer({ content, phaseId }: AnalysisContentRen
   // If we found sections, render as cards
   if (sections.length > 1) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Header with section count */}
-        <div className="flex items-center justify-between px-1 mb-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Target className="h-3.5 w-3.5 text-primary" />
-            <span className="font-medium">Análisis estructurado</span>
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Target className="h-4 w-4 text-primary" />
+            <span className="font-medium">Análisis Estructurado</span>
           </div>
-          <Badge variant="secondary" className="text-[10px]">
+          <Badge variant="outline" className="text-xs font-medium">
             {sections.length} secciones
           </Badge>
         </div>
         
         {/* Section cards */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           {sections.map((section, idx) => (
             <SectionCard key={idx} section={section} index={idx} />
           ))}
         </div>
         
         {/* Footer */}
-        <div className="flex items-center gap-2 pt-2 mt-2 border-t border-border/30 text-[11px] text-muted-foreground">
-          <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+        <div className="flex items-center gap-2 pt-3 mt-3 border-t border-border/40 text-xs text-muted-foreground">
+          <Lightbulb className="h-4 w-4 text-amber-500" />
           <span>Análisis generado con datos locales del mercado</span>
         </div>
       </div>
     );
   }
   
-  // Fallback: Simple clean markdown rendering
+  // Fallback: Simple clean markdown rendering with better styling
   return (
-    <div className="space-y-3">
-      <div className="rounded-lg border bg-card/50 p-4">
+    <div className="space-y-4">
+      <div className="rounded-xl border bg-card/50 p-5 shadow-sm">
         <ReactMarkdown 
           remarkPlugins={[remarkGfm]}
           components={createMarkdownComponents(false)}
