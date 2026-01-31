@@ -70,7 +70,8 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
     completedCount: completedTasks, 
     progressPercent, 
     getOverdueTasks, 
-    getUpcomingTasks 
+    getUpcomingTasks,
+    hasAIChecklist,
   } = usePreOpeningTasks(projectId);
   
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
@@ -208,15 +209,27 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
                   {isConfirmingOpening ? 'Confirmando...' : '¡Confirmar Apertura Oficial!'}
                 </Button>
               ) : (
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  onClick={() => navigate('/r/new-business')}
-                  className="gap-2"
-                >
-                  <ClipboardCheck className="h-5 w-5" />
-                  Revisar Plan de Apertura
-                </Button>
+                <>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    onClick={() => navigate('/r/new-business')}
+                    className="gap-2"
+                  >
+                    <ClipboardCheck className="h-5 w-5" />
+                    Revisar Plan de Apertura
+                  </Button>
+                  {!hasAIChecklist && (
+                    <Button 
+                      size="lg" 
+                      onClick={() => navigate('/r/new-business')}
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-5 w-5" />
+                      Generar Checklist con IA
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </CardContent>
