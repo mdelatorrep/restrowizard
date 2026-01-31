@@ -90,7 +90,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   const [isGeneratingChecklist, setIsGeneratingChecklist] = useState(false);
 
-  const { data: project } = useBusinessProject(projectId);
+  const projectQuery = useBusinessProject(projectId);
+  const project = projectQuery.data;
   const analysesQuery = useProjectAnalyses(projectId);
   const checklistQuery = useProjectChecklist(projectId);
   const analyses = analysesQuery.data ?? [];
@@ -223,8 +224,11 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
       description: "Puedes regenerar el plan con los nuevos datos.",
     });
 
-    // Refresh project data
-    await analysesQuery.refetch();
+    // Refresh project data - CRITICAL: refetch the project itself to update UI
+    await Promise.all([
+      projectQuery.refetch(),
+      analysesQuery.refetch(),
+    ]);
   };
 
   // Regenerate all phases
