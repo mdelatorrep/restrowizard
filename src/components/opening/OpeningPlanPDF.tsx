@@ -376,27 +376,91 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   analysisSection: {
-    marginBottom: 8,
+    marginBottom: 10,
+    padding: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: 4,
   },
   analysisSectionTitle: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: 600,
     color: COLORS.text,
-    marginBottom: 4,
-    paddingBottom: 2,
+    marginBottom: 6,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   analysisContent: {
     fontSize: 8,
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     color: COLORS.textMuted,
+  },
+  // H3 subsection
+  analysisH3: {
+    fontSize: 9,
+    fontWeight: 600,
+    color: COLORS.text,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border + '60',
+  },
+  // H4 subsection
+  analysisH4: {
+    fontSize: 8,
+    fontWeight: 600,
+    color: COLORS.text,
+    marginTop: 6,
+    marginBottom: 3,
+  },
+  // Paragraph text
+  analysisParagraph: {
+    fontSize: 8,
+    lineHeight: 1.6,
+    color: COLORS.textMuted,
+    marginBottom: 4,
+  },
+  // Blockquote
+  analysisBlockquote: {
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+    paddingLeft: 8,
+    paddingVertical: 6,
+    paddingRight: 6,
+    marginVertical: 6,
+    borderRadius: 4,
+  },
+  analysisBlockquoteText: {
+    fontSize: 8,
+    fontStyle: 'italic',
+    color: COLORS.text,
+    lineHeight: 1.5,
+  },
+  // Table
+  analysisTable: {
+    marginVertical: 6,
+    padding: 6,
+    backgroundColor: COLORS.background,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  analysisTableRow: {
+    fontSize: 7,
+    lineHeight: 1.4,
+    color: COLORS.text,
+    marginBottom: 2,
   },
   analysisBullet: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 4,
     paddingLeft: 4,
+    paddingVertical: 2,
+    backgroundColor: COLORS.background + '50',
+    borderRadius: 3,
   },
   bulletDot: {
     width: 4,
@@ -412,6 +476,32 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 1.5,
   },
+  // Numbered list
+  numberedBullet: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+    paddingLeft: 4,
+    paddingVertical: 3,
+    backgroundColor: COLORS.background + '50',
+    borderRadius: 3,
+  },
+  numberedCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberedText: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: COLORS.white,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   // Links
   link: {
     color: COLORS.primary,
@@ -420,6 +510,17 @@ const styles = StyleSheet.create({
   linkIcon: {
     fontSize: 8,
     color: COLORS.primary,
+  },
+  linksSection: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: COLORS.blueLight,
+    borderRadius: 4,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   // Checklist
   checklistPhase: {
@@ -578,44 +679,185 @@ function getAnalysisText(analysis: PhaseAnalysis): string {
   return '';
 }
 
-// Parse content into sections
-function parseSections(content: string): Array<{ title: string; bullets: string[] }> {
-  const sections: Array<{ title: string; bullets: string[] }> = [];
+// Content item types for detailed analysis rendering
+interface ContentItem {
+  type: 'paragraph' | 'bullet' | 'numbered' | 'h3' | 'h4' | 'blockquote' | 'table';
+  text: string;
+  number?: number;
+}
+
+interface ParsedSection {
+  title: string;
+  items: ContentItem[];
+}
+
+// Parse markdown into sections (matching AnalysisContentRenderer logic)
+function parseMarkdownSections(content: string): ParsedSection[] {
+  const sections: ParsedSection[] = [];
   const lines = content.split('\n');
   
-  let currentSection: { title: string; bullets: string[] } | null = null;
+  let currentSection: ParsedSection | null = null;
+  let introContent: ContentItem[] = [];
+  let numberedCounter = 0;
+  let inTable = false;
+  let tableContent = '';
   
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
     
-    // Check for section headers (## or bold text at start)
-    if (trimmed.startsWith('##') || (trimmed.startsWith('**') && trimmed.endsWith('**'))) {
-      if (currentSection && currentSection.bullets.length > 0) {
+    // Match ## headers (main sections) - exactly like AnalysisContentRenderer
+    const headerMatch = trimmed.match(/^##\s+(.+)$/);
+    
+    if (headerMatch) {
+      // Save previous section
+      if (currentSection && currentSection.items.length > 0) {
         sections.push(currentSection);
       }
-      const title = trimmed.replace(/^##\s*/, '').replace(/\*\*/g, '').trim();
-      currentSection = { title, bullets: [] };
-    } else if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('→')) {
-      const bullet = trimmed.replace(/^[•\-→]\s*/, '').trim();
-      if (bullet.length > 10 && bullet.length < 200) {
+      currentSection = {
+        title: headerMatch[1].replace(/\*\*/g, '').trim(),
+        items: []
+      };
+      numberedCounter = 0;
+    } else if (trimmed.startsWith('###')) {
+      // H3 subsection header
+      const h3Text = trimmed.replace(/^###\s*/, '').replace(/\*\*/g, '').trim();
+      if (h3Text) {
+        const item: ContentItem = { type: 'h3', text: h3Text };
         if (currentSection) {
-          currentSection.bullets.push(bullet);
+          currentSection.items.push(item);
         } else {
-          if (sections.length === 0) {
-            sections.push({ title: 'Resumen', bullets: [bullet] });
+          introContent.push(item);
+        }
+      }
+    } else if (trimmed.startsWith('####')) {
+      // H4 subsection header
+      const h4Text = trimmed.replace(/^####\s*/, '').replace(/\*\*/g, '').trim();
+      if (h4Text) {
+        const item: ContentItem = { type: 'h4', text: h4Text };
+        if (currentSection) {
+          currentSection.items.push(item);
+        } else {
+          introContent.push(item);
+        }
+      }
+    } else if (trimmed.startsWith('>')) {
+      // Blockquote
+      const quoteText = trimmed.replace(/^>\s*/, '').trim();
+      if (quoteText) {
+        const item: ContentItem = { type: 'blockquote', text: quoteText };
+        if (currentSection) {
+          currentSection.items.push(item);
+        } else {
+          introContent.push(item);
+        }
+      }
+    } else if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      // Table row
+      if (!inTable) {
+        inTable = true;
+        tableContent = '';
+      }
+      // Skip separator rows
+      if (!trimmed.match(/^\|[-:\s|]+\|$/)) {
+        const cells = trimmed.split('|').filter(c => c.trim()).map(c => c.trim());
+        if (cells.length > 0) {
+          tableContent += cells.join(' | ') + '\n';
+        }
+      }
+    } else {
+      // End of table
+      if (inTable) {
+        inTable = false;
+        if (tableContent.trim()) {
+          const item: ContentItem = { type: 'table', text: tableContent.trim() };
+          if (currentSection) {
+            currentSection.items.push(item);
           } else {
-            sections[sections.length - 1].bullets.push(bullet);
+            introContent.push(item);
           }
         }
+        tableContent = '';
+      }
+      
+      // Numbered list
+      const numberedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
+      if (numberedMatch) {
+        numberedCounter++;
+        const item: ContentItem = { 
+          type: 'numbered', 
+          text: cleanMarkdown(numberedMatch[2]), 
+          number: numberedCounter 
+        };
+        if (currentSection) {
+          currentSection.items.push(item);
+        } else {
+          introContent.push(item);
+        }
+      } else if (trimmed.match(/^[-•*→]\s+/)) {
+        // Bullet list
+        const bulletText = trimmed.replace(/^[-•*→]\s+/, '').trim();
+        if (bulletText) {
+          const item: ContentItem = { type: 'bullet', text: cleanMarkdown(bulletText) };
+          if (currentSection) {
+            currentSection.items.push(item);
+          } else {
+            introContent.push(item);
+          }
+        }
+        numberedCounter = 0;
+      } else if (trimmed.length > 0) {
+        // Regular paragraph text
+        const cleanText = cleanMarkdown(trimmed);
+        if (cleanText.length > 5) {
+          const item: ContentItem = { type: 'paragraph', text: cleanText };
+          if (currentSection) {
+            currentSection.items.push(item);
+          } else {
+            introContent.push(item);
+          }
+        }
+        numberedCounter = 0;
       }
     }
   }
   
-  if (currentSection && currentSection.bullets.length > 0) {
+  // Handle any remaining table content
+  if (inTable && tableContent.trim()) {
+    const item: ContentItem = { type: 'table', text: tableContent.trim() };
+    if (currentSection) {
+      currentSection.items.push(item);
+    } else {
+      introContent.push(item);
+    }
+  }
+  
+  // Don't forget last section
+  if (currentSection && currentSection.items.length > 0) {
     sections.push(currentSection);
   }
   
+  // If there's intro content, add it as first section
+  if (introContent.length > 0) {
+    sections.unshift({
+      title: 'Resumen',
+      items: introContent
+    });
+  }
+  
   return sections;
+}
+
+// Legacy function for backwards compatibility (phase summary cards)
+function parseSections(content: string): Array<{ title: string; bullets: string[] }> {
+  const parsed = parseMarkdownSections(content);
+  return parsed.map(section => ({
+    title: section.title,
+    bullets: section.items
+      .filter(item => item.type === 'bullet' || item.type === 'numbered' || item.type === 'paragraph')
+      .map(item => item.text)
+      .filter(text => text.length > 10)
+  }));
 }
 
 // Get key recommendations from analysis
@@ -981,7 +1223,7 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
           const phaseId = analysis.phase as string;
           const phaseStyle = PHASE_STYLES[phaseId] || PHASE_STYLES.legal_requirements;
           const content = getAnalysisText(analysis);
-          const sections = parseSections(content);
+          const sections = parseMarkdownSections(content);
           const urls = extractUrls(content);
 
           return (
@@ -990,6 +1232,7 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
               style={[styles.analysisCard, { borderLeftColor: phaseStyle.border }]}
               wrap
             >
+              {/* Header */}
               <View style={styles.analysisHeader}>
                 <View style={[styles.analysisIcon, { backgroundColor: phaseStyle.bg }]}>
                   <Text style={{ fontSize: 10, color: phaseStyle.text }}>✓</Text>
@@ -999,6 +1242,7 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
                 </Text>
               </View>
 
+              {/* Badges */}
               <View style={styles.analysisBadgesRow}>
                 {analysis.estimated_cost && (
                   <Text style={styles.analysisBadge}>
@@ -1012,32 +1256,87 @@ export function OpeningPlanPDF({ project, analyses, checklist, metrics }: Openin
                 )}
               </View>
 
-              {/* Render ALL sections, not just first 3 */}
+              {/* Render ALL sections with full content structure */}
               {sections.map((section, idx) => (
-                <View key={idx} style={styles.analysisSection}>
+                <View key={idx} style={styles.analysisSection} wrap>
                   <Text style={styles.analysisSectionTitle}>{section.title}</Text>
-                  {section.bullets.map((bullet, bIdx) => (
-                    <View key={bIdx} style={styles.analysisBullet}>
-                      <View style={[styles.bulletDot, { backgroundColor: phaseStyle.border }]} />
-                      <Text style={styles.bulletText}>{bullet}</Text>
-                    </View>
-                  ))}
+                  
+                  {section.items.map((item, itemIdx) => {
+                    switch (item.type) {
+                      case 'h3':
+                        return (
+                          <Text key={itemIdx} style={styles.analysisH3}>
+                            {item.text}
+                          </Text>
+                        );
+                      case 'h4':
+                        return (
+                          <Text key={itemIdx} style={styles.analysisH4}>
+                            ▸ {item.text}
+                          </Text>
+                        );
+                      case 'blockquote':
+                        return (
+                          <View key={itemIdx} style={styles.analysisBlockquote}>
+                            <Text style={styles.analysisBlockquoteText}>
+                              "{item.text}"
+                            </Text>
+                          </View>
+                        );
+                      case 'table':
+                        return (
+                          <View key={itemIdx} style={styles.analysisTable}>
+                            {item.text.split('\n').map((row, rIdx) => (
+                              <Text key={rIdx} style={styles.analysisTableRow}>
+                                {row}
+                              </Text>
+                            ))}
+                          </View>
+                        );
+                      case 'numbered':
+                        return (
+                          <View key={itemIdx} style={styles.numberedBullet}>
+                            <View style={[styles.numberedCircle, { backgroundColor: phaseStyle.border }]}>
+                              <Text style={styles.numberedText}>{item.number}</Text>
+                            </View>
+                            <Text style={[styles.bulletText, { flex: 1 }]}>{item.text}</Text>
+                          </View>
+                        );
+                      case 'bullet':
+                        return (
+                          <View key={itemIdx} style={styles.analysisBullet}>
+                            <View style={[styles.bulletDot, { backgroundColor: phaseStyle.border }]} />
+                            <Text style={styles.bulletText}>{item.text}</Text>
+                          </View>
+                        );
+                      case 'paragraph':
+                      default:
+                        return (
+                          <Text key={itemIdx} style={styles.analysisParagraph}>
+                            {item.text}
+                          </Text>
+                        );
+                    }
+                  })}
                 </View>
               ))}
 
+              {/* Fallback if no sections parsed */}
               {sections.length === 0 && content && (
                 <Text style={styles.analysisContent}>{content}</Text>
               )}
 
-              {/* Render extracted links */}
+              {/* Render extracted links with clickable icons */}
               {urls.length > 0 && (
-                <View style={[styles.analysisSection, { marginTop: 8 }]}>
-                  <Text style={styles.analysisSectionTitle}>🔗 Enlaces de Referencia</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    {urls.slice(0, 5).map((linkInfo, lIdx) => (
-                      <Link key={lIdx} src={linkInfo.url} style={styles.link}>
-                        <Text style={{ fontSize: 7, color: COLORS.primary }}>🌐 {linkInfo.display}</Text>
-                      </Link>
+                <View style={styles.linksSection}>
+                  <Text style={[styles.analysisSectionTitle, { marginBottom: 4 }]}>🔗 Enlaces de Referencia</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {urls.map((linkInfo, lIdx) => (
+                      <View key={lIdx} style={styles.linkItem}>
+                        <Link src={linkInfo.url} style={styles.link}>
+                          <Text style={{ fontSize: 7, color: COLORS.primary }}>🌐 {linkInfo.display}</Text>
+                        </Link>
+                      </View>
                     ))}
                   </View>
                 </View>
