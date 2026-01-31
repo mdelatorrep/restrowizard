@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { BusinessProject } from '@/hooks/useBusinessOpening';
 import { MessageSquare, Send, Loader2, Bot, User, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { linkifyMarkdown } from '@/lib/linkifyText';
 
 interface Message {
   id: string;
@@ -142,8 +143,8 @@ export function OpeningChat({ project, onAskQuestion, isLoading }: OpeningChatPr
                     }`}
                   >
                     {message.role === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <div className="prose prose-sm max-w-none dark:prose-invert [&_a]:text-primary [&_a]:hover:underline">
+                        <ReactMarkdown>{linkifyMarkdown(message.content)}</ReactMarkdown>
                       </div>
                     ) : (
                       <p className="text-sm">{message.content}</p>

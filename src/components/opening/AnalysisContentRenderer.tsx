@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { linkifyMarkdown } from '@/lib/linkifyText';
 
 interface AnalysisContentRendererProps {
   content: string;
@@ -227,7 +228,7 @@ const SectionCard = ({ section, index }: { section: Section; index: number }) =>
             remarkPlugins={[remarkGfm]}
             components={createMarkdownComponents(true)}
           >
-            {section.content.trim()}
+            {linkifyMarkdown(section.content.trim())}
           </ReactMarkdown>
         </div>
       )}
@@ -277,7 +278,7 @@ export function AnalysisContentRenderer({ content, phaseId }: AnalysisContentRen
           remarkPlugins={[remarkGfm]}
           components={createMarkdownComponents(false)}
         >
-          {content}
+          {linkifyMarkdown(content)}
         </ReactMarkdown>
       </div>
     </div>
