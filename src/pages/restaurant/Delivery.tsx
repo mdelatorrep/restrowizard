@@ -6,15 +6,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Truck, Package, Clock, MapPin, DollarSign, RefreshCw, CheckCircle, XCircle, Timer } from 'lucide-react';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
+import { Truck, Package, Clock, MapPin, DollarSign, RefreshCw, CheckCircle, XCircle, Timer, Sparkles, Brain, TrendingUp } from 'lucide-react';
 import { useOrders } from '@/hooks/useOrders';
+import { useAIAgent } from '@/hooks/useAIAgent';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const Delivery: React.FC = () => {
   const { orders, loading, updateOrderStatus, refetch } = useOrders();
+  const { forecastDeliveryDemand, optimizeDelivery, loading: aiLoading } = useAIAgent();
   const [activeTab, setActiveTab] = useState('pending');
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // Filter delivery orders only
   const deliveryOrders = orders.filter(order => order.order_type === 'delivery');
@@ -63,6 +68,38 @@ const Delivery: React.FC = () => {
   const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
   const avgDeliveryTime = 35; // This would be calculated from actual data
 
+  // AI Analysis handler
+  const handleAIAnalysis = async () => {
+    if (deliveryOrders.length === 0) {
+      toast.error('No hay pedidos de delivery para analizar');
+      return;
+    }
+    
+    const deliveryData = {
+      pedidos_hoy: todayOrders.length,
+      ingresos_hoy: todayRevenue,
+      tiempo_promedio: avgDeliveryTime,
+      pendientes: pendingOrders.length,
+      en_preparacion: preparingOrders.length,
+      en_camino: enRouteOrders.length,
+      completados: completedOrders.length,
+      cancelados: cancelledOrders.length,
+      pedidos_recientes: deliveryOrders.slice(0, 20).map(o => ({
+        hora: new Date(o.created_at).toLocaleTimeString(),
+        direccion: o.delivery_address,
+        total: o.total,
+        estado: o.status
+      }))
+    };
+
+    const result = await forecastDeliveryDemand(deliveryData);
+    
+    if (result) {
+      setAiInsights(result);
+      setShowAIPanel(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -88,11 +125,35 @@ const Delivery: React.FC = () => {
             Administra y rastrea todos los pedidos de delivery
           </p>
         </div>
-        <Button variant="outline" onClick={refetch}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleAIAnalysis}
+            disabled={aiLoading}
+            className="gap-2 border-primary/30 hover:bg-primary/10"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            {aiLoading ? 'Analizando...' : 'Análisis IA'}
+          </Button>
+          <Button variant="outline" onClick={refetch}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Actualizar
+          </Button>
+        </div>
       </div>
+
+      {/* AI Insights Panel */}
+      {showAIPanel && (
+        <AIInsightsPanel
+          title="Análisis de Delivery"
+          description="Pronóstico de demanda y optimización de entregas"
+          insights={aiInsights}
+          loading={aiLoading}
+          onAnalyze={handleAIAnalysis}
+          onClose={() => setShowAIPanel(false)}
+          icon={<TrendingUp className="w-5 h-5 text-primary" />}
+        />
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

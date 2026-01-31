@@ -10,15 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Package, Plus, AlertTriangle, TrendingDown, DollarSign, RefreshCw, Search } from 'lucide-react';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
+import { Package, Plus, AlertTriangle, TrendingDown, DollarSign, RefreshCw, Search, Sparkles, Brain } from 'lucide-react';
 import { useInventoryData, InventoryItem } from '@/hooks/useInventoryData';
+import { useAIAgent } from '@/hooks/useAIAgent';
 import { toast } from 'sonner';
 
 const Inventory: React.FC = () => {
   const { inventory, kpis, loading, hasData, addInventoryItem, updateInventoryItem, deleteInventoryItem, refetch } = useInventoryData();
+  const { optimizeReorders, predictExpiry, analyzeCostTrends, loading: aiLoading } = useAIAgent();
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [formData, setFormData] = useState({
     item_name: '',
     category: '',
@@ -90,6 +95,37 @@ const Inventory: React.FC = () => {
     return { label: 'Normal', variant: 'default' as const };
   };
 
+  // AI Analysis handler
+  const handleAIAnalysis = async () => {
+    if (inventory.length === 0) {
+      toast.error('Agrega items al inventario para poder analizarlos');
+      return;
+    }
+    
+    const inventoryData = inventory.map(item => ({
+      nombre: item.item_name,
+      categoria: item.category,
+      stock_actual: item.current_stock,
+      punto_reorden: item.reorder_point,
+      costo_unitario: item.unit_cost,
+      unidad: item.unit,
+      proveedor: item.supplier_name
+    }));
+
+    const result = await optimizeReorders({
+      items: inventoryData,
+      total_items: kpis?.totalItems || 0,
+      valor_total: kpis?.totalValue || 0,
+      items_stock_bajo: kpis?.lowStockItems?.length || 0,
+      items_agotados: kpis?.outOfStockItems?.length || 0
+    });
+    
+    if (result) {
+      setAiInsights(result);
+      setShowAIPanel(true);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -116,6 +152,15 @@ const Inventory: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleAIAnalysis}
+            disabled={aiLoading}
+            className="gap-2 border-primary/30 hover:bg-primary/10"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            {aiLoading ? 'Analizando...' : 'Análisis IA'}
+          </Button>
           <Button variant="outline" onClick={refetch}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
@@ -277,6 +322,19 @@ const Inventory: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* AI Insights Panel */}
+      {showAIPanel && (
+        <AIInsightsPanel
+          title="Análisis de Inventario"
+          description="Optimización de stock y predicción de necesidades"
+          insights={aiInsights}
+          loading={aiLoading}
+          onAnalyze={handleAIAnalysis}
+          onClose={() => setShowAIPanel(false)}
+          icon={<Brain className="w-5 h-5 text-primary" />}
+        />
       )}
 
       {!hasData ? (

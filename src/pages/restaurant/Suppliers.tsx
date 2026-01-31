@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AIInsightsPanel, AIAnalyzeButton } from '@/components/AIInsightsPanel';
 import { 
   Truck, 
   Plus, 
@@ -26,12 +27,16 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter
+  Filter,
+  Sparkles,
+  Brain,
+  Handshake
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useAIAgent } from '@/hooks/useAIAgent';
 
 interface Supplier {
   id: string;
@@ -67,11 +72,14 @@ export default function RestaurantSuppliers() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { analyzeSuppliers, getSupplierNegotiationTips, loading: aiLoading } = useAIAgent();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -236,6 +244,38 @@ export default function RestaurantSuppliers() {
   const activeSuppliers = suppliers.filter(s => s.is_active).length;
   const avgLeadTime = suppliers.reduce((acc, s) => acc + (s.lead_time_days || 0), 0) / (totalSuppliers || 1);
   const categories = [...new Set(suppliers.map(s => s.category))];
+
+  // AI Analysis handler
+  const handleAIAnalysis = async () => {
+    if (suppliers.length === 0) {
+      toast({ 
+        title: "Sin datos", 
+        description: "Agrega proveedores para poder analizarlos", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    const supplierData = suppliers.map(s => ({
+      nombre: s.name,
+      categoria: s.category,
+      terminos_pago: s.payment_terms,
+      tiempo_entrega_dias: s.lead_time_days,
+      activo: s.is_active
+    }));
+
+    const result = await analyzeSuppliers({
+      proveedores: supplierData,
+      total_proveedores: totalSuppliers,
+      tiempo_entrega_promedio: avgLeadTime,
+      categorias: categories
+    });
+    
+    if (result) {
+      setAiInsights(result);
+      setShowAIPanel(true);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -438,20 +478,41 @@ export default function RestaurantSuppliers() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={handleAIAnalysis}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Análisis IA</p>
-                <p className="text-lg font-bold text-muted-foreground">Próximamente</p>
+                <p className="text-lg font-bold text-primary">
+                  {aiLoading ? 'Analizando...' : 'Analizar'}
+                </p>
               </div>
-              <div className="p-3 rounded-full bg-success/10">
-                <TrendingUp className="w-5 h-5 text-success" />
+              <div className="p-3 rounded-full bg-primary/10">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
             </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {aiInsights ? 'Ver insights' : 'Comparar y optimizar'}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insights Panel */}
+      {showAIPanel && (
+        <AIInsightsPanel
+          title="Análisis de Proveedores"
+          description="Evaluación comparativa y oportunidades de mejora"
+          insights={aiInsights}
+          loading={aiLoading}
+          onAnalyze={handleAIAnalysis}
+          onClose={() => setShowAIPanel(false)}
+          icon={<Brain className="w-5 h-5 text-primary" />}
+        />
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
