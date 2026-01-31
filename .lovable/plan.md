@@ -1,446 +1,327 @@
 
-# Plan de Integración Lógica de Módulos - RestroWizard
-
-## Estado: ✅ IMPLEMENTADO
-
-### Cambios Completados
-
-#### Base de Datos (Migraciones)
-- ✅ Tabla `staff_shifts` para gestión de turnos y cálculo de labor cost
-- ✅ Columnas `popularity_score`, `profitability_score`, `bcg_category` en `menu_items`
-- ✅ Columna `order_id` en `customer_feedback` para vincular feedback con órdenes
-- ✅ Columna `loyalty_customer_id` en `table_reservations`
-- ✅ Vista `menu_items_with_costs` que une productos con costos de recetas
-- ✅ Función `get_aggregated_daily_sales()` para calcular finanzas desde órdenes
-- ✅ Función `calculate_menu_item_scores()` para actualizar popularidad/rentabilidad
-- ✅ Función `get_customer_profile()` para vista 360° del cliente
-- ✅ Trigger `trigger_menu_scores_on_order` para actualizar scores automáticamente
-
-#### Hooks Creados
-- ✅ `useAggregatedFinances` - Finanzas calculadas desde órdenes reales
-- ✅ `useMenuEngineeringData` - Matriz BCG con datos de ventas reales
-- ✅ `useCustomerProfile` - Vista 360° del cliente
-- ✅ `useStaffSchedule` - Gestión de turnos y labor cost
-- ✅ `useRecipeMenuLink` - Vincular recetas con productos del menú
-
-#### Componentes Creados
-- ✅ `PublishRecipeToMenuDialog` - Dialog para publicar recetas en menú
-- ✅ `BCGMatrixView` - Visualización de matriz BCG con datos reales
-- ✅ `AggregatedFinancesDashboard` - Dashboard financiero en tiempo real
-
-#### Páginas Actualizadas
-- ✅ `Recipes.tsx` - Botón "Publicar en Menú" agregado
-- ✅ `StaffSchedule.tsx` - Nueva página de gestión de turnos
-- ✅ Rutas agregadas en `App.tsx`
-
----
+# Plan de Potenciación de Módulos con IA
 
 ## Resumen Ejecutivo
 
-Este plan conecta todos los módulos de la plataforma para crear un flujo de datos coherente donde **recetas crean productos, productos afectan inventarios, habilitan menús, generan ventas, y estas afectan finanzas**. El objetivo es eliminar la entrada manual de datos y hacer que la información fluya automáticamente entre módulos.
+La plataforma RestroWizard cuenta con un agente IA central (`ai-restaurant-agent`) que ya potencia 5 módulos principales. Sin embargo, hay **12+ módulos operativos** que actualmente funcionan sin inteligencia artificial pero que tienen datos ricos que pueden beneficiarse enormemente de capacidades predictivas, de análisis y recomendación.
 
 ---
 
-## Arquitectura de Flujos de Datos
+## Estado Actual de la Arquitectura IA
+
+### Edge Function Central: `ai-restaurant-agent`
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FLUJO CENTRAL DE PRODUCTOS                          │
-│                                                                              │
-│  RECETAS → PRODUCTOS → MENÚ → POS/ÓRDENES → FINANZAS                        │
-│     ↓           ↓         ↓         ↓            ↓                          │
-│  Costos    Inventario  Precios   Ventas    Reportes                        │
-│     ↓           ↓         ↓         ↓            ↓                          │
-│  Márgenes   Alertas   Ingeniería Clientes  Proyecciones                    │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    ai-restaurant-agent                       │
+├─────────────────────────────────────────────────────────────┤
+│  Módulos Actuales:                                          │
+│  ├── finances → analyze_profitability, detect_anomalies    │
+│  ├── talent → staff_optimization, analyze_candidates        │
+│  ├── operations → customer_insights                         │
+│  ├── menu-inventory → menu_engineering, inventory_prediction│
+│  └── sustainability → sustainability_analysis               │
+├─────────────────────────────────────────────────────────────┤
+│  Configuración:                                             │
+│  • Modelo: gpt-4.1-mini                                     │
+│  • Tool: web_search_preview (búsqueda en tiempo real)       │
+│  • Max tokens: 2500                                         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FLUJO DE CLIENTES                                   │
-│                                                                              │
-│  RESERVAS → MESAS → ÓRDENES → LOYALTY → FEEDBACK                            │
-│      ↓         ↓        ↓         ↓          ↓                              │
-│  Capacidad  Rotación  Historial Puntos   Satisfacción                       │
-└─────────────────────────────────────────────────────────────────────────────┘
+### Hook Cliente: `useAIAgent.ts`
+- Abstracción para llamar al agente central
+- Funciones específicas por módulo
+- Manejo de loading y errores
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          FLUJO DE OPERACIONES                                │
-│                                                                              │
-│  EMPLEADOS → TURNOS → ÓRDENES → COSTOS → PRODUCTIVIDAD                      │
-│      ↓          ↓         ↓         ↓           ↓                           │
-│  Capacidad   Labor    Eficiencia Finanzas   Performance                     │
-└─────────────────────────────────────────────────────────────────────────────┘
+---
+
+## Módulos Sin Potenciación IA (Oportunidades)
+
+### 1. Proveedores (`Suppliers.tsx`) - Alta Prioridad
+
+**Datos disponibles:**
+- Categorías de proveedores
+- Tiempos de entrega (lead_time_days)
+- Términos de pago
+- Histórico de compras (vía inventario)
+
+**Funciones IA propuestas:**
+- `supplier_analysis`: Comparar proveedores por rendimiento, puntualidad y precio
+- `supplier_negotiation_tips`: Generar puntos de negociación basados en volumen y mercado
+- `alternative_suppliers_search`: Buscar proveedores alternativos usando web_search
+
+**Prompt ejemplo:**
+```
+Analiza estos proveedores y recomienda estrategias de negociación:
+- Proveedor A: Lead time 3 días, pago 30 días
+- Proveedor B: Lead time 1 día, pago contado
+Incluye precios de mercado actuales para [categoría].
 ```
 
 ---
 
-## Fase 1: Conexión Recetas ↔ Productos ↔ Menú
+### 2. Inventarios (`Inventory.tsx`) - Alta Prioridad
 
-### 1.1 Crear Producto desde Receta
-Cuando se crea/actualiza una receta, permitir generar automáticamente un ítem de menú vinculado.
+**Datos disponibles:**
+- Stock actual vs punto de reorden
+- Costos unitarios
+- Categorías de productos
+- Proveedor asociado
 
-**Cambios:**
-- Modificar `useRecipes.ts` para incluir función `createMenuItemFromRecipe()`
-- Agregar botón "Publicar en Menú" en la vista de receta
-- Calcular precio sugerido: `cost_per_portion × markup_factor`
-- Sincronizar actualizaciones de costo de receta al producto
+**Funciones IA propuestas:**
+- `reorder_optimization`: Cantidades óptimas de pedido por producto
+- `expiry_prediction`: Predicción de caducidad y desperdicio
+- `cost_trend_analysis`: Detectar tendencias de precios de ingredientes
 
-### 1.2 Vincular Producto Existente a Receta
-Permitir asociar un ítem de menú existente con su receta de preparación.
-
-**Cambios:**
-- Agregar selector de `menu_item_id` en formulario de receta
-- Mostrar indicador visual de productos vinculados vs. huérfanos
-
-### 1.3 Costo de Producto Dinámico
-El costo del producto se calcula desde la receta en tiempo real.
-
-**Cambios:**
-- Crear vista SQL `menu_items_with_recipe_cost`
-- Agregar campo calculado `recipe_cost` en hook de menú
-- Mostrar alertas cuando margen cae por debajo de umbral
+**Integración:**
+- Agregar botón "Análisis IA" junto a "Actualizar"
+- Mostrar panel de insights similar a FinancesAIModule
 
 ---
 
-## Fase 2: Productos ↔ Inventario
+### 3. Domicilios/Delivery (`Delivery.tsx`) - Alta Prioridad
 
-### 2.1 Deducción Automática Mejorada
-Ya existe `useInventoryDeduction` pero se debe hacer más robusto.
+**Datos disponibles:**
+- Órdenes por estado
+- Tiempos de entrega
+- Direcciones de clientes
+- Histórico de pedidos
 
-**Cambios:**
-- Validar stock disponible ANTES de confirmar orden
-- Mostrar alertas en tiempo real de stock insuficiente
-- Registrar órdenes que no pudieron deducir inventario
-- Dashboard de "Órdenes sin Receta" (productos sin vincular)
+**Funciones IA propuestas:**
+- `delivery_route_optimization`: Optimizar rutas de entrega
+- `demand_forecast`: Predecir demanda por zona y horario
+- `delivery_time_estimation`: Estimar tiempos realistas de entrega
+- `driver_performance`: Analizar rendimiento de repartidores
 
-### 2.2 Proyección de Inventario
-Predecir necesidades de inventario basado en ventas históricas.
-
-**Cambios:**
-- Crear función `calculateInventoryProjection(days: number)`
-- Integrar con módulo de Ingeniería de Menú
-- Generar órdenes de compra sugeridas
-
----
-
-## Fase 3: Ventas ↔ Finanzas
-
-### 3.1 Agregación Automática de Ventas Diarias
-Eliminar entrada manual de `daily_sales`, calcular desde órdenes.
-
-**Cambios:**
-- Crear hook `useAggregatedDailySales`
-- Calcular automáticamente:
-  - `total_revenue`: suma de `restaurant_orders.total`
-  - `covers_count`: suma de `restaurant_orders.guests_count` 
-  - `food_cost`: suma de costos de recetas vendidas
-  - `labor_cost`: calculado desde turnos de empleados
-- Mantener opción de ajuste manual para gastos no capturados
-
-### 3.2 Finanzas en Tiempo Real
-Dashboard financiero que refleja ventas actuales.
-
-**Cambios:**
-- Modificar `useFinancesData.ts` para usar datos agregados
-- Agregar modo "Tiempo Real" vs "Histórico"
-- Integrar con sesiones POS para cuadre de caja
-
-### 3.3 Cálculo de Food Cost Real
-Calcular food cost desde ingredientes reales usados.
-
-**Cambios:**
-- Sumar `inventory_deductions` × `unit_cost`
-- Comparar con food cost teórico (recetas)
-- Identificar varianzas (desperdicio, robo, porciones)
+**Prompt ejemplo:**
+```
+Analiza estos pedidos de delivery y optimiza:
+- Zonas con mayor demanda
+- Horarios pico
+- Tiempo promedio de entrega actual
+Sugiere mejoras operativas específicas.
+```
 
 ---
 
-## Fase 4: Ingeniería de Menú Basada en Datos Reales
+### 4. Fidelización/Loyalty (`Loyalty.tsx`) - Alta Prioridad
 
-### 4.1 Popularidad desde Ventas
-Calcular `popularity_score` de productos desde órdenes reales.
+**Datos disponibles:**
+- Puntos por cliente
+- Historial de compras
+- Tiers (VIP, Regular, Ocasional)
+- Riesgo de abandono (churn_risk_score)
+- Días desde última compra
 
-**Cambios:**
-- Crear función de cálculo periódico (trigger o cron)
-- Fórmula: `cantidad_vendida / total_items_vendidos × 100`
-- Considerar período configurable (7, 30, 90 días)
+**Funciones IA propuestas:**
+- `churn_prevention`: Estrategias personalizadas para clientes en riesgo
+- `loyalty_tier_recommendations`: Sugerir promociones por tier
+- `personalized_offers`: Generar ofertas personalizadas por cliente
+- `ltv_optimization`: Estrategias para aumentar lifetime value
 
-### 4.2 Rentabilidad Real
-Calcular `profitability_score` desde márgenes reales.
-
-**Cambios:**
-- Fórmula: `(precio_venta - costo_receta) / precio_venta × 100`
-- Actualizar cuando cambia precio o costo de ingredientes
-
-### 4.3 Matriz BCG Dinámica
-Clasificar productos automáticamente.
-
-**Cambios:**
-- **Estrella**: Alta popularidad + Alta rentabilidad
-- **Vaca**: Baja popularidad + Alta rentabilidad  
-- **Incógnita**: Alta popularidad + Baja rentabilidad
-- **Perro**: Baja popularidad + Baja rentabilidad
-- Generar recomendaciones automáticas de IA
+**Prompt ejemplo:**
+```
+Estos clientes están en riesgo de abandono:
+- Cliente A: 45 días sin comprar, $500k LTV
+- Cliente B: 60 días sin comprar, $200k LTV
+Genera campañas de recuperación personalizadas con incentivos apropiados.
+```
 
 ---
 
-## Fase 5: Clientes ↔ Órdenes ↔ Loyalty
+### 5. Recetas (`Recipes.tsx`) - Media Prioridad
 
-### 5.1 Historial de Cliente Unificado
-Consolidar información de cliente desde múltiples fuentes.
+**Datos disponibles:**
+- Ingredientes y cantidades
+- Costos por porción
+- Tiempo de preparación
+- Dificultad
 
-**Cambios:**
-- Crear tabla `customer_profiles` que agrupa:
-  - Datos de `loyalty_customers`
-  - Datos de `table_reservations`
-  - Historial de `restaurant_orders`
-  - Feedback de `customer_feedback`
-- Mostrar vista 360° del cliente en POS
-
-### 5.2 Preferencias Automáticas
-Detectar preferencias de cliente desde historial.
-
-**Cambios:**
-- Analizar órdenes para detectar:
-  - Productos favoritos
-  - Horarios preferidos
-  - Ticket promedio
-  - Frecuencia de visita
-- Actualizar `preferred_items` automáticamente
-
-### 5.3 Feedback Vinculado a Órdenes
-Permitir asociar feedback con orden específica.
-
-**Cambios:**
-- Agregar `order_id` a `customer_feedback`
-- Generar código QR único por orden
-- Correlacionar ratings con productos consumidos
+**Funciones IA propuestas:**
+- `recipe_optimization`: Optimizar costos sin afectar calidad
+- `ingredient_substitution`: Sugerir sustitutos más económicos
+- `menu_pairing`: Recomendar maridajes y combos
+- `nutritional_analysis`: Análisis nutricional estimado
 
 ---
 
-## Fase 6: Empleados ↔ Operaciones ↔ Finanzas
+### 6. Reservaciones (`Reservations.tsx`) - Media Prioridad
 
-### 6.1 Turnos y Costos de Labor
-Crear módulo de turnos que alimente costos.
+**Datos disponibles:**
+- Historial de reservas
+- Tasas de no-show
+- Tamaño de grupos
+- Horas pico
 
-**Cambios:**
-- Crear tabla `staff_shifts`:
-  ```sql
-  staff_member_id, shift_date, start_time, end_time, 
-  break_minutes, hourly_rate_override, status
-  ```
-- Calcular labor_cost diario desde turnos trabajados
-- Integrar con proyección de finanzas
-
-### 6.2 Productividad por Empleado
-Medir ventas/cubiertos por empleado.
-
-**Cambios:**
-- Vincular `restaurant_orders.waiter_id` con `staff_members`
-- Calcular KPIs por empleado:
-  - Ventas totales atendidas
-  - Ticket promedio
-  - Número de mesas atendidas
-  - Propinas recibidas
-
-### 6.3 Performance Score Dinámico
-Calcular `performance_score` desde métricas reales.
-
-**Cambios:**
-- Fórmula ponderada:
-  - 40% Ventas vs objetivo
-  - 30% Satisfacción de clientes
-  - 20% Puntualidad
-  - 10% Capacitación completada
+**Funciones IA propuestas:**
+- `no_show_prediction`: Predecir probabilidad de no-show
+- `capacity_optimization`: Optimizar capacidad por hora
+- `confirmation_templates`: Generar mensajes de confirmación personalizados
+- `overbooking_strategy`: Estrategia de overbooking inteligente
 
 ---
 
-## Fase 7: Reservaciones ↔ Mesas ↔ Capacidad
+### 7. Feedback (`Feedback.tsx`) - Media Prioridad
 
-### 7.1 Ocupación en Tiempo Real
-Integrar reservaciones con gestión de mesas.
+**Datos disponibles:**
+- Ratings y comentarios
+- Análisis de sentimiento (ya existe)
+- Sugerencias de respuesta IA (parcialmente implementado)
 
-**Cambios:**
-- Mostrar disponibilidad basada en:
-  - Reservaciones confirmadas
-  - Mesas actualmente ocupadas
-  - Tiempo estimado de rotación
-- Bloquear horarios cuando capacidad esté llena
+**Funciones IA propuestas:**
+- `trend_analysis`: Detectar tendencias en comentarios
+- `improvement_priorities`: Priorizar mejoras basadas en feedback
+- `response_generation`: Mejorar generación de respuestas (ya existe pero expandir)
+- `competitor_comparison`: Comparar con benchmarks de la industria
 
-### 7.2 Predicción de Demanda
-Proyectar ocupación futura.
+---
 
-**Cambios:**
-- Analizar patrones históricos por:
-  - Día de semana
-  - Hora del día
-  - Eventos especiales
-- Sugerir promociones para horas de baja demanda
+### 8. Turnos/Staff Schedule (`StaffSchedule.tsx`) - Media Prioridad
+
+**Datos disponibles:**
+- Turnos programados vs reales
+- Horas por empleado
+- Costos de labor
+- Tasas de cumplimiento
+
+**Funciones IA propuestas:**
+- `schedule_optimization`: Optimizar horarios según demanda histórica
+- `overtime_prediction`: Predecir horas extra
+- `coverage_analysis`: Análisis de cobertura por hora
+- `labor_cost_forecast`: Pronóstico de costos laborales
+
+---
+
+## Arquitectura Propuesta
+
+### Opción A: Expandir Edge Function Existente (Recomendada)
+
+Agregar nuevos módulos al `ai-restaurant-agent`:
+
+```typescript
+// Nuevos cases en switch(module)
+case 'suppliers':
+  systemPrompt = `Eres un experto en gestión de cadena de suministro 
+  para restaurantes con acceso a búsqueda web...`;
+  break;
+
+case 'delivery':
+  systemPrompt = `Eres un especialista en logística y delivery 
+  para restaurantes...`;
+  break;
+
+case 'loyalty':
+  systemPrompt = `Eres un experto en marketing de retención y 
+  programas de fidelización...`;
+  break;
+
+// etc.
+```
+
+### Opción B: Edge Functions Especializadas
+
+Crear funciones dedicadas para módulos complejos:
+- `ai-delivery-optimizer` - Para análisis de rutas complejos
+- `ai-loyalty-engine` - Ya existe parcialmente
+- `ai-supplier-analyzer` - Ya existe, potenciar
+
+---
+
+## Implementación por Fases
+
+### Fase 1: Módulos de Alto Impacto (Semana 1-2)
+1. **Proveedores**: Análisis y negociación
+2. **Inventarios**: Predicción y optimización de pedidos
+3. **Delivery**: Demanda y optimización de rutas
+4. **Loyalty**: Prevención de churn y ofertas personalizadas
+
+### Fase 2: Módulos de Operaciones (Semana 3-4)
+5. **Turnos**: Optimización de horarios
+6. **Reservaciones**: Predicción de no-shows
+7. **Feedback**: Análisis de tendencias
+
+### Fase 3: Módulos Complementarios (Semana 5-6)
+8. **Recetas**: Optimización de costos
+9. **POS**: Análisis de patrones de venta
+10. **Cocina (KDS)**: Predicción de tiempos
 
 ---
 
 ## Cambios Técnicos Requeridos
 
-### Base de Datos (Migraciones)
+### 1. Actualizar Edge Function (`ai-restaurant-agent/index.ts`)
 
-```sql
--- 1. Vista de productos con costo de receta
-CREATE VIEW menu_items_with_costs AS
-SELECT 
-  mi.*,
-  r.cost_per_portion as recipe_cost,
-  (mi.price - COALESCE(r.cost_per_portion, 0)) / NULLIF(mi.price, 0) * 100 as margin_percent
-FROM menu_items mi
-LEFT JOIN recipes r ON r.menu_item_id = mi.id;
-
--- 2. Tabla de turnos de empleados
-CREATE TABLE staff_shifts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  staff_member_id UUID REFERENCES staff_members(id),
-  shift_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  break_minutes INTEGER DEFAULT 0,
-  hourly_rate_override NUMERIC(10,2),
-  status VARCHAR(20) DEFAULT 'scheduled',
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Agregar order_id a feedback
-ALTER TABLE customer_feedback 
-ADD COLUMN order_id UUID REFERENCES restaurant_orders(id);
-
--- 4. Agregar cliente unificado a reservaciones
-ALTER TABLE table_reservations
-ADD COLUMN loyalty_customer_id UUID REFERENCES loyalty_customers(id);
-
--- 5. Función para calcular ventas diarias agregadas
-CREATE OR REPLACE FUNCTION get_aggregated_daily_sales(
-  p_user_id UUID,
-  p_date DATE
-) RETURNS TABLE (
-  total_revenue NUMERIC,
-  order_count INTEGER,
-  covers_count INTEGER,
-  food_cost NUMERIC,
-  avg_ticket NUMERIC
-) AS $$
-  SELECT 
-    COALESCE(SUM(total), 0) as total_revenue,
-    COUNT(*)::INTEGER as order_count,
-    COALESCE(SUM(guests_count), 0)::INTEGER as covers_count,
-    -- food_cost calculado desde deductions
-    (SELECT COALESCE(SUM(id.quantity_deducted * ii.unit_cost), 0)
-     FROM inventory_deductions id
-     JOIN inventory_items ii ON ii.id = id.inventory_item_id
-     WHERE id.user_id = p_user_id 
-     AND DATE(id.deducted_at) = p_date) as food_cost,
-    CASE WHEN COUNT(*) > 0 THEN SUM(total) / COUNT(*) ELSE 0 END as avg_ticket
-  FROM restaurant_orders
-  WHERE user_id = p_user_id
-  AND DATE(created_at) = p_date
-  AND status != 'cancelled';
-$$ LANGUAGE sql;
-
--- 6. Trigger para actualizar popularity/profitability
-CREATE OR REPLACE FUNCTION update_menu_item_scores() 
-RETURNS TRIGGER AS $$
-DECLARE
-  v_total_sold INTEGER;
-  v_item_sold INTEGER;
-  v_recipe_cost NUMERIC;
-  v_item_price NUMERIC;
-BEGIN
-  -- Solo procesar si la orden está completada
-  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
-    -- Obtener ventas totales del período
-    SELECT COUNT(*) INTO v_total_sold
-    FROM restaurant_orders, jsonb_array_elements(items::jsonb) AS item
-    WHERE user_id = NEW.user_id
-    AND created_at >= NOW() - INTERVAL '30 days'
-    AND status = 'completed';
-    
-    -- Actualizar cada producto vendido
-    FOR item IN SELECT * FROM jsonb_array_elements(NEW.items::jsonb)
-    LOOP
-      -- Actualizar popularity
-      SELECT COUNT(*) INTO v_item_sold
-      FROM restaurant_orders, jsonb_array_elements(items::jsonb) AS i
-      WHERE user_id = NEW.user_id
-      AND i->>'menu_item_id' = item->>'menu_item_id'
-      AND created_at >= NOW() - INTERVAL '30 days'
-      AND status = 'completed';
-      
-      -- Obtener costo y precio
-      SELECT r.cost_per_portion, mi.price INTO v_recipe_cost, v_item_price
-      FROM menu_items mi
-      LEFT JOIN recipes r ON r.menu_item_id = mi.id
-      WHERE mi.id = (item->>'menu_item_id')::UUID;
-      
-      -- Actualizar scores
-      UPDATE menu_items SET
-        popularity_score = (v_item_sold::NUMERIC / NULLIF(v_total_sold, 0)) * 100,
-        profitability_score = ((v_item_price - COALESCE(v_recipe_cost, 0)) / NULLIF(v_item_price, 0)) * 100,
-        updated_at = NOW()
-      WHERE id = (item->>'menu_item_id')::UUID;
-    END LOOP;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_menu_scores
-AFTER UPDATE ON restaurant_orders
-FOR EACH ROW EXECUTE FUNCTION update_menu_item_scores();
+```typescript
+// Agregar nuevos módulos
+type AIModule = 
+  | 'finances' | 'talent' | 'operations' 
+  | 'menu-inventory' | 'sustainability'
+  // Nuevos:
+  | 'suppliers' | 'delivery' | 'loyalty' 
+  | 'reservations' | 'feedback' | 'staff-schedule' 
+  | 'recipes';
 ```
 
-### Nuevos Hooks
+### 2. Actualizar Hook (`useAIAgent.ts`)
 
-| Hook | Propósito |
-|------|-----------|
-| `useAggregatedFinances` | Finanzas calculadas desde órdenes reales |
-| `useMenuEngineeringData` | Matriz BCG con datos de ventas reales |
-| `useCustomerProfile` | Vista 360° del cliente |
-| `useStaffSchedule` | Gestión de turnos y labor cost |
-| `useInventoryProjections` | Predicción de necesidades de inventario |
-| `useTableOccupancy` | Ocupación en tiempo real |
+```typescript
+// Agregar nuevas funciones
+const analyzeSuppliers = async (supplierData: any) => {
+  return await callAIAgent({
+    module: 'suppliers',
+    action: 'supplier_analysis',
+    data: supplierData
+  });
+};
 
-### Componentes Modificados
+const predictDeliveryDemand = async (deliveryData: any) => {
+  return await callAIAgent({
+    module: 'delivery',
+    action: 'demand_forecast',
+    data: deliveryData
+  });
+};
 
-| Componente | Cambios |
-|------------|---------|
-| `Recipes.tsx` | Agregar "Publicar en Menú", selector de producto vinculado |
-| `FinancesAIModule.tsx` | Modo tiempo real, datos agregados |
-| `MenuInventoryAIModule.tsx` | Matriz BCG con datos reales |
-| `POS.tsx` | Validación de stock, vista de cliente |
-| `TalentAIModule.tsx` | KPIs de productividad por empleado |
-| `Reservations.tsx` | Integración con disponibilidad de mesas |
+// ... etc
+```
+
+### 3. Actualizar Componentes de Página
+
+Cada módulo necesitará:
+- Importar `useAIAgent`
+- Agregar estado para `aiInsights`
+- Agregar botón "Análisis IA"
+- Agregar panel de visualización de insights
+
+### 4. Migrar a Lovable AI (Opcional pero Recomendado)
+
+Actualmente usa `OPENAI_API_KEY` directo. Migrar a Lovable AI Gateway:
+- Cambiar endpoint a `https://ai.gateway.lovable.dev/v1/chat/completions`
+- Usar `LOVABLE_API_KEY` (ya disponible automáticamente)
+- Modelo recomendado: `google/gemini-3-flash-preview`
 
 ---
 
-## Orden de Implementación
+## Estimación de Impacto
 
-| Prioridad | Fase | Complejidad | Impacto |
-|-----------|------|-------------|---------|
-| 1 | Fase 3.1 - Agregación Ventas | Media | Alto |
-| 2 | Fase 4.1/4.2 - Popularidad y Rentabilidad | Media | Alto |
-| 3 | Fase 1.1 - Recetas → Productos | Baja | Alto |
-| 4 | Fase 2.1 - Deducción Mejorada | Media | Medio |
-| 5 | Fase 5.1 - Historial Cliente | Alta | Medio |
-| 6 | Fase 6.1 - Turnos | Alta | Medio |
-| 7 | Fase 7.1 - Ocupación | Media | Bajo |
+| Módulo | Valor Agregado | Complejidad |
+|--------|---------------|-------------|
+| Proveedores | Alto (reducción costos 5-15%) | Baja |
+| Inventarios | Alto (reducción desperdicio 10-20%) | Media |
+| Delivery | Alto (mejora tiempos 15-25%) | Media |
+| Loyalty | Muy Alto (retención +20%) | Media |
+| Turnos | Medio (ahorro labor 5-10%) | Baja |
+| Reservaciones | Medio (reducción no-shows 30%) | Baja |
+| Feedback | Medio (mejora satisfacción) | Baja |
+| Recetas | Medio (optimización costos) | Baja |
 
 ---
 
-## Resultado Esperado
+## Próximos Pasos
 
-Al completar esta integración:
-
-1. **Cero Entrada Manual**: Las finanzas se calculan automáticamente
-2. **Decisiones Basadas en Datos**: Ingeniería de menú usa ventas reales
-3. **Alertas Proactivas**: Stock bajo, márgenes bajos, clientes en riesgo
-4. **Vista 360°**: Cliente unificado con historial completo
-5. **Productividad Medible**: Performance de empleados basado en datos
-6. **Capacidad Optimizada**: Reservaciones inteligentes con disponibilidad real
+1. Confirmar prioridades de módulos
+2. Implementar Fase 1 (4 módulos prioritarios)
+3. Agregar prompts especializados al agente
+4. Integrar botones y paneles IA en cada página
+5. Considerar migración a Lovable AI para mejor rendimiento y costo
