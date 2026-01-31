@@ -10,8 +10,7 @@ import {
   Scale, MapPin, ChefHat, Truck, Users, Megaphone, TrendingUp,
   Loader2, ChevronDown, ChevronUp, ExternalLink, RefreshCw, CheckCircle2, Clock, Sparkles, Eye
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { AnalysisContentRenderer } from './AnalysisContentRenderer';
 
 const PHASE_ICONS: Record<string, React.ReactNode> = {
   legal_requirements: <Scale className="h-5 w-5" />,
@@ -194,18 +193,22 @@ export function PhaseAnalysisCard({ phaseId, analysis, onAnalyze, isAnalyzing, c
                 </div>
               )}
 
-              {/* Analysis content */}
-              <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-muted/30">
+              {/* Analysis content with enhanced rendering */}
+              <ScrollArea className="h-[500px] w-full rounded-xl border border-border/50 p-4 bg-gradient-to-b from-muted/20 to-muted/5">
                 {analysisText ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-muted prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisText}</ReactMarkdown>
-                  </div>
+                  <AnalysisContentRenderer content={analysisText} phaseId={phaseId} />
                 ) : analysis.analysis_data ? (
-                  <pre className="text-sm whitespace-pre-wrap">
+                  <pre className="text-sm whitespace-pre-wrap bg-muted/30 p-4 rounded-lg">
                     {JSON.stringify(analysis.analysis_data, null, 2)}
                   </pre>
                 ) : (
-                  <p className="text-muted-foreground">No hay datos de análisis disponibles.</p>
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                      <Sparkles className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">No hay datos de análisis disponibles.</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1">Haz clic en "Analizar" para generar el análisis</p>
+                  </div>
                 )}
               </ScrollArea>
 
