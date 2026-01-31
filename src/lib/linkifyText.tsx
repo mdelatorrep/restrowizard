@@ -101,91 +101,55 @@ export function LinkifyText({ children, className, iconOnly = true }: LinkifyTex
 
 /**
  * Function to preprocess markdown content and convert plain URLs to markdown links
- * This ensures ReactMarkdown renders them as clickable links
- * Also strips UTM parameters and cleans up surrounding brackets/parentheses
+ * This ensures ReactMarkdown renders them as clickable links with a globe icon
  */
 export function linkifyMarkdown(content: string): string {
   if (!content) return content;
   
-  // Helper to strip UTM parameters from URLs
-  const stripUtm = (url: string): string => {
-    try {
-      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
-      const params = urlObj.searchParams;
-      // Remove UTM and common tracking parameters
-      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'ref'].forEach(p => params.delete(p));
-      // Reconstruct URL without tracking params
-      const cleanUrl = urlObj.origin + urlObj.pathname + (params.toString() ? '?' + params.toString() : '');
-      return cleanUrl;
-    } catch {
-      return url;
-    }
-  };
-
-  // Full URL pattern for matching
-  const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/gi;
-
   let processed = content;
 
-  // 1) First, handle existing markdown links [text](url) - convert to icon format
+  // Step 1: Convert existing markdown links [text](url) to icon format [↗](url)
+  // Be careful with URLs that contain parentheses - use a more precise pattern
   processed = processed.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    (_, _text, url) => {
-      const cleanUrl = stripUtm(url);
-      return `[↗](${cleanUrl})`;
-    }
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    (_, _text, url) => `[↗](${url})`
   );
 
-  // 2) Remove parentheses/brackets wrapping around our icon links
+  // Step 2: Clean up URLs wrapped in parentheses: (https://...) -> [↗](url)
+  processed = processed.replace(
+    /\(\s*(https?:\/\/[^)\s]+)\s*\)/g,
+    (_, url) => `[↗](${url})`
+  );
+
+  // Step 3: Clean up URLs wrapped in brackets: [https://...] -> [↗](url)
+  processed = processed.replace(
+    /\[\s*(https?:\/\/[^\]\s]+)\s*\]/g,
+    (_, url) => `[↗](${url})`
+  );
+
+  // Step 4: Convert bare URLs (not already in markdown link format)
+  // Use a simpler approach: match URLs that are NOT preceded by ]( or ](
+  const bareUrlRegex = /(^|[^[(])(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/gm;
+  processed = processed.replace(bareUrlRegex, (match, prefix, url) => {
+    // Don't convert if it's already part of a markdown link
+    if (prefix === '(' || prefix === '[') return match;
+    return `${prefix}[↗](${url})`;
+  });
+
+  // Step 5: Handle www. URLs (add https://)
+  processed = processed.replace(
+    /(^|[\s([])www\.([^\s<>"{}|\\^`[\]()]+)/gim,
+    (_, prefix, domain) => `${prefix}[↗](https://www.${domain})`
+  );
+
+  // Step 6: Remove duplicate/nested link markers
+  // Fix cases like [[↗](url)] or ([↗](url))
   processed = processed
-    .replace(/\(\[↗\]\(([^)]+)\)\)/g, '[↗]($1)')
-    .replace(/\[\[↗\]\(([^)]+)\)\]/g, '[↗]($1)');
+    .replace(/\[\s*\[↗\]\(([^)]+)\)\s*\]/g, '[↗]($1)')
+    .replace(/\(\s*\[↗\]\(([^)]+)\)\s*\)/g, '[↗]($1)');
 
-  // 3) Clean parenthesized URLs: (https://...) -> https://...
-  processed = processed.replace(
-    /\((https?:\/\/[^\s<>"{}|\\^`[\]()]+)\)/g,
-    (_, url) => {
-      const cleanUrl = stripUtm(url);
-      return `[↗](${cleanUrl})`;
-    }
-  );
+  // Step 7: Clean up any orphaned [↗] without a following (url)
+  processed = processed.replace(/\[↗\](?!\()/g, '');
 
-  // 4) Clean bracketed URLs: [https://...] -> icon link
-  processed = processed.replace(
-    /\[(https?:\/\/[^\]]+)\]/g,
-    (_, url) => {
-      const cleanUrl = stripUtm(url);
-      return `[↗](${cleanUrl})`;
-    }
-  );
-
-  // 5) Match bare URLs that are NOT already in markdown link format
-  // Use negative lookbehind to avoid matching URLs already in [↗](url) format
-  processed = processed.replace(
-    /(?<!\]\()(?<!\[↗\]\()(https?:\/\/[^\s<>"{}|\\^`[\]()]+)/g,
-    (_match, capturedUrl) => {
-      const cleanUrl = stripUtm(capturedUrl);
-      return `[↗](${cleanUrl})`;
-    }
-  );
-
-  // 6) Handle www. URLs
-  processed = processed.replace(
-    /(?<!\]\()(?<!\[↗\]\()\b(www\.[^\s<>"{}|\\^`[\]()]+)/gi,
-    (_match, capturedUrl) => {
-      const cleanUrl = stripUtm(`https://${capturedUrl}`);
-      return `[↗](${cleanUrl})`;
-    }
-  );
-
-  // 7) Final cleanup - remove any leftover artifacts
-  processed = processed
-    .replace(/\(\s*:\/\/\s*\)/g, '')
-    .replace(/\[\s*:\/\/\s*\]/g, '')
-    .replace(/\(:\/\/\)/g, '')
-    .replace(/\[:\/\/\]/g, '')
-    // Remove standalone [↗] not followed by (url)
-    .replace(/\[↗\](?!\()/g, '');
-  
   return processed;
 }
