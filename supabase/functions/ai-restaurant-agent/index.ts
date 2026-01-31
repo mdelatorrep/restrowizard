@@ -330,6 +330,232 @@ Proporciona:
 4. Frecuencia de compra óptima por segmento
 5. Inversión recomendada en retención vs adquisición`;
         break;
+
+      // ====== RESERVATIONS MODULE ======
+      case 'no_show_prediction':
+        userPrompt = `Analiza el historial de reservaciones y predice probabilidad de no-show: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Clientes con mayor probabilidad de no-show (ordenados por riesgo)
+2. Factores que aumentan el riesgo de no-show
+3. Estrategias de confirmación recomendadas por segmento
+4. Tasa de no-show actual vs benchmark de la industria
+5. Acciones preventivas para reducir no-shows`;
+        break;
+
+      case 'capacity_optimization':
+        userPrompt = `Optimiza la capacidad de reservaciones del restaurante: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Horarios con capacidad subutilizada
+2. Horarios con exceso de demanda
+3. Estrategia de overbooking inteligente (si aplica)
+4. Tiempos de rotación óptimos por mesa
+5. Recomendaciones para maximizar ingresos por asiento`;
+        break;
+
+      case 'confirmation_templates':
+        userPrompt = `Genera plantillas de confirmación personalizadas para estas reservaciones: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Mensaje de confirmación inicial (personalizado por ocasión)
+2. Recordatorio 24h antes
+3. Recordatorio día de la reserva
+4. Mensaje post-visita para feedback
+5. Mensaje de recuperación si no asiste`;
+        break;
+
+      // ====== STAFF SCHEDULE MODULE ======
+      case 'schedule_optimization':
+        userPrompt = `Optimiza los horarios de turnos de personal: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Distribución óptima de personal por hora y día
+2. Turnos donde hay exceso o falta de personal
+3. Ahorro estimado en costos laborales
+4. Recomendaciones de horarios flexibles
+5. Comparación con benchmarks de personal por cubierto`;
+        break;
+
+      case 'overtime_prediction':
+        userPrompt = `Predice las horas extra para la próxima semana: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Empleados con mayor probabilidad de horas extra
+2. Días con mayor riesgo de overtime
+3. Costo proyectado de horas extra
+4. Estrategias para reducir overtime no planificado
+5. Recomendaciones de contratación o turnos adicionales`;
+        break;
+
+      case 'coverage_analysis':
+        userPrompt = `Analiza la cobertura de personal por hora: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Horas con cobertura insuficiente
+2. Horas con exceso de personal
+3. Ratio personal/clientes por hora
+4. Impacto en calidad de servicio
+5. Ajustes de horario recomendados`;
+        break;
+
+      case 'labor_cost_forecast':
+        userPrompt = `Pronostica los costos laborales: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Proyección de costos laborales semanales/mensuales
+2. Porcentaje de labor cost vs ventas proyectado
+3. Comparación con benchmark de la industria (25-35%)
+4. Oportunidades de optimización
+5. Impacto de contrataciones/despidos`;
+        break;
+
+      // ====== FEEDBACK MODULE ======
+      case 'feedback_trends':
+        userPrompt = `Analiza las tendencias en el feedback de clientes: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Tendencias positivas y negativas identificadas
+2. Temas recurrentes en comentarios
+3. Cambios en satisfacción a lo largo del tiempo
+4. Áreas de mejora prioritarias según impacto
+5. Correlación entre aspectos (comida, servicio, ambiente)`;
+        break;
+
+      case 'improvement_priorities':
+        userPrompt = `Prioriza las mejoras basándote en el feedback de clientes: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Top 5 mejoras ordenadas por impacto potencial
+2. Costo estimado de implementación por mejora
+3. Tiempo estimado para ver resultados
+4. Quick wins (mejoras rápidas y fáciles)
+5. Mejoras estructurales a largo plazo`;
+        break;
+
+      case 'response_templates':
+        userPrompt = `Genera respuestas personalizadas para este feedback: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Respuesta empática y personalizada para cada feedback
+2. Solución o compensación apropiada si aplica
+3. Invitación a regresar con incentivo
+4. Tono apropiado según el sentimiento del cliente
+5. Seguimiento recomendado`;
+        break;
+
+      // ====== RECIPES MODULE ======
+      case 'recipe_optimization':
+        userPrompt = `Optimiza los costos de estas recetas sin afectar calidad: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Análisis de costo actual por porción
+2. Ingredientes con mayor oportunidad de ahorro
+3. Sustitutos recomendados con impacto en calidad
+4. Ahorro potencial por receta
+5. Ajustes de porciones si aplica`;
+        break;
+
+      case 'ingredient_substitution':
+        userPrompt = `Sugiere sustitutos de ingredientes más económicos: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Ingredientes caros con alternativas viables
+2. Diferencia de costo por sustitución
+3. Impacto en sabor y textura (bajo/medio/alto)
+4. Proveedores sugeridos para sustitutos
+5. Recetas donde aplicar cada sustitución`;
+        break;
+
+      case 'menu_pairing':
+        userPrompt = `Recomienda maridajes y combos para estas recetas: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Maridajes de bebidas por platillo
+2. Combos rentables (entrada + plato + postre)
+3. Sugerencias de upselling por receta
+4. Precios sugeridos para combos
+5. Margen de ganancia por combo`;
+        break;
+
+      case 'nutritional_analysis':
+        userPrompt = `Analiza la información nutricional estimada de estas recetas: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Estimación de calorías por porción
+2. Macronutrientes (proteína, carbohidratos, grasa)
+3. Alérgenos presentes
+4. Clasificación (bajo en calorías, alto en proteína, etc.)
+5. Sugerencias para opciones más saludables`;
+        break;
+
+      // ====== POS/SALES MODULE ======
+      case 'sales_pattern_analysis':
+        userPrompt = `Analiza los patrones de venta del POS: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Productos más vendidos por hora y día
+2. Combinaciones frecuentes de productos
+3. Ticket promedio por horario
+4. Tendencias de ventas (crecimiento/declive)
+5. Oportunidades de upselling identificadas`;
+        break;
+
+      case 'peak_hour_analysis':
+        userPrompt = `Analiza las horas pico de venta: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Horas con mayor volumen de ventas
+2. Productos preferidos por hora
+3. Personal recomendado por hora pico
+4. Tiempo promedio de atención en horas pico
+5. Estrategias para maximizar ventas en pico`;
+        break;
+
+      case 'payment_analysis':
+        userPrompt = `Analiza los métodos de pago y propinas: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Distribución de métodos de pago
+2. Ticket promedio por método de pago
+3. Tendencias de propinas
+4. Recomendaciones para incentivar métodos preferidos
+5. Oportunidades de ahorro en comisiones`;
+        break;
+
+      // ====== KITCHEN/KDS MODULE ======
+      case 'preparation_time_prediction':
+        userPrompt = `Predice tiempos de preparación en cocina: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Tiempo estimado de preparación por platillo
+2. Cuellos de botella identificados
+3. Platillos que retrasan la línea
+4. Recomendaciones para optimizar tiempos
+5. Orden óptimo de preparación`;
+        break;
+
+      case 'kitchen_efficiency':
+        userPrompt = `Analiza la eficiencia de cocina: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Tiempo promedio de preparación vs objetivo
+2. Pedidos con retrasos y causas
+3. Estaciones con mayor carga de trabajo
+4. Recomendaciones de flujo de trabajo
+5. Capacitación sugerida por área`;
+        break;
+
+      case 'queue_optimization':
+        userPrompt = `Optimiza la cola de pedidos en cocina: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Priorización óptima de pedidos
+2. Agrupación inteligente por tipo de cocción
+3. Balance de carga entre estaciones
+4. Tiempo estimado de completar cola actual
+5. Alertas de capacidad máxima`;
+        break;
       
       default:
         userPrompt = `Analiza estos datos de restaurante y proporciona insights relevantes: ${JSON.stringify(data)}. Sé específico y práctico en tus recomendaciones. Incluye datos de mercado actuales cuando sea relevante.`;
