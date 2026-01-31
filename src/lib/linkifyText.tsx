@@ -178,12 +178,14 @@ export function linkifyMarkdown(content: string): string {
     }
   );
 
-  // 7) Final cleanup - remove any leftover artifacts like (://) or [:// 
+  // 7) Final cleanup - remove any leftover artifacts
   processed = processed
     .replace(/\(\s*:\/\/\s*\)/g, '')
     .replace(/\[\s*:\/\/\s*\]/g, '')
     .replace(/\(:\/\/\)/g, '')
-    .replace(/\[:\/\/\]/g, '');
+    .replace(/\[:\/\/\]/g, '')
+    // Remove standalone [↗] not followed by (url)
+    .replace(/\[↗\](?!\()/g, '');
   
   return processed;
 }
