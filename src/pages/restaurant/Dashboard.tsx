@@ -59,19 +59,7 @@ const RestaurantDashboard: React.FC = () => {
   const { alerts: copilotAlerts, unreadAlerts, generateAlerts, dismissAlert, isLoading: alertsLoading } = useCopilotAlerts();
   const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
 
-  // Redirect based on lifecycle stage
-  if (!lifecycle.isLoading) {
-    if (lifecycle.stage === 'pre_opening') {
-      return <Navigate to="/r/pre-opening" replace />;
-    }
-    if (lifecycle.stage === 'first_90_days') {
-      return <Navigate to="/r/first-90-days" replace />;
-    }
-    if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement') {
-      return <Navigate to="/r/new-business" replace />;
-    }
-  }
-
+  // ALL useEffect hooks MUST be called before any conditional returns
   useEffect(() => {
     const fetchBusiness = async () => {
       if (!user) return;
@@ -100,6 +88,19 @@ const RestaurantDashboard: React.FC = () => {
     fetchBusiness();
     updateGreeting();
   }, [user]);
+
+  // Redirect based on lifecycle stage - AFTER all hooks
+  if (!lifecycle.isLoading) {
+    if (lifecycle.stage === 'pre_opening') {
+      return <Navigate to="/r/pre-opening" replace />;
+    }
+    if (lifecycle.stage === 'first_90_days') {
+      return <Navigate to="/r/first-90-days" replace />;
+    }
+    if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement') {
+      return <Navigate to="/r/new-business" replace />;
+    }
+  }
 
   // KPI data - use real data when available, fallback to demo
   const kpis: KPIData[] = hasFinanceData && financeKpis ? [
