@@ -47,6 +47,34 @@ serve(async (req) => {
       case 'sustainability':
         systemPrompt = `Eres un experto en sostenibilidad y ESG para restaurantes con acceso a búsqueda web para obtener normativas ambientales actualizadas, certificaciones disponibles y proveedores sostenibles. Analizas huella de carbono, desperdicio alimenticio, consumo de agua y energía, y cumplimiento ESG. Proporcionas recomendaciones prácticas para reducir impacto ambiental y ahorrar costos. Respondes en español.`;
         break;
+
+      case 'suppliers':
+        systemPrompt = `Eres un experto en gestión de cadena de suministro para restaurantes con acceso a búsqueda web para precios de mercado actualizados, directorio de proveedores y benchmarks de la industria. Comparas proveedores por rendimiento, puntualidad y precio. Generas estrategias de negociación basadas en volumen y condiciones de mercado. Buscas proveedores alternativos y evalúas el riesgo de la cadena de suministro. Respondes en español con datos verificables y recomendaciones accionables.`;
+        break;
+
+      case 'inventory':
+        systemPrompt = `Eres un experto en gestión de inventarios para restaurantes con acceso a búsqueda web para precios actualizados de ingredientes y tendencias de mercado. Optimizas cantidades de pedido, predices necesidades de reabastecimiento, detectas patrones de desperdicio y analizas tendencias de costos. Generas alertas proactivas y recomendaciones para reducir mermas. Respondes en español con análisis basados en datos.`;
+        break;
+
+      case 'delivery':
+        systemPrompt = `Eres un experto en logística de delivery y domicilios para restaurantes con acceso a búsqueda web para obtener mejores prácticas de la industria y tecnologías de optimización. Analizas demanda por zona y horario, optimizas tiempos de entrega, evalúas rendimiento de repartidores y pronosticas picos de demanda. Generas estrategias para mejorar tiempos y satisfacción del cliente. Respondes en español con recomendaciones prácticas.`;
+        break;
+
+      case 'loyalty':
+        systemPrompt = `Eres un experto en marketing de retención y programas de fidelización para restaurantes con acceso a búsqueda web para benchmarks de la industria y mejores prácticas de CRM. Analizas riesgo de abandono (churn), generas estrategias de retención personalizadas, optimizas programas de puntos y recompensas, y calculas lifetime value. Creas campañas de recuperación de clientes y ofertas personalizadas. Respondes en español con tácticas accionables basadas en datos.`;
+        break;
+
+      case 'reservations':
+        systemPrompt = `Eres un experto en gestión de reservaciones para restaurantes. Predices probabilidad de no-show basándote en patrones históricos, optimizas capacidad por horario, generas estrategias de overbooking inteligente y creas plantillas de confirmación personalizadas. Respondes en español con recomendaciones basadas en datos.`;
+        break;
+
+      case 'staff-schedule':
+        systemPrompt = `Eres un experto en optimización de turnos y horarios de personal para restaurantes con acceso a búsqueda web para salarios de mercado y regulaciones laborales. Optimizas distribución de personal según demanda histórica, predices horas extra, analizas cobertura por hora y pronosticas costos laborales. Respondes en español con recomendaciones de eficiencia operativa.`;
+        break;
+
+      case 'recipes':
+        systemPrompt = `Eres un experto en ingeniería culinaria y gestión de recetas para restaurantes con acceso a búsqueda web para precios de ingredientes y tendencias gastronómicas. Optimizas costos de recetas sin afectar calidad, sugieres sustitutos más económicos, recomiendas maridajes y combos, y analizas información nutricional. Respondes en español con análisis detallados y prácticos.`;
+        break;
       
       default:
         systemPrompt = `Eres un asistente IA especializado en gestión de restaurantes con acceso a búsqueda web para información actualizada. Ayudas con análisis de datos, optimización de operaciones, finanzas, talento y sostenibilidad. Respondes en español de manera clara y práctica.`;
@@ -151,6 +179,156 @@ Proporciona:
 3. Acciones concretas para reducir impacto con costos estimados
 4. Estimación de ahorro potencial
 5. Certificaciones y normativas ambientales aplicables`;
+        break;
+
+      // ====== SUPPLIERS MODULE ======
+      case 'supplier_analysis':
+        userPrompt = `Analiza estos proveedores del restaurante: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Evaluación comparativa de cada proveedor (precio, calidad, puntualidad)
+2. Identificación de proveedores con mejores y peores condiciones
+3. Oportunidades de consolidación de compras
+4. Riesgos en la cadena de suministro actual
+5. Recomendaciones para diversificar proveedores críticos
+6. Busca precios de mercado actuales para los productos mencionados`;
+        break;
+
+      case 'supplier_negotiation':
+        userPrompt = `Genera estrategias de negociación para estos proveedores: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Puntos de negociación específicos para cada proveedor
+2. Descuentos por volumen típicos en la industria
+3. Condiciones de pago que puedes solicitar
+4. Argumentos basados en precios de mercado actuales
+5. Alternativas de proveedores si la negociación falla`;
+        break;
+
+      case 'alternative_suppliers':
+        userPrompt = `Busca proveedores alternativos para estos productos: ${JSON.stringify(data)}.
+
+Busca y proporciona:
+1. Proveedores alternativos por categoría en la zona indicada
+2. Rangos de precios de mercado actuales
+3. Ventajas y desventajas de cada alternativa
+4. Recomendación de proveedores a contactar
+5. Información de contacto si está disponible públicamente`;
+        break;
+
+      // ====== INVENTORY MODULE ======
+      case 'reorder_optimization':
+        userPrompt = `Optimiza las cantidades de pedido para este inventario: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Cantidad óptima de pedido (EOQ) por producto
+2. Frecuencia de pedido recomendada
+3. Nivel de stock de seguridad sugerido
+4. Prioridad de reabastecimiento (urgente, pronto, normal)
+5. Ahorro estimado por optimización de pedidos
+6. Precios actuales de mercado para comparar`;
+        break;
+
+      case 'expiry_prediction':
+        userPrompt = `Analiza el riesgo de caducidad y desperdicio en este inventario: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Productos con mayor riesgo de caducidad
+2. Predicción de desperdicio en los próximos 7 días
+3. Estrategias para usar productos próximos a vencer
+4. Platos especiales sugeridos para aprovechar inventario
+5. Costo potencial del desperdicio y cómo evitarlo`;
+        break;
+
+      case 'cost_trend_analysis':
+        userPrompt = `Analiza tendencias de costos de ingredientes: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Ingredientes con mayor aumento de precio reciente
+2. Tendencias de mercado para ingredientes clave
+3. Predicción de precios para próximos meses
+4. Estrategias de compra anticipada recomendadas
+5. Sustitutos más económicos sin afectar calidad`;
+        break;
+
+      // ====== DELIVERY MODULE ======
+      case 'demand_forecast':
+        userPrompt = `Pronostica la demanda de delivery basándote en: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Predicción de pedidos por día y hora para la próxima semana
+2. Zonas con mayor potencial de crecimiento
+3. Horarios pico y valles de demanda
+4. Factores externos que pueden afectar (clima, eventos, etc.)
+5. Recomendaciones de capacidad de entrega`;
+        break;
+
+      case 'delivery_optimization':
+        userPrompt = `Optimiza las operaciones de delivery con estos datos: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Tiempos de entrega óptimos por zona
+2. Identificación de cuellos de botella en el proceso
+3. Estrategias para reducir tiempos de entrega
+4. Recomendaciones de rutas o agrupación de pedidos
+5. KPIs objetivo para mejorar rendimiento`;
+        break;
+
+      case 'driver_performance':
+        userPrompt = `Analiza el rendimiento de repartidores: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Ranking de repartidores por eficiencia
+2. Áreas de mejora por cada repartidor
+3. Benchmarks de la industria para tiempos de entrega
+4. Incentivos recomendados para mejorar rendimiento
+5. Capacitación sugerida si hay problemas recurrentes`;
+        break;
+
+      // ====== LOYALTY MODULE ======
+      case 'churn_prevention':
+        userPrompt = `Analiza estos clientes en riesgo de abandono y genera estrategias de retención: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Análisis de cada cliente: por qué está en riesgo
+2. Estrategia de recuperación personalizada para cada uno
+3. Ofertas o incentivos específicos recomendados
+4. Canal de comunicación óptimo (email, SMS, WhatsApp)
+5. Mensaje sugerido para cada cliente
+6. Prioridad de contacto (alto, medio, bajo)`;
+        break;
+
+      case 'loyalty_recommendations':
+        userPrompt = `Genera recomendaciones para el programa de fidelización: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Análisis de efectividad del programa actual
+2. Ajustes recomendados a niveles y beneficios
+3. Nuevas recompensas sugeridas según tendencias
+4. Estrategias para aumentar participación
+5. Benchmarks de programas de lealtad en restaurantes`;
+        break;
+
+      case 'personalized_offers':
+        userPrompt = `Genera ofertas personalizadas para estos clientes: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Oferta específica para cada cliente basada en su historial
+2. Momento óptimo para enviar cada oferta
+3. Valor del descuento/beneficio que maximiza conversión
+4. Mensaje personalizado sugerido
+5. Estimación de ROI de cada campaña`;
+        break;
+
+      case 'ltv_optimization':
+        userPrompt = `Analiza y optimiza el lifetime value de estos clientes: ${JSON.stringify(data)}.
+
+Proporciona:
+1. Segmentación de clientes por LTV actual y potencial
+2. Estrategias para aumentar LTV por segmento
+3. Productos/servicios con mayor impacto en LTV
+4. Frecuencia de compra óptima por segmento
+5. Inversión recomendada en retención vs adquisición`;
         break;
       
       default:

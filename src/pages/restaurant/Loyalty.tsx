@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { 
   Crown, 
   Users, 
@@ -30,10 +31,13 @@ import {
   MoreVertical,
   Eye,
   Award,
-  QrCode
+  QrCode,
+  Brain,
+  UserMinus
 } from 'lucide-react';
 import { useLoyaltyData, type LoyaltyCustomer, type LoyaltyTier, type RewardsCatalogItem } from '@/hooks/useLoyaltyData';
 import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
+import { useAIAgent } from '@/hooks/useAIAgent';
 import { cn } from '@/lib/utils';
 
 // Tier Badge Component
@@ -191,6 +195,8 @@ const Loyalty = () => {
     getCustomersByTier,
   } = useLoyaltyData();
 
+  const { preventChurn, getLoyaltyRecommendations, generatePersonalizedOffers, loading: aiLoading } = useAIAgent();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('overview');
   const [showNewTierDialog, setShowNewTierDialog] = useState(false);
@@ -199,6 +205,8 @@ const Loyalty = () => {
   const [showAwardPointsDialog, setShowAwardPointsDialog] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   // Form states
   const [newTier, setNewTier] = useState({ name: '', min_points: 0, points_multiplier: 1.0, color: '#6B7280' });
@@ -211,6 +219,59 @@ const Loyalty = () => {
     c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.customer_phone?.includes(searchTerm)
   );
+
+  const atRiskCustomers = getAtRiskCustomers();
+  const vipCustomers = getVIPCustomers();
+  const tierDistribution = getCustomersByTier();
+
+  // AI Analysis handlers
+  const handleChurnAnalysis = async () => {
+    if (atRiskCustomers.length === 0) {
+      // Analyze general loyalty data instead
+      const loyaltyData = {
+        total_clientes: kpis?.totalCustomers || 0,
+        ltv_promedio: kpis?.avgLTV || 0,
+        puntos_circulacion: kpis?.totalPointsCirculating || 0,
+        tasa_retencion: kpis?.retentionRate || 0,
+        clientes_vip: vipCustomers.map(c => ({
+          nombre: c.customer_name,
+          puntos: c.current_points,
+          total_gastado: c.total_spent,
+          ordenes: c.total_orders
+        })),
+        distribucion_niveles: tierDistribution
+      };
+      
+      const result = await getLoyaltyRecommendations(loyaltyData);
+      if (result) {
+        setAiInsights(result);
+        setShowAIPanel(true);
+      }
+      return;
+    }
+
+    const churnData = atRiskCustomers.map(c => ({
+      nombre: c.customer_name,
+      email: c.customer_email,
+      puntos: c.current_points,
+      total_gastado: c.total_spent,
+      ordenes: c.total_orders,
+      dias_sin_comprar: c.days_since_last_order,
+      riesgo: c.churn_risk_score,
+      nivel: c.tier?.name
+    }));
+
+    const result = await preventChurn({
+      clientes_en_riesgo: churnData,
+      total_en_riesgo: atRiskCustomers.length,
+      tasa_retencion: kpis?.retentionRate
+    });
+    
+    if (result) {
+      setAiInsights(result);
+      setShowAIPanel(true);
+    }
+  };
 
   const handleCreateTier = async () => {
     await createTier(newTier);
@@ -238,9 +299,6 @@ const Loyalty = () => {
     setSelectedCustomer(null);
   };
 
-  const atRiskCustomers = getAtRiskCustomers();
-  const vipCustomers = getVIPCustomers();
-  const tierDistribution = getCustomersByTier();
 
   if (loading) {
     return (
@@ -267,6 +325,15 @@ const Loyalty = () => {
           <p className="text-muted-foreground">Aumenta el lifetime value de tus clientes</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleChurnAnalysis}
+            disabled={aiLoading}
+            className="gap-2 border-primary/30 hover:bg-primary/10"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            {aiLoading ? 'Analizando...' : 'Análisis IA'}
+          </Button>
           <Button variant="outline" onClick={() => setShowNewCustomerDialog(true)}>
             <Plus className="w-4 h-4 mr-2" /> Cliente
           </Button>
@@ -275,6 +342,19 @@ const Loyalty = () => {
           </Button>
         </div>
       </div>
+
+      {/* AI Insights Panel */}
+      {showAIPanel && (
+        <AIInsightsPanel
+          title="Análisis de Fidelización"
+          description="Estrategias de retención y prevención de abandono"
+          insights={aiInsights}
+          loading={aiLoading}
+          onAnalyze={handleChurnAnalysis}
+          onClose={() => setShowAIPanel(false)}
+          icon={<UserMinus className="w-5 h-5 text-primary" />}
+        />
+      )}
 
       {/* KPIs */}
       {kpis && (

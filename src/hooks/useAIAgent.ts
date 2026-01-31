@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AIAgentRequest {
-  module: 'finances' | 'talent' | 'operations' | 'menu-inventory' | 'sustainability';
+  module: 'finances' | 'talent' | 'operations' | 'menu-inventory' | 'sustainability' | 'suppliers' | 'inventory' | 'delivery' | 'loyalty' | 'reservations' | 'staff-schedule' | 'recipes';
   action: string;
   data: any;
 }
@@ -131,6 +131,114 @@ export const useAIAgent = () => {
     });
   };
 
+  // ====== SUPPLIERS MODULE ======
+  const analyzeSuppliers = async (supplierData: any) => {
+    return await callAIAgent({
+      module: 'suppliers',
+      action: 'supplier_analysis',
+      data: supplierData
+    });
+  };
+
+  const getSupplierNegotiationTips = async (supplierData: any) => {
+    return await callAIAgent({
+      module: 'suppliers',
+      action: 'supplier_negotiation',
+      data: supplierData
+    });
+  };
+
+  const findAlternativeSuppliers = async (productData: any) => {
+    return await callAIAgent({
+      module: 'suppliers',
+      action: 'alternative_suppliers',
+      data: productData
+    });
+  };
+
+  // ====== INVENTORY MODULE ======
+  const optimizeReorders = async (inventoryData: any) => {
+    return await callAIAgent({
+      module: 'inventory',
+      action: 'reorder_optimization',
+      data: inventoryData
+    });
+  };
+
+  const predictExpiry = async (inventoryData: any) => {
+    return await callAIAgent({
+      module: 'inventory',
+      action: 'expiry_prediction',
+      data: inventoryData
+    });
+  };
+
+  const analyzeCostTrends = async (inventoryData: any) => {
+    return await callAIAgent({
+      module: 'inventory',
+      action: 'cost_trend_analysis',
+      data: inventoryData
+    });
+  };
+
+  // ====== DELIVERY MODULE ======
+  const forecastDeliveryDemand = async (deliveryData: any) => {
+    return await callAIAgent({
+      module: 'delivery',
+      action: 'demand_forecast',
+      data: deliveryData
+    });
+  };
+
+  const optimizeDelivery = async (deliveryData: any) => {
+    return await callAIAgent({
+      module: 'delivery',
+      action: 'delivery_optimization',
+      data: deliveryData
+    });
+  };
+
+  const analyzeDriverPerformance = async (driverData: any) => {
+    return await callAIAgent({
+      module: 'delivery',
+      action: 'driver_performance',
+      data: driverData
+    });
+  };
+
+  // ====== LOYALTY MODULE ======
+  const preventChurn = async (customerData: any) => {
+    return await callAIAgent({
+      module: 'loyalty',
+      action: 'churn_prevention',
+      data: customerData
+    });
+  };
+
+  const getLoyaltyRecommendations = async (programData: any) => {
+    return await callAIAgent({
+      module: 'loyalty',
+      action: 'loyalty_recommendations',
+      data: programData
+    });
+  };
+
+  const generatePersonalizedOffers = async (customerData: any) => {
+    return await callAIAgent({
+      module: 'loyalty',
+      action: 'personalized_offers',
+      data: customerData
+    });
+  };
+
+  const optimizeLTV = async (customerData: any) => {
+    return await callAIAgent({
+      module: 'loyalty',
+      action: 'ltv_optimization',
+      data: customerData
+    });
+  };
+
   return {
     loading,
     callAIAgent,
@@ -148,6 +256,23 @@ export const useAIAgent = () => {
     analyzeMenu,
     predictInventory,
     // Sustainability
-    analyzeSustainability
+    analyzeSustainability,
+    // Suppliers
+    analyzeSuppliers,
+    getSupplierNegotiationTips,
+    findAlternativeSuppliers,
+    // Inventory
+    optimizeReorders,
+    predictExpiry,
+    analyzeCostTrends,
+    // Delivery
+    forecastDeliveryDemand,
+    optimizeDelivery,
+    analyzeDriverPerformance,
+    // Loyalty
+    preventChurn,
+    getLoyaltyRecommendations,
+    generatePersonalizedOffers,
+    optimizeLTV
   };
 };
