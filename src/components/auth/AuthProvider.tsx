@@ -226,22 +226,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔄 Auth state change:', { 
           event, 
           userId: session?.user?.id,
           hasSession: !!session 
         });
         
+        // CRITICAL: Only synchronous state updates in callback to prevent deadlock
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Navigate on login events
+        // Defer navigation/Supabase calls with setTimeout to prevent deadlock
         if (event === 'SIGNED_IN' && session) {
-          console.log('✅ SIGNED_IN event detected, calling handleSuccessfulLogin');
-          // Use window.location.pathname for accurate current path
-          await handleSuccessfulLogin(session, window.location.pathname);
+          console.log('✅ SIGNED_IN event detected, deferring handleSuccessfulLogin');
+          setTimeout(() => {
+            handleSuccessfulLogin(session, window.location.pathname);
+          }, 0);
         }
       }
     );
@@ -255,7 +257,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // If already logged in on page load at /auth, navigate appropriately
       if (session && window.location.pathname === '/auth') {
-        handleSuccessfulLogin(session, '/auth');
+        setTimeout(() => {
+          handleSuccessfulLogin(session, '/auth');
+        }, 0);
       }
     });
 
