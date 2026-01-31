@@ -17,9 +17,8 @@ import {
 import { BusinessProject, PhaseAnalysis, ChecklistItem } from '@/hooks/useBusinessProject';
 import { PHASES, PhaseId } from '@/hooks/useBusinessOpening';
 import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { EditProjectDetailsDialog } from './EditProjectDetailsDialog';
+import { AnalysisContentRenderer } from './AnalysisContentRenderer';
 import { formatCurrencyByCountry, getCurrencySymbol, getCurrencyCode } from '@/data/constants';
 import { LinkifyText } from '@/lib/linkifyText';
 
@@ -840,37 +839,57 @@ export function OpeningResultsDashboard({
         <TabsContent value="details" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <Accordion type="single" collapsible className="space-y-2">
+              <Accordion type="single" collapsible className="space-y-3">
                 {PHASES.map(phase => {
                   const analysis = analyses.find(a => a.phase === phase.id);
                   const Icon = PHASE_ICONS[phase.id];
+                  const colors = PHASE_COLORS[phase.id];
                   
                   if (!analysis) return null;
+
+                  const content = getAnalysisContent(analysis);
+                  const costEstimate = analysis.estimated_cost;
+                  const timeEstimate = analysis.estimated_time_days;
 
                   return (
                     <AccordionItem
                       key={phase.id}
                       value={phase.id}
-                      className="border rounded-lg px-4"
+                      className={cn(
+                        "border rounded-xl overflow-hidden transition-all",
+                        colors.border
+                      )}
                     >
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <Icon className="h-5 w-5 text-primary" />
+                      <AccordionTrigger className="hover:no-underline px-5 py-4 data-[state=open]:bg-muted/30">
+                        <div className="flex items-center gap-4 w-full">
+                          <div className={cn("p-3 rounded-xl shadow-sm", colors.bg)}>
+                            <Icon className={cn("h-6 w-6", colors.text)} />
                           </div>
-                          <div className="text-left">
-                            <p className="font-medium">{phase.name}</p>
+                          <div className="text-left flex-1">
+                            <p className="font-semibold text-base">{phase.name}</p>
                             <p className="text-sm text-muted-foreground">
                               {PHASE_DESCRIPTIONS[phase.id]}
                             </p>
                           </div>
+                          <div className="flex items-center gap-2">
+                            {costEstimate && (
+                              <Badge variant="secondary" className="text-xs">
+                                <DollarSign className="h-3 w-3 mr-1" />
+                                {currencySymbol}{costEstimate.toLocaleString()}
+                              </Badge>
+                            )}
+                            {timeEstimate && (
+                              <Badge variant="outline" className="text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {timeEstimate}d
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="pt-4 prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {getAnalysisContent(analysis)}
-                          </ReactMarkdown>
+                        <div className={cn("px-5 py-5 border-t", colors.border, "bg-gradient-to-b from-muted/20 to-transparent")}>
+                          <AnalysisContentRenderer content={content} phaseId={phase.id} />
                         </div>
                       </AccordionContent>
                     </AccordionItem>
