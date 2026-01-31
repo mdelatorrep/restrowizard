@@ -11,7 +11,10 @@ interface OpeningChecklistProps {
   onToggle: (itemId: string, isCompleted: boolean) => void;
 }
 
+// Mapping from AI-generated phase keys to display labels
+// Includes multiple variants the AI might return
 const PHASE_LABELS: Record<string, string> = {
+  // Standard keys (as defined in prompt)
   planning: 'Planeación',
   legal: 'Legal y Permisos',
   location: 'Ubicación',
@@ -21,21 +24,88 @@ const PHASE_LABELS: Record<string, string> = {
   marketing: 'Marketing',
   pre_opening: 'Pre-apertura',
   opening: 'Apertura',
+  // Alternative keys the AI might generate
+  legal_requirements: 'Legal y Permisos',
+  location_analysis: 'Ubicación',
+  equipment_setup: 'Equipamiento',
+  supplier_network: 'Proveedores',
+  staffing_plan: 'Personal',
+  marketing_launch: 'Marketing',
+  financial_projection: 'Proyección Financiera',
+  // Spanish variants
+  planeacion: 'Planeación',
+  'legal y permisos': 'Legal y Permisos',
+  ubicacion: 'Ubicación',
+  equipamiento: 'Equipamiento',
+  proveedores: 'Proveedores',
+  personal: 'Personal',
+  'pre-apertura': 'Pre-apertura',
+  apertura: 'Apertura',
+  // Fallback
+  general: 'General',
 };
+
+// Normalize phase key to standard format
+const normalizePhase = (phase: string): string => {
+  if (!phase) return 'planning';
+  const lower = phase.toLowerCase().trim();
+  
+  // Direct match
+  if (PHASE_LABELS[lower]) return lower;
+  
+  // Map variations to standard keys
+  const mappings: Record<string, string> = {
+    'legal_requirements': 'legal',
+    'location_analysis': 'location',
+    'equipment_setup': 'equipment',
+    'supplier_network': 'suppliers',
+    'staffing_plan': 'staffing',
+    'marketing_launch': 'marketing',
+    'financial_projection': 'planning',
+    'planeación': 'planning',
+    'planeacion': 'planning',
+    'legal y permisos': 'legal',
+    'ubicación': 'location',
+    'ubicacion': 'location',
+    'equipamiento': 'equipment',
+    'proveedores': 'suppliers',
+    'personal': 'staffing',
+    'pre-apertura': 'pre_opening',
+    'preapertura': 'pre_opening',
+    'apertura': 'opening',
+    'general': 'planning',
+  };
+  
+  return mappings[lower] || 'planning';
+};
+
+// Define display order for phases
+const PHASE_ORDER = [
+  'planning',
+  'legal',
+  'location', 
+  'equipment',
+  'suppliers',
+  'staffing',
+  'marketing',
+  'pre_opening',
+  'opening',
+];
 
 export function OpeningChecklist({ items, onToggle }: OpeningChecklistProps) {
   const completedCount = items.filter(item => item.is_completed).length;
   const progressPercent = items.length > 0 ? (completedCount / items.length) * 100 : 0;
 
-  // Group items by phase
+  // Group items by normalized phase
   const itemsByPhase = items.reduce((acc, item) => {
-    const phase = item.phase || 'planning';
-    if (!acc[phase]) acc[phase] = [];
-    acc[phase].push(item);
+    const normalizedPhase = normalizePhase(item.phase || 'planning');
+    if (!acc[normalizedPhase]) acc[normalizedPhase] = [];
+    acc[normalizedPhase].push(item);
     return acc;
   }, {} as Record<string, ChecklistItem[]>);
 
-  const phases = Object.keys(itemsByPhase);
+  // Sort phases by predefined order
+  const phases = PHASE_ORDER.filter(phase => itemsByPhase[phase]?.length > 0);
 
   return (
     <Card>
