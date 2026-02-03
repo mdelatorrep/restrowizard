@@ -181,7 +181,7 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         throw new Error(`Unknown action: ${action}`);
     }
 
-    console.log('📡 Calling OpenAI GPT-5 with web search...');
+    console.log('📡 Calling OpenAI API...');
 
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -190,14 +190,13 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
         max_tokens: 4000,
-        tools: [{ type: 'web_search_preview' }],
       }),
     });
 
