@@ -67,7 +67,9 @@ const RestaurantDashboard: React.FC = () => {
         .from('restaurant_businesses')
         .select('name')
         .eq('owner_id', user.id)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (data) setBusinessName(data.name);
     };
 
