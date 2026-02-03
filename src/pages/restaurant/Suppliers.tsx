@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,51 +8,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AIInsightsPanel, AIAnalyzeButton } from '@/components/AIInsightsPanel';
+import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { 
   Truck, 
   Plus, 
   Phone, 
   Mail, 
   MapPin, 
-  Star, 
-  AlertTriangle,
-  TrendingUp,
+  Star,
   Package,
-  DollarSign,
   Clock,
-  MoreVertical,
   Edit,
   Trash2,
   Search,
   Filter,
   Sparkles,
-  Brain,
-  Handshake
+  Brain
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useEnterpriseInventory, InventorySupplier } from '@/hooks/useEnterpriseInventory';
 import { useAIAgent } from '@/hooks/useAIAgent';
-
-interface Supplier {
-  id: string;
-  name: string;
-  contact_name: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  category: string;
-  payment_terms: string | null;
-  lead_time_days: number | null;
-  rating: number | null;
-  notes: string | null;
-  is_active: boolean;
-  created_at: string;
-}
 
 const SUPPLIER_CATEGORIES = [
   'Carnes y Proteínas',
@@ -69,173 +45,124 @@ const SUPPLIER_CATEGORIES = [
 ];
 
 export default function RestaurantSuppliers() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { analyzeSuppliers, getSupplierNegotiationTips, loading: aiLoading } = useAIAgent();
+  const { 
+    suppliers, 
+    loading, 
+    createSupplier, 
+    updateSupplier, 
+    deleteSupplier 
+  } = useEnterpriseInventory();
+  
+  const { analyzeSuppliers, loading: aiLoading } = useAIAgent();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<InventorySupplier | null>(null);
   const [aiInsights, setAiInsights] = useState<string | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: '',
+    supplier_name: '',
     contact_name: '',
     email: '',
     phone: '',
     address: '',
+    city: '',
     category: '',
     payment_terms: '',
-    lead_time_days: '',
+    minimum_order: 0,
+    delivery_days: '',
+    lead_time_days: 1,
+    rating: 0,
+    is_active: true,
     notes: ''
-  });
-
-  // Fetch suppliers
-  const { data: suppliers = [], isLoading } = useQuery({
-    queryKey: ['suppliers', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      return data as Supplier[];
-    },
-    enabled: !!user,
-  });
-
-  // Create supplier
-  const createSupplier = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .insert({
-          user_id: user!.id,
-          name: data.name,
-          contact_name: data.contact_name || null,
-          email: data.email || null,
-          phone: data.phone || null,
-          address: data.address || null,
-          category: data.category,
-          payment_terms: data.payment_terms || null,
-          lead_time_days: data.lead_time_days ? parseInt(data.lead_time_days) : null,
-          notes: data.notes || null,
-        });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      toast({ title: 'Proveedor creado', description: 'El proveedor se agregó correctamente' });
-      resetForm();
-      setShowAddDialog(false);
-    },
-    onError: () => {
-      toast({ title: 'Error', description: 'No se pudo crear el proveedor', variant: 'destructive' });
-    }
-  });
-
-  // Update supplier
-  const updateSupplier = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .update({
-          name: data.name,
-          contact_name: data.contact_name || null,
-          email: data.email || null,
-          phone: data.phone || null,
-          address: data.address || null,
-          category: data.category,
-          payment_terms: data.payment_terms || null,
-          lead_time_days: data.lead_time_days ? parseInt(data.lead_time_days) : null,
-          notes: data.notes || null,
-        })
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      toast({ title: 'Proveedor actualizado' });
-      resetForm();
-      setEditingSupplier(null);
-    },
-    onError: () => {
-      toast({ title: 'Error', description: 'No se pudo actualizar', variant: 'destructive' });
-    }
-  });
-
-  // Delete supplier
-  const deleteSupplier = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      toast({ title: 'Proveedor eliminado' });
-    },
-    onError: () => {
-      toast({ title: 'Error', description: 'No se pudo eliminar', variant: 'destructive' });
-    }
   });
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      supplier_name: '',
       contact_name: '',
       email: '',
       phone: '',
       address: '',
+      city: '',
       category: '',
       payment_terms: '',
-      lead_time_days: '',
+      minimum_order: 0,
+      delivery_days: '',
+      lead_time_days: 1,
+      rating: 0,
+      is_active: true,
       notes: ''
     });
   };
 
-  const handleEdit = (supplier: Supplier) => {
+  const handleEdit = (supplier: InventorySupplier) => {
     setEditingSupplier(supplier);
     setFormData({
-      name: supplier.name,
+      supplier_name: supplier.supplier_name,
       contact_name: supplier.contact_name || '',
       email: supplier.email || '',
       phone: supplier.phone || '',
       address: supplier.address || '',
-      category: supplier.category,
+      city: supplier.city || '',
+      category: (supplier as any).category || '',
       payment_terms: supplier.payment_terms || '',
-      lead_time_days: supplier.lead_time_days?.toString() || '',
+      minimum_order: supplier.minimum_order || 0,
+      delivery_days: supplier.delivery_days || '',
+      lead_time_days: supplier.lead_time_days,
+      rating: supplier.rating || 0,
+      is_active: supplier.is_active,
       notes: supplier.notes || ''
     });
   };
 
-  const handleSubmit = () => {
-    if (!formData.name || !formData.category) {
-      toast({ title: 'Error', description: 'Nombre y categoría son requeridos', variant: 'destructive' });
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!formData.supplier_name) return;
+
+    const data = {
+      supplier_name: formData.supplier_name,
+      contact_name: formData.contact_name || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      address: formData.address || null,
+      city: formData.city || null,
+      payment_terms: formData.payment_terms || null,
+      minimum_order: formData.minimum_order || null,
+      delivery_days: formData.delivery_days || null,
+      lead_time_days: formData.lead_time_days || 1,
+      rating: formData.rating || null,
+      is_active: formData.is_active,
+      notes: formData.notes ? `[${formData.category}] ${formData.notes}` : formData.category || null
+    };
 
     if (editingSupplier) {
-      updateSupplier.mutate({ id: editingSupplier.id, data: formData });
+      await updateSupplier(editingSupplier.id, data);
     } else {
-      createSupplier.mutate(formData);
+      await createSupplier(data);
     }
+    
+    resetForm();
+    setShowAddDialog(false);
+    setEditingSupplier(null);
+  };
+
+  // Extract category from notes field (temporary until category column added)
+  const getSupplierCategory = (supplier: InventorySupplier): string => {
+    if (supplier.notes?.startsWith('[')) {
+      const match = supplier.notes.match(/^\[([^\]]+)\]/);
+      return match ? match[1] : 'Otros';
+    }
+    return 'Otros';
   };
 
   // Filter suppliers
   const filteredSuppliers = suppliers.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = s.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           s.contact_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || s.category === categoryFilter;
+    const supplierCategory = getSupplierCategory(s);
+    const matchesCategory = categoryFilter === 'all' || supplierCategory === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -243,25 +170,19 @@ export default function RestaurantSuppliers() {
   const totalSuppliers = suppliers.length;
   const activeSuppliers = suppliers.filter(s => s.is_active).length;
   const avgLeadTime = suppliers.reduce((acc, s) => acc + (s.lead_time_days || 0), 0) / (totalSuppliers || 1);
-  const categories = [...new Set(suppliers.map(s => s.category))];
+  const categories = [...new Set(suppliers.map(s => getSupplierCategory(s)))];
 
   // AI Analysis handler
   const handleAIAnalysis = async () => {
-    if (suppliers.length === 0) {
-      toast({ 
-        title: "Sin datos", 
-        description: "Agrega proveedores para poder analizarlos", 
-        variant: "destructive" 
-      });
-      return;
-    }
+    if (suppliers.length === 0) return;
     
     const supplierData = suppliers.map(s => ({
-      nombre: s.name,
-      categoria: s.category,
+      nombre: s.supplier_name,
+      categoria: getSupplierCategory(s),
       terminos_pago: s.payment_terms,
       tiempo_entrega_dias: s.lead_time_days,
-      activo: s.is_active
+      activo: s.is_active,
+      calificacion: s.rating
     }));
 
     const result = await analyzeSuppliers({
@@ -277,7 +198,21 @@ export default function RestaurantSuppliers() {
     }
   };
 
-  if (isLoading) {
+  const renderStars = (rating: number | null) => {
+    const stars = Math.round(rating || 0);
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map(i => (
+          <Star 
+            key={i} 
+            className={`h-3 w-3 ${i <= stars ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} 
+          />
+        ))}
+      </div>
+    );
+  };
+
+  if (loading) {
     return (
       <div className="p-6 space-y-6">
         <div className="h-8 bg-muted animate-pulse rounded w-48" />
@@ -313,7 +248,7 @@ export default function RestaurantSuppliers() {
               <Plus className="w-4 h-4 mr-2" /> Agregar Proveedor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}</DialogTitle>
               <DialogDescription>
@@ -325,13 +260,13 @@ export default function RestaurantSuppliers() {
                 <div className="space-y-2">
                   <Label>Nombre de la Empresa *</Label>
                   <Input 
-                    value={formData.name}
-                    onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
+                    value={formData.supplier_name}
+                    onChange={e => setFormData(f => ({ ...f, supplier_name: e.target.value }))}
                     placeholder="Distribuidora ABC"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Categoría *</Label>
+                  <Label>Categoría</Label>
                   <Select value={formData.category} onValueChange={v => setFormData(f => ({ ...f, category: v }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar" />
@@ -362,14 +297,24 @@ export default function RestaurantSuppliers() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input 
-                  type="email"
-                  value={formData.email}
-                  onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
-                  placeholder="ventas@proveedor.com"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    value={formData.email}
+                    onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
+                    placeholder="ventas@proveedor.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ciudad</Label>
+                  <Input 
+                    value={formData.city}
+                    onChange={e => setFormData(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Ciudad"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Dirección</Label>
@@ -401,9 +346,48 @@ export default function RestaurantSuppliers() {
                   <Input 
                     type="number"
                     value={formData.lead_time_days}
-                    onChange={e => setFormData(f => ({ ...f, lead_time_days: e.target.value }))}
-                    placeholder="2"
+                    onChange={e => setFormData(f => ({ ...f, lead_time_days: parseInt(e.target.value) || 1 }))}
+                    min={1}
                   />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Pedido Mínimo ($)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.minimum_order}
+                    onChange={e => setFormData(f => ({ ...f, minimum_order: parseFloat(e.target.value) || 0 }))}
+                    min={0}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Días de Entrega</Label>
+                  <Input 
+                    value={formData.delivery_days}
+                    onChange={e => setFormData(f => ({ ...f, delivery_days: e.target.value }))}
+                    placeholder="Lun, Mié, Vie"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Calificación (0-5)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.rating}
+                    onChange={e => setFormData(f => ({ ...f, rating: Math.min(5, Math.max(0, parseFloat(e.target.value) || 0)) }))}
+                    min={0}
+                    max={5}
+                    step={0.5}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={v => setFormData(f => ({ ...f, is_active: v }))}
+                  />
+                  <Label>Proveedor Activo</Label>
                 </div>
               </div>
               <div className="space-y-2">
@@ -424,7 +408,7 @@ export default function RestaurantSuppliers() {
               }}>
                 Cancelar
               </Button>
-              <Button onClick={handleSubmit}>
+              <Button onClick={handleSubmit} disabled={!formData.supplier_name}>
                 {editingSupplier ? 'Actualizar' : 'Crear Proveedor'}
               </Button>
             </DialogFooter>
@@ -561,25 +545,27 @@ export default function RestaurantSuppliers() {
                   <TableHead>Contacto</TableHead>
                   <TableHead>Términos</TableHead>
                   <TableHead>Entrega</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSuppliers.map(supplier => (
-                  <TableRow key={supplier.id}>
+                  <TableRow key={supplier.id} className={!supplier.is_active ? 'opacity-60' : ''}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{supplier.name}</p>
-                        {supplier.address && (
+                        <p className="font-medium">{supplier.supplier_name}</p>
+                        {supplier.city && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
-                            {supplier.address}
+                            {supplier.city}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{supplier.category}</Badge>
+                      <Badge variant="secondary">{getSupplierCategory(supplier)}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -608,11 +594,15 @@ export default function RestaurantSuppliers() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {supplier.lead_time_days ? (
-                        <span>{supplier.lead_time_days} días</span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
+                      <span>{supplier.lead_time_days} días</span>
+                    </TableCell>
+                    <TableCell>
+                      {renderStars(supplier.rating)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={supplier.is_active ? 'default' : 'secondary'}>
+                        {supplier.is_active ? 'Activo' : 'Inactivo'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -623,7 +613,11 @@ export default function RestaurantSuppliers() {
                           variant="ghost" 
                           size="icon" 
                           className="text-destructive hover:text-destructive"
-                          onClick={() => deleteSupplier.mutate(supplier.id)}
+                          onClick={() => {
+                            if (confirm('¿Eliminar este proveedor?')) {
+                              deleteSupplier(supplier.id);
+                            }
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
