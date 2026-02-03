@@ -3657,16 +3657,26 @@ export type Database = {
           brand_values: Json | null
           brand_voice: string | null
           created_at: string | null
+          differentiators: Json | null
+          favicon_url: string | null
           font_primary: string | null
           font_secondary: string | null
+          gallery_photos: Json | null
           id: string
+          logo_dark_url: string | null
+          logo_square_url: string | null
           logo_url: string | null
+          logo_white_url: string | null
+          mission: string | null
           primary_color: string | null
           secondary_color: string | null
           social_links: Json | null
+          story: string | null
           tagline: string | null
+          target_audience: string | null
           updated_at: string | null
           user_id: string
+          vision: string | null
         }
         Insert: {
           accent_color?: string | null
@@ -3675,16 +3685,26 @@ export type Database = {
           brand_values?: Json | null
           brand_voice?: string | null
           created_at?: string | null
+          differentiators?: Json | null
+          favicon_url?: string | null
           font_primary?: string | null
           font_secondary?: string | null
+          gallery_photos?: Json | null
           id?: string
+          logo_dark_url?: string | null
+          logo_square_url?: string | null
           logo_url?: string | null
+          logo_white_url?: string | null
+          mission?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           social_links?: Json | null
+          story?: string | null
           tagline?: string | null
+          target_audience?: string | null
           updated_at?: string | null
           user_id: string
+          vision?: string | null
         }
         Update: {
           accent_color?: string | null
@@ -3693,16 +3713,26 @@ export type Database = {
           brand_values?: Json | null
           brand_voice?: string | null
           created_at?: string | null
+          differentiators?: Json | null
+          favicon_url?: string | null
           font_primary?: string | null
           font_secondary?: string | null
+          gallery_photos?: Json | null
           id?: string
+          logo_dark_url?: string | null
+          logo_square_url?: string | null
           logo_url?: string | null
+          logo_white_url?: string | null
+          mission?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           social_links?: Json | null
+          story?: string | null
           tagline?: string | null
+          target_audience?: string | null
           updated_at?: string | null
           user_id?: string
+          vision?: string | null
         }
         Relationships: []
       }

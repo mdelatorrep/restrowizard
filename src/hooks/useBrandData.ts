@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
@@ -9,6 +9,10 @@ export interface RestaurantBrand {
   user_id: string;
   brand_name: string;
   logo_url: string | null;
+  logo_white_url: string | null;
+  logo_dark_url: string | null;
+  logo_square_url: string | null;
+  favicon_url: string | null;
   tagline: string | null;
   primary_color: string;
   secondary_color: string;
@@ -19,6 +23,17 @@ export interface RestaurantBrand {
   brand_values: string[];
   brand_manual_url: string | null;
   social_links: Record<string, string>;
+  mission: string | null;
+  vision: string | null;
+  story: string | null;
+  differentiators: string[];
+  target_audience: string | null;
+  gallery_photos: Array<{
+    url: string;
+    category: string;
+    caption?: string;
+    uploadedAt: string;
+  }>;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +57,7 @@ export const useBrandData = () => {
   const { toast } = useToast();
   const { userId } = useDataUserId();
 
-  const fetchBrand = async () => {
+  const fetchBrand = useCallback(async () => {
     if (!userId) return;
     
     try {
@@ -56,7 +71,20 @@ export const useBrandData = () => {
       if (error) throw error;
       
       if (data) {
-        setBrand(data as unknown as RestaurantBrand);
+        // Parse JSON fields safely
+        const parsedBrand: RestaurantBrand = {
+          ...data,
+          brand_values: Array.isArray(data.brand_values) ? data.brand_values as string[] : [],
+          social_links: typeof data.social_links === 'object' && data.social_links !== null 
+            ? data.social_links as Record<string, string>
+            : {},
+          differentiators: Array.isArray(data.differentiators) ? data.differentiators as string[] : [],
+          gallery_photos: Array.isArray(data.gallery_photos) 
+            ? (data.gallery_photos as Array<{ url: string; category: string; caption?: string; uploadedAt: string }>)
+            : [],
+        };
+        
+        setBrand(parsedBrand);
         setHasData(true);
         
         const { data: assetsData } = await supabase
@@ -74,7 +102,7 @@ export const useBrandData = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const createBrand = async (brandData: { brand_name: string; [key: string]: unknown }) => {
     if (!userId) return null;
@@ -93,6 +121,8 @@ export const useBrandData = () => {
         brand_voice: brandData.brand_voice as string | undefined,
         brand_values: (brandData.brand_values ?? null) as Json,
         social_links: (brandData.social_links ?? null) as Json,
+        differentiators: (brandData.differentiators ?? null) as Json,
+        gallery_photos: (brandData.gallery_photos ?? null) as Json,
       };
 
       const { data, error } = await supabase
@@ -117,17 +147,34 @@ export const useBrandData = () => {
     if (!brand?.id) return null;
     
     try {
+      // Convert arrays to JSON for storage
+      const updateData: Record<string, unknown> = { ...updates };
+      if (updates.brand_values !== undefined) {
+        updateData.brand_values = updates.brand_values as unknown as Json;
+      }
+      if (updates.social_links !== undefined) {
+        updateData.social_links = updates.social_links as unknown as Json;
+      }
+      if (updates.differentiators !== undefined) {
+        updateData.differentiators = updates.differentiators as unknown as Json;
+      }
+      if (updates.gallery_photos !== undefined) {
+        updateData.gallery_photos = updates.gallery_photos as unknown as Json;
+      }
+
       const { data, error } = await supabase
         .from('restaurant_brands')
-        .update(updates as Record<string, unknown>)
+        .update(updateData)
         .eq('id', brand.id)
         .select()
         .single();
 
       if (error) throw error;
       
-      toast({ title: 'Marca actualizada', description: 'Los cambios han sido guardados' });
-      await fetchBrand();
+      // Update local state immediately
+      setBrand(prev => prev ? { ...prev, ...updates } : null);
+      
+      toast({ title: 'Cambios guardados', description: 'La marca se ha actualizado' });
       return data;
     } catch (error) {
       console.error('Error updating brand:', error);
@@ -159,7 +206,7 @@ export const useBrandData = () => {
 
   useEffect(() => {
     fetchBrand();
-  }, [userId]);
+  }, [fetchBrand]);
 
   return {
     brand,
