@@ -44,7 +44,8 @@ interface ActiveClientContextType {
   getClientCity: (client: ClientData | null) => string;
 }
 
-const ActiveClientContext = createContext<ActiveClientContextType | undefined>(undefined);
+// Export the context for direct useContext access (avoids throwing when provider is missing)
+export const ActiveClientContext = createContext<ActiveClientContextType | undefined>(undefined);
 
 export const ActiveClientProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { userType } = useUserType();
