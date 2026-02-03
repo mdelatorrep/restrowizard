@@ -113,13 +113,13 @@ export const InventoryCountsManager = ({ counts, locations, onCreate, onComplete
               </div>
               <div>
                 <Label>Ubicación (opcional)</Label>
-                <Select value={formData.storage_location_id} onValueChange={(v) => setFormData({ ...formData, storage_location_id: v })}>
+                <Select value={formData.storage_location_id || "all"} onValueChange={(v) => setFormData({ ...formData, storage_location_id: v === "all" ? "" : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todas las ubicaciones" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las ubicaciones</SelectItem>
-                    {locations.map(loc => (
+                    <SelectItem value="all">Todas las ubicaciones</SelectItem>
+                    {locations.filter(loc => loc.id).map(loc => (
                       <SelectItem key={loc.id} value={loc.id}>{loc.location_name}</SelectItem>
                     ))}
                   </SelectContent>

@@ -181,7 +181,7 @@ export const InventoryItemForm = ({ isOpen, onClose, item, locations, suppliers,
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations.map(loc => (
+                    {locations.filter(loc => loc.id).map(loc => (
                       <SelectItem key={loc.id} value={loc.id}>{loc.location_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -320,7 +320,7 @@ export const InventoryItemForm = ({ isOpen, onClose, item, locations, suppliers,
                   <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.map(s => (
+                  {suppliers.filter(s => s.id).map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.supplier_name}</SelectItem>
                   ))}
                 </SelectContent>

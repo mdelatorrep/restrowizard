@@ -107,7 +107,7 @@ export const WasteTracker = ({ waste, inventory, locations, onRecord, wasteThisM
                     <SelectValue placeholder="Seleccionar producto" />
                   </SelectTrigger>
                   <SelectContent>
-                    {inventory.map(item => (
+                    {inventory.filter(item => item.id).map(item => (
                       <SelectItem key={item.id} value={item.id}>
                         {item.item_name} ({item.current_stock} {item.unit})
                       </SelectItem>
@@ -155,7 +155,7 @@ export const WasteTracker = ({ waste, inventory, locations, onRecord, wasteThisM
                     <SelectValue placeholder="Seleccionar ubicación" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations.map(loc => (
+                    {locations.filter(loc => loc.id).map(loc => (
                       <SelectItem key={loc.id} value={loc.id}>{loc.location_name}</SelectItem>
                     ))}
                   </SelectContent>
