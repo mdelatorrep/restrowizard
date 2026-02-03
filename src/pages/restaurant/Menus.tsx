@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Plus, Eye, Edit3, Share2, QrCode, CheckCircle, Loader2, 
-  MoreVertical, Trash2, Copy, BarChart2, Users, FileEdit
+  MoreVertical, Trash2, Copy, Users, FileEdit, Sparkles,
+  ArrowRight, Utensils, TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ import { QRCodeDialog } from '@/components/menus/QRCodeDialog';
 import { ShareMenuDialog } from '@/components/menus/ShareMenuDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import Confetti from '@/components/ui/confetti';
 
 const RestaurantMenus = () => {
   const { menus, loading, publishMenu, loadMenus } = useMenus();
@@ -39,9 +41,12 @@ const RestaurantMenus = () => {
   const [sharingMenu, setSharingMenu] = useState<string | null>(null);
   const [qrMenu, setQrMenu] = useState<string | null>(null);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const handlePublish = async (menuId: string) => {
     await publishMenu(menuId);
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 3000);
   };
 
   const handleDeleteMenu = async () => {
@@ -77,7 +82,6 @@ const RestaurantMenus = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Generate new slug
       const { data: slugData } = await supabase.rpc('generate_menu_slug', {
         menu_name: `${menu.name} (Copia)`
       });
@@ -98,7 +102,6 @@ const RestaurantMenus = () => {
 
       if (error) throw error;
 
-      // Copy menu items
       const { data: items } = await supabase
         .from('menu_items')
         .select('*')
@@ -116,7 +119,7 @@ const RestaurantMenus = () => {
         await supabase.from('menu_items').insert(newItems);
       }
 
-      toast({ title: 'Menú duplicado' });
+      toast({ title: 'Menú duplicado exitosamente' });
       loadMenus();
     } catch (error) {
       console.error('Error duplicating menu:', error);
@@ -140,105 +143,191 @@ const RestaurantMenus = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <Utensils className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        </div>
       </div>
     );
   }
 
+  const totalViews = menus.reduce((sum, m) => sum + (m.view_count || 0), 0);
+  const publishedMenus = menus.filter(m => m.status === 'published').length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Menús Digitales</h1>
-          <p className="text-muted-foreground">
-            Gestiona y personaliza los menús de tu restaurante
-          </p>
+    <div className="space-y-8">
+      {showConfetti && <Confetti />}
+      
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-primary p-8 text-primary-foreground">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-medium">
+                <Sparkles className="w-3 h-3 inline mr-1" />
+                Gestión Profesional
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              Menús Digitales
+            </h1>
+            <p className="text-primary-foreground/80 max-w-md">
+              Crea experiencias gastronómicas memorables con menús interactivos y códigos QR personalizados
+            </p>
+          </div>
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            size="lg"
+            className="bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20 group"
+          >
+            <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
+            Crear Menú
+            <ArrowRight className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+          </Button>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Crear Nuevo Menú
-        </Button>
+        
+        {/* Floating decorative elements */}
+        <div className="absolute top-4 right-4 w-20 h-20 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute bottom-0 left-1/2 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Cards */}
       {menus.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileEdit className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{menus.length}</p>
-                <p className="text-xs text-muted-foreground">Menús</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{menus.filter(m => m.status === 'published').length}</p>
-                <p className="text-xs text-muted-foreground">Publicados</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FileEdit className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    {menus.length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Menús creados</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {menus.reduce((sum, m) => sum + (m.view_count || 0), 0)}
-                </p>
-                <p className="text-xs text-muted-foreground">Visualizaciones</p>
+          
+          <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-green-600">{publishedMenus}</p>
+                  <p className="text-sm text-muted-foreground">Publicados</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <QrCode className="w-5 h-5 text-purple-600" />
+          
+          <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-blue-600">{totalViews.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Visualizaciones</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{menus.filter(m => m.public_url_slug).length}</p>
-                <p className="text-xs text-muted-foreground">Con QR activo</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {totalViews > 0 && menus.length > 0 ? Math.round(totalViews / menus.length) : 0}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Promedio/menú</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
+      {/* Empty State */}
       {menus.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Plus className="w-8 h-8 text-primary" />
+        <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-card via-card to-muted/20">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center animate-pulse">
+                <Utensils className="w-10 h-10 text-primary" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">No tienes menús creados</h3>
-            <p className="text-muted-foreground text-center mb-6 max-w-md">
-              Comienza creando tu primer menú usando nuestras plantillas profesionales
+            <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              ¡Comienza tu aventura gastronómica!
+            </h3>
+            <p className="text-muted-foreground text-center mb-8 max-w-md">
+              Crea menús digitales profesionales con códigos QR, alérgenos, 
+              precios dinámicos y mucho más
             </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              size="lg"
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-lg group"
+            >
+              <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
               Crear Mi Primer Menú
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menus.map((menu) => (
-            <Card key={menu.id} className="hover:shadow-lg transition-shadow group">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{menu.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {menu.description || 'Menú creado con RestroWizard'}
-                    </CardDescription>
+        /* Menu Grid */
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {menus.map((menu, index) => (
+            <Card 
+              key={menu.id} 
+              className="group relative overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 bg-card"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              {/* Gradient top bar */}
+              <div className={`h-1.5 ${menu.status === 'published' 
+                ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500' 
+                : 'bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500'}`} 
+              />
+              
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge 
+                        className={`${menu.status === 'published' 
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0' 
+                          : 'bg-gradient-to-r from-amber-400 to-yellow-500 text-yellow-950 border-0'
+                        } shadow-sm`}
+                      >
+                        {menu.status === 'published' ? '✓ Publicado' : '◯ Borrador'}
+                      </Badge>
+                      {menu.view_count && menu.view_count > 0 && (
+                        <Badge variant="outline" className="text-muted-foreground bg-muted/50">
+                          <Eye className="w-3 h-3 mr-1" />
+                          {menu.view_count}
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold truncate group-hover:text-primary transition-colors">
+                      {menu.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                      {menu.description || 'Menú profesional con RestroWizard'}
+                    </p>
                   </div>
+                  
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -249,7 +338,7 @@ const RestaurantMenus = () => {
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem onClick={() => setEditingMenu(menu.id)}>
                         <Edit3 className="w-4 h-4 mr-2" />
                         Editar menú
@@ -281,84 +370,72 @@ const RestaurantMenus = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge 
-                    variant={menu.status === 'published' ? 'default' : 'secondary'}
-                    className={menu.status === 'published' 
-                      ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                      : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-                    }
-                  >
-                    {menu.status === 'published' ? 'Publicado' : 'Borrador'}
-                  </Badge>
-                  <Badge variant="outline" className="capitalize">
+
+                {/* Cuisine Type Badge */}
+                <div className="mb-6">
+                  <Badge variant="outline" className="capitalize text-xs bg-muted/50">
+                    <Utensils className="w-3 h-3 mr-1" />
                     {menu.cuisine_type?.replace('_', ' ') || 'General'}
                   </Badge>
-                  {menu.view_count && menu.view_count > 0 && (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      <Eye className="w-3 h-3 mr-1" />
-                      {menu.view_count}
-                    </Badge>
-                  )}
                 </div>
-              </CardHeader>
-              
-              <CardFooter className="flex flex-col gap-2 pt-0">
-                <div className="flex gap-2 w-full">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingMenu(menu.id)}
-                    className="flex-1"
-                  >
-                    <Edit3 className="w-4 h-4 mr-1" />
-                    Editar
-                  </Button>
-                  {menu.status === 'published' && menu.public_url_slug && (
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
                     <Button
-                      size="sm"
                       variant="outline"
-                      onClick={() => window.open(`/menu/${menu.public_url_slug}`, '_blank')}
-                      className="flex-1"
+                      onClick={() => setEditingMenu(menu.id)}
+                      className="flex-1 group/btn hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver
+                      <Edit3 className="w-4 h-4 mr-2 group-hover/btn:rotate-12 transition-transform" />
+                      Editar
                     </Button>
-                  )}
-                </div>
-                
-                {menu.status === 'draft' ? (
-                  <Button
-                    size="sm"
-                    onClick={() => handlePublish(menu.id)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Publicar Menú
-                  </Button>
-                ) : (
-                  <div className="flex gap-2 w-full">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSharingMenu(menu.id)}
-                      className="flex-1"
-                    >
-                      <Share2 className="w-4 h-4 mr-1" />
-                      Compartir
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setQrMenu(menu.id)}
-                      className="flex-1"
-                    >
-                      <QrCode className="w-4 h-4 mr-1" />
-                      QR
-                    </Button>
+                    {menu.status === 'published' && menu.public_url_slug && (
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(`/menu/${menu.public_url_slug}`, '_blank')}
+                        className="flex-1 group/btn hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all"
+                      >
+                        <Eye className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+                        Ver
+                      </Button>
+                    )}
                   </div>
-                )}
-              </CardFooter>
+                  
+                  {menu.status === 'draft' ? (
+                    <Button
+                      onClick={() => handlePublish(menu.id)}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25 group/pub"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2 group-hover/pub:scale-110 transition-transform" />
+                      Publicar Menú
+                      <Sparkles className="w-4 h-4 ml-2 opacity-50" />
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setSharingMenu(menu.id)}
+                        className="flex-1 group/share hover:bg-gradient-to-r hover:from-violet-500 hover:to-purple-600 hover:text-white hover:border-transparent"
+                      >
+                        <Share2 className="w-4 h-4 mr-2 group-hover/share:-rotate-12 transition-transform" />
+                        Compartir
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setQrMenu(menu.id)}
+                        className="flex-1 group/qr hover:bg-gradient-to-r hover:from-primary hover:to-secondary hover:text-white hover:border-transparent"
+                      >
+                        <QrCode className="w-4 h-4 mr-2 group-hover/qr:rotate-12 transition-transform" />
+                        QR Code
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+
+              {/* Hover gradient effect */}
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </Card>
           ))}
         </div>
