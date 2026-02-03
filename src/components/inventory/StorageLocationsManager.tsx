@@ -112,7 +112,7 @@ export const StorageLocationsManager = ({ locations, onCreate, onUpdate, onDelet
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationTypes.map(type => (
+                    {locationTypes.filter(type => type.value).map(type => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.icon} {type.label}
                       </SelectItem>
