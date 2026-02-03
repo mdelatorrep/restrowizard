@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useMenus, RestaurantMenu, MenuItem } from '@/hooks/useMenus';
-import { useRecipes, RecipeWithIngredients } from '@/hooks/useRecipes';
+import { useRecipes, RecipeWithDetails } from '@/hooks/useRecipes';
 import { useToast } from '@/hooks/use-toast';
 
 interface MenuEditorProps {

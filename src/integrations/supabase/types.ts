@@ -129,6 +129,33 @@ export type Database = {
           },
         ]
       }
+      allergens: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          severity: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          severity?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          severity?: string | null
+        }
+        Relationships: []
+      }
       applicant_profiles: {
         Row: {
           bio: string | null
@@ -2514,6 +2541,44 @@ export type Database = {
         }
         Relationships: []
       }
+      measurement_units: {
+        Row: {
+          abbreviation: string
+          base_unit_id: string | null
+          category: string
+          conversion_factor: number | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation: string
+          base_unit_id?: string | null
+          category?: string
+          conversion_factor?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string
+          base_unit_id?: string | null
+          category?: string
+          conversion_factor?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurement_units_base_unit_id_fkey"
+            columns: ["base_unit_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           ai_description: string | null
@@ -3467,40 +3532,67 @@ export type Database = {
       }
       recipe_ingredients: {
         Row: {
+          allergen_ids: string[] | null
+          calories_per_unit: number | null
+          carbs_per_unit: number | null
           cost_per_unit: number | null
+          fat_per_unit: number | null
+          gross_quantity: number | null
           id: string
           ingredient_name: string
           inventory_item_id: string | null
           is_optional: boolean | null
           notes: string | null
+          preparation_method: string | null
+          protein_per_unit: number | null
           quantity: number
           recipe_id: string | null
           sort_order: number | null
           unit: string
+          unit_id: string | null
+          yield_percentage: number | null
         }
         Insert: {
+          allergen_ids?: string[] | null
+          calories_per_unit?: number | null
+          carbs_per_unit?: number | null
           cost_per_unit?: number | null
+          fat_per_unit?: number | null
+          gross_quantity?: number | null
           id?: string
           ingredient_name: string
           inventory_item_id?: string | null
           is_optional?: boolean | null
           notes?: string | null
+          preparation_method?: string | null
+          protein_per_unit?: number | null
           quantity: number
           recipe_id?: string | null
           sort_order?: number | null
           unit: string
+          unit_id?: string | null
+          yield_percentage?: number | null
         }
         Update: {
+          allergen_ids?: string[] | null
+          calories_per_unit?: number | null
+          carbs_per_unit?: number | null
           cost_per_unit?: number | null
+          fat_per_unit?: number | null
+          gross_quantity?: number | null
           id?: string
           ingredient_name?: string
           inventory_item_id?: string | null
           is_optional?: boolean | null
           notes?: string | null
+          preparation_method?: string | null
+          protein_per_unit?: number | null
           quantity?: number
           recipe_id?: string | null
           sort_order?: number | null
           unit?: string
+          unit_id?: string | null
+          yield_percentage?: number | null
         }
         Relationships: [
           {
@@ -3520,6 +3612,210 @@ export type Database = {
           {
             foreignKeyName: "recipe_ingredients_recipe_id_fkey"
             columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_nutrition: {
+        Row: {
+          calories: number | null
+          carbs_grams: number | null
+          cholesterol_mg: number | null
+          created_at: string | null
+          fat_grams: number | null
+          fiber_grams: number | null
+          id: string
+          is_estimated: boolean | null
+          notes: string | null
+          protein_grams: number | null
+          recipe_id: string
+          saturated_fat_grams: number | null
+          sodium_mg: number | null
+          sugar_grams: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs_grams?: number | null
+          cholesterol_mg?: number | null
+          created_at?: string | null
+          fat_grams?: number | null
+          fiber_grams?: number | null
+          id?: string
+          is_estimated?: boolean | null
+          notes?: string | null
+          protein_grams?: number | null
+          recipe_id: string
+          saturated_fat_grams?: number | null
+          sodium_mg?: number | null
+          sugar_grams?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          calories?: number | null
+          carbs_grams?: number | null
+          cholesterol_mg?: number | null
+          created_at?: string | null
+          fat_grams?: number | null
+          fiber_grams?: number | null
+          id?: string
+          is_estimated?: boolean | null
+          notes?: string | null
+          protein_grams?: number | null
+          recipe_id?: string
+          saturated_fat_grams?: number | null
+          sodium_mg?: number | null
+          sugar_grams?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_nutrition_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: true
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_nutrition_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: true
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_steps: {
+        Row: {
+          created_at: string | null
+          critical_point: boolean | null
+          duration_minutes: number | null
+          equipment: string | null
+          id: string
+          instruction: string
+          photo_url: string | null
+          recipe_id: string
+          step_number: number
+          technique: string | null
+          temperature_celsius: number | null
+          tips: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          critical_point?: boolean | null
+          duration_minutes?: number | null
+          equipment?: string | null
+          id?: string
+          instruction: string
+          photo_url?: string | null
+          recipe_id: string
+          step_number: number
+          technique?: string | null
+          temperature_celsius?: number | null
+          tips?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          critical_point?: boolean | null
+          duration_minutes?: number | null
+          equipment?: string | null
+          id?: string
+          instruction?: string
+          photo_url?: string | null
+          recipe_id?: string
+          step_number?: number
+          technique?: string | null
+          temperature_celsius?: number | null
+          tips?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_steps_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_steps_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_sub_recipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          parent_recipe_id: string
+          quantity: number
+          sort_order: number | null
+          sub_recipe_id: string
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          parent_recipe_id: string
+          quantity?: number
+          sort_order?: number | null
+          sub_recipe_id: string
+          unit?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          parent_recipe_id?: string
+          quantity?: number
+          sort_order?: number | null
+          sub_recipe_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_sub_recipes_parent_recipe_id_fkey"
+            columns: ["parent_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_sub_recipes_parent_recipe_id_fkey"
+            columns: ["parent_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_sub_recipes_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_sub_recipes_sub_recipe_id_fkey"
+            columns: ["sub_recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
             referencedColumns: ["id"]
@@ -3576,61 +3872,109 @@ export type Database = {
       }
       recipes: {
         Row: {
+          allergen_ids: string[] | null
           category: string | null
           cost_per_portion: number | null
           created_at: string | null
           difficulty: string | null
+          equipment_needed: string[] | null
           id: string
           instructions: string | null
           is_secret: boolean | null
+          is_sub_recipe: boolean | null
+          labor_cost_per_hour: number | null
+          labor_time_minutes: number | null
           menu_item_id: string | null
           name: string
+          overhead_percentage: number | null
+          parent_recipe_ids: string[] | null
           photo_url: string | null
+          plating_instructions: string | null
           portions: number | null
           preparation_time_minutes: number | null
+          serving_size_grams: number | null
+          shelf_life_hours: number | null
+          storage_instructions: string | null
+          tags: string[] | null
           tips: string | null
           total_cost: number | null
           updated_at: string | null
           user_id: string
           video_url: string | null
+          waste_percentage: number | null
+          yield_quantity: number | null
+          yield_unit: string | null
+          yield_weight_grams: number | null
         }
         Insert: {
+          allergen_ids?: string[] | null
           category?: string | null
           cost_per_portion?: number | null
           created_at?: string | null
           difficulty?: string | null
+          equipment_needed?: string[] | null
           id?: string
           instructions?: string | null
           is_secret?: boolean | null
+          is_sub_recipe?: boolean | null
+          labor_cost_per_hour?: number | null
+          labor_time_minutes?: number | null
           menu_item_id?: string | null
           name: string
+          overhead_percentage?: number | null
+          parent_recipe_ids?: string[] | null
           photo_url?: string | null
+          plating_instructions?: string | null
           portions?: number | null
           preparation_time_minutes?: number | null
+          serving_size_grams?: number | null
+          shelf_life_hours?: number | null
+          storage_instructions?: string | null
+          tags?: string[] | null
           tips?: string | null
           total_cost?: number | null
           updated_at?: string | null
           user_id: string
           video_url?: string | null
+          waste_percentage?: number | null
+          yield_quantity?: number | null
+          yield_unit?: string | null
+          yield_weight_grams?: number | null
         }
         Update: {
+          allergen_ids?: string[] | null
           category?: string | null
           cost_per_portion?: number | null
           created_at?: string | null
           difficulty?: string | null
+          equipment_needed?: string[] | null
           id?: string
           instructions?: string | null
           is_secret?: boolean | null
+          is_sub_recipe?: boolean | null
+          labor_cost_per_hour?: number | null
+          labor_time_minutes?: number | null
           menu_item_id?: string | null
           name?: string
+          overhead_percentage?: number | null
+          parent_recipe_ids?: string[] | null
           photo_url?: string | null
+          plating_instructions?: string | null
           portions?: number | null
           preparation_time_minutes?: number | null
+          serving_size_grams?: number | null
+          shelf_life_hours?: number | null
+          storage_instructions?: string | null
+          tags?: string[] | null
           tips?: string | null
           total_cost?: number | null
           updated_at?: string | null
           user_id?: string
           video_url?: string | null
+          waste_percentage?: number | null
+          yield_quantity?: number | null
+          yield_unit?: string | null
+          yield_weight_grams?: number | null
         }
         Relationships: [
           {
