@@ -3166,25 +3166,194 @@ export type Database = {
           },
         ]
       }
+      menu_allergens: {
+        Row: {
+          code: string
+          icon: string | null
+          id: string
+          name: string
+          name_en: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          icon?: string | null
+          id?: string
+          name: string
+          name_en: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          name_en?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      menu_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          menu_id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          menu_id: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          menu_id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_modifier_links: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean
+          menu_item_id: string
+          modifier_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          menu_item_id: string
+          modifier_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          menu_item_id?: string
+          modifier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_modifier_links_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_modifier_links_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_modifier_links_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "menu_item_modifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_modifiers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          max_selections: number | null
+          menu_id: string
+          min_selections: number | null
+          name: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_selections?: number | null
+          menu_id: string
+          min_selections?: number | null
+          name: string
+          sort_order?: number
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_selections?: number | null
+          menu_id?: string
+          min_selections?: number | null
+          name?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_modifiers_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           ai_description: string | null
           allergens: string[] | null
           bcg_category: string | null
+          calories: number | null
           category: string
+          category_id: string | null
+          cost: number | null
           created_at: string
           description: string | null
           dietary_tags: string[] | null
           id: string
           image_url: string | null
           is_available: boolean
+          is_bestseller: boolean | null
           is_featured: boolean
+          is_new: boolean | null
           menu_id: string
           name: string
           popularity_score: number | null
+          preparation_time_minutes: number | null
           price: number
           profitability_score: number | null
+          recipe_id: string | null
           sort_order: number
+          spicy_level: number | null
           suggested_price: number | null
           updated_at: string
         }
@@ -3192,20 +3361,28 @@ export type Database = {
           ai_description?: string | null
           allergens?: string[] | null
           bcg_category?: string | null
+          calories?: number | null
           category?: string
+          category_id?: string | null
+          cost?: number | null
           created_at?: string
           description?: string | null
           dietary_tags?: string[] | null
           id?: string
           image_url?: string | null
           is_available?: boolean
+          is_bestseller?: boolean | null
           is_featured?: boolean
+          is_new?: boolean | null
           menu_id: string
           name: string
           popularity_score?: number | null
+          preparation_time_minutes?: number | null
           price?: number
           profitability_score?: number | null
+          recipe_id?: string | null
           sort_order?: number
+          spicy_level?: number | null
           suggested_price?: number | null
           updated_at?: string
         }
@@ -3213,29 +3390,99 @@ export type Database = {
           ai_description?: string | null
           allergens?: string[] | null
           bcg_category?: string | null
+          calories?: number | null
           category?: string
+          category_id?: string | null
+          cost?: number | null
           created_at?: string
           description?: string | null
           dietary_tags?: string[] | null
           id?: string
           image_url?: string | null
           is_available?: boolean
+          is_bestseller?: boolean | null
           is_featured?: boolean
+          is_new?: boolean | null
           menu_id?: string
           name?: string
           popularity_score?: number | null
+          preparation_time_minutes?: number | null
           price?: number
           profitability_score?: number | null
+          recipe_id?: string | null
           sort_order?: number
+          spicy_level?: number | null
           suggested_price?: number | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "menu_items_menu_id_fkey"
             columns: ["menu_id"]
             isOneToOne: false
             referencedRelation: "restaurant_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "menu_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_modifier_options: {
+        Row: {
+          created_at: string
+          id: string
+          is_available: boolean
+          is_default: boolean
+          modifier_id: string
+          name: string
+          price_adjustment: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          modifier_id: string
+          name: string
+          price_adjustment?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          modifier_id?: string
+          name?: string
+          price_adjustment?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_modifier_options_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "menu_item_modifiers"
             referencedColumns: ["id"]
           },
         ]
