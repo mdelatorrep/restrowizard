@@ -133,7 +133,7 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                         <SelectValue placeholder="Seleccionar proveedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {suppliers.map(s => (
+                        {suppliers.filter(s => s.id).map(s => (
                           <SelectItem key={s.id} value={s.id}>{s.supplier_name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -175,7 +175,7 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                                 <SelectValue placeholder="Seleccionar" />
                               </SelectTrigger>
                               <SelectContent>
-                                {inventory.map(i => (
+                                {inventory.filter(i => i.id).map(i => (
                                   <SelectItem key={i.id} value={i.id}>
                                     {i.item_name} ({i.current_stock} {i.unit})
                                   </SelectItem>
