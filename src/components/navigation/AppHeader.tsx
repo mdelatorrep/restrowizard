@@ -32,14 +32,18 @@ export const AppHeader: React.FC = () => {
           .from('restaurant_businesses')
           .select('name')
           .eq('owner_id', user.id)
-          .single();
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
         setBusinessName(data?.name || 'Mi Restaurante');
       } else if (userType === 'consultant') {
         const { data } = await supabase
           .from('consultant_profiles')
           .select('company_name')
           .eq('user_id', user.id)
-          .single();
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
         setBusinessName(data?.company_name || 'Mi Consultoría');
       }
     };

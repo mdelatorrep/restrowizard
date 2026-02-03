@@ -222,9 +222,10 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
       const { data: businessData } = await client
         .from('restaurant_businesses')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (businessData) {
         await client
