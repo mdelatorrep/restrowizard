@@ -19,10 +19,14 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
 
   // If we have a type from metadata, check onboarding status
   if (type === 'restaurant_owner') {
+    // IMPORTANT: some users can end up with multiple businesses.
+    // We only need to know whether at least one exists; limit(1) prevents PGRST116.
     const { data: business, error } = await supabase
       .from('restaurant_businesses')
       .select('id')
       .eq('owner_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     console.log('📊 [useUserType] restaurant_businesses query result:', { business, error });
@@ -37,10 +41,13 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
   }
 
   if (type === 'consultant') {
+    // Same rationale as restaurants: limit(1) avoids errors if multiple rows exist.
     const { data: consultantProfile, error } = await supabase
       .from('consultant_profiles')
       .select('id, company_name')
       .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     console.log('📊 [useUserType] consultant_profiles query result:', { consultantProfile, error });
@@ -84,6 +91,8 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
       .from('restaurant_businesses')
       .select('id')
       .eq('owner_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     return { userType: profileType, hasCompletedOnboarding: !!business };
@@ -93,6 +102,8 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
     .from('consultant_profiles')
     .select('id, company_name')
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   return {
