@@ -1616,6 +1616,145 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_count_items: {
+        Row: {
+          count_id: string
+          counted_at: string | null
+          counted_quantity: number | null
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          notes: string | null
+          system_quantity: number
+          unit_cost: number | null
+          variance_percentage: number | null
+          variance_quantity: number | null
+          variance_value: number | null
+        }
+        Insert: {
+          count_id: string
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          notes?: string | null
+          system_quantity: number
+          unit_cost?: number | null
+          variance_percentage?: number | null
+          variance_quantity?: number | null
+          variance_value?: number | null
+        }
+        Update: {
+          count_id?: string
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          notes?: string | null
+          system_quantity?: number
+          unit_cost?: number | null
+          variance_percentage?: number | null
+          variance_quantity?: number | null
+          variance_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_count_items_count_id_fkey"
+            columns: ["count_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_counts: {
+        Row: {
+          completed_at: string | null
+          count_name: string
+          count_type: string | null
+          counted_by: string | null
+          created_at: string | null
+          id: string
+          items_counted: number | null
+          notes: string | null
+          scheduled_date: string | null
+          started_at: string | null
+          status: string | null
+          storage_location_id: string | null
+          total_items: number | null
+          total_variance_value: number | null
+          user_id: string
+          verified_by: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          count_name: string
+          count_type?: string | null
+          counted_by?: string | null
+          created_at?: string | null
+          id?: string
+          items_counted?: number | null
+          notes?: string | null
+          scheduled_date?: string | null
+          started_at?: string | null
+          status?: string | null
+          storage_location_id?: string | null
+          total_items?: number | null
+          total_variance_value?: number | null
+          user_id: string
+          verified_by?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          count_name?: string
+          count_type?: string | null
+          counted_by?: string | null
+          created_at?: string | null
+          id?: string
+          items_counted?: number | null
+          notes?: string | null
+          scheduled_date?: string | null
+          started_at?: string | null
+          status?: string | null
+          storage_location_id?: string | null
+          total_items?: number | null
+          total_variance_value?: number | null
+          user_id?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_counts_storage_location_id_fkey"
+            columns: ["storage_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_deductions: {
         Row: {
           deducted_at: string
@@ -1652,6 +1791,20 @@ export type Database = {
             foreignKeyName: "inventory_deductions_inventory_item_id_fkey"
             columns: ["inventory_item_id"]
             isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_deductions_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_deductions_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
             referencedRelation: "inventory_items"
             referencedColumns: ["id"]
           },
@@ -1678,17 +1831,106 @@ export type Database = {
           },
         ]
       }
+      inventory_item_suppliers: {
+        Row: {
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          is_preferred: boolean | null
+          last_ordered_at: string | null
+          min_order_quantity: number | null
+          purchase_unit: string | null
+          supplier_id: string
+          supplier_sku: string | null
+          unit_cost: number
+          units_per_purchase: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          is_preferred?: boolean | null
+          last_ordered_at?: string | null
+          min_order_quantity?: number | null
+          purchase_unit?: string | null
+          supplier_id: string
+          supplier_sku?: string | null
+          unit_cost: number
+          units_per_purchase?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          is_preferred?: boolean | null
+          last_ordered_at?: string | null
+          min_order_quantity?: number | null
+          purchase_unit?: string | null
+          supplier_id?: string
+          supplier_sku?: string | null
+          unit_cost?: number
+          units_per_purchase?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_item_suppliers_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_item_suppliers_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_item_suppliers_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_item_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           alert_when_low: boolean | null
+          barcode: string | null
           category: string | null
           created_at: string
           current_stock: number
+          expiration_date: string | null
           id: string
+          is_perishable: boolean | null
           item_name: string
           last_restocked_at: string | null
+          lead_time_days: number | null
+          lot_number: string | null
+          max_level: number | null
+          min_order_quantity: number | null
           min_stock_level: number | null
+          notes: string | null
+          par_level: number | null
+          preferred_supplier_id: string | null
+          purchase_quantity: number | null
+          purchase_unit: string | null
           reorder_point: number | null
+          shelf_life_days: number | null
+          sku: string | null
+          storage_location_id: string | null
           supplier_name: string | null
           track_stock: boolean | null
           unit: string
@@ -1698,14 +1940,29 @@ export type Database = {
         }
         Insert: {
           alert_when_low?: boolean | null
+          barcode?: string | null
           category?: string | null
           created_at?: string
           current_stock?: number
+          expiration_date?: string | null
           id?: string
+          is_perishable?: boolean | null
           item_name: string
           last_restocked_at?: string | null
+          lead_time_days?: number | null
+          lot_number?: string | null
+          max_level?: number | null
+          min_order_quantity?: number | null
           min_stock_level?: number | null
+          notes?: string | null
+          par_level?: number | null
+          preferred_supplier_id?: string | null
+          purchase_quantity?: number | null
+          purchase_unit?: string | null
           reorder_point?: number | null
+          shelf_life_days?: number | null
+          sku?: string | null
+          storage_location_id?: string | null
           supplier_name?: string | null
           track_stock?: boolean | null
           unit?: string
@@ -1715,19 +1972,266 @@ export type Database = {
         }
         Update: {
           alert_when_low?: boolean | null
+          barcode?: string | null
           category?: string | null
           created_at?: string
           current_stock?: number
+          expiration_date?: string | null
           id?: string
+          is_perishable?: boolean | null
           item_name?: string
           last_restocked_at?: string | null
+          lead_time_days?: number | null
+          lot_number?: string | null
+          max_level?: number | null
+          min_order_quantity?: number | null
           min_stock_level?: number | null
+          notes?: string | null
+          par_level?: number | null
+          preferred_supplier_id?: string | null
+          purchase_quantity?: number | null
+          purchase_unit?: string | null
           reorder_point?: number | null
+          shelf_life_days?: number | null
+          sku?: string | null
+          storage_location_id?: string | null
           supplier_name?: string | null
           track_stock?: boolean | null
           unit?: string
           unit_cost?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_storage_location_id_fkey"
+            columns: ["storage_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string | null
+          expiration_date: string | null
+          from_location_id: string | null
+          id: string
+          inventory_item_id: string
+          lot_number: string | null
+          movement_type: string
+          notes: string | null
+          performed_by: string | null
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reference_id: string | null
+          reference_type: string | null
+          to_location_id: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expiration_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          inventory_item_id: string
+          lot_number?: string | null
+          movement_type: string
+          notes?: string | null
+          performed_by?: string | null
+          quantity_after: number
+          quantity_before: number
+          quantity_change: number
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expiration_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          inventory_item_id?: string
+          lot_number?: string | null
+          movement_type?: string
+          notes?: string | null
+          performed_by?: string | null
+          quantity_after?: number
+          quantity_before?: number
+          quantity_change?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_price_history: {
+        Row: {
+          change_percentage: number | null
+          change_reason: string | null
+          id: string
+          inventory_item_id: string
+          new_price: number
+          old_price: number | null
+          recorded_at: string | null
+          recorded_by: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          change_percentage?: number | null
+          change_reason?: string | null
+          id?: string
+          inventory_item_id: string
+          new_price: number
+          old_price?: number | null
+          recorded_at?: string | null
+          recorded_by?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          change_percentage?: number | null
+          change_reason?: string | null
+          id?: string
+          inventory_item_id?: string
+          new_price?: number
+          old_price?: number | null
+          recorded_at?: string | null
+          recorded_by?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_price_history_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_price_history_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_price_history_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_price_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_suppliers: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          delivery_days: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          lead_time_days: number | null
+          minimum_order: number | null
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          rating: number | null
+          supplier_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          delivery_days?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          minimum_order?: number | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          supplier_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          delivery_days?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          minimum_order?: number | null
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          supplier_name?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1798,6 +2302,89 @@ export type Database = {
             columns: ["to_location_id"]
             isOneToOne: false
             referencedRelation: "chain_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_waste: {
+        Row: {
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          is_preventable: boolean | null
+          lot_number: string | null
+          notes: string | null
+          quantity: number
+          reported_by: string | null
+          storage_location_id: string | null
+          total_cost: number | null
+          unit: string
+          unit_cost: number | null
+          user_id: string
+          waste_date: string | null
+          waste_reason: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          is_preventable?: boolean | null
+          lot_number?: string | null
+          notes?: string | null
+          quantity: number
+          reported_by?: string | null
+          storage_location_id?: string | null
+          total_cost?: number | null
+          unit: string
+          unit_cost?: number | null
+          user_id: string
+          waste_date?: string | null
+          waste_reason: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          is_preventable?: boolean | null
+          lot_number?: string | null
+          notes?: string | null
+          quantity?: number
+          reported_by?: string | null
+          storage_location_id?: string | null
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          user_id?: string
+          waste_date?: string | null
+          waste_reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_waste_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_waste_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_waste_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_waste_storage_location_id_fkey"
+            columns: ["storage_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -3344,6 +3931,151 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string | null
+          expiration_date: string | null
+          id: string
+          inventory_item_id: string
+          lot_number: string | null
+          notes: string | null
+          purchase_order_id: string
+          quantity_ordered: number
+          quantity_received: number | null
+          total_cost: number
+          unit: string
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string | null
+          expiration_date?: string | null
+          id?: string
+          inventory_item_id: string
+          lot_number?: string | null
+          notes?: string | null
+          purchase_order_id: string
+          quantity_ordered: number
+          quantity_received?: number | null
+          total_cost: number
+          unit: string
+          unit_cost: number
+        }
+        Update: {
+          created_at?: string | null
+          expiration_date?: string | null
+          id?: string
+          inventory_item_id?: string
+          lot_number?: string | null
+          notes?: string | null
+          purchase_order_id?: string
+          quantity_ordered?: number
+          quantity_received?: number | null
+          total_cost?: number
+          unit?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expected_delivery: string | null
+          id: string
+          internal_notes: string | null
+          notes: string | null
+          order_date: string | null
+          order_number: string
+          received_by: string | null
+          received_date: string | null
+          shipping_cost: number | null
+          status: string | null
+          subtotal: number | null
+          supplier_id: string | null
+          tax_amount: number | null
+          total_amount: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_number: string
+          received_by?: string | null
+          received_date?: string | null
+          shipping_cost?: number | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          order_date?: string | null
+          order_number?: string
+          received_by?: string | null
+          received_date?: string | null
+          shipping_cost?: number | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -3595,6 +4327,20 @@ export type Database = {
           yield_percentage?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recipe_ingredients_inventory_item_id_fkey"
             columns: ["inventory_item_id"]
@@ -5172,6 +5918,45 @@ export type Database = {
           },
         ]
       }
+      storage_locations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          location_name: string
+          location_type: string | null
+          sort_order: number | null
+          temperature_range: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_name: string
+          location_type?: string | null
+          sort_order?: number | null
+          temperature_range?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location_name?: string
+          location_type?: string | null
+          sort_order?: number | null
+          temperature_range?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       supplier_analysis: {
         Row: {
           alternatives: Json | null
@@ -5231,6 +6016,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_analysis_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_analysis_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_analysis_inventory_item_id_fkey"
             columns: ["inventory_item_id"]
@@ -5899,6 +6698,38 @@ export type Database = {
       }
     }
     Views: {
+      inventory_below_par: {
+        Row: {
+          current_stock: number | null
+          estimated_order_cost: number | null
+          id: string | null
+          item_name: string | null
+          lead_time_days: number | null
+          par_level: number | null
+          preferred_supplier: string | null
+          quantity_to_order: number | null
+          reorder_point: number | null
+          unit: string | null
+          unit_cost: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      inventory_expiring_soon: {
+        Row: {
+          current_stock: number | null
+          days_until_expiry: number | null
+          expiration_date: string | null
+          expiration_status: string | null
+          id: string | null
+          item_name: string | null
+          lot_number: string | null
+          storage_location: string | null
+          unit: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       menu_items_with_costs: {
         Row: {
           allergens: string[] | null
