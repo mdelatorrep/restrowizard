@@ -59,6 +59,7 @@ import {
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+ import { Switch } from '@/components/ui/switch';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
@@ -285,6 +286,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const lifecycle = useRestaurantLifecycle();
   const prerequisites = useModulePrerequisites();
   const [expansionOpen, setExpansionOpen] = useState(false);
+   const [showAllModules, setShowAllModules] = useState(false);
 
   const isCollapsed = state === 'collapsed';
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
@@ -293,6 +295,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
 
   // Filter menu items based on lifecycle stage
   const filterByStage = (items: MenuItem[]) => {
+     if (showAllModules) return items;
     return items.filter(item => {
       if (!item.stages) return true;
       return item.stages.includes(lifecycle.stage);
@@ -447,6 +450,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </div>
         )}
 
+         {/* Toggle para ver todos los módulos */}
+         {userType === 'restaurant_owner' && !isCollapsed && (
+           <div className="px-3 pt-2">
+             <div className="flex items-center justify-between text-xs">
+               <span className="text-sidebar-foreground/70">Ver todos los módulos</span>
+               <Switch 
+                 checked={showAllModules} 
+                 onCheckedChange={setShowAllModules}
+                 className="scale-75"
+               />
+             </div>
+           </div>
+         )}
+ 
         {/* ====== RESTAURANT OWNER NAVIGATION ====== */}
         {userType === 'restaurant_owner' && (
           <>
