@@ -1,216 +1,258 @@
 
-# Plan: Reorganizacion del Sidebar para Restaurantes
+# Plan: Mejoras al Modulo de Inventarios - Alineacion con Referentes Globales
 
-## ✅ IMPLEMENTADO
+## Resumen Ejecutivo
 
-## Objetivo
-Simplificar y optimizar la navegacion del sidebar agrupando modulos de manera logica, eliminando redundancias y asegurando que cada modulo tenga un proposito claro y diferenciado.
+El modulo actual de inventarios tiene una buena base enterprise con multiples funcionalidades. Sin embargo, tras comparar con los lideres globales (MarketMan, WISK, BlueCart, Lightspeed), he identificado brechas criticas que afectan la funcionalidad end-to-end.
 
 ---
 
-## Analisis de la Estructura Actual
+## Analisis del Estado Actual
 
-### Estructura Actual (8 grupos, ~25 modulos)
+### Funcionalidades Existentes (Lo que ya funciona bien)
+
+| Funcionalidad | Estado | Calidad |
+|--------------|--------|---------|
+| Items de inventario con par levels | Completo | Buena |
+| Ubicaciones de almacenamiento | Completo | Buena |
+| Proveedores con calificacion | Completo | Buena |
+| Ordenes de compra basicas | Completo | Media |
+| Generacion automatica desde par levels | Completo | Buena |
+| Conteos fisicos con varianza | Completo | Buena |
+| Registro de mermas | Completo | Buena |
+| Escaneo de codigo de barras (manual) | Completo | Media |
+| Historial de movimientos | Completo | Buena |
+| Analisis IA de inventario | Completo | Buena |
+| Buscador de proveedores IA | Completo | Buena |
+
+### Brechas Criticas Identificadas
+
+| Gap | Referente | Impacto |
+|-----|-----------|---------|
+| Deduccion automatica POS no visible | MarketMan, Rezku | Alto - los usuarios no ven las deducciones |
+| FIFO sin implementacion UI | WISK, BlueCart | Alto - productos vencen sin control visual |
+| Recepcion de OC sin captura de lotes | MarketMan | Medio - trazabilidad incompleta |
+| Escaner camara no implementado | WISK | Alto - escaner actual solo acepta texto |
+| Dashboard de items criticos faltante | MarketMan | Medio - alertas dispersas |
+| Historial de precios sin graficas | BlueCart | Bajo - datos existen pero no se visualizan |
+| Transferencias entre ubicaciones sin UI | WISK | Medio - funcion existe pero no accesible |
+| Integracion recetas-inventario opaca | MarketMan | Alto - usuarios no entienden el flujo |
+
+---
+
+## Plan de Mejoras Ordenado por Prioridad
+
+### Fase 1: Funcionalidad Critica (Prioridad Alta)
+
+#### 1.1 Dashboard de Alertas Criticas
+
+Agregar una seccion prominente al inicio del modulo que muestre:
+
+- Items vencidos o por vencer (proximos 7 dias)
+- Items agotados
+- Items bajo par level
+- OC pendientes de recepcion
+- Conteos vencidos (mas de 30 dias sin contar)
+
+**Archivos a modificar:**
+- `src/pages/restaurant/Inventory.tsx` - Agregar componente de alertas antes de los KPIs actuales
+
+**Nuevo componente:**
+- `src/components/inventory/CriticalAlertsPanel.tsx`
+
+#### 1.2 Mejora de Recepcion de Ordenes de Compra
+
+El flujo actual de recepcion es demasiado simple. Los referentes permiten:
+- Captura de lote y vencimiento por item recibido
+- Recepcion parcial con tracking de pendientes
+- Vista detallada de items de la OC
+
+**Archivos a modificar:**
+- `src/components/inventory/PurchaseOrdersManager.tsx` - Agregar dialog de recepcion detallada
+- `src/hooks/useEnterpriseInventory.ts` - Ya tiene `receivePurchaseOrder`, ajustar para UI
+
+**Nuevo componente:**
+- `src/components/inventory/ReceiveOrderDialog.tsx`
+
+#### 1.3 Vista FIFO y Gestion de Vencimientos
+
+Agregar una vista dedicada para:
+- Ver todos los lotes por item ordenados FIFO
+- Alertas visuales de vencimiento inminente
+- Accion rapida para registrar merma por vencimiento
+
+**Nuevo componente:**
+- `src/components/inventory/ExpirationTracker.tsx`
+
+**Modificacion:**
+- Agregar tab "Vencimientos" al modulo principal
+
+#### 1.4 Panel de Integracion Recetas-Inventario
+
+Hacer visible el flujo de deduccion automatica:
+- Mostrar que recetas estan vinculadas a items
+- Vista de "Que pasa cuando vendo X"
+- Log de deducciones recientes
+
+**Nuevo componente:**
+- `src/components/inventory/RecipeIntegrationPanel.tsx`
+
+### Fase 2: Mejoras de Usabilidad (Prioridad Media)
+
+#### 2.1 Escaner con Camara
+
+Implementar escaner real usando la API de MediaDevices:
+- Uso de libreria `@mantine/hooks` o `quagga2` para decodificacion
+- Fallback al input manual actual
+- Soporte para escaneo continuo en conteos
+
+**Archivos a modificar:**
+- `src/components/inventory/BarcodeScanner.tsx` - Agregar modo camara
+
+#### 2.2 Dialog de Transferencias entre Ubicaciones
+
+Exponer la funcion `transferInventory` existente con UI:
+- Seleccion de item, origen y destino
+- Cantidad a transferir
+- Historial de transferencias
+
+**Nuevo componente:**
+- `src/components/inventory/TransferDialog.tsx`
+
+#### 2.3 Grafica de Historial de Precios
+
+Visualizar la tabla `inventory_price_history`:
+- Grafica de linea por proveedor
+- Comparativa de precios entre proveedores
+- Alerta cuando precio sube mas de X%
+
+**Nuevo componente:**
+- `src/components/inventory/PriceHistoryChart.tsx`
+
+#### 2.4 Vista Detallada de Item
+
+Al hacer click en un item, mostrar panel lateral con:
+- Todos los lotes (FIFO)
+- Historial de movimientos
+- Historial de precios
+- Recetas que lo usan
+- Proveedores alternativos
+
+**Nuevo componente:**
+- `src/components/inventory/InventoryItemDetail.tsx`
+
+### Fase 3: Mejoras Avanzadas (Prioridad Baja)
+
+#### 3.1 Conteo por Escaneo
+
+Durante un conteo fisico, permitir:
+- Escanear codigo de barras
+- Ingresar cantidad contada
+- Marcar item automaticamente
+
+**Archivos a modificar:**
+- `src/components/inventory/InventoryCountsManager.tsx`
+
+**Nuevo componente:**
+- `src/components/inventory/CountingSession.tsx`
+
+#### 3.2 Reportes de Inventario
+
+Agregar tab de reportes con:
+- Reporte de valoracion (valor total por categoria/ubicacion)
+- Reporte de rotacion (dias de inventario promedio)
+- Reporte de mermas (tendencias mensuales)
+- Export a PDF/Excel
+
+**Nuevo componente:**
+- `src/components/inventory/InventoryReports.tsx`
+
+#### 3.3 Ordenes de Compra Automaticas
+
+Envio automatico de OC cuando items bajan del reorder point:
+- Configuracion por proveedor
+- Dias de pedido automatico
+- Notificaciones de confirmacion
+
+**Requiere:**
+- Nuevo edge function para automatizacion
+- Tabla de configuracion de auto-orders
+
+---
+
+## Cambios Tecnicos Detallados
+
+### Nuevos Componentes (9 total)
 
 ```text
-1. Principal
-   - Dashboard
-   - Nuevo Negocio (solo etapas iniciales)
-   - Pre-Apertura (solo pre-apertura)
-   - Primeros 90 Dias (solo primeros 90 dias)
+src/components/inventory/
+  CriticalAlertsPanel.tsx      - Panel de alertas criticas
+  ReceiveOrderDialog.tsx       - Recepcion detallada de OC
+  ExpirationTracker.tsx        - Vista FIFO y vencimientos
+  RecipeIntegrationPanel.tsx   - Vinculo recetas-inventario
+  TransferDialog.tsx           - Transferencias entre ubicaciones
+  PriceHistoryChart.tsx        - Grafica de precios historicos
+  InventoryItemDetail.tsx      - Vista detallada de item
+  CountingSession.tsx          - Sesion de conteo con escaneo
+  InventoryReports.tsx         - Reportes y exports
+```
 
-2. Configuracion Base
-   - Marca
-   - Recetas
-   - Inventarios
-   - Proveedores
-   - Menus Digitales
+### Modificaciones a Archivos Existentes
 
-3. Ventas y Operaciones
-   - Punto de Venta
-   - Pedidos
-   - Cocina (KDS)
-   - Domicilios
-   - Reservaciones
+| Archivo | Cambios |
+|---------|---------|
+| `src/pages/restaurant/Inventory.tsx` | Agregar tabs de Vencimientos, Recetas, Reportes; Integrar alertas |
+| `src/components/inventory/BarcodeScanner.tsx` | Agregar modo camara con MediaDevices |
+| `src/components/inventory/PurchaseOrdersManager.tsx` | Integrar ReceiveOrderDialog |
+| `src/components/inventory/InventoryCountsManager.tsx` | Agregar modo de conteo por escaneo |
+| `src/hooks/useEnterpriseInventory.ts` | Agregar queries para FIFO, vinculos recetas |
 
-4. Analisis IA
-   - Finanzas IA
-   - Operaciones IA
-   - Reportes Ventas
-   - Metas de Venta
+### Dependencias Nuevas Sugeridas
 
-5. Equipo
-   - Talento IA
-   - Turnos
-
-6. Clientes
-   - Fidelizacion
-   - Feedback
-   - Soporte PQRS
-
-7. Marketing
-   - Sitio Web
-   - Social Listening
-
-8. Avanzado
-   - Sostenibilidad
-   - Ghost Kitchen
-   - Gestion de Cadenas
+```text
+quagga2 - Decodificacion de codigos de barras via camara
+date-fns - Ya instalado, uso extendido para calculos FIFO
 ```
 
 ---
 
-## Problemas Identificados
-
-| Problema | Modulos Afectados | Impacto |
-|----------|-------------------|---------|
-| Duplicidad conceptual | Finanzas IA + Reportes Ventas | Confunden al usuario sobre donde ver datos financieros |
-| Modulo huerfano | Operaciones IA | Mezcla feedback + lealtad + KPIs sin datos propios |
-| Nombre confuso | "Metas de Venta" | Deberia fusionarse con Finanzas o POS Reports |
-| Grupo con 1 item | Social Listening solo | Marketing tiene muy poco contenido |
-| Modulos muy avanzados visibles | Ghost Kitchen, Cadenas | Mayoria de restaurantes son unidades unicas |
-| Ingenieria de Menu removida | Ya integrada en Menus | Correcto, pero verificar consistencia |
-
----
-
-## Propuesta de Nueva Estructura (5 grupos principales)
+## Estructura Final del Modulo
 
 ```text
-1. Principal (contextual por etapa)
-   - Dashboard / Nuevo Negocio / Pre-Apertura / Primeros 90 Dias
-
-2. Mi Restaurante
-   - Marca e Identidad
-   - Recetas y Costos
-   - Menus Digitales (incluye Ingenieria de Menu)
-   - Inventario y Proveedores
-
-3. Ventas
-   - Punto de Venta (POS)
-   - Pedidos y Cocina
-   - Domicilios
-   - Reservaciones
-   - Reportes y Metas (fusion de POS Reports + Sales Goals)
-
-4. Equipo y Clientes
-   - Talento y Turnos (fusion)
-   - Fidelizacion
-   - Feedback y Reputacion (fusion de Feedback + Social Listening)
-   - Soporte PQRS
-
-5. Presencia Digital
-   - Sitio Web y URLs
-
-6. Finanzas y Analisis (solo para operacion normal)
-   - Finanzas IA (absorbe Operaciones IA)
-   - Sostenibilidad
-   
-7. Expansion (oculto por defecto, solo operacion normal)
-   - Ghost Kitchen
-   - Gestion de Cadenas
+Tabs principales:
+1. Inventario (items, busqueda, stock)
+2. Ubicaciones (almacenes, zonas)
+3. Proveedores (directorio, calificaciones)
+4. Compras (OC, recepcion, historial)
+5. Conteos (auditorias, varianzas)
+6. Mermas (registro, analisis)
+7. Vencimientos (FIFO, alertas) [NUEVO]
+8. Recetas (vinculos, deducciones) [NUEVO]
+9. Reportes (valoracion, rotacion) [NUEVO]
 ```
 
 ---
 
-## Cambios Detallados
+## Orden de Implementacion Sugerido
 
-### 1. Fusiones
-
-| Modulos Actuales | Nuevo Modulo | Justificacion |
-|------------------|--------------|---------------|
-| Finanzas IA + Operaciones IA | Finanzas IA | Operaciones IA duplica datos de otros modulos (feedback, lealtad). Finanzas IA ya tiene KPIs operativos |
-| POS Reports + Metas de Venta | Reportes y Metas | Ambos tratan sobre rendimiento de ventas |
-| Feedback + Social Listening | Feedback y Reputacion | Ambos miden satisfaccion del cliente |
-| Talento IA + Turnos | Talento y Turnos | Ambos sobre gestion de personal |
-| Inventario + Proveedores | Inventario y Proveedores | Proveedores es parte del ciclo de inventario |
-
-### 2. Reorganizacion de Grupos
-
-**Grupo "Mi Restaurante"** (configuracion del negocio):
-- Marca e Identidad (antes: Marca)
-- Recetas y Costos (antes: Recetas) 
-- Menus Digitales (sin cambios, ya incluye Ingenieria de Menu)
-- Inventario y Proveedores (fusion)
-
-**Grupo "Ventas"** (operaciones diarias):
-- Punto de Venta
-- Pedidos y Cocina (fusion para unificar flujo de ordenes)
-- Domicilios
-- Reservaciones
-- Reportes y Metas (fusion)
-
-**Grupo "Equipo y Clientes"** (personas):
-- Talento y Turnos (fusion)
-- Fidelizacion
-- Feedback y Reputacion (fusion)
-- Soporte PQRS
-
-**Grupo "Presencia Digital"**:
-- Sitio Web y URLs (centraliza todas las URLs publicas)
-
-**Grupo "Finanzas"** (analisis avanzado):
-- Finanzas IA (ahora incluye insights de operaciones)
-- Sostenibilidad
-
-**Grupo "Expansion"** (opcional, colapsado):
-- Ghost Kitchen
-- Gestion de Cadenas
-
-### 3. Visibilidad por Etapa
-
-| Grupo | conception | enablement | pre_opening | first_90_days | normal_operation |
-|-------|------------|------------|-------------|---------------|------------------|
-| Principal | Si | Si | Si | Si | Si |
-| Mi Restaurante | Marca solo | Si | Si | Si | Si |
-| Ventas | No | No | Reservaciones | Si | Si |
-| Equipo y Clientes | No | Talento | Si | Si | Si |
-| Presencia Digital | No | Si | Si | Si | Si |
-| Finanzas | No | No | No | Si | Si |
-| Expansion | No | No | No | No | Si |
+1. CriticalAlertsPanel - Visibilidad inmediata de problemas
+2. ReceiveOrderDialog - Completar flujo de compras
+3. ExpirationTracker - Control FIFO critico para restaurantes
+4. InventoryItemDetail - Vista 360 de cada item
+5. RecipeIntegrationPanel - Transparencia en deducciones
+6. TransferDialog - Operaciones entre ubicaciones
+7. BarcodeScanner con camara - Eficiencia operativa
+8. PriceHistoryChart - Analisis de costos
+9. CountingSession - Mejora de auditorias
+10. InventoryReports - Reportes ejecutivos
 
 ---
 
-## Archivos a Modificar
+## Metricas de Exito
 
-### AppSidebar.tsx
-- Reestructurar los arrays de items segun nueva organizacion
-- Actualizar las funciones de filtrado por etapa
-- Implementar grupo "Expansion" colapsable
+- Reduccion de items vencidos sin detectar
+- Tiempo promedio de conteo fisico
+- Precision de inventario (varianza en conteos)
+- Visibilidad del costo de merma
+- Uso de ordenes de compra automaticas
 
-### Paginas a Fusionar o Redirigir
-
-| Pagina Actual | Accion | Destino |
-|---------------|--------|---------|
-| `/r/operations` | Redirigir | `/r/finances` (agregar tab de operaciones) |
-| `/r/pos-reports` | Mantener | Agregar tab de metas dentro |
-| `/r/sales-goals` | Redirigir | `/r/pos-reports` |
-| `/r/social-listening` | Redirigir | `/r/feedback` (agregar tab de reputacion) |
-| `/r/staff-schedule` | Redirigir | `/r/talent` (agregar tab de turnos) |
-| `/r/suppliers` | Redirigir | `/r/inventory` (agregar tab de proveedores) |
-
-### Componentes a Actualizar
-
-1. `FinancesAIModule.tsx` - Agregar tab con datos de operaciones
-2. `RestaurantFeedback.tsx` - Agregar tab de Social Listening
-3. `RestaurantTalent.tsx` - Agregar tab de programacion de turnos
-4. `RestaurantInventory.tsx` - Agregar tab de proveedores
-5. `RestaurantPOSReports.tsx` - Agregar tab de metas de venta
-
----
-
-## Beneficios Esperados
-
-1. **Reduccion de 25 a 15 items** en el sidebar
-2. **Grupos mas logicos** que reflejan el flujo de trabajo real
-3. **Menos confusion** al eliminar modulos duplicados
-4. **Mejor escalabilidad** con grupo de expansion oculto
-5. **Navegacion mas rapida** con menos opciones visibles
-
----
-
-## Notas de Implementacion
-
-- Mantener rutas antiguas con redirects para no romper bookmarks
-- Actualizar el hook `useModulePrerequisites` para los nuevos modulos
-- Actualizar las referencias en el Dashboard de accesos rapidos
-- Considerar agregar un toggle para "Vista Avanzada" que muestre todos los modulos originales para usuarios que lo prefieran
