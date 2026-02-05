@@ -28,7 +28,7 @@
    currentSection = 'home',
  }: PublicHeaderProps) {
    const { slug } = useParams<{ slug: string }>();
-   const basePath = `/r/${slug}`;
+   const basePath = `/p/${slug}`;
  
    const navItems = [
      { key: 'home', label: 'Inicio', icon: Home, path: basePath, show: true },

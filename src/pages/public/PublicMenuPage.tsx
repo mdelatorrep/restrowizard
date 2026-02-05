@@ -336,7 +336,7 @@
          <div className="sticky bottom-0 bg-background/95 backdrop-blur border-t p-4">
            <div className="container mx-auto flex justify-center">
              <Button size="lg" asChild>
-               <Link to={`/r/${slug}/domicilios`}>
+                <Link to={`/p/${slug}/domicilios`}>
                  <ShoppingCart className="w-5 h-5 mr-2" />
                  Pedir a Domicilio
                </Link>

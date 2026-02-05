@@ -110,18 +110,18 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
-               
-               {/* Unified public restaurant routes */}
-               <Route path="/r/:slug" element={<PublicRestaurantHub />} />
-               <Route path="/r/:slug/menu" element={<PublicMenuPage />} />
-               <Route path="/r/:slug/reservas" element={<PublicReservationsPage />} />
-               <Route path="/r/:slug/domicilios" element={<PublicDeliveryPage />} />
-               <Route path="/r/:slug/fidelidad" element={<PublicLoyaltyPage />} />
-               <Route path="/r/:slug/experiencia" element={<PublicExperiencePage />} />
-               
-               {/* Legacy route - keep for backwards compatibility */}
-               <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
-               
+
+              {/* Unified public restaurant routes - using /p/ prefix for public */}
+              <Route path="/p/:slug" element={<PublicRestaurantHub />} />
+              <Route path="/p/:slug/menu" element={<PublicMenuPage />} />
+              <Route path="/p/:slug/reservas" element={<PublicReservationsPage />} />
+              <Route path="/p/:slug/domicilios" element={<PublicDeliveryPage />} />
+              <Route path="/p/:slug/fidelidad" element={<PublicLoyaltyPage />} />
+              <Route path="/p/:slug/experiencia" element={<PublicExperiencePage />} />
+
+              {/* Legacy route - keep for backwards compatibility */}
+              <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
+
               <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
               <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
               <Route path="/mi-fidelidad/:codigo" element={<PublicLoyalty />} />
