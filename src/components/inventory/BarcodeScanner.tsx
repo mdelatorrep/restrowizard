@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Scan, Plus, Minus, Package, Check, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Scan, Plus, Minus, Package, Check, X, Camera, Keyboard } from 'lucide-react';
 import { InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
 
 interface Props {
@@ -21,19 +22,66 @@ export const BarcodeScanner = ({ inventory, onLookup, onAdjustStock, isOpen, onC
   const [foundItem, setFoundItem] = useState<InventoryItemExtended | null>(null);
   const [adjustment, setAdjustment] = useState(0);
   const [mode, setMode] = useState<'add' | 'remove'>('add');
+  const [inputMode, setInputMode] = useState<'manual' | 'camera'>('manual');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
+    return () => {
+      stopCamera();
+    };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (inputMode === 'camera' && isOpen) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+  }, [inputMode, isOpen]);
+
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsScanning(true);
+      }
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      setCameraError('No se pudo acceder a la cámara. Verifica los permisos.');
+      setInputMode('manual');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsScanning(false);
+  };
 
   const handleBarcodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!barcode.trim()) return;
     
-    const item = onLookup(barcode.trim());
+    lookupBarcode(barcode.trim());
+  };
+
+  const lookupBarcode = (code: string) => {
+    const item = onLookup(code);
+    setBarcode(code);
     if (item) {
       setFoundItem(item);
       setAdjustment(1);
@@ -66,10 +114,19 @@ export const BarcodeScanner = ({ inventory, onLookup, onAdjustStock, isOpen, onC
     setBarcode('');
     setFoundItem(null);
     setAdjustment(0);
+    if (inputMode === 'manual' && inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const handleClose = () => {
+    stopCamera();
+    handleReset();
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -79,25 +136,91 @@ export const BarcodeScanner = ({ inventory, onLookup, onAdjustStock, isOpen, onC
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Barcode input */}
-          <form onSubmit={handleBarcodeSubmit}>
-            <Label>Código de Barras / SKU</Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                ref={inputRef}
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="Escanea o ingresa el código..."
-                autoFocus
-              />
-              <Button type="submit" size="sm">
-                <Scan className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              El cursor está activo para recibir escaneo
-            </p>
-          </form>
+          {/* Input Mode Tabs */}
+          <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'manual' | 'camera')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="manual" className="gap-2">
+                <Keyboard className="h-4 w-4" />
+                Manual
+              </TabsTrigger>
+              <TabsTrigger value="camera" className="gap-2">
+                <Camera className="h-4 w-4" />
+                Cámara
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="manual" className="mt-4">
+              <form onSubmit={handleBarcodeSubmit}>
+                <Label>Código de Barras / SKU</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    ref={inputRef}
+                    value={barcode}
+                    onChange={(e) => setBarcode(e.target.value)}
+                    placeholder="Escanea o ingresa el código..."
+                    autoFocus
+                  />
+                  <Button type="submit" size="sm">
+                    <Scan className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  El cursor está activo para recibir escaneo de pistola
+                </p>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="camera" className="mt-4">
+              {cameraError ? (
+                <Card className="border-destructive">
+                  <CardContent className="py-6 text-center">
+                    <Camera className="h-12 w-12 mx-auto text-destructive mb-2" />
+                    <p className="text-sm text-destructive">{cameraError}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => setInputMode('manual')}
+                    >
+                      Usar entrada manual
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline 
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    {isScanning && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-48 h-32 border-2 border-primary rounded-lg opacity-70" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    La lectura automática de códigos requiere una librería adicional.
+                    Por ahora, usa el modo manual con un escáner de pistola USB.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="O ingresa el código manualmente..."
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && lookupBarcode(barcode)}
+                    />
+                    <Button onClick={() => lookupBarcode(barcode)} disabled={!barcode}>
+                      Buscar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           {/* Found item display */}
           {foundItem && (
@@ -209,11 +332,13 @@ export const BarcodeScanner = ({ inventory, onLookup, onAdjustStock, isOpen, onC
 
           {/* Instructions */}
           {!foundItem && !barcode && (
+            inputMode === 'manual' && (
             <div className="text-center py-6 text-muted-foreground">
               <Scan className="h-16 w-16 mx-auto mb-3 opacity-50" />
               <p>Escanea un código de barras o ingresa el SKU</p>
               <p className="text-sm">para buscar y ajustar inventario</p>
             </div>
+            )
           )}
         </div>
       </DialogContent>
