@@ -487,13 +487,13 @@ export default function WebsitePage() {
                 </div>
                 <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                   <code className="flex-1 text-sm break-all">
-                    {window.location.origin}/restaurante/{website.slug}
+                     {window.location.origin}/r/{website.slug}
                   </code>
                   <Button variant="ghost" size="sm" onClick={copyUrl}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
-                    <a href={`/restaurante/${website.slug}`} target="_blank" rel="noopener noreferrer">
+                     <a href={`/r/${website.slug}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -560,20 +560,20 @@ export default function WebsitePage() {
                   </div>
                   <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                     <code className="flex-1 text-sm break-all">
-                      {window.location.origin}/restaurante/{website.slug}#reservas
+                       {window.location.origin}/r/{website.slug}/reservas
                     </code>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/restaurante/${website.slug}#reservas`);
+                         navigator.clipboard.writeText(`${window.location.origin}/r/${website.slug}/reservas`);
                         toast({ title: 'URL copiada' });
                       }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href={`/restaurante/${website.slug}#reservas`} target="_blank" rel="noopener noreferrer">
+                       <a href={`/r/${website.slug}/reservas`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
@@ -598,20 +598,20 @@ export default function WebsitePage() {
                   </div>
                   <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                     <code className="flex-1 text-sm break-all">
-                      {window.location.origin}/restaurante/{website.slug}#menu
+                       {window.location.origin}/r/{website.slug}/domicilios
                     </code>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/restaurante/${website.slug}#menu`);
+                         navigator.clipboard.writeText(`${window.location.origin}/r/${website.slug}/domicilios`);
                         toast({ title: 'URL copiada' });
                       }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href={`/restaurante/${website.slug}#menu`} target="_blank" rel="noopener noreferrer">
+                       <a href={`/r/${website.slug}/domicilios`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>

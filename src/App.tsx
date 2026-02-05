@@ -57,6 +57,16 @@ import RestaurantInventory from "./pages/restaurant/Inventory";
 import RestaurantDelivery from "./pages/restaurant/Delivery";
 import RestaurantSuppliers from "./pages/restaurant/Suppliers";
 import PublicRestaurant from "./pages/PublicRestaurant";
+ import { Navigate } from "react-router-dom";
+ 
+ // New unified public pages
+ import PublicRestaurantHub from "./pages/public/PublicRestaurantHub";
+ import PublicMenuPage from "./pages/public/PublicMenuPage";
+ import PublicReservationsPage from "./pages/public/PublicReservationsPage";
+ import PublicDeliveryPage from "./pages/public/PublicDeliveryPage";
+ import PublicLoyaltyPage from "./pages/public/PublicLoyaltyPage";
+ import PublicExperiencePage from "./pages/public/PublicExperiencePage";
+ 
 // Consultant pages
 import ConsultantOnboarding from "./pages/consultant/Onboarding";
 import ConsultantDashboard from "./pages/consultant/Dashboard";
@@ -100,7 +110,18 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
-              <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
+               
+               {/* Unified public restaurant routes */}
+               <Route path="/r/:slug" element={<PublicRestaurantHub />} />
+               <Route path="/r/:slug/menu" element={<PublicMenuPage />} />
+               <Route path="/r/:slug/reservas" element={<PublicReservationsPage />} />
+               <Route path="/r/:slug/domicilios" element={<PublicDeliveryPage />} />
+               <Route path="/r/:slug/fidelidad" element={<PublicLoyaltyPage />} />
+               <Route path="/r/:slug/experiencia" element={<PublicExperiencePage />} />
+               
+               {/* Legacy route - keep for backwards compatibility */}
+               <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
+               
               <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
               <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
               <Route path="/mi-fidelidad/:codigo" element={<PublicLoyalty />} />

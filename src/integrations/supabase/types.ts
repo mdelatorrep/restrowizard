@@ -5498,6 +5498,7 @@ export type Database = {
           show_about: boolean | null
           show_contact: boolean | null
           show_delivery: boolean | null
+          show_feedback: boolean
           show_gallery: boolean | null
           show_loyalty: boolean | null
           show_menu: boolean | null
@@ -5537,6 +5538,7 @@ export type Database = {
           show_about?: boolean | null
           show_contact?: boolean | null
           show_delivery?: boolean | null
+          show_feedback?: boolean
           show_gallery?: boolean | null
           show_loyalty?: boolean | null
           show_menu?: boolean | null
@@ -5576,6 +5578,7 @@ export type Database = {
           show_about?: boolean | null
           show_contact?: boolean | null
           show_delivery?: boolean | null
+          show_feedback?: boolean
           show_gallery?: boolean | null
           show_loyalty?: boolean | null
           show_menu?: boolean | null
