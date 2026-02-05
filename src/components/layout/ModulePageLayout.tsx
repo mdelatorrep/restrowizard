@@ -16,9 +16,10 @@
  interface PageHeaderProps {
    title: string;
    description?: string;
+   subtitle?: string;
    icon?: LucideIcon;
    badge?: React.ReactNode;
-   actions?: ActionButton[];
+   actions?: ActionButton[] | React.ReactNode;
    gradient?: boolean;
    children?: React.ReactNode;
  }
@@ -26,12 +27,17 @@
  export const PageHeader: React.FC<PageHeaderProps> = ({
    title,
    description,
+   subtitle,
    icon: Icon,
    badge,
    actions,
    gradient = true,
    children
  }) => {
+   const desc = description || subtitle;
+   const isReactElement = actions && !Array.isArray(actions);
+   const actionButtons = isReactElement ? null : (actions as ActionButton[] | undefined);
+ 
    if (gradient) {
      return (
        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-secondary p-6 md:p-8 text-primary-foreground">
@@ -47,16 +53,18 @@
                {Icon && <Icon className="h-7 w-7 md:h-8 md:w-8 shrink-0" />}
                {title}
              </h1>
-             {description && (
+             {desc && (
                <p className="text-primary-foreground/80 text-sm md:text-base max-w-xl">
-                 {description}
+                 {desc}
                </p>
              )}
            </div>
            
-           {actions && actions.length > 0 && (
+           {isReactElement ? (
+             <div className="flex flex-wrap gap-2">{actions}</div>
+           ) : actionButtons && actionButtons.length > 0 && (
              <div className="flex flex-wrap gap-2">
-               {actions.map((action, index) => (
+               {actionButtons.map((action, index) => (
                  <Button
                    key={index}
                    variant={action.variant || 'secondary'}
@@ -91,14 +99,16 @@
            {Icon && <Icon className="h-7 w-7 text-primary shrink-0" />}
            {title}
          </h1>
-         {description && (
-           <p className="text-muted-foreground font-lato-light mt-1">{description}</p>
+         {desc && (
+           <p className="text-muted-foreground font-lato-light mt-1">{desc}</p>
          )}
        </div>
        
-       {actions && actions.length > 0 && (
+       {isReactElement ? (
+         <div className="flex flex-wrap gap-2">{actions}</div>
+       ) : actionButtons && actionButtons.length > 0 && (
          <div className="flex flex-wrap gap-2">
-           {actions.map((action, index) => (
+           {actionButtons.map((action, index) => (
              <Button
                key={index}
                variant={action.variant || 'default'}

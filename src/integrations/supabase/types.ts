@@ -5475,26 +5475,57 @@ export type Database = {
           about_description: string | null
           about_image_url: string | null
           about_title: string | null
+          announcement_bar_enabled: boolean | null
+          announcement_bar_text: string | null
           business_hours: Json | null
+          color_scheme: string | null
           created_at: string | null
           custom_scripts: string | null
+          custom_sections: Json | null
           delivery_message: string | null
           delivery_min_order: number | null
+          facebook_pixel_id: string | null
           favicon_url: string | null
+          featured_items: Json | null
+          footer_text: string | null
           gallery_images: Json | null
           google_analytics_id: string | null
+          google_maps_embed_url: string | null
+          gtm_id: string | null
           hero_cta_link: string | null
           hero_cta_text: string | null
           hero_image_url: string | null
+          hero_style: string | null
           hero_subtitle: string | null
           hero_title: string | null
+          hero_video_url: string | null
           id: string
+          instagram_feed_enabled: boolean | null
+          instagram_handle: string | null
           is_published: boolean | null
+          layout_variant: string | null
           meta_description: string | null
+          newsletter_enabled: boolean | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          ordering_platforms: Json | null
+          popup_content: string | null
+          popup_cta_link: string | null
+          popup_cta_text: string | null
+          popup_enabled: boolean | null
+          popup_image_url: string | null
+          popup_title: string | null
+          promo_banner_bg_color: string | null
+          promo_banner_enabled: boolean | null
+          promo_banner_link: string | null
+          promo_banner_text: string | null
           reservation_advance_days: number | null
           reservation_available_times: Json | null
           reservation_max_party_size: number | null
+          reservation_platforms: Json | null
           reservation_slot_duration: number | null
+          schema_type: string | null
           show_about: boolean | null
           show_contact: boolean | null
           show_delivery: boolean | null
@@ -5502,39 +5533,75 @@ export type Database = {
           show_gallery: boolean | null
           show_loyalty: boolean | null
           show_menu: boolean | null
+          show_powered_by: boolean | null
           show_reservations: boolean | null
           show_reviews: boolean | null
           site_title: string | null
           slug: string
           template_id: string | null
+          testimonials: Json | null
           theme_overrides: Json | null
+          tiktok_pixel_id: string | null
           updated_at: string | null
           user_id: string
+          whatsapp_message: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           about_description?: string | null
           about_image_url?: string | null
           about_title?: string | null
+          announcement_bar_enabled?: boolean | null
+          announcement_bar_text?: string | null
           business_hours?: Json | null
+          color_scheme?: string | null
           created_at?: string | null
           custom_scripts?: string | null
+          custom_sections?: Json | null
           delivery_message?: string | null
           delivery_min_order?: number | null
+          facebook_pixel_id?: string | null
           favicon_url?: string | null
+          featured_items?: Json | null
+          footer_text?: string | null
           gallery_images?: Json | null
           google_analytics_id?: string | null
+          google_maps_embed_url?: string | null
+          gtm_id?: string | null
           hero_cta_link?: string | null
           hero_cta_text?: string | null
           hero_image_url?: string | null
+          hero_style?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
+          hero_video_url?: string | null
           id?: string
+          instagram_feed_enabled?: boolean | null
+          instagram_handle?: string | null
           is_published?: boolean | null
+          layout_variant?: string | null
           meta_description?: string | null
+          newsletter_enabled?: boolean | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordering_platforms?: Json | null
+          popup_content?: string | null
+          popup_cta_link?: string | null
+          popup_cta_text?: string | null
+          popup_enabled?: boolean | null
+          popup_image_url?: string | null
+          popup_title?: string | null
+          promo_banner_bg_color?: string | null
+          promo_banner_enabled?: boolean | null
+          promo_banner_link?: string | null
+          promo_banner_text?: string | null
           reservation_advance_days?: number | null
           reservation_available_times?: Json | null
           reservation_max_party_size?: number | null
+          reservation_platforms?: Json | null
           reservation_slot_duration?: number | null
+          schema_type?: string | null
           show_about?: boolean | null
           show_contact?: boolean | null
           show_delivery?: boolean | null
@@ -5542,39 +5609,75 @@ export type Database = {
           show_gallery?: boolean | null
           show_loyalty?: boolean | null
           show_menu?: boolean | null
+          show_powered_by?: boolean | null
           show_reservations?: boolean | null
           show_reviews?: boolean | null
           site_title?: string | null
           slug: string
           template_id?: string | null
+          testimonials?: Json | null
           theme_overrides?: Json | null
+          tiktok_pixel_id?: string | null
           updated_at?: string | null
           user_id: string
+          whatsapp_message?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           about_description?: string | null
           about_image_url?: string | null
           about_title?: string | null
+          announcement_bar_enabled?: boolean | null
+          announcement_bar_text?: string | null
           business_hours?: Json | null
+          color_scheme?: string | null
           created_at?: string | null
           custom_scripts?: string | null
+          custom_sections?: Json | null
           delivery_message?: string | null
           delivery_min_order?: number | null
+          facebook_pixel_id?: string | null
           favicon_url?: string | null
+          featured_items?: Json | null
+          footer_text?: string | null
           gallery_images?: Json | null
           google_analytics_id?: string | null
+          google_maps_embed_url?: string | null
+          gtm_id?: string | null
           hero_cta_link?: string | null
           hero_cta_text?: string | null
           hero_image_url?: string | null
+          hero_style?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
+          hero_video_url?: string | null
           id?: string
+          instagram_feed_enabled?: boolean | null
+          instagram_handle?: string | null
           is_published?: boolean | null
+          layout_variant?: string | null
           meta_description?: string | null
+          newsletter_enabled?: boolean | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          ordering_platforms?: Json | null
+          popup_content?: string | null
+          popup_cta_link?: string | null
+          popup_cta_text?: string | null
+          popup_enabled?: boolean | null
+          popup_image_url?: string | null
+          popup_title?: string | null
+          promo_banner_bg_color?: string | null
+          promo_banner_enabled?: boolean | null
+          promo_banner_link?: string | null
+          promo_banner_text?: string | null
           reservation_advance_days?: number | null
           reservation_available_times?: Json | null
           reservation_max_party_size?: number | null
+          reservation_platforms?: Json | null
           reservation_slot_duration?: number | null
+          schema_type?: string | null
           show_about?: boolean | null
           show_contact?: boolean | null
           show_delivery?: boolean | null
@@ -5582,14 +5685,19 @@ export type Database = {
           show_gallery?: boolean | null
           show_loyalty?: boolean | null
           show_menu?: boolean | null
+          show_powered_by?: boolean | null
           show_reservations?: boolean | null
           show_reviews?: boolean | null
           site_title?: string | null
           slug?: string
           template_id?: string | null
+          testimonials?: Json | null
           theme_overrides?: Json | null
+          tiktok_pixel_id?: string | null
           updated_at?: string | null
           user_id?: string
+          whatsapp_message?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
