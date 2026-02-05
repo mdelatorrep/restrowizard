@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Card, CardContent } from '@/components/ui/card';
+ import { CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ import {
   Trash2, Eye, Sparkles, Search, Link2, BookOpen, 
   UtensilsCrossed, Flame, Scale, AlertTriangle, X
 } from 'lucide-react';
+ import { ModulePageLayout, PageHeader, KPIGrid, KPICardData, EmptyState } from '@/components/layout';
 
 const DifficultyBadge = ({ difficulty }: { difficulty: string | null }) => {
   const config: Record<string, string> = {
@@ -161,24 +163,19 @@ const Recipes = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Recetas</h1>
-          <p className="text-muted-foreground">Recetas profesionales con costeo, nutrición y sub-recetas</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAnalyzeRecipes} disabled={aiLoading || recipes.length === 0}>
-            <Sparkles className="h-4 w-4 mr-2" />
-            {aiLoading ? 'Analizando...' : 'Optimizar Costos'}
-          </Button>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Receta
-              </Button>
-            </DialogTrigger>
+     <ModulePageLayout>
+       <PageHeader
+         title="Gestión de Recetas"
+         description="Recetas profesionales con costeo, nutrición y sub-recetas"
+         icon={ChefHat}
+         actions={[
+           { label: aiLoading ? 'Analizando...' : 'Optimizar Costos', icon: Sparkles, onClick: handleAnalyzeRecipes, variant: 'outline', disabled: aiLoading || recipes.length === 0 },
+           { label: 'Nueva Receta', icon: Plus, onClick: () => setShowCreateDialog(true) }
+         ]}
+       />
+ 
+       {/* Create Recipe Dialog */}
+       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Crear Nueva Receta</DialogTitle>
@@ -301,79 +298,20 @@ const Recipes = () => {
                 <Button onClick={handleCreateRecipe}>Crear Receta</Button>
               </div>
             </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+       </Dialog>
 
       {/* KPIs */}
-      <div className="grid md:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Recetas</p>
-                <p className="text-3xl font-bold">{kpis?.totalRecipes || 0}</p>
-              </div>
-              <ChefHat className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Sub-Recetas</p>
-                <p className="text-3xl font-bold">{kpis?.subRecipesCount || 0}</p>
-              </div>
-              <BookOpen className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Costo Promedio</p>
-                <p className="text-3xl font-bold">${kpis?.avgCostPerPortion?.toLocaleString() || 0}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Calorías Prom.</p>
-                <p className="text-3xl font-bold">{kpis?.avgNutritionCalories || 0}</p>
-              </div>
-              <Flame className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Categorías</p>
-                <p className="text-3xl font-bold">{kpis?.categoriesCount || 0}</p>
-              </div>
-              <UtensilsCrossed className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Secretas</p>
-                <p className="text-3xl font-bold">{kpis?.secretRecipes || 0}</p>
-              </div>
-              <Lock className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+       <KPIGrid
+         columns={6}
+         kpis={[
+           { label: 'Total Recetas', value: kpis?.totalRecipes || 0, icon: ChefHat, iconColor: 'text-primary' },
+           { label: 'Sub-Recetas', value: kpis?.subRecipesCount || 0, icon: BookOpen, iconColor: 'text-purple-500' },
+           { label: 'Costo Promedio', value: `$${kpis?.avgCostPerPortion?.toLocaleString() || 0}`, icon: DollarSign, iconColor: 'text-green-500' },
+           { label: 'Calorías Prom.', value: kpis?.avgNutritionCalories || 0, icon: Flame, iconColor: 'text-orange-500' },
+           { label: 'Categorías', value: kpis?.categoriesCount || 0, icon: UtensilsCrossed, iconColor: 'text-blue-500' },
+           { label: 'Secretas', value: kpis?.secretRecipes || 0, icon: Lock, iconColor: 'text-orange-500' }
+         ] as KPICardData[]}
+       />
 
       {/* AI Insights Panel */}
       <AIInsightsPanel
@@ -666,7 +604,7 @@ const Recipes = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+     </ModulePageLayout>
   );
 };
 

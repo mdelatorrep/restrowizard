@@ -1,19 +1,18 @@
 import React from 'react';
+ import { DollarSign } from 'lucide-react';
 import FinancesAIModule from '@/components/FinancesAIModule';
+ import { ModulePageLayout, PageHeader } from '@/components/layout';
 
 const Finances: React.FC = () => {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-headline font-bold text-foreground">
-          Finanzas IA
-        </h1>
-        <p className="text-muted-foreground font-lato-light">
-          Análisis financiero inteligente para tu restaurante
-        </p>
-      </div>
+     <ModulePageLayout>
+       <PageHeader
+         title="Finanzas IA"
+         description="Análisis financiero inteligente para tu restaurante"
+         icon={DollarSign}
+       />
       <FinancesAIModule />
-    </div>
+     </ModulePageLayout>
   );
 };
 

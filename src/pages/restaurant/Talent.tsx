@@ -1,15 +1,14 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import TalentAIModule from '@/components/TalentAIModule';
-import StaffSchedule from './StaffSchedule';
-import { AvailabilityManager } from '@/components/talent/AvailabilityManager';
-import { TimeOffRequestsPanel } from '@/components/talent/TimeOffRequestsPanel';
-import { ShiftTemplatesManager } from '@/components/talent/ShiftTemplatesManager';
-import { StaffProfileSheet } from '@/components/talent/StaffProfileSheet';
-import { useTalentAdvanced, StaffMemberExtended } from '@/hooks/useTalentAdvanced';
-import { Users, CalendarDays, Clock, CalendarOff, LayoutTemplate, Loader2 } from 'lucide-react';
+ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+ import { Users, CalendarDays, Clock, CalendarOff, LayoutTemplate, Loader2 } from 'lucide-react';
+ import TalentAIModule from '@/components/TalentAIModule';
+ import StaffSchedule from './StaffSchedule';
+ import { AvailabilityManager } from '@/components/talent/AvailabilityManager';
+ import { TimeOffRequestsPanel } from '@/components/talent/TimeOffRequestsPanel';
+ import { ShiftTemplatesManager } from '@/components/talent/ShiftTemplatesManager';
+ import { StaffProfileSheet } from '@/components/talent/StaffProfileSheet';
+ import { useTalentAdvanced, StaffMemberExtended } from '@/hooks/useTalentAdvanced';
+ import { ModulePageLayout, PageHeader, ResponsiveTabs, TabsContent } from '@/components/layout';
 
 const Talent: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,63 +35,45 @@ const Talent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
+   const tabs = [
+     { value: 'talent', label: 'Equipo', icon: Users },
+     { value: 'schedule', label: 'Turnos', icon: CalendarDays },
+     { value: 'availability', label: 'Disponibilidad', icon: Clock },
+     { value: 'timeoff', label: 'Ausencias', icon: CalendarOff },
+     { value: 'templates', label: 'Plantillas', icon: LayoutTemplate },
+   ];
+ 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-headline font-bold text-foreground">
-          Talento y Turnos
-        </h1>
-        <p className="text-muted-foreground font-lato-light">
-          Gestión integral de tu equipo, disponibilidad y programación de turnos
-        </p>
-      </div>
-      
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="flex flex-wrap">
-          <TabsTrigger value="talent" className="gap-2">
-            <Users className="h-4 w-4" />
-            Equipo
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="gap-2">
-            <CalendarDays className="h-4 w-4" />
-            Turnos
-          </TabsTrigger>
-          <TabsTrigger value="availability" className="gap-2">
-            <Clock className="h-4 w-4" />
-            Disponibilidad
-          </TabsTrigger>
-          <TabsTrigger value="timeoff" className="gap-2">
-            <CalendarOff className="h-4 w-4" />
-            Ausencias
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-2">
-            <LayoutTemplate className="h-4 w-4" />
-            Plantillas
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="talent" className="mt-6">
+     <ModulePageLayout>
+       <PageHeader
+         title="Talento y Turnos"
+         description="Gestión integral de tu equipo, disponibilidad y programación de turnos"
+         icon={Users}
+       />
+ 
+       <ResponsiveTabs tabs={tabs} value={activeTab} onValueChange={handleTabChange}>
+         <TabsContent value="talent">
           <TalentAIModule />
         </TabsContent>
-        
-        <TabsContent value="schedule" className="mt-6">
+ 
+         <TabsContent value="schedule">
           <StaffSchedule />
         </TabsContent>
 
-        <TabsContent value="availability" className="mt-6">
+         <TabsContent value="availability">
           <AvailabilityManager
             staff={staff}
             onSave={setStaffAvailability}
           />
         </TabsContent>
 
-        <TabsContent value="timeoff" className="mt-6">
+         <TabsContent value="timeoff">
           <TimeOffRequestsPanel
             requests={timeOffRequests}
             staff={staff}
@@ -101,14 +82,14 @@ const Talent: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="templates" className="mt-6">
+         <TabsContent value="templates">
           <ShiftTemplatesManager
             templates={shiftTemplates}
             onCreate={createShiftTemplate}
             onDelete={deleteShiftTemplate}
           />
         </TabsContent>
-      </Tabs>
+       </ResponsiveTabs>
 
       {/* Staff Profile Sheet */}
       <StaffProfileSheet
@@ -118,7 +99,7 @@ const Talent: React.FC = () => {
         onUpdate={updateStaffMember}
         onAddCertification={addCertification}
       />
-    </div>
+     </ModulePageLayout>
   );
 };
 
