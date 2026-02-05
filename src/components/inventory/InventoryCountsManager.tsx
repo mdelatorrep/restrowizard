@@ -9,14 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { ClipboardCheck, Plus, Play, CheckCircle, BarChart3, AlertTriangle } from 'lucide-react';
-import { InventoryCount, StorageLocation } from '@/hooks/useEnterpriseInventory';
+import { ClipboardCheck, Plus, Play, CheckCircle, AlertTriangle, Scan } from 'lucide-react';
+import { InventoryCount, StorageLocation, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { CountingSession } from './CountingSession';
 
 interface Props {
   counts: InventoryCount[];
   locations: StorageLocation[];
+  inventory?: InventoryItemExtended[];
   onCreate: (data: Partial<InventoryCount>, itemIds?: string[]) => Promise<any>;
   onComplete: (countId: string, applyAdjustments: boolean) => Promise<void>;
+  onUpdateItem?: (countId: string, itemId: string, quantity: number, notes?: string) => Promise<void>;
+  onLookupBarcode?: (barcode: string) => InventoryItemExtended | undefined;
 }
 
 const countTypes = [
@@ -31,8 +35,10 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   cancelled: { label: 'Cancelado', variant: 'destructive' }
 };
 
-export const InventoryCountsManager = ({ counts, locations, onCreate, onComplete }: Props) => {
+export const InventoryCountsManager = ({ counts, locations, inventory = [], onCreate, onComplete, onUpdateItem, onLookupBarcode }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeCount, setActiveCount] = useState<InventoryCount | null>(null);
+  const [sessionOpen, setSessionOpen] = useState(false);
   const [formData, setFormData] = useState({
     count_name: '',
     count_type: 'full',
@@ -191,21 +197,27 @@ export const InventoryCountsManager = ({ counts, locations, onCreate, onComplete
                     </div>
                   )}
                   <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setActiveCount(count); setSessionOpen(true); }}
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      Contar
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1"
                       onClick={() => onComplete(count.id, false)}
                     >
-                      Completar sin ajustes
+                      Cerrar
                     </Button>
                     <Button 
                       size="sm" 
-                      className="flex-1"
                       onClick={() => onComplete(count.id, true)}
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Completar y ajustar
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Ajustar
                     </Button>
                   </div>
                 </CardContent>
@@ -267,6 +279,18 @@ export const InventoryCountsManager = ({ counts, locations, onCreate, onComplete
             <p className="text-sm">Inicia un conteo físico para auditar tu inventario</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Counting Session Dialog */}
+      {onUpdateItem && onLookupBarcode && (
+        <CountingSession
+          count={activeCount}
+          isOpen={sessionOpen}
+          onClose={() => { setSessionOpen(false); setActiveCount(null); }}
+          onUpdateItem={onUpdateItem}
+          onComplete={onComplete}
+          onLookupBarcode={onLookupBarcode}
+        />
       )}
     </div>
   );

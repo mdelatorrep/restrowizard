@@ -14,15 +14,22 @@ import { InventoryCountsManager } from '@/components/inventory/InventoryCountsMa
 import { WasteTracker } from '@/components/inventory/WasteTracker';
 import { BarcodeScanner } from '@/components/inventory/BarcodeScanner';
 import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
+import { CriticalAlertsPanel } from '@/components/inventory/CriticalAlertsPanel';
+import { ExpirationTracker } from '@/components/inventory/ExpirationTracker';
+import { RecipeIntegrationPanel } from '@/components/inventory/RecipeIntegrationPanel';
+import { TransferDialog } from '@/components/inventory/TransferDialog';
+import { InventoryItemDetail } from '@/components/inventory/InventoryItemDetail';
+import { InventoryReports } from '@/components/inventory/InventoryReports';
 import { 
   Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
   RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
-  ClipboardList, ClipboardCheck, Trash2, Scan, Edit, Eye,
-  Calendar, BarChart3
+  ClipboardList, ClipboardCheck, Trash2, Scan, Edit,
+  Calendar, ChefHat, Clock, MoveHorizontal, Eye, BarChart3
 } from 'lucide-react';
-import { useEnterpriseInventory, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { useEnterpriseInventory, InventoryItemExtended, PurchaseOrder } from '@/hooks/useEnterpriseInventory';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Inventory: React.FC = () => {
   const { 
@@ -55,6 +62,9 @@ const Inventory: React.FC = () => {
     updatePurchaseOrder,
     receivePurchaseOrder,
     generatePOFromParLevels,
+    transferInventory,
+    getPriceHistory,
+    getItemMovements,
     // Counts
     createInventoryCount,
     completeCount,
@@ -70,6 +80,9 @@ const Inventory: React.FC = () => {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemExtended | null>(null);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<InventoryItemExtended | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const filteredInventory = inventory.filter(item =>
     item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,6 +94,11 @@ const Inventory: React.FC = () => {
   const handleEdit = (item: InventoryItemExtended) => {
     setEditingItem(item);
     setItemFormOpen(true);
+  };
+
+  const handleViewDetail = (item: InventoryItemExtended) => {
+    setDetailItem(item);
+    setDetailOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -161,7 +179,7 @@ const Inventory: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-headline font-bold text-foreground flex items-center">
-            <Package className="mr-3 text-primary" size={32} />
+            <Package className="mr-3 h-8 w-8 text-primary" />
             Gestión de Inventarios
           </h1>
           <p className="text-muted-foreground font-lato-light">
@@ -169,6 +187,10 @@ const Inventory: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setTransferDialogOpen(true)} className="gap-2">
+            <MoveHorizontal className="w-4 h-4" />
+            Transferir
+          </Button>
           <Button variant="outline" onClick={() => setScannerOpen(true)} className="gap-2">
             <Scan className="w-4 h-4" />
             Escanear
@@ -191,6 +213,20 @@ const Inventory: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Critical Alerts Panel */}
+      {kpis && (kpis.expiredItems > 0 || kpis.outOfStockItems > 0 || kpis.expiringItems > 0 || kpis.belowParItems > 0) && (
+        <CriticalAlertsPanel
+          inventory={inventory}
+          purchaseOrders={purchaseOrders}
+          inventoryCounts={inventoryCounts}
+          onNavigateToTab={setActiveTab}
+          onSelectItem={(item) => {
+            setEditingItem(item);
+            setItemFormOpen(true);
+          }}
+        />
+      )}
 
       {/* KPIs */}
       {kpis && (
@@ -286,7 +322,7 @@ const Inventory: React.FC = () => {
 
       {/* Main tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="flex w-full overflow-x-auto">
           <TabsTrigger value="items" className="gap-1">
             <Package className="h-4 w-4" />
             <span className="hidden md:inline">Inventario</span>
@@ -310,6 +346,18 @@ const Inventory: React.FC = () => {
           <TabsTrigger value="waste" className="gap-1">
             <Trash2 className="h-4 w-4" />
             <span className="hidden md:inline">Mermas</span>
+          </TabsTrigger>
+          <TabsTrigger value="expirations" className="gap-1">
+            <Clock className="h-4 w-4" />
+            <span className="hidden md:inline">Vencimientos</span>
+          </TabsTrigger>
+          <TabsTrigger value="recipes" className="gap-1">
+            <ChefHat className="h-4 w-4" />
+            <span className="hidden md:inline">Recetas</span>
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-1">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden md:inline">Reportes</span>
           </TabsTrigger>
         </TabsList>
 
@@ -396,6 +444,9 @@ const Inventory: React.FC = () => {
                             <Badge variant={status.variant}>{status.label}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -456,8 +507,22 @@ const Inventory: React.FC = () => {
           <InventoryCountsManager
             counts={inventoryCounts}
             locations={storageLocations}
+            inventory={inventory}
             onCreate={createInventoryCount}
             onComplete={completeCount}
+            onUpdateItem={async (countId, itemId, qty, notes) => {
+              // Simple update - the hook will handle the rest
+              await supabase
+                .from('inventory_count_items')
+                .update({ 
+                  counted_quantity: qty, 
+                  notes,
+                  counted_at: new Date().toISOString()
+                })
+                .eq('id', itemId);
+              refetch();
+            }}
+            onLookupBarcode={lookupByBarcode}
           />
         </TabsContent>
 
@@ -469,6 +534,29 @@ const Inventory: React.FC = () => {
             locations={storageLocations}
             onRecord={recordWaste}
             wasteThisMonth={kpis?.wasteThisMonth || 0}
+          />
+        </TabsContent>
+
+        {/* Expirations Tab */}
+        <TabsContent value="expirations" className="mt-4">
+          <ExpirationTracker
+            inventory={inventory}
+            locations={storageLocations}
+            onRecordWaste={recordWaste}
+          />
+        </TabsContent>
+
+        {/* Recipes Integration Tab */}
+        <TabsContent value="recipes" className="mt-4">
+          <RecipeIntegrationPanel inventory={inventory} />
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="mt-4">
+          <InventoryReports
+            inventory={inventory}
+            locations={storageLocations}
+            waste={waste}
           />
         </TabsContent>
       </Tabs>
@@ -491,6 +579,29 @@ const Inventory: React.FC = () => {
         suppliers={suppliers}
         onCreate={createInventoryItem}
         onUpdate={updateInventoryItem}
+      />
+
+      {/* Transfer Dialog */}
+      <TransferDialog
+        isOpen={transferDialogOpen}
+        onClose={() => setTransferDialogOpen(false)}
+        inventory={inventory}
+        locations={storageLocations}
+        onTransfer={transferInventory}
+      />
+
+      {/* Item Detail Sheet */}
+      <InventoryItemDetail
+        item={detailItem}
+        isOpen={detailOpen}
+        onClose={() => { setDetailOpen(false); setDetailItem(null); }}
+        onEdit={(item) => {
+          setDetailOpen(false);
+          handleEdit(item);
+        }}
+        getMovements={getItemMovements}
+        getPriceHistory={getPriceHistory}
+        suppliers={suppliers}
       />
     </div>
   );

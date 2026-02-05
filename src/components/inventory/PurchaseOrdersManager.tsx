@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ClipboardList, Plus, Send, Package, Check, X, FileText, Wand2 } from 'lucide-react';
 import { PurchaseOrder, InventorySupplier, InventoryItemExtended, PurchaseOrderItem } from '@/hooks/useEnterpriseInventory';
+import { ReceiveOrderDialog } from './ReceiveOrderDialog';
 
 interface Props {
   orders: PurchaseOrder[];
@@ -32,6 +33,8 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, onUpdate, onReceive, onGenerateFromPar }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+  const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
+  const [orderToReceive, setOrderToReceive] = useState<PurchaseOrder | null>(null);
   const [formData, setFormData] = useState({
     supplier_id: '',
     expected_delivery: '',
@@ -94,6 +97,11 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
 
   const handleGenerateAuto = async () => {
     await onGenerateFromPar();
+  };
+
+  const handleOpenReceive = (order: PurchaseOrder) => {
+    setOrderToReceive(order);
+    setReceiveDialogOpen(true);
   };
 
   const getSupplierName = (id: string | null) => {
@@ -299,13 +307,7 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => {
-                            // Simplified receive - mark as fully received
-                            onUpdate(order.id, { 
-                              status: 'received', 
-                              received_date: new Date().toISOString().split('T')[0] 
-                            });
-                          }}
+                          onClick={() => handleOpenReceive(order)}
                         >
                           <Package className="h-4 w-4 mr-1" /> Recibir
                         </Button>
@@ -321,6 +323,14 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
           </Table>
         </Card>
       )}
+
+      {/* Receive Order Dialog */}
+      <ReceiveOrderDialog
+        order={orderToReceive}
+        isOpen={receiveDialogOpen}
+        onClose={() => { setReceiveDialogOpen(false); setOrderToReceive(null); }}
+        onReceive={onReceive}
+      />
     </div>
   );
 };
