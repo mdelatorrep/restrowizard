@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePreOpeningTasks, PreOpeningTask } from '@/hooks/usePreOpeningTasks';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PreOpeningCountdownProps {
   businessName: string;
@@ -171,6 +172,7 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   // Use persistent tasks from database
   const { 
@@ -267,77 +269,79 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8 pb-24 md:pb-8">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
         {/* Hero Countdown */}
         <Card className="bg-gradient-to-br from-primary/10 via-background to-success/10 border-primary/20 overflow-hidden relative">
-          <div className="absolute top-4 right-4">
-            <Sparkles className="h-8 w-8 text-primary/30 animate-pulse" />
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
+            <Sparkles className="h-5 w-5 sm:h-8 sm:w-8 text-primary/30 animate-pulse" />
           </div>
-          <CardHeader className="text-center pb-2">
+          <CardHeader className="text-center pb-1 sm:pb-2 px-3 sm:px-6">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Rocket className="h-6 w-6 text-primary" />
-              <Badge variant="outline" className="text-primary border-primary">
+              <Rocket className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
+              <Badge variant="outline" className="text-primary border-primary text-xs sm:text-sm">
                 Pre-Apertura
               </Badge>
             </div>
-            <CardTitle className="text-3xl md:text-4xl font-headline text-primary">
+            <CardTitle className="text-xl sm:text-2xl md:text-4xl font-headline text-primary leading-tight">
               {businessName}
             </CardTitle>
-            <CardDescription className="text-lg">
+            <CardDescription className="text-xs sm:text-sm md:text-lg">
               Apertura programada: {format(parseISO(openingDate), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {/* Countdown Display */}
-            <div className="flex justify-center gap-4 md:gap-8 my-8">
+            <div className="flex justify-center gap-2 sm:gap-4 md:gap-8 my-4 sm:my-6 md:my-8">
               <div className="text-center">
-                <div className="text-4xl md:text-6xl font-bold text-primary">{countdown.days}</div>
-                <div className="text-sm text-muted-foreground">días</div>
+                <div className="text-2xl sm:text-4xl md:text-6xl font-bold text-primary">{countdown.days}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">días</div>
               </div>
-              <div className="text-4xl md:text-6xl font-bold text-muted-foreground">:</div>
+              <div className="text-2xl sm:text-4xl md:text-6xl font-bold text-muted-foreground">:</div>
               <div className="text-center">
-                <div className="text-4xl md:text-6xl font-bold text-primary">{countdown.hours}</div>
-                <div className="text-sm text-muted-foreground">horas</div>
+                <div className="text-2xl sm:text-4xl md:text-6xl font-bold text-primary">{countdown.hours}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">horas</div>
               </div>
-              <div className="text-4xl md:text-6xl font-bold text-muted-foreground">:</div>
+              <div className="text-2xl sm:text-4xl md:text-6xl font-bold text-muted-foreground">:</div>
               <div className="text-center">
-                <div className="text-4xl md:text-6xl font-bold text-primary">{countdown.minutes}</div>
-                <div className="text-sm text-muted-foreground">minutos</div>
+                <div className="text-2xl sm:text-4xl md:text-6xl font-bold text-primary">{countdown.minutes}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">minutos</div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
               {daysUntilOpening <= 0 ? (
                 <Button 
-                  size="lg" 
+                  size={isMobile ? "default" : "lg"} 
                   onClick={handleConfirmOpening}
                   disabled={isConfirmingOpening}
-                  className="gap-2 bg-success hover:bg-success/90"
+                  className="gap-2 bg-success hover:bg-success/90 text-sm sm:text-base"
                 >
-                  <PartyPopper className="h-5 w-5" />
+                  <PartyPopper className="h-4 w-4 sm:h-5 sm:w-5" />
                   {isConfirmingOpening ? 'Confirmando...' : '¡Confirmar Apertura Oficial!'}
                 </Button>
               ) : (
                 <>
                   <Button 
-                    size="lg" 
+                    size={isMobile ? "default" : "lg"} 
                     variant="outline" 
                     onClick={() => navigate('/r/new-business')}
-                    className="gap-2"
+                    className="gap-2 text-xs sm:text-sm"
                   >
-                    <ClipboardCheck className="h-5 w-5" />
-                    Revisar Plan de Apertura
+                    <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="hidden sm:inline">Revisar Plan de Apertura</span>
+                    <span className="sm:hidden">Ver Plan</span>
                   </Button>
                   {!hasAIChecklist && (
                     <Button 
-                      size="lg" 
+                      size={isMobile ? "default" : "lg"} 
                       onClick={() => navigate('/r/new-business')}
-                      className="gap-2"
+                      className="gap-2 text-xs sm:text-sm"
                     >
-                      <Sparkles className="h-5 w-5" />
-                      Generar Checklist con IA
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="hidden sm:inline">Generar Checklist con IA</span>
+                      <span className="sm:hidden">Checklist IA</span>
                     </Button>
                   )}
                 </>
@@ -347,31 +351,31 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
         </Card>
 
         {/* Progress Overview */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Checklist Completado</span>
-                <span className="text-2xl font-bold text-primary">{progressPercent}%</span>
+            <CardContent className="p-3 sm:p-4 md:pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1">
+                <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">Completado</span>
+                <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary">{progressPercent}%</span>
               </div>
-              <Progress value={progressPercent} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
+              <Progress value={progressPercent} className="h-1.5 sm:h-2" />
+              <p className="text-[9px] sm:text-xs text-muted-foreground mt-1 sm:mt-2">
                 {completedTasks} de {tasks.length} tareas
               </p>
             </CardContent>
           </Card>
           
           <Card className={overdueTasks.length > 0 ? 'border-warning' : ''}>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
+            <CardContent className="p-3 sm:p-4 md:pt-6">
+              <div className="flex items-center gap-1 sm:gap-2 mb-2">
                 {overdueTasks.length > 0 ? (
-                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-warning shrink-0" />
                 ) : (
-                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-success shrink-0" />
                 )}
-                <span className="text-sm font-medium">Tareas Pendientes</span>
+                <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">Pendientes</span>
               </div>
-              <p className="text-2xl font-bold">
+              <p className="text-sm sm:text-lg md:text-2xl font-bold">
                 {overdueTasks.length > 0 ? (
                   <span className="text-warning">{overdueTasks.length} atrasadas</span>
                 ) : (
@@ -382,67 +386,75 @@ export const PreOpeningCountdown: React.FC<PreOpeningCountdownProps> = ({
           </Card>
           
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-5 w-5 text-info" />
-                <span className="text-sm font-medium">Próximas Tareas</span>
+            <CardContent className="p-3 sm:p-4 md:pt-6">
+              <div className="flex items-center gap-1 sm:gap-2 mb-2">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-info shrink-0" />
+                <span className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">Próximas</span>
               </div>
-              <p className="text-2xl font-bold text-info">{upcomingTasks.length}</p>
-              <p className="text-xs text-muted-foreground">tareas por completar</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-info">{upcomingTasks.length}</p>
+              <p className="text-[9px] sm:text-xs text-muted-foreground">por completar</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tasks Tabs */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5" />
+          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
               Checklist de Pre-Apertura
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Tareas críticas para asegurar una apertura exitosa
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6 pb-4">
             <Tabs defaultValue="all">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">Todas</TabsTrigger>
-                <TabsTrigger value="overdue" className="text-warning">
-                  Atrasadas ({overdueTasks.length})
+              <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10">
+                <TabsTrigger value="all" className="text-[10px] sm:text-xs md:text-sm px-1 sm:px-2">Todas</TabsTrigger>
+                <TabsTrigger value="overdue" className="text-warning text-[10px] sm:text-xs md:text-sm px-1 sm:px-2">
+                  <span className="hidden sm:inline">Atrasadas</span>
+                  <span className="sm:hidden">Atras.</span>
+                  <span className="ml-0.5">({overdueTasks.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="upcoming">Próximas</TabsTrigger>
-                <TabsTrigger value="completed">Completadas</TabsTrigger>
+                <TabsTrigger value="upcoming" className="text-[10px] sm:text-xs md:text-sm px-1 sm:px-2">
+                  <span className="hidden sm:inline">Próximas</span>
+                  <span className="sm:hidden">Próx.</span>
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="text-[10px] sm:text-xs md:text-sm px-1 sm:px-2">
+                  <span className="hidden sm:inline">Completadas</span>
+                  <span className="sm:hidden">Listas</span>
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="all" className="mt-4 space-y-3">
+              <TabsContent value="all" className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
                 {tasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isMobile={isMobile} />
                 ))}
               </TabsContent>
               
-              <TabsContent value="overdue" className="mt-4 space-y-3">
+              <TabsContent value="overdue" className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
                 {overdueTasks.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-success" />
-                    <p>¡Excelente! No tienes tareas atrasadas</p>
+                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                    <CheckCircle2 className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 text-success" />
+                    <p className="text-xs sm:text-sm">¡Excelente! No tienes tareas atrasadas</p>
                   </div>
                 ) : (
                   overdueTasks.map(task => (
-                    <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isOverdue />
+                    <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isOverdue isMobile={isMobile} />
                   ))
                 )}
               </TabsContent>
               
-              <TabsContent value="upcoming" className="mt-4 space-y-3">
+              <TabsContent value="upcoming" className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
                 {upcomingTasks.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isMobile={isMobile} />
                 ))}
               </TabsContent>
               
-              <TabsContent value="completed" className="mt-4 space-y-3">
+              <TabsContent value="completed" className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
                 {tasks.filter(t => t.is_completed).map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} />
+                  <TaskItem key={task.id} task={task} onToggle={() => toggleTask(task.id)} daysUntilOpening={daysUntilOpening} isMobile={isMobile} />
                 ))}
               </TabsContent>
             </Tabs>
@@ -458,9 +470,10 @@ interface TaskItemProps {
   onToggle: () => void;
   daysUntilOpening: number;
   isOverdue?: boolean;
+  isMobile?: boolean;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, isOverdue }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, isOverdue, isMobile }) => {
   const navigate = useNavigate();
   const Icon = getCategoryIcon(task.category);
   const shouldBeDone = task.days_before_opening >= daysUntilOpening;
@@ -475,37 +488,37 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, i
   
   return (
     <div 
-      className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border transition-all overflow-hidden
+      className={`flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border transition-all overflow-hidden
         ${task.is_completed ? 'bg-muted/50 border-muted' : shouldBeDone ? 'bg-warning/5 border-warning/30' : 'bg-card border-border hover:border-primary/50'}
       `}
     >
-      <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+      <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
         <div 
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer flex-shrink-0
+          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center cursor-pointer flex-shrink-0 mt-0.5
             ${task.is_completed ? 'bg-success border-success' : 'border-muted-foreground hover:border-primary'}
           `}
           onClick={onToggle}
         >
-          {task.is_completed && <CheckCircle2 className="h-4 w-4 text-success-foreground" />}
+          {task.is_completed && <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-success-foreground" />}
         </div>
         
-        <div className={`p-2 rounded-lg ${getCategoryColor(task.category)} flex-shrink-0`}>
-          <Icon className="h-4 w-4" />
+        <div className={`p-1.5 sm:p-2 rounded-lg ${getCategoryColor(task.category)} flex-shrink-0`}>
+          <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+          <p className={`font-medium text-xs sm:text-sm leading-tight ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
             {typeof task.title === 'string' ? task.title : JSON.stringify(task.title)}
           </p>
-          <p className="text-sm text-muted-foreground truncate">
+          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 sm:truncate mt-0.5">
             {typeof task.description === 'string' ? task.description : task.description ? JSON.stringify(task.description) : ''}
           </p>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 sm:gap-3 ml-10 sm:ml-0 flex-shrink-0">
-        <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'} className="flex-shrink-0">
-          {task.days_before_opening} días antes
+      <div className="flex items-center gap-2 ml-7 sm:ml-11 flex-shrink-0">
+        <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'} className="flex-shrink-0 text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+          {task.days_before_opening}d antes
         </Badge>
         
         {moduleAction && !task.is_completed && (
@@ -513,10 +526,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, i
             size="sm" 
             variant="outline" 
             onClick={handleActionClick}
-            className="gap-1 text-xs whitespace-nowrap"
+            className="gap-1 text-[10px] sm:text-xs whitespace-nowrap h-6 sm:h-7 px-2 sm:px-2.5"
           >
-            <moduleAction.icon className="h-3 w-3" />
-            <span className="hidden md:inline">{moduleAction.label}</span>
+            <moduleAction.icon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            {!isMobile && <span className="hidden md:inline">{moduleAction.label}</span>}
             <ArrowRight className="h-3 w-3" />
           </Button>
         )}
