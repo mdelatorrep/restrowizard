@@ -5965,6 +5965,125 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_swap_requests: {
+        Row: {
+          created_at: string
+          id: string
+          original_shift_id: string
+          reason: string | null
+          requesting_staff_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          swap_type: string
+          target_shift_id: string | null
+          target_staff_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_shift_id: string
+          reason?: string | null
+          requesting_staff_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          swap_type?: string
+          target_shift_id?: string | null
+          target_staff_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_shift_id?: string
+          reason?: string | null
+          requesting_staff_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          swap_type?: string
+          target_shift_id?: string | null
+          target_staff_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_swap_requests_original_shift_id_fkey"
+            columns: ["original_shift_id"]
+            isOneToOne: false
+            referencedRelation: "staff_shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_swap_requests_requesting_staff_id_fkey"
+            columns: ["requesting_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_swap_requests_target_shift_id_fkey"
+            columns: ["target_shift_id"]
+            isOneToOne: false
+            referencedRelation: "staff_shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_swap_requests_target_staff_id_fkey"
+            columns: ["target_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_templates: {
+        Row: {
+          break_minutes: number
+          color: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          position: string | null
+          start_time: string
+          template_name: string
+          user_id: string
+        }
+        Insert: {
+          break_minutes?: number
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean
+          position?: string | null
+          start_time: string
+          template_name: string
+          user_id: string
+        }
+        Update: {
+          break_minutes?: number
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          position?: string | null
+          start_time?: string
+          template_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_accounts: {
         Row: {
           access_token_encrypted: string | null
@@ -6067,42 +6186,181 @@ export type Database = {
         }
         Relationships: []
       }
-      staff_members: {
+      staff_availability: {
         Row: {
           created_at: string
-          hire_date: string | null
-          hourly_rate: number | null
+          day_of_week: number
+          effective_from: string | null
+          effective_until: string | null
+          end_time: string
           id: string
-          is_active: boolean | null
-          name: string
-          performance_score: number | null
-          position: string
-          training_progress: number | null
+          is_available: boolean
+          notes: string | null
+          staff_member_id: string
+          start_time: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          hire_date?: string | null
-          hourly_rate?: number | null
+          day_of_week: number
+          effective_from?: string | null
+          effective_until?: string | null
+          end_time: string
           id?: string
-          is_active?: boolean | null
-          name: string
-          performance_score?: number | null
-          position: string
-          training_progress?: number | null
+          is_available?: boolean
+          notes?: string | null
+          staff_member_id: string
+          start_time: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          day_of_week?: number
+          effective_from?: string | null
+          effective_until?: string | null
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          staff_member_id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_certifications: {
+        Row: {
+          certification_name: string
+          certification_type: string | null
+          created_at: string
+          document_url: string | null
+          expiration_date: string | null
+          id: string
+          issued_date: string | null
+          issuing_authority: string | null
+          notes: string | null
+          staff_member_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          certification_name: string
+          certification_type?: string | null
+          created_at?: string
+          document_url?: string | null
+          expiration_date?: string | null
+          id?: string
+          issued_date?: string | null
+          issuing_authority?: string | null
+          notes?: string | null
+          staff_member_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          certification_name?: string
+          certification_type?: string | null
+          created_at?: string
+          document_url?: string | null
+          expiration_date?: string | null
+          id?: string
+          issued_date?: string | null
+          issuing_authority?: string | null
+          notes?: string | null
+          staff_member_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_certifications_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_members: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employee_id: string | null
+          hire_date: string | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          max_hours_per_week: number | null
+          name: string
+          performance_score: number | null
+          phone: string | null
+          position: string
+          preferred_shifts: string[] | null
+          skills: string[] | null
+          training_progress: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_id?: string | null
           hire_date?: string | null
           hourly_rate?: number | null
           id?: string
           is_active?: boolean | null
+          max_hours_per_week?: number | null
+          name: string
+          performance_score?: number | null
+          phone?: string | null
+          position: string
+          preferred_shifts?: string[] | null
+          skills?: string[] | null
+          training_progress?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_id?: string | null
+          hire_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_hours_per_week?: number | null
           name?: string
           performance_score?: number | null
+          phone?: string | null
           position?: string
+          preferred_shifts?: string[] | null
+          skills?: string[] | null
           training_progress?: number | null
           updated_at?: string
           user_id?: string
@@ -6114,15 +6372,20 @@ export type Database = {
           actual_end_time: string | null
           actual_start_time: string | null
           break_minutes: number | null
+          color: string | null
           created_at: string | null
+          department: string | null
           end_time: string
           hourly_rate_override: number | null
           id: string
+          is_published: boolean | null
           notes: string | null
+          published_at: string | null
           shift_date: string
           staff_member_id: string | null
           start_time: string
           status: string | null
+          template_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -6130,15 +6393,20 @@ export type Database = {
           actual_end_time?: string | null
           actual_start_time?: string | null
           break_minutes?: number | null
+          color?: string | null
           created_at?: string | null
+          department?: string | null
           end_time: string
           hourly_rate_override?: number | null
           id?: string
+          is_published?: boolean | null
           notes?: string | null
+          published_at?: string | null
           shift_date: string
           staff_member_id?: string | null
           start_time: string
           status?: string | null
+          template_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -6146,15 +6414,20 @@ export type Database = {
           actual_end_time?: string | null
           actual_start_time?: string | null
           break_minutes?: number | null
+          color?: string | null
           created_at?: string | null
+          department?: string | null
           end_time?: string
           hourly_rate_override?: number | null
           id?: string
+          is_published?: boolean | null
           notes?: string | null
+          published_at?: string | null
           shift_date?: string
           staff_member_id?: string | null
           start_time?: string
           status?: string | null
+          template_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -6164,6 +6437,13 @@ export type Database = {
             columns: ["staff_member_id"]
             isOneToOne: false
             referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_shifts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shift_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -6642,6 +6922,71 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_off_requests: {
+        Row: {
+          created_at: string
+          end_date: string
+          end_time: string | null
+          id: string
+          is_full_day: boolean
+          reason: string | null
+          request_type: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_member_id: string
+          start_date: string
+          start_time: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          end_time?: string | null
+          id?: string
+          is_full_day?: boolean
+          reason?: string | null
+          request_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_member_id: string
+          start_date: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          end_time?: string | null
+          id?: string
+          is_full_day?: boolean
+          reason?: string | null
+          request_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_member_id?: string
+          start_date?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_requests_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
             referencedColumns: ["id"]
           },
         ]
