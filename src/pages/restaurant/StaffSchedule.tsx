@@ -218,7 +218,7 @@ const StaffSchedule: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
 
       {/* AI Insights Panel */}
       <AIInsightsPanel
