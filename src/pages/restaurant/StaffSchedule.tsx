@@ -132,11 +132,7 @@ const StaffSchedule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Turnos</h1>
-          <p className="text-muted-foreground">Programa y rastrea los turnos de tu equipo</p>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleAnalyzeSchedule} disabled={aiLoading || shifts.length === 0}>
             <Sparkles className="h-4 w-4 mr-2" />
@@ -219,6 +215,7 @@ const StaffSchedule: React.FC = () => {
           </DialogContent>
         </Dialog>
         </div>
+      </div>
 
       {/* AI Insights Panel */}
       <AIInsightsPanel
@@ -228,7 +225,6 @@ const StaffSchedule: React.FC = () => {
         loading={aiLoading}
         onAnalyze={handleAnalyzeSchedule}
       />
-      </div>
 
       {/* Week Navigation */}
       <div className="flex items-center justify-between">
