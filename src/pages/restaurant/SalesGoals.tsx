@@ -106,6 +106,11 @@ const ProjectionCard = ({ projection }: { projection: SalesProjection }) => {
 };
 
 const SalesGoals = () => {
+  return <SalesGoalsContent />;
+};
+
+// Export the content component for use in POSReports page
+export const SalesGoalsContent = () => {
   const { goals, projections, kpis, loading, hasData, createGoal } = useSalesGoals();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);

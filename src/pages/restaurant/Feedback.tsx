@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   MessageSquare, Star, TrendingUp, TrendingDown, AlertTriangle, 
   QrCode, Plus, Loader2, ThumbsUp, ThumbsDown, Minus, Sparkles,
-  Mail, Phone, Eye
+  Mail, Phone, Eye, Globe
 } from 'lucide-react';
+import { SocialListeningContent } from './SocialListening';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -51,6 +53,8 @@ const StarRating = ({ rating }: { rating: number | null }) => {
 };
 
 const Feedback = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mainTab = searchParams.get('mainTab') || 'feedback';
   const { feedback, campaigns, kpis, loading, hasData, addFeedback, createCampaign, respondToFeedback } = useFeedbackData();
   const { toast } = useToast();
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
@@ -121,6 +125,10 @@ const Feedback = () => {
     if (result) setAiInsights(result);
   };
 
+  const handleMainTabChange = (value: string) => {
+    setSearchParams({ mainTab: value });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -133,15 +141,31 @@ const Feedback = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Feedback de Clientes</h1>
-          <p className="text-muted-foreground">Gestiona y analiza las opiniones de tus clientes</p>
+          <h1 className="text-3xl font-bold">Feedback y Reputación</h1>
+          <p className="text-muted-foreground">Gestiona opiniones y monitorea tu reputación online</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAnalyzeTrends} disabled={aiLoading || feedback.length === 0}>
-            <Sparkles className="h-4 w-4 mr-2" />
-            {aiLoading ? 'Analizando...' : 'Analizar Tendencias'}
-          </Button>
-          <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
+      </div>
+
+      <Tabs value={mainTab} onValueChange={handleMainTabChange}>
+        <TabsList>
+          <TabsTrigger value="feedback" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Feedback
+          </TabsTrigger>
+          <TabsTrigger value="reputation" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Reputación Online
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="feedback" className="mt-6 space-y-6">
+          {/* Feedback Actions */}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={handleAnalyzeTrends} disabled={aiLoading || feedback.length === 0}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              {aiLoading ? 'Analizando...' : 'Analizar Tendencias'}
+            </Button>
+            <Dialog open={showCampaignDialog} onOpenChange={setShowCampaignDialog}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <QrCode className="h-4 w-4 mr-2" />
@@ -176,7 +200,7 @@ const Feedback = () => {
               </div>
             </DialogContent>
           </Dialog>
-          <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+            <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -234,8 +258,7 @@ const Feedback = () => {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
 
       {/* KPIs */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -294,14 +317,14 @@ const Feedback = () => {
         onAnalyze={handleAnalyzeTrends}
       />
 
-      <Tabs defaultValue="feedback">
+          <Tabs defaultValue="recent">
         <TabsList>
-          <TabsTrigger value="feedback">Feedback Reciente</TabsTrigger>
+              <TabsTrigger value="recent">Feedback Reciente</TabsTrigger>
           <TabsTrigger value="campaigns">Campañas QR</TabsTrigger>
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="feedback" className="space-y-4">
+            <TabsContent value="recent" className="space-y-4">
           {feedback.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
@@ -473,6 +496,12 @@ const Feedback = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="reputation" className="mt-6">
+          <SocialListeningContent />
         </TabsContent>
       </Tabs>
 
