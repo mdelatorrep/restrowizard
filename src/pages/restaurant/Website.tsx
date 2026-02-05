@@ -155,7 +155,7 @@ export default function WebsitePage() {
   };
 
   const copyUrl = () => {
-    const url = `${window.location.origin}/restaurante/${website?.slug}`;
+    const url = `${window.location.origin}/p/${website?.slug}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -262,7 +262,7 @@ export default function WebsitePage() {
   }
 
   // Website editor
-  const siteUrl = `${window.location.origin}/restaurante/${website.slug}`;
+  const siteUrl = `${window.location.origin}/p/${website.slug}`;
 
   return (
     <div className="space-y-6">
@@ -487,13 +487,13 @@ export default function WebsitePage() {
                 </div>
                 <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                   <code className="flex-1 text-sm break-all">
-                     {window.location.origin}/r/{website.slug}
+                     {window.location.origin}/p/{website.slug}
                   </code>
                   <Button variant="ghost" size="sm" onClick={copyUrl}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
-                     <a href={`/r/${website.slug}`} target="_blank" rel="noopener noreferrer">
+                      <a href={`/p/${website.slug}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
@@ -560,20 +560,20 @@ export default function WebsitePage() {
                   </div>
                   <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                     <code className="flex-1 text-sm break-all">
-                       {window.location.origin}/r/{website.slug}/reservas
+                       {window.location.origin}/p/{website.slug}/reservas
                     </code>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                         navigator.clipboard.writeText(`${window.location.origin}/r/${website.slug}/reservas`);
+                         navigator.clipboard.writeText(`${window.location.origin}/p/${website.slug}/reservas`);
                         toast({ title: 'URL copiada' });
                       }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                       <a href={`/r/${website.slug}/reservas`} target="_blank" rel="noopener noreferrer">
+                       <a href={`/p/${website.slug}/reservas`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
@@ -598,20 +598,20 @@ export default function WebsitePage() {
                   </div>
                   <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
                     <code className="flex-1 text-sm break-all">
-                       {window.location.origin}/r/{website.slug}/domicilios
+                       {window.location.origin}/p/{website.slug}/domicilios
                     </code>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                         navigator.clipboard.writeText(`${window.location.origin}/r/${website.slug}/domicilios`);
+                         navigator.clipboard.writeText(`${window.location.origin}/p/${website.slug}/domicilios`);
                         toast({ title: 'URL copiada' });
                       }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                       <a href={`/r/${website.slug}/domicilios`} target="_blank" rel="noopener noreferrer">
+                       <a href={`/p/${website.slug}/domicilios`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>

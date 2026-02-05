@@ -25,7 +25,7 @@
    if (error || !data) return <PublicErrorState type={error || 'not_found'} />;
  
    const { website, brand, profile, restaurantName } = data;
-   const basePath = `/r/${slug}`;
+   const basePath = `/p/${slug}`;
  
    const quickLinks = [
      { key: 'menu', label: 'Ver Menú', description: 'Explora nuestros platos', icon: UtensilsCrossed, path: `${basePath}/menu`, show: website?.show_menu, color: 'bg-orange-500' },

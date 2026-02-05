@@ -31,7 +31,7 @@
    showLoyalty = true,
  }: PublicFooterProps) {
    const { slug } = useParams<{ slug: string }>();
-   const basePath = `/r/${slug}`;
+   const basePath = `/p/${slug}`;
  
    const footerLinks = [
      { label: 'Menú', path: `${basePath}/menu`, show: showMenu },
