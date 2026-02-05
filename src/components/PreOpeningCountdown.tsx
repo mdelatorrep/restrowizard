@@ -475,11 +475,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, i
   
   return (
     <div 
-      className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border transition-all
+      className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg border transition-all overflow-hidden
         ${task.is_completed ? 'bg-muted/50 border-muted' : shouldBeDone ? 'bg-warning/5 border-warning/30' : 'bg-card border-border hover:border-primary/50'}
       `}
     >
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
         <div 
           className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer flex-shrink-0
             ${task.is_completed ? 'bg-success border-success' : 'border-muted-foreground hover:border-primary'}
@@ -494,14 +494,16 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, daysUntilOpening, i
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-            {task.title}
+          <p className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+            {typeof task.title === 'string' ? task.title : JSON.stringify(task.title)}
           </p>
-          <p className="text-sm text-muted-foreground truncate">{task.description}</p>
+          <p className="text-sm text-muted-foreground truncate">
+            {typeof task.description === 'string' ? task.description : task.description ? JSON.stringify(task.description) : ''}
+          </p>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 sm:gap-3 ml-10 sm:ml-0">
+      <div className="flex items-center gap-2 sm:gap-3 ml-10 sm:ml-0 flex-shrink-0">
         <Badge variant={shouldBeDone && !task.is_completed ? 'destructive' : 'outline'} className="flex-shrink-0">
           {task.days_before_opening} días antes
         </Badge>
