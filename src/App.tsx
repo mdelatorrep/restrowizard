@@ -142,9 +142,11 @@ const App = () => (
               }>
               <Route path="dashboard" element={<RestaurantDashboard />} />
                 <Route path="finances" element={<RestaurantFinances />} />
-                <Route path="operations" element={<RestaurantOperations />} />
+                {/* Redirect operations to finances */}
+                <Route path="operations" element={<Navigate to="/r/finances" replace />} />
                 <Route path="talent" element={<RestaurantTalent />} />
-                <Route path="menu-engineering" element={<RestaurantMenuEngineering />} />
+                {/* Redirect menu-engineering to menus */}
+                <Route path="menu-engineering" element={<Navigate to="/r/menus" replace />} />
                 <Route path="sustainability" element={<RestaurantSustainability />} />
                 <Route path="ghost-kitchen" element={<RestaurantGhostKitchen />} />
                 <Route path="chain-management" element={<RestaurantChainManagement />} />
@@ -152,9 +154,11 @@ const App = () => (
                 <Route path="feedback" element={<RestaurantFeedback />} />
                 <Route path="recipes" element={<RestaurantRecipes />} />
                 <Route path="orders" element={<RestaurantOrders />} />
-                <Route path="sales-goals" element={<RestaurantSalesGoals />} />
+                {/* Redirect sales-goals to pos-reports */}
+                <Route path="sales-goals" element={<Navigate to="/r/pos-reports?tab=goals" replace />} />
                 <Route path="support" element={<RestaurantSupport />} />
-                <Route path="social-listening" element={<RestaurantSocialListening />} />
+                {/* Redirect social-listening to feedback */}
+                <Route path="social-listening" element={<Navigate to="/r/feedback?mainTab=reputation" replace />} />
                 <Route path="new-business" element={<RestaurantNewBusiness />} />
                 <Route path="menus" element={<RestaurantMenus />} />
                 <Route path="loyalty" element={<RestaurantLoyalty />} />
@@ -165,10 +169,12 @@ const App = () => (
                 <Route path="kitchen" element={<RestaurantKitchen />} />
                 <Route path="website" element={<RestaurantWebsite />} />
                 <Route path="reservations" element={<RestaurantReservations />} />
-                <Route path="staff-schedule" element={<RestaurantStaffSchedule />} />
+                {/* Redirect staff-schedule to talent */}
+                <Route path="staff-schedule" element={<Navigate to="/r/talent?tab=schedule" replace />} />
                 <Route path="inventory" element={<RestaurantInventory />} />
                 <Route path="delivery" element={<RestaurantDelivery />} />
-                <Route path="suppliers" element={<RestaurantSuppliers />} />
+                {/* Redirect suppliers to inventory */}
+                <Route path="suppliers" element={<Navigate to="/r/inventory?tab=suppliers" replace />} />
                 <Route path="settings" element={<RestaurantSettings />} />
               </Route>
 

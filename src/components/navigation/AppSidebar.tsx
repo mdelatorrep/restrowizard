@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -39,7 +39,6 @@ import {
   MessageSquare,
   BookOpen,
   ShoppingBag,
-  Target,
   HeadphonesIcon,
   Globe,
   Rocket,
@@ -48,17 +47,18 @@ import {
   Wrench,
   Timer,
   CalendarCheck,
-  LayoutTemplate,
   TrendingUp,
   LucideIcon,
   UtensilsCrossed,
   BarChart3,
   Truck,
   Package,
-  Lock,
   AlertCircle,
+  Lock,
+  ChevronDown,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
@@ -74,7 +74,7 @@ interface MenuItem {
 
 // ====== SIDEBAR REORGANIZADO POR GRUPOS LÓGICOS ======
 
-// 1. GESTIÓN PRINCIPAL - Siempre visible según etapa
+// 1. PRINCIPAL - Contextual por etapa
 const mainNavigationItems: MenuItem[] = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/r/dashboard' },
   { 
@@ -97,35 +97,21 @@ const mainNavigationItems: MenuItem[] = [
   },
 ];
 
-// 2. CONFIGURACIÓN BASE - Fundamentos del negocio
-const baseConfigItems: MenuItem[] = [
+// 2. MI RESTAURANTE - Configuración del negocio
+const myRestaurantItems: MenuItem[] = [
   { 
-    title: 'Marca', 
+    title: 'Marca e Identidad', 
     icon: Palette, 
     path: '/r/brand',
     stages: ['conception', 'enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'brand'
   },
   { 
-    title: 'Recetas', 
+    title: 'Recetas y Costos', 
     icon: BookOpen, 
     path: '/r/recipes',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'recipes'
-  },
-  { 
-    title: 'Inventarios', 
-    icon: Package, 
-    path: '/r/inventory',
-    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'inventory'
-  },
-  { 
-    title: 'Proveedores', 
-    icon: Truck, 
-    path: '/r/suppliers',
-    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'suppliers'
   },
   { 
     title: 'Menús Digitales', 
@@ -134,10 +120,17 @@ const baseConfigItems: MenuItem[] = [
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'menus'
   },
+  { 
+    title: 'Inventario y Proveedores', 
+    icon: Package, 
+    path: '/r/inventory',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    moduleKey: 'inventory'
+  },
 ];
 
-// 3. VENTAS Y OPERACIONES - Requiere menús
-const salesOperationsItems: MenuItem[] = [
+// 3. VENTAS - Operaciones diarias
+const salesItems: MenuItem[] = [
   { 
     title: 'Punto de Venta', 
     icon: CreditCard, 
@@ -146,18 +139,11 @@ const salesOperationsItems: MenuItem[] = [
     moduleKey: 'pos'
   },
   { 
-    title: 'Pedidos', 
-    icon: ShoppingBag, 
+    title: 'Pedidos y Cocina', 
+    icon: UtensilsCrossed, 
     path: '/r/orders',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'orders'
-  },
-  { 
-    title: 'Cocina (KDS)', 
-    icon: UtensilsCrossed, 
-    path: '/r/kitchen',
-    stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'kitchen'
   },
   { 
     title: 'Domicilios', 
@@ -173,60 +159,24 @@ const salesOperationsItems: MenuItem[] = [
     stages: ['pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'reservations'
   },
-];
-
-// 4. ANÁLISIS IA - Módulos inteligentes
-const aiAnalysisItems: MenuItem[] = [
   { 
-    title: 'Finanzas IA', 
-    icon: DollarSign, 
-    path: '/r/finances',
-    stages: ['pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'finances'
-  },
-  { 
-    title: 'Operaciones IA', 
-    icon: ChefHat, 
-    path: '/r/operations',
-    stages: ['pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'operations'
-  },
-  { 
-    title: 'Reportes Ventas', 
-    icon: Target, 
+    title: 'Reportes y Metas', 
+    icon: BarChart3, 
     path: '/r/pos-reports',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'pos-reports'
   },
-  { 
-    title: 'Metas de Venta', 
-    icon: TrendingUp, 
-    path: '/r/sales-goals',
-    stages: ['pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'sales-goals'
-  },
 ];
 
-// 5. EQUIPO - Gestión de personal
-const teamItems: MenuItem[] = [
+// 4. EQUIPO Y CLIENTES - Personas
+const peopleItems: MenuItem[] = [
   { 
-    title: 'Talento IA', 
+    title: 'Talento y Turnos', 
     icon: Users, 
     path: '/r/talent',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'talent'
   },
-  { 
-    title: 'Turnos', 
-    icon: CalendarDays, 
-    path: '/r/staff-schedule',
-    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'staff-schedule'
-  },
-];
-
-// 6. CLIENTES - Fidelización y feedback
-const customerItems: MenuItem[] = [
   { 
     title: 'Fidelización', 
     icon: Crown, 
@@ -235,7 +185,7 @@ const customerItems: MenuItem[] = [
     moduleKey: 'loyalty'
   },
   { 
-    title: 'Feedback', 
+    title: 'Feedback y Reputación', 
     icon: MessageSquare, 
     path: '/r/feedback',
     stages: ['first_90_days', 'normal_operation'],
@@ -250,26 +200,26 @@ const customerItems: MenuItem[] = [
   },
 ];
 
-// 7. MARKETING Y PRESENCIA - Sitio web y redes
-const marketingItems: MenuItem[] = [
+// 5. PRESENCIA DIGITAL
+const digitalPresenceItems: MenuItem[] = [
   { 
-    title: 'Sitio Web', 
-    icon: LayoutTemplate, 
+    title: 'Sitio Web y URLs', 
+    icon: Globe, 
     path: '/r/website',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'website'
   },
-  { 
-    title: 'Social Listening', 
-    icon: Globe, 
-    path: '/r/social-listening',
-    stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'social-listening'
-  },
 ];
 
-// 8. AVANZADO - Expansión y sostenibilidad
-const advancedItems: MenuItem[] = [
+// 6. FINANZAS Y ANÁLISIS - Solo para operación normal
+const financeItems: MenuItem[] = [
+  { 
+    title: 'Finanzas IA', 
+    icon: DollarSign, 
+    path: '/r/finances',
+    stages: ['first_90_days', 'normal_operation'],
+    moduleKey: 'finances'
+  },
   { 
     title: 'Sostenibilidad', 
     icon: Leaf, 
@@ -277,6 +227,10 @@ const advancedItems: MenuItem[] = [
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'sustainability'
   },
+];
+
+// 7. EXPANSIÓN - Oculto por defecto, solo operación normal
+const expansionItems: MenuItem[] = [
   { 
     title: 'Ghost Kitchen', 
     icon: Store, 
@@ -330,6 +284,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const { state, toggleSidebar } = useSidebar();
   const lifecycle = useRestaurantLifecycle();
   const prerequisites = useModulePrerequisites();
+  const [expansionOpen, setExpansionOpen] = useState(false);
 
   const isCollapsed = state === 'collapsed';
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
@@ -417,13 +372,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
 
   // Filtered items for restaurant owner
   const filteredMainNav = filterByStage(mainNavigationItems);
-  const filteredBaseConfig = filterByStage(baseConfigItems);
-  const filteredSalesOps = filterByStage(salesOperationsItems);
-  const filteredAiAnalysis = filterByStage(aiAnalysisItems);
-  const filteredTeam = filterByStage(teamItems);
-  const filteredCustomer = filterByStage(customerItems);
-  const filteredMarketing = filterByStage(marketingItems);
-  const filteredAdvanced = filterByStage(advancedItems);
+  const filteredMyRestaurant = filterByStage(myRestaurantItems);
+  const filteredSales = filterByStage(salesItems);
+  const filteredPeople = filterByStage(peopleItems);
+  const filteredDigital = filterByStage(digitalPresenceItems);
+  const filteredFinance = filterByStage(financeItems);
+  const filteredExpansion = filterByStage(expansionItems);
 
   const stageInfo = getStageInfo(lifecycle.stage);
 
@@ -508,101 +462,92 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Base Configuration - Foundations */}
-            {filteredBaseConfig.length > 0 && (
+            {/* Mi Restaurante - Business Configuration */}
+            {filteredMyRestaurant.length > 0 && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Configuración Base
+                  Mi Restaurante
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {filteredBaseConfig.map(renderMenuItem)}
+                    {filteredMyRestaurant.map(renderMenuItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
 
-            {/* Sales & Operations */}
-            {filteredSalesOps.length > 0 && (
+            {/* Ventas */}
+            {filteredSales.length > 0 && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Ventas y Operaciones
+                  Ventas
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {filteredSalesOps.map(renderMenuItem)}
+                    {filteredSales.map(renderMenuItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
 
-            {/* AI Analysis */}
-            {filteredAiAnalysis.length > 0 && (
+            {/* Equipo y Clientes */}
+            {filteredPeople.length > 0 && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Análisis IA
+                  Equipo y Clientes
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {filteredAiAnalysis.map(renderMenuItem)}
+                    {filteredPeople.map(renderMenuItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
 
-            {/* Team */}
-            {filteredTeam.length > 0 && (
+            {/* Presencia Digital */}
+            {filteredDigital.length > 0 && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Equipo
+                  Presencia Digital
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {filteredTeam.map(renderMenuItem)}
+                    {filteredDigital.map(renderMenuItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
 
-            {/* Customers */}
-            {filteredCustomer.length > 0 && (
+            {/* Finanzas y Análisis */}
+            {filteredFinance.length > 0 && (
               <SidebarGroup>
                 <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Clientes
+                  Finanzas y Análisis
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {filteredCustomer.map(renderMenuItem)}
+                    {filteredFinance.map(renderMenuItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
 
-            {/* Marketing */}
-            {filteredMarketing.length > 0 && (
-              <SidebarGroup>
-                <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Marketing
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {filteredMarketing.map(renderMenuItem)}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-
-            {/* Advanced */}
-            {filteredAdvanced.length > 0 && (
-              <SidebarGroup>
-                <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-                  Avanzado
-                </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {filteredAdvanced.map(renderMenuItem)}
-                  </SidebarMenu>
-                </SidebarGroupContent>
+            {/* Expansión - Collapsible */}
+            {filteredExpansion.length > 0 && (
+              <SidebarGroup className="border-t border-sidebar-border/50 pt-2 mt-2">
+                <Collapsible open={expansionOpen} onOpenChange={setExpansionOpen}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-1.5 text-sidebar-foreground/70 hover:text-sidebar-foreground text-xs font-medium">
+                    <span className="font-lato-medium">Expansión</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${expansionOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {filteredExpansion.map(renderMenuItem)}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </Collapsible>
               </SidebarGroup>
             )}
           </>

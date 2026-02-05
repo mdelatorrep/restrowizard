@@ -82,6 +82,11 @@ const MentionCard = ({ mention }: { mention: SocialMention }) => {
 };
 
 const SocialListening = () => {
+  return <SocialListeningContent />;
+};
+
+// Export the content component for use in Feedback page
+export const SocialListeningContent = () => {
   const { mentions, accounts, reports, kpis, loading, hasData, addMention, addAccount } = useSocialMentions();
   const { toast } = useToast();
   const [showAddDialog, setShowAddDialog] = useState(false);
