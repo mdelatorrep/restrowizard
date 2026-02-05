@@ -140,7 +140,8 @@ const App = () => (
                   <AppLayout requiredUserType="restaurant_owner" />
                 </OnboardingGuard>
               }>
-              <Route path="dashboard" element={<RestaurantDashboard />} />
+                <Route index element={<RestaurantDashboard />} />
+                <Route path="dashboard" element={<RestaurantDashboard />} />
                 <Route path="finances" element={<RestaurantFinances />} />
                 {/* Redirect operations to finances */}
                 <Route path="operations" element={<Navigate to="/r/finances" replace />} />
