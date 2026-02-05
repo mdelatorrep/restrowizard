@@ -6,16 +6,12 @@ import {
   TrendingDown, 
   Users, 
   Utensils,
-  ArrowUpRight,
   AlertTriangle,
   Lightbulb,
   Clock,
   Leaf,
   Store,
-  Building2,
-  RefreshCw,
-  CheckCircle,
-  X
+  ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -213,22 +209,28 @@ const RestaurantDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
       {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-foreground truncate">
             {greeting}, Carlos
-          </h1>
-          <p className="text-muted-foreground font-lato-light capitalize">
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground font-lato-light capitalize truncate">
             {currentTime} • {businessName}
-          </p>
+            </p>
+          </div>
+          <Badge variant="outline" className="shrink-0 ml-2 hidden sm:flex">
+            <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+            En línea
+          </Badge>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/diagnosis')}>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          <Button variant="outline" size="sm" onClick={() => navigate('/diagnosis')} className="shrink-0 text-xs sm:text-sm">
             Ver Diagnóstico
           </Button>
-          <Button onClick={() => navigate('/r/finances')}>
+          <Button size="sm" onClick={() => navigate('/r/finances')} className="shrink-0 text-xs sm:text-sm">
             Ver Reportes
           </Button>
         </div>
@@ -236,34 +238,34 @@ const RestaurantDashboard: React.FC = () => {
 
       {/* Tabs for Dashboard vs Action Plan */}
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 h-10">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="action-plan">Plan de Acción</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6 mt-6">
+        <TabsContent value="dashboard" className="space-y-4 md:space-y-6 mt-4">
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {kpis.map((kpi, index) => (
-          <Card key={index} className="hover:shadow-elegant transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg ${
+          <Card key={index} className="hover:shadow-lg transition-shadow border-0 bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-3 sm:p-4 md:p-5">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className={`p-1.5 sm:p-2 rounded-lg ${
                   kpi.trend === 'up' ? 'bg-success/10 text-success' :
                   kpi.trend === 'down' ? 'bg-destructive/10 text-destructive' :
                   'bg-muted text-muted-foreground'
                 }`}>
-                  {kpi.icon}
+                  {React.cloneElement(kpi.icon as React.ReactElement, { className: 'h-4 w-4 sm:h-5 sm:w-5' })}
                 </div>
-                <Badge variant={kpi.trend === 'up' ? 'default' : 'destructive'} className="gap-1">
-                  {kpi.trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <Badge variant={kpi.trend === 'up' ? 'default' : 'destructive'} className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0.5">
+                  {kpi.trend === 'up' ? <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                   {Math.abs(kpi.change)}%
                 </Badge>
               </div>
               <div>
-                <p className="text-2xl font-headline font-bold">{kpi.value}</p>
-                <p className="text-sm text-muted-foreground font-lato-light">{kpi.label}</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-headline font-bold">{kpi.value}</p>
+                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-lato-light truncate">{kpi.label}</p>
               </div>
             </CardContent>
           </Card>
@@ -271,51 +273,51 @@ const RestaurantDashboard: React.FC = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         {/* AI Copilot Alerts */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="lg:col-span-2 border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
+          <CardHeader className="pb-2 sm:pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 font-headline">
-                  <Lightbulb className="h-5 w-5 text-warning" />
+                <CardTitle className="flex items-center gap-2 font-headline text-base sm:text-lg">
+                  <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
                   Co-Piloto RestroWizard
                 </CardTitle>
-                <CardDescription className="font-lato-light">
+                <CardDescription className="font-lato-light text-xs sm:text-sm hidden sm:block">
                   Alertas y recomendaciones basadas en tus datos
                 </CardDescription>
               </div>
-              <Badge variant="secondary">{unreadAlerts.length || 3} nuevas</Badge>
+              <Badge variant="secondary" className="text-xs">{unreadAlerts.length || 3} nuevas</Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2 sm:space-y-3">
             {displayAlerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`p-4 rounded-lg border ${
+                className={`p-3 sm:p-4 rounded-xl border ${
                   alert.type === 'warning' ? 'bg-warning/5 border-warning/20' :
                   alert.type === 'success' ? 'bg-success/5 border-success/20' :
                   'bg-info/5 border-info/20'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`p-1.5 rounded-full ${
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className={`p-1 sm:p-1.5 rounded-full shrink-0 ${
                     alert.type === 'warning' ? 'bg-warning/20' :
                     alert.type === 'success' ? 'bg-success/20' :
                     'bg-info/20'
                   }`}>
                     {alert.type === 'warning' ? (
-                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
                     ) : (
-                      <Lightbulb className="h-4 w-4 text-info" />
+                      <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-info" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-lato-bold text-sm">{alert.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-lato-bold text-xs sm:text-sm line-clamp-1">{alert.title}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">{alert.message}</p>
                     {alert.action && (
-                      <Button variant="link" className="p-0 h-auto mt-2 text-primary">
-                        {alert.action} <ArrowUpRight className="h-3 w-3 ml-1" />
+                      <Button variant="link" className="p-0 h-auto mt-1 sm:mt-2 text-primary text-xs sm:text-sm">
+                        {alert.action} <ChevronRight className="h-3 w-3 ml-0.5" />
                       </Button>
                     )}
                   </div>
@@ -326,24 +328,24 @@ const RestaurantDashboard: React.FC = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">Acceso Rápido</CardTitle>
-            <CardDescription className="font-lato-light">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
+          <CardHeader className="pb-2 sm:pb-4">
+            <CardTitle className="font-headline text-base sm:text-lg">Acceso Rápido</CardTitle>
+            <CardDescription className="font-lato-light text-xs sm:text-sm hidden sm:block">
               Módulos de gestión con IA
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="grid grid-cols-2 lg:grid-cols-1 gap-2">
             {quickActions.map((action) => (
               <Button
                 key={action.path}
                 variant="outline"
-                className="w-full justify-start gap-3 h-12"
+                className="w-full justify-start gap-2 h-10 sm:h-11 text-xs sm:text-sm"
                 onClick={() => navigate(action.path)}
               >
-                <action.icon className="h-5 w-5 text-primary" />
-                {action.label}
-                <ArrowUpRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                <action.icon className="h-4 w-4 text-primary shrink-0" />
+                <span className="truncate">{action.label}</span>
+                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground shrink-0 hidden sm:block" />
               </Button>
             ))}
           </CardContent>
@@ -351,32 +353,32 @@ const RestaurantDashboard: React.FC = () => {
       </div>
 
       {/* Weekly Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Rendimiento Semanal</CardTitle>
-          <CardDescription className="font-lato-light">
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="font-headline text-base sm:text-lg">Rendimiento Semanal</CardTitle>
+          <CardDescription className="font-lato-light text-xs sm:text-sm">
             Comparativa vs semana anterior
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>Ventas</span>
-                <span className="font-medium">$298,450 / $320,000</span>
+                <span className="font-medium">$298k / $320k</span>
               </div>
               <Progress value={93} className="h-2" />
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>Clientes</span>
-                <span className="font-medium">1,842 / 2,000</span>
+                <span className="font-medium">1.8k / 2k</span>
               </div>
               <Progress value={92} className="h-2" />
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Ticket Promedio</span>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span>Ticket Prom.</span>
                 <span className="font-medium">$162 / $150</span>
               </div>
               <Progress value={108} className="h-2" />
@@ -386,7 +388,7 @@ const RestaurantDashboard: React.FC = () => {
       </Card>
         </TabsContent>
 
-        <TabsContent value="action-plan" className="mt-6">
+        <TabsContent value="action-plan" className="mt-4">
           <ActionPlan />
         </TabsContent>
       </Tabs>
