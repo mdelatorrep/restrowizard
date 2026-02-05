@@ -13,9 +13,22 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Globe, Eye, EyeOff, ExternalLink, Copy, Check, 
   Palette, Layout, Image, Clock, Settings, Zap,
-  Calendar, Truck, Save, Loader2
+  Calendar, Truck, Save, Loader2, Link2, MapPin, Plus, Trash2, DollarSign
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMenus } from '@/hooks/useMenus';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import type { Tables } from '@/integrations/supabase/types';
+
+interface DeliveryZone {
+  id: string;
+  zone_name: string;
+  min_order: number | null;
+  delivery_fee: number | null;
+  estimated_time_minutes: number | null;
+  is_active: boolean;
+}
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const DAY_NAMES: Record<string, string> = {
@@ -31,6 +44,8 @@ const DAY_NAMES: Record<string, string> = {
 export default function WebsitePage() {
   const { website, templates, loading, createWebsite, updateWebsite, publishWebsite, checkSlugAvailability } = useRestaurantWebsite();
   const { brand } = useBrandData();
+  const { menus } = useMenus();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [newSlug, setNewSlug] = useState('');
@@ -41,13 +56,76 @@ export default function WebsitePage() {
   
   const [formData, setFormData] = useState<Partial<RestaurantWebsite>>({});
   const [businessHours, setBusinessHours] = useState<Record<string, { open: string; close: string; closed?: boolean }>>({});
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
 
   useEffect(() => {
     if (website) {
       setFormData(website);
       setBusinessHours(website.business_hours || {});
+      loadDeliveryZones();
     }
   }, [website]);
+
+  const loadDeliveryZones = async () => {
+    if (!user?.id) return;
+    setZonesLoading(true);
+    const { data } = await supabase
+      .from('delivery_zones')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('zone_name');
+    
+    if (data) {
+      setDeliveryZones(data as DeliveryZone[]);
+    }
+    setZonesLoading(false);
+  };
+
+  const addDeliveryZone = async () => {
+    if (!user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('delivery_zones')
+      .insert({
+        user_id: user.id,
+        zone_name: 'Nueva zona',
+        min_order: 0,
+        delivery_fee: 5000,
+        estimated_time_minutes: 30,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (data) {
+      setDeliveryZones(prev => [...prev, data as DeliveryZone]);
+      toast({ title: 'Zona creada', description: 'Configura los detalles de la zona' });
+    }
+  };
+
+  const updateDeliveryZone = async (id: string, updates: Partial<DeliveryZone>) => {
+    const { error } = await supabase
+      .from('delivery_zones')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      setDeliveryZones(prev => prev.map(z => z.id === id ? { ...z, ...updates } : z));
+    }
+  };
+
+  const deleteDeliveryZone = async (id: string) => {
+    const { error } = await supabase
+      .from('delivery_zones')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setDeliveryZones(prev => prev.filter(z => z.id !== id));
+      toast({ title: 'Zona eliminada' });
+    }
+  };
 
   const handleCheckSlug = async () => {
     if (!newSlug) return;
@@ -241,6 +319,10 @@ export default function WebsitePage() {
             <Settings className="h-4 w-4 mr-2" />
             General
           </TabsTrigger>
+          <TabsTrigger value="urls">
+            <Link2 className="h-4 w-4 mr-2" />
+            URLs
+          </TabsTrigger>
           <TabsTrigger value="hero">
             <Image className="h-4 w-4 mr-2" />
             Hero
@@ -248,14 +330,6 @@ export default function WebsitePage() {
           <TabsTrigger value="sections">
             <Layout className="h-4 w-4 mr-2" />
             Secciones
-          </TabsTrigger>
-          <TabsTrigger value="hours">
-            <Clock className="h-4 w-4 mr-2" />
-            Horarios
-          </TabsTrigger>
-          <TabsTrigger value="reservations">
-            <Calendar className="h-4 w-4 mr-2" />
-            Reservas
           </TabsTrigger>
           <TabsTrigger value="delivery">
             <Truck className="h-4 w-4 mr-2" />
@@ -265,6 +339,7 @@ export default function WebsitePage() {
 
         {/* General Tab */}
         <TabsContent value="general">
+          <div className="grid gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Configuración General</CardTitle>
@@ -298,11 +373,17 @@ export default function WebsitePage() {
                 />
                 <p className="text-xs text-muted-foreground">Aparece en resultados de Google (máx. 160 caracteres)</p>
               </div>
+            </CardContent>
+          </Card>
 
-              <Separator />
-
+          <Card>
+            <CardHeader>
+              <CardTitle>Acerca de</CardTitle>
+              <CardDescription>Historia y descripción de tu restaurante</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Acerca de - Título</Label>
+                <Label>Título</Label>
                 <Input
                   value={formData.about_title || ''}
                   onChange={e => updateField('about_title', e.target.value)}
@@ -311,7 +392,7 @@ export default function WebsitePage() {
               </div>
               
               <div className="space-y-2">
-                <Label>Acerca de - Descripción</Label>
+                <Label>Descripción</Label>
                 <Textarea
                   value={formData.about_description || ''}
                   onChange={e => updateField('about_description', e.target.value)}
@@ -321,12 +402,229 @@ export default function WebsitePage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Acerca de - Imagen URL</Label>
+                <Label>Imagen URL</Label>
                 <Input
                   value={formData.about_image_url || ''}
                   onChange={e => updateField('about_image_url', e.target.value)}
                   placeholder="https://..."
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Horarios de atención</CardTitle>
+              <CardDescription>Define los horarios de tu restaurante</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {DAYS.map(day => (
+                <div key={day} className="flex items-center gap-4 py-3 border-b last:border-0">
+                  <div className="w-32">
+                    <p className="font-medium">{DAY_NAMES[day]}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={!businessHours[day]?.closed}
+                      onCheckedChange={(checked) => updateHours(day, 'closed', !checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {businessHours[day]?.closed ? 'Cerrado' : 'Abierto'}
+                    </span>
+                  </div>
+                  {!businessHours[day]?.closed && (
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Input
+                        type="time"
+                        value={businessHours[day]?.open || '09:00'}
+                        onChange={e => updateHours(day, 'open', e.target.value)}
+                        className="w-32"
+                      />
+                      <span>a</span>
+                      <Input
+                        type="time"
+                        value={businessHours[day]?.close || '22:00'}
+                        onChange={e => updateHours(day, 'close', e.target.value)}
+                        className="w-32"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          </div>
+        </TabsContent>
+
+        {/* URLs Tab */}
+        <TabsContent value="urls">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                URLs Públicas de tu Restaurante
+              </CardTitle>
+              <CardDescription>
+                Todas las direcciones web donde tus clientes pueden encontrarte
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Website URL */}
+              <div className="p-4 border rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Sitio Web Principal</p>
+                      <p className="text-sm text-muted-foreground">Página completa con menú, reservas y delivery</p>
+                    </div>
+                  </div>
+                  <Badge variant={website.is_published ? 'default' : 'secondary'}>
+                    {website.is_published ? 'Publicado' : 'Borrador'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
+                  <code className="flex-1 text-sm break-all">
+                    {window.location.origin}/restaurante/{website.slug}
+                  </code>
+                  <Button variant="ghost" size="sm" onClick={copyUrl}>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href={`/restaurante/${website.slug}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Published Menus */}
+              {menus.filter(m => m.status === 'published').length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Menús Publicados</h3>
+                  {menus.filter(m => m.status === 'published').map(menu => (
+                    <div key={menu.id} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                            <Layout className="w-5 h-5 text-accent-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-semibold">{menu.name}</p>
+                            <p className="text-sm text-muted-foreground">Menú digital con QR</p>
+                          </div>
+                        </div>
+                        <Badge variant="default">Activo</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
+                        <code className="flex-1 text-sm break-all">
+                          {window.location.origin}/menu/{menu.public_url_slug}
+                        </code>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/menu/${menu.public_url_slug}`);
+                            toast({ title: 'URL copiada' });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={`/menu/${menu.public_url_slug}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Reservations URL */}
+              {formData.show_reservations && (
+                <div className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Reservaciones</p>
+                        <p className="text-sm text-muted-foreground">Sección de reservas en tu sitio</p>
+                      </div>
+                    </div>
+                    <Badge variant="default">Activo</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
+                    <code className="flex-1 text-sm break-all">
+                      {window.location.origin}/restaurante/{website.slug}#reservas
+                    </code>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/restaurante/${website.slug}#reservas`);
+                        toast({ title: 'URL copiada' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={`/restaurante/${website.slug}#reservas`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Delivery URL */}
+              {formData.show_delivery && (
+                <div className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-secondary/30 flex items-center justify-center">
+                        <Truck className="w-5 h-5 text-secondary-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Pedidos a Domicilio</p>
+                        <p className="text-sm text-muted-foreground">Sección de delivery en tu sitio</p>
+                      </div>
+                    </div>
+                    <Badge variant="default">Activo</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted p-3 rounded-md">
+                    <code className="flex-1 text-sm break-all">
+                      {window.location.origin}/restaurante/{website.slug}#menu
+                    </code>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/restaurante/${website.slug}#menu`);
+                        toast({ title: 'URL copiada' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={`/restaurante/${website.slug}#menu`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="p-4 bg-muted/50 rounded-lg border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  <strong>💡 Tip:</strong> Comparte estas URLs en tus redes sociales, Google Business y materiales impresos. 
+                  Los menús tienen códigos QR integrados que puedes imprimir para tus mesas.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -424,149 +722,231 @@ export default function WebsitePage() {
           </Card>
         </TabsContent>
 
-        {/* Hours Tab */}
-        <TabsContent value="hours">
-          <Card>
-            <CardHeader>
-              <CardTitle>Horarios de atención</CardTitle>
-              <CardDescription>Define los horarios de tu restaurante</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {DAYS.map(day => (
-                <div key={day} className="flex items-center gap-4 py-3 border-b last:border-0">
-                  <div className="w-32">
-                    <p className="font-medium">{DAY_NAMES[day]}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={!businessHours[day]?.closed}
-                      onCheckedChange={(checked) => updateHours(day, 'closed', !checked)}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {businessHours[day]?.closed ? 'Cerrado' : 'Abierto'}
-                    </span>
-                  </div>
-                  {!businessHours[day]?.closed && (
-                    <div className="flex items-center gap-2 ml-auto">
-                      <Input
-                        type="time"
-                        value={businessHours[day]?.open || '09:00'}
-                        onChange={e => updateHours(day, 'open', e.target.value)}
-                        className="w-32"
-                      />
-                      <span>a</span>
-                      <Input
-                        type="time"
-                        value={businessHours[day]?.close || '22:00'}
-                        onChange={e => updateHours(day, 'close', e.target.value)}
-                        className="w-32"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Reservations Tab */}
-        <TabsContent value="reservations">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuración de reservas</CardTitle>
-              <CardDescription>Define cómo funcionan las reservaciones en línea</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">Reservas habilitadas</p>
-                  <p className="text-sm text-muted-foreground">Permite que los clientes hagan reservas desde tu sitio</p>
-                </div>
-                <Switch
-                  checked={!!formData.show_reservations}
-                  onCheckedChange={(checked) => updateField('show_reservations', checked)}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label>Máximo de personas</Label>
-                  <Input
-                    type="number"
-                    value={formData.reservation_max_party_size || 10}
-                    onChange={e => updateField('reservation_max_party_size', parseInt(e.target.value))}
-                    min={1}
-                    max={50}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Días de anticipación</Label>
-                  <Input
-                    type="number"
-                    value={formData.reservation_advance_days || 30}
-                    onChange={e => updateField('reservation_advance_days', parseInt(e.target.value))}
-                    min={1}
-                    max={90}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Duración (minutos)</Label>
-                  <Input
-                    type="number"
-                    value={formData.reservation_slot_duration || 60}
-                    onChange={e => updateField('reservation_slot_duration', parseInt(e.target.value))}
-                    min={30}
-                    max={180}
-                    step={15}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* Delivery Tab */}
         <TabsContent value="delivery">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuración de domicilios</CardTitle>
-              <CardDescription>Configura tu servicio de delivery en línea</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">Domicilios habilitados</p>
-                  <p className="text-sm text-muted-foreground">Permite que los clientes pidan desde tu sitio</p>
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración de domicilios</CardTitle>
+                <CardDescription>Configura tu servicio de delivery en línea</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Domicilios habilitados</p>
+                    <p className="text-sm text-muted-foreground">Permite que los clientes pidan desde tu sitio</p>
+                  </div>
+                  <Switch
+                    checked={!!formData.show_delivery}
+                    onCheckedChange={(checked) => updateField('show_delivery', checked)}
+                  />
                 </div>
-                <Switch
-                  checked={!!formData.show_delivery}
-                  onCheckedChange={(checked) => updateField('show_delivery', checked)}
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label>Pedido mínimo</Label>
-                <Input
-                  type="number"
-                  value={formData.delivery_min_order || 0}
-                  onChange={e => updateField('delivery_min_order', parseFloat(e.target.value))}
-                  min={0}
-                  step={1000}
-                />
-                <p className="text-xs text-muted-foreground">Valor mínimo de pedido para domicilios</p>
-              </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Pedido mínimo general</Label>
+                    <Input
+                      type="number"
+                      value={formData.delivery_min_order || 0}
+                      onChange={e => updateField('delivery_min_order', parseFloat(e.target.value))}
+                      min={0}
+                      step={1000}
+                    />
+                    <p className="text-xs text-muted-foreground">Valor mínimo de pedido para domicilios</p>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Mensaje para clientes</Label>
-                <Textarea
-                  value={formData.delivery_message || ''}
-                  onChange={e => updateField('delivery_message', e.target.value)}
-                  placeholder="Ej: Hacemos envíos a toda la ciudad. Tiempo estimado: 30-45 min"
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <Label>Reservas habilitadas</Label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <Switch
+                        checked={!!formData.show_reservations}
+                        onCheckedChange={(checked) => updateField('show_reservations', checked)}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {formData.show_reservations ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mensaje para clientes</Label>
+                  <Textarea
+                    value={formData.delivery_message || ''}
+                    onChange={e => updateField('delivery_message', e.target.value)}
+                    placeholder="Ej: Hacemos envíos a toda la ciudad. Tiempo estimado: 30-45 min"
+                    rows={3}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Delivery Zones */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Zonas de Entrega
+                    </CardTitle>
+                    <CardDescription>Define las zonas donde haces entregas y sus tarifas</CardDescription>
+                  </div>
+                  <Button onClick={addDeliveryZone} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar zona
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {zonesLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </div>
+                ) : deliveryZones.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                    <MapPin className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground mb-4">No has configurado zonas de entrega</p>
+                    <Button variant="outline" onClick={addDeliveryZone}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crear primera zona
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {deliveryZones.map(zone => (
+                      <div 
+                        key={zone.id} 
+                        className={`p-4 border rounded-lg space-y-4 ${!zone.is_active ? 'opacity-60 bg-muted/30' : ''}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Switch
+                              checked={zone.is_active}
+                              onCheckedChange={(checked) => updateDeliveryZone(zone.id, { is_active: checked })}
+                            />
+                            <Input
+                              value={zone.zone_name}
+                              onChange={e => updateDeliveryZone(zone.id, { zone_name: e.target.value })}
+                              className="font-semibold w-48"
+                              placeholder="Nombre de zona"
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteDeliveryZone(zone.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              Tarifa de envío
+                            </Label>
+                            <Input
+                              type="number"
+                              value={zone.delivery_fee || 0}
+                              onChange={e => updateDeliveryZone(zone.id, { delivery_fee: parseFloat(e.target.value) })}
+                              min={0}
+                              step={500}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              Pedido mínimo
+                            </Label>
+                            <Input
+                              type="number"
+                              value={zone.min_order || 0}
+                              onChange={e => updateDeliveryZone(zone.id, { min_order: parseFloat(e.target.value) })}
+                              min={0}
+                              step={1000}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Tiempo estimado (min)
+                            </Label>
+                            <Input
+                              type="number"
+                              value={zone.estimated_time_minutes || 30}
+                              onChange={e => updateDeliveryZone(zone.id, { estimated_time_minutes: parseInt(e.target.value) })}
+                              min={5}
+                              step={5}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Reservations Quick Config */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Configuración de Reservas
+                </CardTitle>
+                <CardDescription>Define cómo funcionan las reservaciones en línea</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Reservas habilitadas</p>
+                    <p className="text-sm text-muted-foreground">Permite que los clientes hagan reservas desde tu sitio</p>
+                  </div>
+                  <Switch
+                    checked={!!formData.show_reservations}
+                    onCheckedChange={(checked) => updateField('show_reservations', checked)}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label>Máximo de personas</Label>
+                    <Input
+                      type="number"
+                      value={formData.reservation_max_party_size || 10}
+                      onChange={e => updateField('reservation_max_party_size', parseInt(e.target.value))}
+                      min={1}
+                      max={50}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Días de anticipación</Label>
+                    <Input
+                      type="number"
+                      value={formData.reservation_advance_days || 30}
+                      onChange={e => updateField('reservation_advance_days', parseInt(e.target.value))}
+                      min={1}
+                      max={90}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Duración (minutos)</Label>
+                    <Input
+                      type="number"
+                      value={formData.reservation_slot_duration || 60}
+                      onChange={e => updateField('reservation_slot_duration', parseInt(e.target.value))}
+                      min={30}
+                      max={180}
+                      step={15}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
