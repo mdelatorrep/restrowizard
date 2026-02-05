@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { TabsContent } from '@/components/ui/tabs';
+ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
@@ -23,13 +24,14 @@ import { InventoryReports } from '@/components/inventory/InventoryReports';
 import { 
   Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
   RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
-  ClipboardList, ClipboardCheck, Trash2, Scan, Edit,
-  Calendar, ChefHat, Clock, MoveHorizontal, Eye, BarChart3
+   ClipboardList, ClipboardCheck, Trash2, Scan,
+   Calendar, ChefHat, Clock, MoveHorizontal, Eye, BarChart3, Edit
 } from 'lucide-react';
 import { useEnterpriseInventory, InventoryItemExtended, PurchaseOrder } from '@/hooks/useEnterpriseInventory';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+ import { ModulePageLayout, PageHeader, KPIGrid, KPICardData, QuickStats, ResponsiveTabs } from '@/components/layout';
 
 const Inventory: React.FC = () => {
   const { 
@@ -174,45 +176,18 @@ const Inventory: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-headline font-bold text-foreground flex items-center">
-            <Package className="mr-3 h-8 w-8 text-primary" />
-            Gestión de Inventarios
-          </h1>
-          <p className="text-muted-foreground font-lato-light">
-            Control enterprise de stock, proveedores y compras
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setTransferDialogOpen(true)} className="gap-2">
-            <MoveHorizontal className="w-4 h-4" />
-            Transferir
-          </Button>
-          <Button variant="outline" onClick={() => setScannerOpen(true)} className="gap-2">
-            <Scan className="w-4 h-4" />
-            Escanear
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleAIAnalysis}
-            disabled={aiLoading}
-            className="gap-2 border-primary/30 hover:bg-primary/10"
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            {aiLoading ? 'Analizando...' : 'Análisis IA'}
-          </Button>
-          <Button variant="outline" onClick={refetch}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button onClick={() => { setEditingItem(null); setItemFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Ítem
-          </Button>
-        </div>
-      </div>
+     <ModulePageLayout>
+       <PageHeader
+         title="Gestión de Inventarios"
+         description="Control enterprise de stock, proveedores y compras"
+         icon={Package}
+         actions={[
+           { label: 'Transferir', icon: MoveHorizontal, onClick: () => setTransferDialogOpen(true), variant: 'outline' },
+           { label: 'Escanear', icon: Scan, onClick: () => setScannerOpen(true), variant: 'outline' },
+           { label: aiLoading ? 'Analizando...' : 'Análisis IA', icon: Sparkles, onClick: handleAIAnalysis, variant: 'outline', loading: aiLoading },
+           { label: 'Nuevo Ítem', icon: Plus, onClick: () => { setEditingItem(null); setItemFormOpen(true); } }
+         ]}
+       />
 
       {/* Critical Alerts Panel */}
       {kpis && (kpis.expiredItems > 0 || kpis.outOfStockItems > 0 || kpis.expiringItems > 0 || kpis.belowParItems > 0) && (
@@ -229,83 +204,23 @@ const Inventory: React.FC = () => {
       )}
 
       {/* KPIs */}
-      {kpis && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Items</p>
-                  <p className="text-2xl font-bold">{kpis.totalItems}</p>
-                </div>
-                <Package className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Valor Total</p>
-                  <p className="text-2xl font-bold">${kpis.totalValue.toLocaleString()}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-green-600 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className={kpis.belowParItems > 0 ? 'border-yellow-500' : ''}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Bajo Par Level</p>
-                  <p className="text-2xl font-bold text-yellow-600">{kpis.belowParItems}</p>
-                </div>
-                <TrendingDown className="h-8 w-8 text-yellow-600 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className={kpis.expiringItems > 0 ? 'border-orange-500' : ''}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Por Vencer</p>
-                  <p className="text-2xl font-bold text-orange-600">{kpis.expiringItems}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-orange-600 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className={kpis.outOfStockItems > 0 ? 'border-red-500' : ''}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Agotados</p>
-                  <p className="text-2xl font-bold text-red-600">{kpis.outOfStockItems}</p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-600 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+       {kpis && (<KPIGrid
+         columns={5}
+         kpis={[
+           { label: 'Total Items', value: kpis.totalItems, icon: Package, iconColor: 'text-primary' },
+           { label: 'Valor Total', value: `$${kpis.totalValue.toLocaleString()}`, icon: DollarSign, iconColor: 'text-green-600' },
+           { label: 'Bajo Par Level', value: kpis.belowParItems, icon: TrendingDown, iconColor: 'text-yellow-600', highlight: kpis.belowParItems > 0, highlightColor: 'warning' },
+           { label: 'Por Vencer', value: kpis.expiringItems, icon: Calendar, iconColor: 'text-orange-500', highlight: kpis.expiringItems > 0, highlightColor: 'warning' },
+           { label: 'Agotados', value: kpis.outOfStockItems, icon: AlertTriangle, iconColor: 'text-destructive', highlight: kpis.outOfStockItems > 0, highlightColor: 'danger' }
+         ] as KPICardData[]}
+       />)}
 
       {/* Quick stats row */}
-      {kpis && (
-        <div className="flex gap-4 text-sm">
-          <Badge variant="outline" className="gap-1">
-            <ClipboardList className="h-3 w-3" />
-            {kpis.pendingOrders} OC pendientes
-          </Badge>
-          <Badge variant="outline" className="gap-1">
-            <ClipboardCheck className="h-3 w-3" />
-            {kpis.openCounts} conteos abiertos
-          </Badge>
-          <Badge variant="outline" className="gap-1 text-red-600">
-            <Trash2 className="h-3 w-3" />
-            ${kpis.wasteThisMonth.toLocaleString()} merma este mes
-          </Badge>
-        </div>
-      )}
+       {kpis && (<QuickStats items={[
+         { icon: ClipboardList, value: kpis.pendingOrders, label: 'OC pendientes' },
+         { icon: ClipboardCheck, value: kpis.openCounts, label: 'conteos abiertos' },
+         { icon: Trash2, value: `$${kpis.wasteThisMonth.toLocaleString()}`, label: 'merma este mes', variant: 'danger' }
+       ]} />)}
 
       {/* AI Insights Panel */}
       {showAIPanel && (
@@ -603,7 +518,7 @@ const Inventory: React.FC = () => {
         getPriceHistory={getPriceHistory}
         suppliers={suppliers}
       />
-    </div>
+     </ModulePageLayout>
   );
 };
 

@@ -28,7 +28,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
         <main className="flex-1 flex flex-col min-h-screen">
           <AppHeader />
           {effectiveUserType === 'consultant' && <WorkingAsBar />}
-          <div className="flex-1 p-6 overflow-auto">
+           <div className="flex-1 p-4 md:p-6 overflow-auto">
             <Outlet />
           </div>
         </main>
