@@ -185,13 +185,6 @@ const aiAnalysisItems: MenuItem[] = [
     moduleKey: 'finances'
   },
   { 
-    title: 'Ingeniería de Menú', 
-    icon: BarChart3, 
-    path: '/r/menu-engineering',
-    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'menu-engineering'
-  },
-  { 
     title: 'Operaciones IA', 
     icon: ChefHat, 
     path: '/r/operations',

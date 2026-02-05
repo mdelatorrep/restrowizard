@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, Plus, Eye, Settings, FolderTree, ListOrdered, 
   LayoutGrid, Loader2, Search, Filter, CheckCircle, EyeOff,
-  TrendingUp, Package, DollarSign, Sparkles, Utensils, ExternalLink
+  TrendingUp, Package, DollarSign, Sparkles, Utensils, ExternalLink, PieChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ import { useRecipes } from '@/hooks/useRecipes';
 import { MenuItemCard } from './MenuItemCard';
 import { MenuItemDialog } from './MenuItemDialog';
 import { MenuCategoriesManager } from './MenuCategoriesManager';
+import { MenuEngineeringTab } from './MenuEngineeringTab';
 
 interface MenuEditorProps {
   menuId: string;
@@ -281,6 +282,13 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
             <Settings className="w-4 h-4" />
             Modificadores
           </TabsTrigger>
+          <TabsTrigger 
+            value="engineering" 
+            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            <PieChart className="w-4 h-4" />
+            Ingeniería
+          </TabsTrigger>
         </TabsList>
 
         {/* Items Tab */}
@@ -483,6 +491,11 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Engineering Tab */}
+        <TabsContent value="engineering" className="mt-4">
+          <MenuEngineeringTab menuId={menuId} />
         </TabsContent>
       </Tabs>
 
