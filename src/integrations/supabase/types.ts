@@ -5470,6 +5470,69 @@ export type Database = {
           },
         ]
       }
+      restaurant_team_members: {
+        Row: {
+          business_id: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          invitation_sent_at: string | null
+          invitation_token: string | null
+          invited_email: string | null
+          permissions: Json
+          role: Database["public"]["Enums"]["team_member_role"]
+          staff_member_id: string | null
+          status: Database["public"]["Enums"]["team_member_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          invitation_sent_at?: string | null
+          invitation_token?: string | null
+          invited_email?: string | null
+          permissions?: Json
+          role?: Database["public"]["Enums"]["team_member_role"]
+          staff_member_id?: string | null
+          status?: Database["public"]["Enums"]["team_member_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          invitation_sent_at?: string | null
+          invitation_token?: string | null
+          invited_email?: string | null
+          permissions?: Json
+          role?: Database["public"]["Enums"]["team_member_role"]
+          staff_member_id?: string | null
+          status?: Database["public"]["Enums"]["team_member_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_team_members_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_team_members_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_websites: {
         Row: {
           about_description: string | null
@@ -7474,6 +7537,7 @@ export type Database = {
         Args: { p_invitation_token: string }
         Returns: Json
       }
+      claim_team_invitation: { Args: { p_token: string }; Returns: Json }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       generate_redemption_code: { Args: never; Returns: string }
       get_aggregated_daily_sales: {
@@ -7504,9 +7568,31 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_default_permissions_for_role: {
+        Args: { p_role: Database["public"]["Enums"]["team_member_role"] }
+        Returns: Json
+      }
+      get_user_business_id: { Args: { _user_id: string }; Returns: string }
+      has_module_access: {
+        Args: {
+          _business_id: string
+          _level?: string
+          _module: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_team_role: {
+        Args: {
+          _business_id: string
+          _role: Database["public"]["Enums"]["team_member_role"]
           _user_id: string
         }
         Returns: boolean
@@ -7594,6 +7680,14 @@ export type Database = {
         | "entertainment"
         | "flowers"
         | "other"
+      team_member_role:
+        | "owner"
+        | "admin"
+        | "manager"
+        | "cashier"
+        | "kitchen"
+        | "staff"
+      team_member_status: "invited" | "active" | "suspended" | "removed"
       venue_type:
         | "restaurant"
         | "banquet_hall"
@@ -7822,6 +7916,15 @@ export const Constants = {
         "flowers",
         "other",
       ],
+      team_member_role: [
+        "owner",
+        "admin",
+        "manager",
+        "cashier",
+        "kitchen",
+        "staff",
+      ],
+      team_member_status: ["invited", "active", "suspended", "removed"],
       venue_type: [
         "restaurant",
         "banquet_hall",
