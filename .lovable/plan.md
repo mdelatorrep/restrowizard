@@ -1,258 +1,350 @@
 
-# Plan: Mejoras al Modulo de Inventarios - Alineacion con Referentes Globales
 
-## Resumen Ejecutivo
+# Plan: Sistema Multi-Usuario con Roles y Permisos por Restaurante
 
-El modulo actual de inventarios tiene una buena base enterprise con multiples funcionalidades. Sin embargo, tras comparar con los lideres globales (MarketMan, WISK, BlueCart, Lightspeed), he identificado brechas criticas que afectan la funcionalidad end-to-end.
+## Resumen
 
----
-
-## Analisis del Estado Actual
-
-### Funcionalidades Existentes (Lo que ya funciona bien)
-
-| Funcionalidad | Estado | Calidad |
-|--------------|--------|---------|
-| Items de inventario con par levels | Completo | Buena |
-| Ubicaciones de almacenamiento | Completo | Buena |
-| Proveedores con calificacion | Completo | Buena |
-| Ordenes de compra basicas | Completo | Media |
-| Generacion automatica desde par levels | Completo | Buena |
-| Conteos fisicos con varianza | Completo | Buena |
-| Registro de mermas | Completo | Buena |
-| Escaneo de codigo de barras (manual) | Completo | Media |
-| Historial de movimientos | Completo | Buena |
-| Analisis IA de inventario | Completo | Buena |
-| Buscador de proveedores IA | Completo | Buena |
-
-### Brechas Criticas Identificadas
-
-| Gap | Referente | Impacto |
-|-----|-----------|---------|
-| Deduccion automatica POS no visible | MarketMan, Rezku | Alto - los usuarios no ven las deducciones |
-| FIFO sin implementacion UI | WISK, BlueCart | Alto - productos vencen sin control visual |
-| Recepcion de OC sin captura de lotes | MarketMan | Medio - trazabilidad incompleta |
-| Escaner camara no implementado | WISK | Alto - escaner actual solo acepta texto |
-| Dashboard de items criticos faltante | MarketMan | Medio - alertas dispersas |
-| Historial de precios sin graficas | BlueCart | Bajo - datos existen pero no se visualizan |
-| Transferencias entre ubicaciones sin UI | WISK | Medio - funcion existe pero no accesible |
-| Integracion recetas-inventario opaca | MarketMan | Alto - usuarios no entienden el flujo |
+Implementar la capacidad para que un restaurante tenga múltiples usuarios (empleados del equipo) con diferentes roles y accesos específicos a módulos. Esto permitirá que el dueño invite a gerentes, cajeros, personal de cocina, etc., cada uno con permisos personalizados.
 
 ---
 
-## Plan de Mejoras Ordenado por Prioridad
-
-### Fase 1: Funcionalidad Critica (Prioridad Alta)
-
-#### 1.1 Dashboard de Alertas Criticas
-
-Agregar una seccion prominente al inicio del modulo que muestre:
-
-- Items vencidos o por vencer (proximos 7 dias)
-- Items agotados
-- Items bajo par level
-- OC pendientes de recepcion
-- Conteos vencidos (mas de 30 dias sin contar)
-
-**Archivos a modificar:**
-- `src/pages/restaurant/Inventory.tsx` - Agregar componente de alertas antes de los KPIs actuales
-
-**Nuevo componente:**
-- `src/components/inventory/CriticalAlertsPanel.tsx`
-
-#### 1.2 Mejora de Recepcion de Ordenes de Compra
-
-El flujo actual de recepcion es demasiado simple. Los referentes permiten:
-- Captura de lote y vencimiento por item recibido
-- Recepcion parcial con tracking de pendientes
-- Vista detallada de items de la OC
-
-**Archivos a modificar:**
-- `src/components/inventory/PurchaseOrdersManager.tsx` - Agregar dialog de recepcion detallada
-- `src/hooks/useEnterpriseInventory.ts` - Ya tiene `receivePurchaseOrder`, ajustar para UI
-
-**Nuevo componente:**
-- `src/components/inventory/ReceiveOrderDialog.tsx`
-
-#### 1.3 Vista FIFO y Gestion de Vencimientos
-
-Agregar una vista dedicada para:
-- Ver todos los lotes por item ordenados FIFO
-- Alertas visuales de vencimiento inminente
-- Accion rapida para registrar merma por vencimiento
-
-**Nuevo componente:**
-- `src/components/inventory/ExpirationTracker.tsx`
-
-**Modificacion:**
-- Agregar tab "Vencimientos" al modulo principal
-
-#### 1.4 Panel de Integracion Recetas-Inventario
-
-Hacer visible el flujo de deduccion automatica:
-- Mostrar que recetas estan vinculadas a items
-- Vista de "Que pasa cuando vendo X"
-- Log de deducciones recientes
-
-**Nuevo componente:**
-- `src/components/inventory/RecipeIntegrationPanel.tsx`
-
-### Fase 2: Mejoras de Usabilidad (Prioridad Media)
-
-#### 2.1 Escaner con Camara
-
-Implementar escaner real usando la API de MediaDevices:
-- Uso de libreria `@mantine/hooks` o `quagga2` para decodificacion
-- Fallback al input manual actual
-- Soporte para escaneo continuo en conteos
-
-**Archivos a modificar:**
-- `src/components/inventory/BarcodeScanner.tsx` - Agregar modo camara
-
-#### 2.2 Dialog de Transferencias entre Ubicaciones
-
-Exponer la funcion `transferInventory` existente con UI:
-- Seleccion de item, origen y destino
-- Cantidad a transferir
-- Historial de transferencias
-
-**Nuevo componente:**
-- `src/components/inventory/TransferDialog.tsx`
-
-#### 2.3 Grafica de Historial de Precios
-
-Visualizar la tabla `inventory_price_history`:
-- Grafica de linea por proveedor
-- Comparativa de precios entre proveedores
-- Alerta cuando precio sube mas de X%
-
-**Nuevo componente:**
-- `src/components/inventory/PriceHistoryChart.tsx`
-
-#### 2.4 Vista Detallada de Item
-
-Al hacer click en un item, mostrar panel lateral con:
-- Todos los lotes (FIFO)
-- Historial de movimientos
-- Historial de precios
-- Recetas que lo usan
-- Proveedores alternativos
-
-**Nuevo componente:**
-- `src/components/inventory/InventoryItemDetail.tsx`
-
-### Fase 3: Mejoras Avanzadas (Prioridad Baja)
-
-#### 3.1 Conteo por Escaneo
-
-Durante un conteo fisico, permitir:
-- Escanear codigo de barras
-- Ingresar cantidad contada
-- Marcar item automaticamente
-
-**Archivos a modificar:**
-- `src/components/inventory/InventoryCountsManager.tsx`
-
-**Nuevo componente:**
-- `src/components/inventory/CountingSession.tsx`
-
-#### 3.2 Reportes de Inventario
-
-Agregar tab de reportes con:
-- Reporte de valoracion (valor total por categoria/ubicacion)
-- Reporte de rotacion (dias de inventario promedio)
-- Reporte de mermas (tendencias mensuales)
-- Export a PDF/Excel
-
-**Nuevo componente:**
-- `src/components/inventory/InventoryReports.tsx`
-
-#### 3.3 Ordenes de Compra Automaticas
-
-Envio automatico de OC cuando items bajan del reorder point:
-- Configuracion por proveedor
-- Dias de pedido automatico
-- Notificaciones de confirmacion
-
-**Requiere:**
-- Nuevo edge function para automatizacion
-- Tabla de configuracion de auto-orders
-
----
-
-## Cambios Tecnicos Detallados
-
-### Nuevos Componentes (9 total)
+## 1. Arquitectura Propuesta
 
 ```text
-src/components/inventory/
-  CriticalAlertsPanel.tsx      - Panel de alertas criticas
-  ReceiveOrderDialog.tsx       - Recepcion detallada de OC
-  ExpirationTracker.tsx        - Vista FIFO y vencimientos
-  RecipeIntegrationPanel.tsx   - Vinculo recetas-inventario
-  TransferDialog.tsx           - Transferencias entre ubicaciones
-  PriceHistoryChart.tsx        - Grafica de precios historicos
-  InventoryItemDetail.tsx      - Vista detallada de item
-  CountingSession.tsx          - Sesion de conteo con escaneo
-  InventoryReports.tsx         - Reportes y exports
-```
-
-### Modificaciones a Archivos Existentes
-
-| Archivo | Cambios |
-|---------|---------|
-| `src/pages/restaurant/Inventory.tsx` | Agregar tabs de Vencimientos, Recetas, Reportes; Integrar alertas |
-| `src/components/inventory/BarcodeScanner.tsx` | Agregar modo camara con MediaDevices |
-| `src/components/inventory/PurchaseOrdersManager.tsx` | Integrar ReceiveOrderDialog |
-| `src/components/inventory/InventoryCountsManager.tsx` | Agregar modo de conteo por escaneo |
-| `src/hooks/useEnterpriseInventory.ts` | Agregar queries para FIFO, vinculos recetas |
-
-### Dependencias Nuevas Sugeridas
-
-```text
-quagga2 - Decodificacion de codigos de barras via camara
-date-fns - Ya instalado, uso extendido para calculos FIFO
+┌─────────────────────────────────────────────────────────────────────┐
+│                    RESTAURANT_BUSINESSES                           │
+│  id | owner_id | name | ...                                         │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              │ 1:N
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    RESTAURANT_TEAM_MEMBERS                         │
+│  id | business_id | user_id | staff_member_id | role | status      │
+│     | permissions (JSONB) | invitation_token | invited_email       │
+│     | invitation_sent_at | claimed_at                               │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+        ┌─────────────────────┴─────────────────────┐
+        │                                           │
+        ▼                                           ▼
+  STAFF_MEMBERS                              AUTH.USERS
+  (datos laborales)                    (cuenta de acceso)
 ```
 
 ---
 
-## Estructura Final del Modulo
+## 2. Roles del Sistema
+
+| Rol | Descripcion | Permisos por Defecto |
+|-----|-------------|---------------------|
+| **owner** | Propietario del restaurante | Acceso total, gestionar equipo |
+| **admin** | Administrador/Gerente General | Todo excepto eliminar negocio |
+| **manager** | Gerente de turno | Ventas, inventario, turnos, reportes |
+| **cashier** | Cajero | Solo POS, ordenes, cocina |
+| **kitchen** | Personal de cocina | Ordenes, recetas, inventario (lectura) |
+| **staff** | Empleado general | Ver turnos, ver dashboard basico |
+
+---
+
+## 3. Permisos por Modulo
+
+Se definira un sistema de permisos granular con las siguientes claves:
 
 ```text
-Tabs principales:
-1. Inventario (items, busqueda, stock)
-2. Ubicaciones (almacenes, zonas)
-3. Proveedores (directorio, calificaciones)
-4. Compras (OC, recepcion, historial)
-5. Conteos (auditorias, varianzas)
-6. Mermas (registro, analisis)
-7. Vencimientos (FIFO, alertas) [NUEVO]
-8. Recetas (vinculos, deducciones) [NUEVO]
-9. Reportes (valoracion, rotacion) [NUEVO]
+MODULOS DISPONIBLES:
+- dashboard         (Panel principal)
+- finances          (Finanzas)
+- inventory         (Inventario)
+- recipes           (Recetas)
+- menus             (Menus digitales)
+- pos               (Punto de venta)
+- orders            (Pedidos/Cocina)
+- delivery          (Domicilios)
+- reservations      (Reservaciones)
+- talent            (Talento/Turnos)
+- feedback          (Feedback/Reputacion)
+- loyalty           (Fidelizacion)
+- website           (Sitio web)
+- brand             (Marca)
+- settings          (Configuracion)
+- team              (Gestion de equipo) - NUEVO
+
+NIVELES DE ACCESO:
+- "none"   : Sin acceso
+- "read"   : Solo lectura
+- "write"  : Lectura y escritura
+- "admin"  : Control total del modulo
 ```
 
 ---
 
-## Orden de Implementacion Sugerido
+## 4. Cambios en Base de Datos
 
-1. CriticalAlertsPanel - Visibilidad inmediata de problemas
-2. ReceiveOrderDialog - Completar flujo de compras
-3. ExpirationTracker - Control FIFO critico para restaurantes
-4. InventoryItemDetail - Vista 360 de cada item
-5. RecipeIntegrationPanel - Transparencia en deducciones
-6. TransferDialog - Operaciones entre ubicaciones
-7. BarcodeScanner con camara - Eficiencia operativa
-8. PriceHistoryChart - Analisis de costos
-9. CountingSession - Mejora de auditorias
-10. InventoryReports - Reportes ejecutivos
+### 4.1 Nueva Tabla: `restaurant_team_members`
+
+```sql
+CREATE TYPE team_member_role AS ENUM (
+  'owner', 'admin', 'manager', 'cashier', 'kitchen', 'staff'
+);
+
+CREATE TYPE team_member_status AS ENUM (
+  'invited', 'active', 'suspended', 'removed'
+);
+
+CREATE TABLE restaurant_team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES restaurant_businesses(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  staff_member_id UUID REFERENCES staff_members(id) ON DELETE SET NULL,
+  role team_member_role NOT NULL DEFAULT 'staff',
+  permissions JSONB NOT NULL DEFAULT '{}',
+  status team_member_status NOT NULL DEFAULT 'invited',
+  invited_email TEXT,
+  invitation_token UUID DEFAULT gen_random_uuid(),
+  invitation_sent_at TIMESTAMPTZ,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(business_id, user_id),
+  UNIQUE(business_id, invited_email)
+);
+```
+
+### 4.2 Funcion de Verificacion de Acceso
+
+```sql
+CREATE OR REPLACE FUNCTION has_module_access(
+  _user_id UUID, 
+  _business_id UUID, 
+  _module TEXT, 
+  _level TEXT DEFAULT 'read'
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM restaurant_team_members rtm
+    JOIN restaurant_businesses rb ON rb.id = rtm.business_id
+    WHERE rtm.business_id = _business_id
+      AND (rtm.user_id = _user_id OR rb.owner_id = _user_id)
+      AND rtm.status = 'active'
+      AND (
+        rtm.role = 'owner' 
+        OR rtm.role = 'admin'
+        OR (rtm.permissions->>_module)::TEXT IN (_level, 'write', 'admin')
+      )
+  )
+  OR EXISTS (
+    SELECT 1 FROM restaurant_businesses
+    WHERE id = _business_id AND owner_id = _user_id
+  )
+$$;
+```
+
+### 4.3 Funcion para Reclamar Invitacion
+
+```sql
+CREATE OR REPLACE FUNCTION claim_team_invitation(p_token UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_member restaurant_team_members%ROWTYPE;
+  v_user_id UUID;
+BEGIN
+  v_user_id := auth.uid();
+  
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Usuario no autenticado');
+  END IF;
+
+  SELECT * INTO v_member
+  FROM restaurant_team_members
+  WHERE invitation_token = p_token
+    AND user_id IS NULL
+    AND status = 'invited';
+
+  IF v_member.id IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Invitacion invalida o ya reclamada');
+  END IF;
+
+  UPDATE restaurant_team_members
+  SET user_id = v_user_id,
+      claimed_at = NOW(),
+      status = 'active'
+  WHERE id = v_member.id;
+
+  RETURN json_build_object(
+    'success', true,
+    'business_id', v_member.business_id,
+    'role', v_member.role
+  );
+END;
+$$;
+```
+
+### 4.4 Politicas RLS
+
+```sql
+-- Propietarios ven todos los miembros de su negocio
+CREATE POLICY "Owners can manage team"
+  ON restaurant_team_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM restaurant_businesses
+      WHERE id = business_id AND owner_id = auth.uid()
+    )
+  );
+
+-- Miembros activos pueden verse a si mismos
+CREATE POLICY "Members can view own record"
+  ON restaurant_team_members FOR SELECT
+  USING (user_id = auth.uid());
+
+-- Admins pueden gestionar (excepto owner)
+CREATE POLICY "Admins can manage non-owners"
+  ON restaurant_team_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM restaurant_team_members rtm
+      WHERE rtm.business_id = restaurant_team_members.business_id
+        AND rtm.user_id = auth.uid()
+        AND rtm.role IN ('admin', 'manager')
+        AND rtm.status = 'active'
+    )
+    AND role != 'owner'
+  );
+```
 
 ---
 
-## Metricas de Exito
+## 5. Cambios en Frontend
 
-- Reduccion de items vencidos sin detectar
-- Tiempo promedio de conteo fisico
-- Precision de inventario (varianza en conteos)
-- Visibilidad del costo de merma
-- Uso de ordenes de compra automaticas
+### 5.1 Nuevo Hook: `useTeamMembers`
+
+Funcionalidades:
+- Listar miembros del equipo
+- Invitar nuevo miembro (por email)
+- Actualizar rol/permisos
+- Suspender/Reactivar miembro
+- Eliminar miembro
+- Generar link de invitacion
+
+### 5.2 Nuevo Hook: `useTeamPermissions`
+
+Funcionalidades:
+- Verificar acceso a modulo
+- Obtener rol del usuario actual
+- Obtener permisos del usuario actual
+- Funcion helper `canAccess(module, level)`
+
+### 5.3 Nueva Pagina: `/r/settings` - Tab "Equipo"
+
+Agregar nueva pestana en Configuracion:
+- Lista de miembros del equipo
+- Dialogo para invitar nuevo miembro
+- Editor de permisos por modulo
+- Acciones: editar rol, suspender, eliminar
+
+### 5.4 Componente: `TeamMemberInviteDialog`
+
+- Formulario: email, nombre, rol
+- Permisos predefinidos segun rol
+- Opcion de personalizar permisos
+- Generar y copiar link de invitacion
+
+### 5.5 Componente: `TeamPermissionsEditor`
+
+- Grid de modulos con toggles
+- Selector de nivel (ninguno/lectura/escritura/admin)
+- Presets por rol
+
+### 5.6 Guard de Permisos: `RequireModuleAccess`
+
+```tsx
+<RequireModuleAccess module="inventory" level="write">
+  <InventoryPage />
+</RequireModuleAccess>
+```
+
+### 5.7 Modificar `AppSidebar`
+
+- Filtrar modulos segun permisos del usuario
+- Mostrar icono de candado en modulos sin acceso
+- Mostrar badge con rol del usuario
+
+### 5.8 Modificar `useDataUserId`
+
+- Agregar soporte para usuarios de equipo
+- Retornar `businessId` ademas de `userId`
+- Identificar si es owner o team member
+
+---
+
+## 6. Flujo de Invitacion
+
+```text
+1. Owner abre Settings > Equipo
+2. Click "Invitar Miembro"
+3. Ingresa email y selecciona rol
+4. Sistema genera token de invitacion
+5. Owner copia link o envia por email
+6. Invitado abre link
+7. Si no tiene cuenta: se registra
+8. Si tiene cuenta: inicia sesion
+9. Sistema detecta token en URL
+10. Ejecuta claim_team_invitation()
+11. Redirige al dashboard del restaurante
+```
+
+---
+
+## 7. Archivos a Crear/Modificar
+
+### Nuevos Archivos:
+- `src/hooks/useTeamMembers.ts`
+- `src/hooks/useTeamPermissions.ts`
+- `src/components/team/TeamManagementTab.tsx`
+- `src/components/team/TeamMemberInviteDialog.tsx`
+- `src/components/team/TeamPermissionsEditor.tsx`
+- `src/components/guards/RequireModuleAccess.tsx`
+- `supabase/migrations/[timestamp]_add_team_members.sql`
+
+### Archivos a Modificar:
+- `src/pages/restaurant/Settings.tsx` - Agregar tab Equipo
+- `src/components/navigation/AppSidebar.tsx` - Filtrar por permisos
+- `src/hooks/useDataUserId.ts` - Soporte para team members
+- `src/components/auth/AuthProvider.tsx` - Detectar invitacion
+- `src/pages/Auth.tsx` - Procesar token de invitacion
+
+---
+
+## 8. Consideraciones de Seguridad
+
+1. **RLS Estricto**: Todas las tablas de datos del restaurante deben verificar permisos
+2. **Security Definer**: Las funciones de verificacion evitan recursion
+3. **Token de Invitacion**: UUID unico, solo funciona una vez
+4. **Roles Inmutables**: Solo el owner puede cambiar roles de admin
+5. **Audit Trail**: Registrar cambios de permisos (opcional futuro)
+
+---
+
+## 9. Secuencia de Implementacion
+
+1. Crear migracion de base de datos
+2. Implementar `useTeamMembers` hook
+3. Implementar `useTeamPermissions` hook
+4. Crear componentes de UI para gestion de equipo
+5. Integrar en Settings
+6. Modificar sidebar para filtrar por permisos
+7. Actualizar flujo de autenticacion para invitaciones
+8. Agregar guards de permisos en paginas
+9. Testing end-to-end
 
