@@ -1,11 +1,11 @@
 import React from 'react';
-import FinancesAIModule from '@/components/FinancesAIModule';
+import AdvancedFinancesDashboard from '@/components/finances/AdvancedFinancesDashboard';
 import { RequireActiveClient } from '@/components/consultant/RequireActiveClient';
 
 const Finances: React.FC = () => {
   return (
-    <RequireActiveClient moduleName="Finanzas IA">
-      <FinancesAIModule />
+    <RequireActiveClient moduleName="Centro Financiero">
+      <AdvancedFinancesDashboard />
     </RequireActiveClient>
   );
 };
