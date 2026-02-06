@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Shield, Building2, CreditCard } from 'lucide-react';
+import { User, Bell, Shield, Building2, Users } from 'lucide-react';
 import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
+import TeamManagementTab from '@/components/team/TeamManagementTab';
 
 const Settings: React.FC = () => {
   return (
@@ -22,9 +23,13 @@ const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="business">Negocio</TabsTrigger>
+          <TabsTrigger value="team">
+            <Users className="h-4 w-4 mr-1" />
+            Equipo
+          </TabsTrigger>
           <TabsTrigger value="payments">Pasarelas de Pago</TabsTrigger>
           <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
           <TabsTrigger value="security">Seguridad</TabsTrigger>
@@ -96,6 +101,10 @@ const Settings: React.FC = () => {
               <Button>Actualizar negocio</Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamManagementTab />
         </TabsContent>
 
         <TabsContent value="payments">

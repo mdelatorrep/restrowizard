@@ -41,7 +41,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       currentPath,
     });
 
-    // We intentionally avoid any backend calls here.
+    // Check for team invitation token
+    const teamInviteToken = localStorage.getItem('teamInviteToken');
+    if (teamInviteToken) {
+      console.log('🎟️ Found team invite token, claiming...');
+      try {
+        const { data, error } = await supabase.rpc('claim_team_invitation', {
+          p_token: teamInviteToken
+        });
+        
+        const result = data as { success?: boolean; error?: string; business_id?: string } | null;
+        
+        if (error) {
+          console.error('❌ Team invitation claim error:', error);
+        } else if (result?.success) {
+          console.log('✅ Team invitation claimed:', result);
+          localStorage.removeItem('teamInviteToken');
+          // Navigate to restaurant dashboard
+          navigate('/r/dashboard', { replace: true });
+          return;
+        } else {
+          console.warn('⚠️ Team invitation claim failed:', result?.error);
+        }
+      } catch (err) {
+        console.error('💥 Team invitation claim exception:', err);
+      }
+      localStorage.removeItem('teamInviteToken');
+    }
+
+    // We intentionally avoid any other backend calls here.
     // Those calls were causing the app to hang right after login.
     // Instead, we navigate immediately and let route guards/hooks fetch what they need.
 

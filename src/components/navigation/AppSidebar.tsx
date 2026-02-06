@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useAuth } from '@/hooks/useAuth';
 import { useRestaurantLifecycle, getStageInfo, RestaurantStage } from '@/hooks/useRestaurantLifecycle';
 import { useModulePrerequisites } from '@/hooks/useModulePrerequisites';
+import { useTeamPermissions } from '@/hooks/useTeamPermissions';
+import type { ModulePermissions } from '@/hooks/useTeamMembers';
 import {
   LayoutDashboard,
   DollarSign,
@@ -56,10 +58,11 @@ import {
   AlertCircle,
   Lock,
   ChevronDown,
+  Shield,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
- import { Switch } from '@/components/ui/switch';
+import { Switch } from '@/components/ui/switch';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
@@ -71,6 +74,7 @@ interface MenuItem {
   path: string;
   stages?: RestaurantStage[];
   moduleKey?: string; // Key to check prerequisites
+  permissionModule?: keyof ModulePermissions; // Key to check team permissions
 }
 
 // ====== SIDEBAR REORGANIZADO POR GRUPOS LÓGICOS ======
@@ -105,28 +109,32 @@ const myRestaurantItems: MenuItem[] = [
     icon: Palette, 
     path: '/r/brand',
     stages: ['conception', 'enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'brand'
+    moduleKey: 'brand',
+    permissionModule: 'brand'
   },
   { 
     title: 'Recetas y Costos', 
     icon: BookOpen, 
     path: '/r/recipes',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'recipes'
+    moduleKey: 'recipes',
+    permissionModule: 'recipes'
   },
   { 
     title: 'Menús Digitales', 
     icon: Utensils, 
     path: '/r/menus',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'menus'
+    moduleKey: 'menus',
+    permissionModule: 'menus'
   },
   { 
     title: 'Inventario y Proveedores', 
     icon: Package, 
     path: '/r/inventory',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'inventory'
+    moduleKey: 'inventory',
+    permissionModule: 'inventory'
   },
 ];
 
@@ -137,35 +145,40 @@ const salesItems: MenuItem[] = [
     icon: CreditCard, 
     path: '/r/pos',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'pos'
+    moduleKey: 'pos',
+    permissionModule: 'pos'
   },
   { 
     title: 'Pedidos y Cocina', 
     icon: UtensilsCrossed, 
     path: '/r/orders',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'orders'
+    moduleKey: 'orders',
+    permissionModule: 'orders'
   },
   { 
     title: 'Domicilios', 
     icon: Truck, 
     path: '/r/delivery',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'delivery'
+    moduleKey: 'delivery',
+    permissionModule: 'delivery'
   },
   { 
     title: 'Reservaciones', 
     icon: CalendarCheck, 
     path: '/r/reservations',
     stages: ['pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'reservations'
+    moduleKey: 'reservations',
+    permissionModule: 'reservations'
   },
   { 
     title: 'Reportes y Metas', 
     icon: BarChart3, 
     path: '/r/pos-reports',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'pos-reports'
+    moduleKey: 'pos-reports',
+    permissionModule: 'finances'
   },
 ];
 
@@ -176,21 +189,24 @@ const peopleItems: MenuItem[] = [
     icon: Users, 
     path: '/r/talent',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'talent'
+    moduleKey: 'talent',
+    permissionModule: 'talent'
   },
   { 
     title: 'Fidelización', 
     icon: Crown, 
     path: '/r/loyalty',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'loyalty'
+    moduleKey: 'loyalty',
+    permissionModule: 'loyalty'
   },
   { 
     title: 'Feedback y Reputación', 
     icon: MessageSquare, 
     path: '/r/feedback',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'feedback'
+    moduleKey: 'feedback',
+    permissionModule: 'feedback'
   },
   { 
     title: 'Soporte PQRS', 
@@ -208,7 +224,8 @@ const digitalPresenceItems: MenuItem[] = [
     icon: Globe, 
     path: '/r/website',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'website'
+    moduleKey: 'website',
+    permissionModule: 'website'
   },
 ];
 
@@ -219,7 +236,8 @@ const financeItems: MenuItem[] = [
     icon: DollarSign, 
     path: '/r/finances',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'finances'
+    moduleKey: 'finances',
+    permissionModule: 'finances'
   },
   { 
     title: 'Sostenibilidad', 
@@ -285,21 +303,43 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const { state, toggleSidebar } = useSidebar();
   const lifecycle = useRestaurantLifecycle();
   const prerequisites = useModulePrerequisites();
+  const teamPermissions = useTeamPermissions();
   const [expansionOpen, setExpansionOpen] = useState(false);
-   const [showAllModules, setShowAllModules] = useState(false);
+  const [showAllModules, setShowAllModules] = useState(false);
 
   const isCollapsed = state === 'collapsed';
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Filter menu items based on lifecycle stage
-  const filterByStage = (items: MenuItem[]) => {
-     if (showAllModules) return items;
-    return items.filter(item => {
-      if (!item.stages) return true;
-      return item.stages.includes(lifecycle.stage);
-    });
+  // Check if user has permission for a module
+  const hasModulePermission = (item: MenuItem): boolean => {
+    // If no permission module defined, allow access
+    if (!item.permissionModule) return true;
+    // Owners and loading state - allow access
+    if (teamPermissions.isLoading || teamPermissions.isOwner) return true;
+    // Check team permissions
+    return teamPermissions.canAccess(item.permissionModule, 'read');
+  };
+
+  // Filter menu items based on lifecycle stage and permissions
+  const filterByStageAndPermissions = (items: MenuItem[]) => {
+    let filtered = items;
+    
+    // Filter by stage unless showing all
+    if (!showAllModules) {
+      filtered = filtered.filter(item => {
+        if (!item.stages) return true;
+        return item.stages.includes(lifecycle.stage);
+      });
+    }
+    
+    // Filter by team permissions (only for team members, not owners)
+    if (!teamPermissions.isOwner && teamPermissions.isTeamMember) {
+      filtered = filtered.filter(hasModulePermission);
+    }
+    
+    return filtered;
   };
 
   // Get module status for an item
@@ -374,13 +414,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   };
 
   // Filtered items for restaurant owner
-  const filteredMainNav = filterByStage(mainNavigationItems);
-  const filteredMyRestaurant = filterByStage(myRestaurantItems);
-  const filteredSales = filterByStage(salesItems);
-  const filteredPeople = filterByStage(peopleItems);
-  const filteredDigital = filterByStage(digitalPresenceItems);
-  const filteredFinance = filterByStage(financeItems);
-  const filteredExpansion = filterByStage(expansionItems);
+  const filteredMainNav = filterByStageAndPermissions(mainNavigationItems);
+  const filteredMyRestaurant = filterByStageAndPermissions(myRestaurantItems);
+  const filteredSales = filterByStageAndPermissions(salesItems);
+  const filteredPeople = filterByStageAndPermissions(peopleItems);
+  const filteredDigital = filterByStageAndPermissions(digitalPresenceItems);
+  const filteredFinance = filterByStageAndPermissions(financeItems);
+  const filteredExpansion = filterByStageAndPermissions(expansionItems);
 
   const stageInfo = getStageInfo(lifecycle.stage);
 
