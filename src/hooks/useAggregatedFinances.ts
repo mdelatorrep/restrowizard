@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 export interface AggregatedDailySales {
   date: string;
@@ -65,56 +65,94 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     setLoading(true);
 
     try {
-      const days = eachDayOfInterval({ start: range.start, end: range.end });
+      const startStr = format(range.start, 'yyyy-MM-dd');
+      const endStr = format(range.end, 'yyyy-MM-dd');
+
+      // Fetch orders for the date range in a SINGLE query
+      const { data: orders, error: ordersError } = await supabase
+        .from('restaurant_orders')
+        .select('id, total, guests_count, status, created_at, items')
+        .eq('user_id', userId)
+        .gte('created_at', `${startStr}T00:00:00`)
+        .lte('created_at', `${endStr}T23:59:59`)
+        .not('status', 'in', '("cancelled","pending")');
+
+      if (ordersError) throw ordersError;
+
+      // Fetch daily_sales for cost data in a SINGLE query
+      const { data: dailySalesData, error: salesError } = await supabase
+        .from('daily_sales')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('sale_date', startStr)
+        .lte('sale_date', endStr)
+        .order('sale_date', { ascending: true });
+
+      if (salesError) throw salesError;
+
+      // Group orders by date
+      const ordersByDate: Record<string, { revenue: number; count: number; covers: number }> = {};
+      
+      (orders || []).forEach(order => {
+        const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
+        if (!ordersByDate[dateKey]) {
+          ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0 };
+        }
+        ordersByDate[dateKey].revenue += Number(order.total) || 0;
+        ordersByDate[dateKey].count += 1;
+        ordersByDate[dateKey].covers += order.guests_count || 0;
+      });
+
+      // Create daily sales map from daily_sales table
+      const costsByDate: Record<string, { foodCost: number; laborCost: number }> = {};
+      (dailySalesData || []).forEach(sale => {
+        costsByDate[sale.sale_date] = {
+          foodCost: Number(sale.food_cost) || 0,
+          laborCost: Number(sale.labor_cost) || 0
+        };
+      });
+
+      // Merge data into aggregated format
+      const allDates = new Set([...Object.keys(ordersByDate), ...Object.keys(costsByDate)]);
       const salesData: AggregatedDailySales[] = [];
 
-      // Fetch aggregated data for each day using the database function
-      for (const day of days) {
-        const dateStr = format(day, 'yyyy-MM-dd');
+      allDates.forEach(dateStr => {
+        const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0 };
+        const costData = costsByDate[dateStr] || { foodCost: 0, laborCost: 0 };
         
-        const { data, error } = await supabase.rpc('get_aggregated_daily_sales', {
-          p_user_id: userId,
-          p_date: dateStr
-        });
+        const revenue = orderData.revenue;
+        const foodCost = costData.foodCost;
+        const laborCost = costData.laborCost;
 
-        if (error) {
-          console.error(`Error fetching data for ${dateStr}:`, error);
-          continue;
-        }
-
-        if (data && data.length > 0) {
-          const row = data[0];
-          const revenue = Number(row.total_revenue) || 0;
-          const foodCost = Number(row.food_cost) || 0;
-          const laborCost = Number(row.labor_cost) || 0;
-
+        if (revenue > 0 || orderData.count > 0) {
           salesData.push({
             date: dateStr,
             total_revenue: revenue,
-            order_count: Number(row.order_count) || 0,
-            covers_count: Number(row.covers_count) || 0,
+            order_count: orderData.count,
+            covers_count: orderData.covers,
             food_cost: foodCost,
             labor_cost: laborCost,
-            avg_ticket: Number(row.avg_ticket) || 0,
+            avg_ticket: orderData.count > 0 ? revenue / orderData.count : 0,
             gross_margin: revenue > 0 ? ((revenue - foodCost) / revenue) * 100 : 0,
             food_cost_percentage: revenue > 0 ? (foodCost / revenue) * 100 : 0,
             labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0
           });
         }
-      }
+      });
 
-      // Filter out days with no activity
-      const activeDays = salesData.filter(d => d.total_revenue > 0 || d.order_count > 0);
-      setDailySales(activeDays);
-      setHasData(activeDays.length > 0);
+      // Sort by date
+      salesData.sort((a, b) => a.date.localeCompare(b.date));
+
+      setDailySales(salesData);
+      setHasData(salesData.length > 0);
 
       // Calculate KPIs
-      if (activeDays.length > 0) {
-        const totalRevenue = activeDays.reduce((sum, d) => sum + d.total_revenue, 0);
-        const totalFoodCost = activeDays.reduce((sum, d) => sum + d.food_cost, 0);
-        const totalLaborCost = activeDays.reduce((sum, d) => sum + d.labor_cost, 0);
-        const totalOrders = activeDays.reduce((sum, d) => sum + d.order_count, 0);
-        const totalCovers = activeDays.reduce((sum, d) => sum + d.covers_count, 0);
+      if (salesData.length > 0) {
+        const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
+        const totalFoodCost = salesData.reduce((sum, d) => sum + d.food_cost, 0);
+        const totalLaborCost = salesData.reduce((sum, d) => sum + d.labor_cost, 0);
+        const totalOrders = salesData.reduce((sum, d) => sum + d.order_count, 0);
+        const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
 
         setKpis({
           totalRevenue,
@@ -128,11 +166,11 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           laborCostPercentage: totalRevenue > 0 ? (totalLaborCost / totalRevenue) * 100 : 0,
           netProfit: totalRevenue - totalFoodCost - totalLaborCost,
           revenuePerCover: totalCovers > 0 ? totalRevenue / totalCovers : 0,
-          ordersPerDay: activeDays.length > 0 ? totalOrders / activeDays.length : 0
+          ordersPerDay: salesData.length > 0 ? totalOrders / salesData.length : 0
         });
 
         // Build trends
-        setTrends(activeDays.map(d => ({
+        setTrends(salesData.map(d => ({
           date: d.date,
           revenue: d.total_revenue,
           food_cost: d.food_cost,
@@ -155,7 +193,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     }
   }, [userId, range.start, range.end, toast]);
 
-  // Also fetch from orders directly for real-time data
+  // Fetch realtime today data
   const fetchRealtimeToday = useCallback(async () => {
     if (!userId) return null;
 
