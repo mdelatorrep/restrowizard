@@ -207,6 +207,57 @@ export type Database = {
         }
         Relationships: []
       }
+      benefit_requests: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          id: string
+          message: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          staff_member_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          staff_member_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          staff_member_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_requests_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "staff_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefit_requests_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_assets: {
         Row: {
           ai_generated: boolean | null
@@ -6578,6 +6629,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           is_active: boolean | null
+          linked_user_id: string | null
           max_hours_per_week: number | null
           name: string
           performance_score: number | null
@@ -6601,6 +6653,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_active?: boolean | null
+          linked_user_id?: string | null
           max_hours_per_week?: number | null
           name: string
           performance_score?: number | null
@@ -6624,6 +6677,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_active?: boolean | null
+          linked_user_id?: string | null
           max_hours_per_week?: number | null
           name?: string
           performance_score?: number | null

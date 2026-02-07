@@ -56,6 +56,7 @@ import RestaurantStaffSchedule from "./pages/restaurant/StaffSchedule";
 import RestaurantInventory from "./pages/restaurant/Inventory";
 import RestaurantDelivery from "./pages/restaurant/Delivery";
 import RestaurantSuppliers from "./pages/restaurant/Suppliers";
+import RestaurantMyDevelopment from "./pages/restaurant/MyDevelopment";
 import PublicRestaurant from "./pages/PublicRestaurant";
  import { Navigate } from "react-router-dom";
  
@@ -177,6 +178,7 @@ const App = () => (
                 {/* Redirect suppliers to inventory */}
                 <Route path="suppliers" element={<Navigate to="/r/inventory?tab=suppliers" replace />} />
                 <Route path="settings" element={<RestaurantSettings />} />
+                <Route path="my-development" element={<RestaurantMyDevelopment />} />
               </Route>
 
               {/* Consultant onboarding (requires NOT having completed onboarding) */}

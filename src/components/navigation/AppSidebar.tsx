@@ -59,6 +59,7 @@ import {
   Lock,
   ChevronDown,
   Shield,
+  GraduationCap,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -191,6 +192,12 @@ const peopleItems: MenuItem[] = [
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'talent',
     permissionModule: 'talent'
+  },
+  { 
+    title: 'Mi Desarrollo', 
+    icon: GraduationCap, 
+    path: '/r/my-development',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
   },
   { 
     title: 'Fidelización', 
