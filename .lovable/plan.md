@@ -1,350 +1,279 @@
 
-
-# Plan: Sistema Multi-Usuario con Roles y Permisos por Restaurante
+# Plan: Modulo de Beneficios y Formacion para Empleados
 
 ## Resumen
 
-Implementar la capacidad para que un restaurante tenga múltiples usuarios (empleados del equipo) con diferentes roles y accesos específicos a módulos. Esto permitirá que el dueño invite a gerentes, cajeros, personal de cocina, etc., cada uno con permisos personalizados.
+Crear un modulo profesional de Beneficios y Formacion integrado en la pestana existente de Talento (`/r/talent`), inspirado en las mejores practicas de plataformas globales como **7shifts** (programas de formacion estructurados), **Typsy** (micro-aprendizaje en hospitalidad), **Jolt** (cumplimiento y compliance), **Wisetail** (gamificacion y leaderboards), y **Deputy** (gestion de beneficios de empleados).
 
 ---
 
-## 1. Arquitectura Propuesta
+## Que hacen los referentes globales
+
+### Formacion (Training)
+- **7shifts**: Programas de onboarding estructurados por posicion con checklists, seguimiento de progreso y notificaciones automaticas
+- **Typsy**: Micro-lecciones de 5-10 minutos con video, quizzes y certificados digitales; catalogo de +1,500 cursos de hospitalidad
+- **Wisetail**: Gamificacion con puntos, badges y leaderboards; rutas de aprendizaje personalizadas por rol
+- **Jolt**: Cumplimiento normativo automatizado (seguridad alimentaria, manejo de alcohol, primeros auxilios); alertas de vencimiento
+
+### Beneficios (Benefits)
+- **7shifts**: Descuento en comidas (meal perks), acceso a salario anticipado (earned wage access)
+- **Deputy**: Seguimiento de beneficios por empleado (salud, vacaciones, descuentos)
+- **Toast**: Descuentos en comida del restaurante, bonos por rendimiento, programas de referidos
+
+---
+
+## Arquitectura del Modulo
+
+Se agregaran **2 nuevas pestanas** al modulo de Talento existente (`/r/talent`):
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                    RESTAURANT_BUSINESSES                           │
-│  id | owner_id | name | ...                                         │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              │ 1:N
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    RESTAURANT_TEAM_MEMBERS                         │
-│  id | business_id | user_id | staff_member_id | role | status      │
-│     | permissions (JSONB) | invitation_token | invited_email       │
-│     | invitation_sent_at | claimed_at                               │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-        ┌─────────────────────┴─────────────────────┐
-        │                                           │
-        ▼                                           ▼
-  STAFF_MEMBERS                              AUTH.USERS
-  (datos laborales)                    (cuenta de acceso)
+Talento y Turnos
+┌──────────┬────────┬──────────────┬───────────┬────────────┬────────────┬──────────────┐
+│  Equipo  │ Turnos │Disponibilidad│ Ausencias │ Plantillas │ Formacion  │ Beneficios   │
+└──────────┴────────┴──────────────┴───────────┴────────────┴────────────┴──────────────┘
 ```
 
 ---
 
-## 2. Roles del Sistema
+## 1. Nuevas Tablas de Base de Datos
 
-| Rol | Descripcion | Permisos por Defecto |
-|-----|-------------|---------------------|
-| **owner** | Propietario del restaurante | Acceso total, gestionar equipo |
-| **admin** | Administrador/Gerente General | Todo excepto eliminar negocio |
-| **manager** | Gerente de turno | Ventas, inventario, turnos, reportes |
-| **cashier** | Cajero | Solo POS, ordenes, cocina |
-| **kitchen** | Personal de cocina | Ordenes, recetas, inventario (lectura) |
-| **staff** | Empleado general | Ver turnos, ver dashboard basico |
+### 1.1 `training_programs` - Programas de Formacion
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | ID del programa |
+| user_id | UUID | Dueno del restaurante |
+| title | TEXT | Nombre del programa |
+| description | TEXT | Descripcion |
+| category | TEXT | onboarding / food_safety / service / leadership / compliance / custom |
+| position | TEXT | Posicion objetivo (chef, mesero, etc.) o NULL para todos |
+| estimated_hours | NUMERIC | Duracion estimada |
+| is_mandatory | BOOLEAN | Si es obligatorio |
+| is_active | BOOLEAN | Si esta activo |
+| content | JSONB | Contenido estructurado (modulos/lecciones) |
+| passing_score | INT | Puntaje minimo para aprobar (0-100) |
+| created_at | TIMESTAMPTZ | Fecha creacion |
+
+### 1.2 `staff_training_progress` - Progreso Individual
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | ID del registro |
+| user_id | UUID | Dueno del restaurante |
+| staff_member_id | UUID FK | Empleado |
+| training_program_id | UUID FK | Programa |
+| status | TEXT | not_started / in_progress / completed / expired |
+| progress_percent | INT | Porcentaje completado (0-100) |
+| score | INT | Puntaje obtenido |
+| started_at | TIMESTAMPTZ | Inicio |
+| completed_at | TIMESTAMPTZ | Finalizacion |
+| due_date | DATE | Fecha limite |
+| modules_completed | JSONB | Detalle de modulos completados |
+| notes | TEXT | Notas del supervisor |
+
+### 1.3 `staff_benefits` - Beneficios de Empleados
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | ID |
+| user_id | UUID | Dueno del restaurante |
+| benefit_name | TEXT | Nombre del beneficio |
+| benefit_type | TEXT | meal_discount / health / bonus / referral / transport / education / wellness / other |
+| description | TEXT | Descripcion |
+| value | NUMERIC | Valor monetario (si aplica) |
+| value_type | TEXT | percentage / fixed / unlimited |
+| eligibility_months | INT | Meses minimos de antiguedad |
+| is_active | BOOLEAN | Si esta activo |
+| applicable_positions | TEXT[] | Posiciones elegibles (NULL = todas) |
+
+### 1.4 `staff_benefit_assignments` - Asignacion de Beneficios
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | ID |
+| user_id | UUID | Dueno del restaurante |
+| staff_member_id | UUID FK | Empleado |
+| benefit_id | UUID FK | Beneficio |
+| status | TEXT | active / paused / expired / revoked |
+| start_date | DATE | Desde |
+| end_date | DATE | Hasta (NULL = indefinido) |
+| usage_count | INT | Veces usado (para tracking) |
+| notes | TEXT | Notas |
+
+### 1.5 Politicas RLS
+
+- Todas las tablas: lectura/escritura solo para `user_id = auth.uid()`
+- Consistente con el patron existente en `staff_members`, `staff_certifications`, etc.
 
 ---
 
-## 3. Permisos por Modulo
+## 2. Nuevos Componentes Frontend
 
-Se definira un sistema de permisos granular con las siguientes claves:
+### 2.1 `TrainingProgramsManager.tsx`
+Componente principal de la pestana "Formacion":
+- **KPIs superiores**: Tasa de completacion general, programas activos, empleados certificados, horas de formacion este mes
+- **Lista de programas**: Cards con titulo, categoria, progreso agregado, cantidad de asignados
+- **Vista de progreso por empleado**: Tabla con nombre, programa, porcentaje, estado, fecha limite
+- **Alertas**: Programas vencidos, empleados sin formacion obligatoria
 
-```text
-MODULOS DISPONIBLES:
-- dashboard         (Panel principal)
-- finances          (Finanzas)
-- inventory         (Inventario)
-- recipes           (Recetas)
-- menus             (Menus digitales)
-- pos               (Punto de venta)
-- orders            (Pedidos/Cocina)
-- delivery          (Domicilios)
-- reservations      (Reservaciones)
-- talent            (Talento/Turnos)
-- feedback          (Feedback/Reputacion)
-- loyalty           (Fidelizacion)
-- website           (Sitio web)
-- brand             (Marca)
-- settings          (Configuracion)
-- team              (Gestion de equipo) - NUEVO
+### 2.2 `CreateTrainingDialog.tsx`
+Dialogo para crear/editar programas:
+- Titulo, descripcion, categoria (con iconos)
+- Selector de posicion objetivo
+- Constructor de modulos/lecciones (drag & drop)
+- Configuracion: obligatorio, puntaje minimo, duracion estimada
+- Boton "Generar con IA" que usa Lovable AI para crear contenido basado en la categoria y posicion
 
-NIVELES DE ACCESO:
-- "none"   : Sin acceso
-- "read"   : Solo lectura
-- "write"  : Lectura y escritura
-- "admin"  : Control total del modulo
+### 2.3 `TrainingProgressCard.tsx`
+Tarjeta individual de progreso:
+- Avatar + nombre del empleado
+- Barra de progreso circular
+- Estado con badge de color
+- Fecha limite con countdown
+- Boton de marcar modulo como completado
+
+### 2.4 `BenefitsManager.tsx`
+Componente principal de la pestana "Beneficios":
+- **KPIs**: Total beneficios activos, empleados cubiertos, costo mensual estimado, satisfaccion
+- **Catalogo de beneficios**: Cards con tipo, valor, elegibilidad
+- **Asignaciones**: Vista por empleado de sus beneficios activos
+- **Recomendaciones IA**: Sugerencias basadas en antiguedad y rendimiento
+
+### 2.5 `CreateBenefitDialog.tsx`
+Dialogo para crear beneficios:
+- Nombre, tipo (con iconos por categoria), descripcion
+- Valor y tipo de valor
+- Elegibilidad por antiguedad y posicion
+- Templates predefinidos (descuento comida 50%, bono rendimiento, etc.)
+
+### 2.6 `BenefitAssignmentPanel.tsx`
+Panel para asignar beneficios:
+- Lista de empleados elegibles (filtrada automaticamente por antiguedad y posicion)
+- Checkbox multiple para asignacion masiva
+- Estado de cada asignacion
+
+---
+
+## 3. Hook: `useStaffDevelopment.ts`
+
+Hook centralizado para formacion y beneficios:
+- `trainingPrograms`: Lista de programas
+- `trainingProgress`: Progreso de todos los empleados
+- `benefits`: Catalogo de beneficios
+- `benefitAssignments`: Asignaciones activas
+- CRUD para programas, progreso, beneficios y asignaciones
+- KPIs calculados: tasa de completacion, costo de beneficios, compliance rate
+- `generateTrainingContent(category, position)`: Genera contenido con IA
+
+---
+
+## 4. Integracion con IA (Lovable AI)
+
+### 4.1 Generacion de Programas de Formacion
+Usar la edge function `ai-restaurant-agent` existente con un nuevo tipo de consulta para:
+- Generar programas completos de onboarding por posicion
+- Crear cuestionarios de seguridad alimentaria
+- Sugerir rutas de aprendizaje personalizadas basadas en el rendimiento del empleado
+
+### 4.2 Recomendaciones de Beneficios
+- Analizar metricas del equipo (rotacion, antiguedad, rendimiento)
+- Sugerir beneficios competitivos segun tendencias de la industria
+- Estimar impacto en retencion
+
+---
+
+## 5. Cambios en Archivos Existentes
+
+### 5.1 `src/pages/restaurant/Talent.tsx`
+- Agregar 2 nuevas pestanas: "Formacion" (GraduationCap) y "Beneficios" (Gift)
+- Importar `TrainingProgramsManager` y `BenefitsManager`
+
+### 5.2 `src/components/navigation/AppSidebar.tsx`
+- No requiere cambios (ya tiene la entrada de "Talento y Turnos")
+
+### 5.3 `src/hooks/useModulePrerequisites.ts`
+- No requiere cambios (el modulo talent ya esta registrado)
+
+---
+
+## 6. Templates Predefinidos
+
+### Programas de Formacion Preconfigurados
+1. **Onboarding General** - 4 modulos: cultura, politicas, seguridad, servicio al cliente
+2. **Seguridad Alimentaria** - HACCP, manipulacion, temperaturas, alergenos
+3. **Servicio al Cliente** - Atencion, manejo de quejas, upselling, protocolo
+4. **Barista/Bartender** - Tecnicas de preparacion, presentacion, maridaje
+5. **Liderazgo** - Gestion de equipo, resolucion de conflictos, KPIs
+
+### Beneficios Predefinidos
+1. **Descuento Comida** - 50% en turno, 25% fuera de turno
+2. **Bono por Rendimiento** - Mensual segun score > 85%
+3. **Programa de Referidos** - Bono por referir candidato contratado
+4. **Dia de Cumpleanos** - Dia libre adicional
+5. **Desarrollo Profesional** - Presupuesto para cursos externos
+
+---
+
+## 7. Secuencia de Implementacion
+
+1. Crear migracion de base de datos (4 tablas + RLS)
+2. Crear hook `useStaffDevelopment.ts`
+3. Crear componentes de Formacion (`TrainingProgramsManager`, `CreateTrainingDialog`, `TrainingProgressCard`)
+4. Crear componentes de Beneficios (`BenefitsManager`, `CreateBenefitDialog`, `BenefitAssignmentPanel`)
+5. Integrar nuevas pestanas en `Talent.tsx`
+6. Agregar generacion de contenido con IA
+
+---
+
+## Seccion Tecnica
+
+### Estructura de `content` JSONB en `training_programs`
+```json
+{
+  "modules": [
+    {
+      "id": "mod-1",
+      "title": "Introduccion",
+      "description": "Conoce nuestra cultura",
+      "lessons": [
+        {
+          "id": "les-1",
+          "title": "Historia del restaurante",
+          "type": "text",
+          "content": "...",
+          "duration_minutes": 10
+        },
+        {
+          "id": "les-2",
+          "title": "Quiz de cultura",
+          "type": "quiz",
+          "questions": [...],
+          "duration_minutes": 5
+        }
+      ]
+    }
+  ]
+}
 ```
 
----
-
-## 4. Cambios en Base de Datos
-
-### 4.1 Nueva Tabla: `restaurant_team_members`
-
+### Patron de RLS (consistente con tablas existentes)
 ```sql
-CREATE TYPE team_member_role AS ENUM (
-  'owner', 'admin', 'manager', 'cashier', 'kitchen', 'staff'
-);
-
-CREATE TYPE team_member_status AS ENUM (
-  'invited', 'active', 'suspended', 'removed'
-);
-
-CREATE TABLE restaurant_team_members (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  business_id UUID REFERENCES restaurant_businesses(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  staff_member_id UUID REFERENCES staff_members(id) ON DELETE SET NULL,
-  role team_member_role NOT NULL DEFAULT 'staff',
-  permissions JSONB NOT NULL DEFAULT '{}',
-  status team_member_status NOT NULL DEFAULT 'invited',
-  invited_email TEXT,
-  invitation_token UUID DEFAULT gen_random_uuid(),
-  invitation_sent_at TIMESTAMPTZ,
-  claimed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(business_id, user_id),
-  UNIQUE(business_id, invited_email)
-);
+ALTER TABLE training_programs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own training programs"
+  ON training_programs FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 ```
 
-### 4.2 Funcion de Verificacion de Acceso
+### Archivos Nuevos
+- `supabase/migrations/[timestamp]_add_training_and_benefits.sql`
+- `src/hooks/useStaffDevelopment.ts`
+- `src/components/talent/TrainingProgramsManager.tsx`
+- `src/components/talent/CreateTrainingDialog.tsx`
+- `src/components/talent/TrainingProgressCard.tsx`
+- `src/components/talent/BenefitsManager.tsx`
+- `src/components/talent/CreateBenefitDialog.tsx`
+- `src/components/talent/BenefitAssignmentPanel.tsx`
 
-```sql
-CREATE OR REPLACE FUNCTION has_module_access(
-  _user_id UUID, 
-  _business_id UUID, 
-  _module TEXT, 
-  _level TEXT DEFAULT 'read'
-)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM restaurant_team_members rtm
-    JOIN restaurant_businesses rb ON rb.id = rtm.business_id
-    WHERE rtm.business_id = _business_id
-      AND (rtm.user_id = _user_id OR rb.owner_id = _user_id)
-      AND rtm.status = 'active'
-      AND (
-        rtm.role = 'owner' 
-        OR rtm.role = 'admin'
-        OR (rtm.permissions->>_module)::TEXT IN (_level, 'write', 'admin')
-      )
-  )
-  OR EXISTS (
-    SELECT 1 FROM restaurant_businesses
-    WHERE id = _business_id AND owner_id = _user_id
-  )
-$$;
-```
-
-### 4.3 Funcion para Reclamar Invitacion
-
-```sql
-CREATE OR REPLACE FUNCTION claim_team_invitation(p_token UUID)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_member restaurant_team_members%ROWTYPE;
-  v_user_id UUID;
-BEGIN
-  v_user_id := auth.uid();
-  
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'Usuario no autenticado');
-  END IF;
-
-  SELECT * INTO v_member
-  FROM restaurant_team_members
-  WHERE invitation_token = p_token
-    AND user_id IS NULL
-    AND status = 'invited';
-
-  IF v_member.id IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'Invitacion invalida o ya reclamada');
-  END IF;
-
-  UPDATE restaurant_team_members
-  SET user_id = v_user_id,
-      claimed_at = NOW(),
-      status = 'active'
-  WHERE id = v_member.id;
-
-  RETURN json_build_object(
-    'success', true,
-    'business_id', v_member.business_id,
-    'role', v_member.role
-  );
-END;
-$$;
-```
-
-### 4.4 Politicas RLS
-
-```sql
--- Propietarios ven todos los miembros de su negocio
-CREATE POLICY "Owners can manage team"
-  ON restaurant_team_members FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM restaurant_businesses
-      WHERE id = business_id AND owner_id = auth.uid()
-    )
-  );
-
--- Miembros activos pueden verse a si mismos
-CREATE POLICY "Members can view own record"
-  ON restaurant_team_members FOR SELECT
-  USING (user_id = auth.uid());
-
--- Admins pueden gestionar (excepto owner)
-CREATE POLICY "Admins can manage non-owners"
-  ON restaurant_team_members FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM restaurant_team_members rtm
-      WHERE rtm.business_id = restaurant_team_members.business_id
-        AND rtm.user_id = auth.uid()
-        AND rtm.role IN ('admin', 'manager')
-        AND rtm.status = 'active'
-    )
-    AND role != 'owner'
-  );
-```
-
----
-
-## 5. Cambios en Frontend
-
-### 5.1 Nuevo Hook: `useTeamMembers`
-
-Funcionalidades:
-- Listar miembros del equipo
-- Invitar nuevo miembro (por email)
-- Actualizar rol/permisos
-- Suspender/Reactivar miembro
-- Eliminar miembro
-- Generar link de invitacion
-
-### 5.2 Nuevo Hook: `useTeamPermissions`
-
-Funcionalidades:
-- Verificar acceso a modulo
-- Obtener rol del usuario actual
-- Obtener permisos del usuario actual
-- Funcion helper `canAccess(module, level)`
-
-### 5.3 Nueva Pagina: `/r/settings` - Tab "Equipo"
-
-Agregar nueva pestana en Configuracion:
-- Lista de miembros del equipo
-- Dialogo para invitar nuevo miembro
-- Editor de permisos por modulo
-- Acciones: editar rol, suspender, eliminar
-
-### 5.4 Componente: `TeamMemberInviteDialog`
-
-- Formulario: email, nombre, rol
-- Permisos predefinidos segun rol
-- Opcion de personalizar permisos
-- Generar y copiar link de invitacion
-
-### 5.5 Componente: `TeamPermissionsEditor`
-
-- Grid de modulos con toggles
-- Selector de nivel (ninguno/lectura/escritura/admin)
-- Presets por rol
-
-### 5.6 Guard de Permisos: `RequireModuleAccess`
-
-```tsx
-<RequireModuleAccess module="inventory" level="write">
-  <InventoryPage />
-</RequireModuleAccess>
-```
-
-### 5.7 Modificar `AppSidebar`
-
-- Filtrar modulos segun permisos del usuario
-- Mostrar icono de candado en modulos sin acceso
-- Mostrar badge con rol del usuario
-
-### 5.8 Modificar `useDataUserId`
-
-- Agregar soporte para usuarios de equipo
-- Retornar `businessId` ademas de `userId`
-- Identificar si es owner o team member
-
----
-
-## 6. Flujo de Invitacion
-
-```text
-1. Owner abre Settings > Equipo
-2. Click "Invitar Miembro"
-3. Ingresa email y selecciona rol
-4. Sistema genera token de invitacion
-5. Owner copia link o envia por email
-6. Invitado abre link
-7. Si no tiene cuenta: se registra
-8. Si tiene cuenta: inicia sesion
-9. Sistema detecta token en URL
-10. Ejecuta claim_team_invitation()
-11. Redirige al dashboard del restaurante
-```
-
----
-
-## 7. Archivos a Crear/Modificar
-
-### Nuevos Archivos:
-- `src/hooks/useTeamMembers.ts`
-- `src/hooks/useTeamPermissions.ts`
-- `src/components/team/TeamManagementTab.tsx`
-- `src/components/team/TeamMemberInviteDialog.tsx`
-- `src/components/team/TeamPermissionsEditor.tsx`
-- `src/components/guards/RequireModuleAccess.tsx`
-- `supabase/migrations/[timestamp]_add_team_members.sql`
-
-### Archivos a Modificar:
-- `src/pages/restaurant/Settings.tsx` - Agregar tab Equipo
-- `src/components/navigation/AppSidebar.tsx` - Filtrar por permisos
-- `src/hooks/useDataUserId.ts` - Soporte para team members
-- `src/components/auth/AuthProvider.tsx` - Detectar invitacion
-- `src/pages/Auth.tsx` - Procesar token de invitacion
-
----
-
-## 8. Consideraciones de Seguridad
-
-1. **RLS Estricto**: Todas las tablas de datos del restaurante deben verificar permisos
-2. **Security Definer**: Las funciones de verificacion evitan recursion
-3. **Token de Invitacion**: UUID unico, solo funciona una vez
-4. **Roles Inmutables**: Solo el owner puede cambiar roles de admin
-5. **Audit Trail**: Registrar cambios de permisos (opcional futuro)
-
----
-
-## 9. Secuencia de Implementacion
-
-1. Crear migracion de base de datos
-2. Implementar `useTeamMembers` hook
-3. Implementar `useTeamPermissions` hook
-4. Crear componentes de UI para gestion de equipo
-5. Integrar en Settings
-6. Modificar sidebar para filtrar por permisos
-7. Actualizar flujo de autenticacion para invitaciones
-8. Agregar guards de permisos en paginas
-9. Testing end-to-end
-
+### Archivos Modificados
+- `src/pages/restaurant/Talent.tsx` (agregar 2 tabs)
