@@ -6410,6 +6410,105 @@ export type Database = {
           },
         ]
       }
+      staff_benefit_assignments: {
+        Row: {
+          benefit_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          staff_member_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          benefit_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          staff_member_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          benefit_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          staff_member_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_benefit_assignments_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "staff_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_benefit_assignments_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_benefits: {
+        Row: {
+          applicable_positions: string[] | null
+          benefit_name: string
+          benefit_type: string
+          created_at: string
+          description: string | null
+          eligibility_months: number | null
+          id: string
+          is_active: boolean
+          user_id: string
+          value: number | null
+          value_type: string
+        }
+        Insert: {
+          applicable_positions?: string[] | null
+          benefit_name: string
+          benefit_type?: string
+          created_at?: string
+          description?: string | null
+          eligibility_months?: number | null
+          id?: string
+          is_active?: boolean
+          user_id: string
+          value?: number | null
+          value_type?: string
+        }
+        Update: {
+          applicable_positions?: string[] | null
+          benefit_name?: string
+          benefit_type?: string
+          created_at?: string
+          description?: string | null
+          eligibility_months?: number | null
+          id?: string
+          is_active?: boolean
+          user_id?: string
+          value?: number | null
+          value_type?: string
+        }
+        Relationships: []
+      }
       staff_certifications: {
         Row: {
           certification_name: string
@@ -6615,6 +6714,72 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "shift_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_training_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          modules_completed: Json | null
+          notes: string | null
+          progress_percent: number
+          score: number | null
+          staff_member_id: string
+          started_at: string | null
+          status: string
+          training_program_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          modules_completed?: Json | null
+          notes?: string | null
+          progress_percent?: number
+          score?: number | null
+          staff_member_id: string
+          started_at?: string | null
+          status?: string
+          training_program_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          modules_completed?: Json | null
+          notes?: string | null
+          progress_percent?: number
+          score?: number | null
+          staff_member_id?: string
+          started_at?: string | null
+          status?: string
+          training_program_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_training_progress_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_training_progress_training_program_id_fkey"
+            columns: ["training_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
             referencedColumns: ["id"]
           },
         ]
@@ -7219,6 +7384,51 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      training_programs: {
+        Row: {
+          category: string
+          content: Json | null
+          created_at: string
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          passing_score: number | null
+          position: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          passing_score?: number | null
+          position?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          passing_score?: number | null
+          position?: string | null
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
