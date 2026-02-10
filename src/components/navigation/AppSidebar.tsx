@@ -271,6 +271,12 @@ const expansionItems: MenuItem[] = [
     stages: ['normal_operation'],
     moduleKey: 'chain-management'
   },
+  { 
+    title: 'Admin Ecosistema', 
+    icon: Wrench, 
+    path: '/r/ecosystem-admin',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+  },
 ];
 
 // Consultant AI tools
