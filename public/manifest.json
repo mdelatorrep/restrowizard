@@ -3,25 +3,71 @@
   "short_name": "RestroWizard",
   "description": "Transforma tu restaurante con IA. Diagnóstico gratuito, copilotos inteligentes y un ecosistema completo para la rentabilidad de tu negocio.",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#EFE2F2",
   "theme_color": "#3E1064",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "scope": "/",
   "lang": "es",
+  "dir": "ltr",
   "categories": ["business", "productivity", "food"],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/assets/restrowizard-logo.png",
-      "sizes": "192x192",
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/assets/restrowizard-logo.png", 
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -29,37 +75,67 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Accede rápidamente a tu dashboard",
-      "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/assets/restrowizard-logo.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/r/dashboard",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Diagnóstico",
-      "short_name": "Diagnóstico",
-      "description": "Realiza un diagnóstico de madurez",
-      "url": "/diagnosis",
-      "icons": [
-        {
-          "src": "/assets/restrowizard-logo.png",
-          "sizes": "96x96"
-        }
-      ]
+      "name": "Punto de Venta",
+      "short_name": "POS",
+      "description": "Abre el punto de venta",
+      "url": "/r/pos",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Menús",
-      "short_name": "Menús",
-      "description": "Gestiona tus menús",
-      "url": "/menus",
-      "icons": [
-        {
-          "src": "/assets/restrowizard-logo.png",
-          "sizes": "96x96"
-        }
-      ]
+      "name": "Pedidos",
+      "short_name": "Pedidos",
+      "description": "Gestiona los pedidos",
+      "url": "/r/orders",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Inventario",
+      "short_name": "Inventario",
+      "description": "Control de inventario",
+      "url": "/r/inventory",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/r/dashboard",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "screenshots": [
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard de RestroWizard"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "RestroWizard en móvil"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+restrowizard",
+      "url": "/%s"
+    }
+  ],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
