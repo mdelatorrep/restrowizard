@@ -406,6 +406,131 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_experience: {
+        Row: {
+          candidate_id: string
+          city: string | null
+          company_name: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          position: string
+          start_date: string | null
+        }
+        Insert: {
+          candidate_id: string
+          city?: string | null
+          company_name: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          position: string
+          start_date?: string | null
+        }
+        Update: {
+          candidate_id?: string
+          city?: string | null
+          company_name?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          position?: string
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_experience_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_profiles: {
+        Row: {
+          availability: string | null
+          bio: string | null
+          certifications: string[] | null
+          city: string | null
+          country: string | null
+          created_at: string
+          desired_categories: string[] | null
+          desired_job_types: string[] | null
+          desired_salary_max: number | null
+          desired_salary_min: number | null
+          full_name: string
+          headline: string | null
+          id: string
+          is_actively_looking: boolean | null
+          languages: string[] | null
+          phone: string | null
+          photo_url: string | null
+          profile_completeness: number | null
+          resume_url: string | null
+          skills: string[] | null
+          updated_at: string
+          user_id: string
+          years_experience: number | null
+        }
+        Insert: {
+          availability?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          desired_categories?: string[] | null
+          desired_job_types?: string[] | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          full_name: string
+          headline?: string | null
+          id?: string
+          is_actively_looking?: boolean | null
+          languages?: string[] | null
+          phone?: string | null
+          photo_url?: string | null
+          profile_completeness?: number | null
+          resume_url?: string | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id: string
+          years_experience?: number | null
+        }
+        Update: {
+          availability?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          desired_categories?: string[] | null
+          desired_job_types?: string[] | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          full_name?: string
+          headline?: string | null
+          id?: string
+          is_actively_looking?: boolean | null
+          languages?: string[] | null
+          phone?: string | null
+          photo_url?: string | null
+          profile_completeness?: number | null
+          resume_url?: string | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       carbon_footprint_items: {
         Row: {
           category: string
@@ -2463,41 +2588,104 @@ export type Database = {
       }
       job_applications: {
         Row: {
+          ai_match_score: number | null
+          ai_summary: string | null
+          applicant_email: string | null
           applicant_id: string
+          applicant_name: string | null
+          applicant_phone: string | null
+          candidate_profile_id: string | null
           cover_letter: string | null
           created_at: string
+          employer_notes: string | null
           id: string
+          interview_date: string | null
           job_id: string
           notes: string | null
+          rejection_reason: string | null
           resume_url: string | null
           status: Database["public"]["Enums"]["application_status"]
           updated_at: string
         }
         Insert: {
+          ai_match_score?: number | null
+          ai_summary?: string | null
+          applicant_email?: string | null
           applicant_id: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          candidate_profile_id?: string | null
           cover_letter?: string | null
           created_at?: string
+          employer_notes?: string | null
           id?: string
+          interview_date?: string | null
           job_id: string
           notes?: string | null
+          rejection_reason?: string | null
           resume_url?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
         }
         Update: {
+          ai_match_score?: number | null
+          ai_summary?: string | null
+          applicant_email?: string | null
           applicant_id?: string
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          candidate_profile_id?: string | null
           cover_letter?: string | null
           created_at?: string
+          employer_notes?: string | null
           id?: string
+          interview_date?: string | null
           job_id?: string
           notes?: string | null
+          rejection_reason?: string | null
           resume_url?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "job_applications_candidate_profile_id_fkey"
+            columns: ["candidate_profile_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_saved: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_saved_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
@@ -2510,6 +2698,8 @@ export type Database = {
           applications_count: number
           benefits: string | null
           category: Database["public"]["Enums"]["job_category"]
+          company_logo_url: string | null
+          company_name: string | null
           created_at: string
           description: string
           employer_id: string
@@ -2520,17 +2710,24 @@ export type Database = {
           is_salary_visible: boolean
           job_type: Database["public"]["Enums"]["job_type"]
           location: string
+          perks: string[] | null
+          remote_option: string | null
           requirements: string | null
+          responsibilities: string | null
           salary_max: number | null
           salary_min: number | null
+          skills_required: string[] | null
           title: string
           updated_at: string
+          urgent: boolean | null
           views_count: number
         }
         Insert: {
           applications_count?: number
           benefits?: string | null
           category?: Database["public"]["Enums"]["job_category"]
+          company_logo_url?: string | null
+          company_name?: string | null
           created_at?: string
           description: string
           employer_id: string
@@ -2541,17 +2738,24 @@ export type Database = {
           is_salary_visible?: boolean
           job_type?: Database["public"]["Enums"]["job_type"]
           location: string
+          perks?: string[] | null
+          remote_option?: string | null
           requirements?: string | null
+          responsibilities?: string | null
           salary_max?: number | null
           salary_min?: number | null
+          skills_required?: string[] | null
           title: string
           updated_at?: string
+          urgent?: boolean | null
           views_count?: number
         }
         Update: {
           applications_count?: number
           benefits?: string | null
           category?: Database["public"]["Enums"]["job_category"]
+          company_logo_url?: string | null
+          company_name?: string | null
           created_at?: string
           description?: string
           employer_id?: string
@@ -2562,11 +2766,16 @@ export type Database = {
           is_salary_visible?: boolean
           job_type?: Database["public"]["Enums"]["job_type"]
           location?: string
+          perks?: string[] | null
+          remote_option?: string | null
           requirements?: string | null
+          responsibilities?: string | null
           salary_max?: number | null
           salary_min?: number | null
+          skills_required?: string[] | null
           title?: string
           updated_at?: string
+          urgent?: boolean | null
           views_count?: number
         }
         Relationships: []
