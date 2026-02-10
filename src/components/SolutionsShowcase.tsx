@@ -29,7 +29,7 @@ const solutions = [
     description: 'Plataforma de formación y capacitación continua para equipos de restaurantes y profesionales gastronómicos.',
     tags: ['Formación', 'Cursos', 'Certificaciones'],
     active: true,
-    action: '/events',
+    action: '/learn',
   },
   {
     logo: restroservicesLogo,
@@ -37,15 +37,15 @@ const solutions = [
     description: 'Directorio de proveedores y servicios especializados para la industria restaurantera.',
     tags: ['Proveedores', 'Servicios', 'Equipamiento'],
     active: true,
-    action: '#',
+    action: '/services',
   },
   {
     logo: restrogrowthLogo,
     name: 'RestroGrowth',
     description: 'Plataforma de emprendimiento para conectar inversionistas y restauranteros para la creación de nuevos negocios culinarios.',
     tags: ['Inversión', 'Emprendimiento', 'Expansión'],
-    active: false,
-    action: null,
+    active: true,
+    action: '/growth',
   },
 ];
 
@@ -84,7 +84,6 @@ const SolutionsShowcase = () => {
               }`}
               onClick={() => {
                 if (solution.active && solution.action) {
-                  if (solution.action.startsWith('#')) return;
                   navigate(solution.action);
                 }
               }}

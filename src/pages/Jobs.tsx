@@ -10,6 +10,9 @@ import { useJobs, Job, JobFilters } from '@/hooks/useJobs';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import restrojobsLogo from '@/assets/logos/restrojobs.png';
 import { es } from 'date-fns/locale';
 
 // Mock courses data (could be moved to DB later)
@@ -146,20 +149,20 @@ const Jobs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-off-white">
+      <Header />
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-16">
-        <div className="container mx-auto px-4">
+      <section className="pt-28 pb-16 bg-gradient-to-br from-purple-intense via-purple-medium to-purple-intense relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_80%,rgba(212,165,219,0.2),transparent_60%)]" />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Restro Jobs
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 opacity-90">
-              Encuentra tu próxima oportunidad en la industria gastronómica
+            <img src={restrojobsLogo} alt="RestroJobs" className="h-16 md:h-20 w-auto mx-auto mb-6 brightness-0 invert" />
+            <p className="text-xl md:text-2xl mb-8 text-white/90 font-lato-regular">
+              Bolsa de empleo especializada en la industria gastronómica
             </p>
             
             {/* Search Bar */}
-            <div className="bg-background rounded-lg p-4 max-w-3xl mx-auto">
+            <div className="bg-white rounded-xl p-4 max-w-3xl mx-auto shadow-2xl">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -193,7 +196,7 @@ const Jobs = () => {
                     <SelectItem value="administration">Administración</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button size="lg" onClick={handleSearch} disabled={loading}>
+                <Button size="lg" onClick={handleSearch} disabled={loading} className="bg-gradient-to-r from-purple-medium to-purple-intense text-white font-lato-bold">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
                 </Button>
               </div>
@@ -371,28 +374,30 @@ const Jobs = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-muted py-12">
+      <section className="py-12 bg-gradient-to-r from-purple-intense to-purple-medium">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
             <div>
-              <div className="text-3xl font-bold text-primary">{jobs.length || '0'}</div>
-              <div className="text-sm text-muted-foreground">Ofertas Activas</div>
+              <div className="text-3xl font-headline">{jobs.length || '0'}</div>
+              <div className="text-sm font-lato-light text-white/70">Ofertas Activas</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary">1,200+</div>
-              <div className="text-sm text-muted-foreground">Restaurantes</div>
+              <div className="text-3xl font-headline">1,200+</div>
+              <div className="text-sm font-lato-light text-white/70">Restaurantes</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary">5,000+</div>
-              <div className="text-sm text-muted-foreground">Profesionales</div>
+              <div className="text-3xl font-headline">5,000+</div>
+              <div className="text-sm font-lato-light text-white/70">Profesionales</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary">50+</div>
-              <div className="text-sm text-muted-foreground">Cursos</div>
+              <div className="text-3xl font-headline">50+</div>
+              <div className="text-sm font-lato-light text-white/70">Cursos</div>
             </div>
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

@@ -78,17 +78,22 @@ const Footer = () => {
             {/* Solution Logos */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
               {[
-                { logo: restrojobsLogo, alt: 'RestroJobs' },
-                { logo: restrolearnLogo, alt: 'RestroLearn' },
-                { logo: restroservicesLogo, alt: 'RestroServices' },
-                { logo: restrogrowthLogo, alt: 'RestroGrowth' },
+                { logo: restrojobsLogo, alt: 'RestroJobs', href: '/jobs' },
+                { logo: restrolearnLogo, alt: 'RestroLearn', href: '/learn' },
+                { logo: restroservicesLogo, alt: 'RestroServices', href: '/services' },
+                { logo: restrogrowthLogo, alt: 'RestroGrowth', href: '/growth' },
               ].map((item) => (
-                <img
+                <a
                   key={item.alt}
-                  src={item.logo}
-                  alt={item.alt}
-                  className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity brightness-0 invert"
-                />
+                  href={item.href}
+                  className="inline-block"
+                >
+                  <img
+                    src={item.logo}
+                    alt={item.alt}
+                    className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity brightness-0 invert"
+                  />
+                </a>
               ))}
             </div>
             
