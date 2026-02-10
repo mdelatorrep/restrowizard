@@ -6129,19 +6129,26 @@ export type Database = {
           average_rating: number | null
           category: Database["public"]["Enums"]["service_category"]
           city: string
+          contact_email: string | null
+          contact_phone: string | null
           country: string
           created_at: string
           description: string | null
           id: string
           is_active: boolean
+          is_verified: boolean | null
+          logo_url: string | null
           name: string
-          owner_id: string
+          owner_id: string | null
           portfolio_images: string[] | null
           price_max: number | null
           price_min: number | null
+          rating: number | null
           reviews_count: number
           services_offered: string[] | null
+          specialty: string | null
           state: string | null
+          tags: string[] | null
           updated_at: string
           website_url: string | null
         }
@@ -6149,19 +6156,26 @@ export type Database = {
           average_rating?: number | null
           category?: Database["public"]["Enums"]["service_category"]
           city: string
+          contact_email?: string | null
+          contact_phone?: string | null
           country?: string
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_verified?: boolean | null
+          logo_url?: string | null
           name: string
-          owner_id: string
+          owner_id?: string | null
           portfolio_images?: string[] | null
           price_max?: number | null
           price_min?: number | null
+          rating?: number | null
           reviews_count?: number
           services_offered?: string[] | null
+          specialty?: string | null
           state?: string | null
+          tags?: string[] | null
           updated_at?: string
           website_url?: string | null
         }
@@ -6169,19 +6183,26 @@ export type Database = {
           average_rating?: number | null
           category?: Database["public"]["Enums"]["service_category"]
           city?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           country?: string
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_verified?: boolean | null
+          logo_url?: string | null
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           portfolio_images?: string[] | null
           price_max?: number | null
           price_min?: number | null
+          rating?: number | null
           reviews_count?: number
           services_offered?: string[] | null
+          specialty?: string | null
           state?: string | null
+          tags?: string[] | null
           updated_at?: string
           website_url?: string | null
         }
@@ -7922,6 +7943,9 @@ export type Database = {
         | "cleaning"
         | "delivery"
         | "other"
+        | "marketing"
+        | "finance"
+        | "administration"
       job_type:
         | "full_time"
         | "part_time"
@@ -7944,6 +7968,11 @@ export type Database = {
         | "entertainment"
         | "flowers"
         | "other"
+        | "equipment"
+        | "technology"
+        | "food_supplies"
+        | "consulting"
+        | "design"
       team_member_role:
         | "owner"
         | "admin"
@@ -8154,6 +8183,9 @@ export const Constants = {
         "cleaning",
         "delivery",
         "other",
+        "marketing",
+        "finance",
+        "administration",
       ],
       job_type: [
         "full_time",
@@ -8179,6 +8211,11 @@ export const Constants = {
         "entertainment",
         "flowers",
         "other",
+        "equipment",
+        "technology",
+        "food_supplies",
+        "consulting",
+        "design",
       ],
       team_member_role: [
         "owner",

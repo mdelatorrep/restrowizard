@@ -8,26 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import restroservicesLogo from '@/assets/logos/restroservices.png';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const serviceCategories = [
   { id: 'all', label: 'Todos', icon: Filter },
   { id: 'equipment', label: 'Equipamiento', icon: Wrench },
   { id: 'technology', label: 'Tecnología', icon: Cpu },
-  { id: 'ingredients', label: 'Ingredientes', icon: Leaf },
+  { id: 'food_supplies', label: 'Ingredientes', icon: Leaf },
   { id: 'consulting', label: 'Consultoría', icon: Building2 },
   { id: 'design', label: 'Diseño', icon: PenTool },
-];
-
-const providers = [
-  { id: '1', name: 'EquipChef Pro', category: 'equipment', city: 'Bogotá', rating: 4.8, reviews: 142, specialty: 'Equipos de cocina industrial', description: 'Proveedor líder en equipamiento profesional para cocinas de alto rendimiento.', tags: ['Hornos', 'Refrigeración', 'Mobiliario'], verified: true },
-  { id: '2', name: 'TechFood Solutions', category: 'technology', city: 'Medellín', rating: 4.7, reviews: 98, specialty: 'Software POS y gestión', description: 'Soluciones tecnológicas integrales para la digitalización de restaurantes.', tags: ['POS', 'Delivery', 'Reservas'], verified: true },
-  { id: '3', name: 'Orgánica del Valle', category: 'ingredients', city: 'Cali', rating: 4.9, reviews: 210, specialty: 'Productos orgánicos certificados', description: 'Distribución de ingredientes orgánicos y de origen sostenible para restaurantes premium.', tags: ['Orgánico', 'Local', 'Sostenible'], verified: true },
-  { id: '4', name: 'Gastro Consulting Group', category: 'consulting', city: 'Bogotá', rating: 4.6, reviews: 67, specialty: 'Consultoría gastronómica integral', description: 'Asesoría en apertura, operación y optimización de negocios gastronómicos.', tags: ['Estrategia', 'Operaciones', 'Finanzas'], verified: true },
-  { id: '5', name: 'Restaurante Design Studio', category: 'design', city: 'Barranquilla', rating: 4.8, reviews: 89, specialty: 'Diseño de interiores para restaurantes', description: 'Creamos experiencias espaciales que potencian la identidad gastronómica de tu marca.', tags: ['Interiores', 'Branding', 'Iluminación'], verified: false },
-  { id: '6', name: 'ColdChain Express', category: 'equipment', city: 'Medellín', rating: 4.5, reviews: 76, specialty: 'Cadena de frío y logística', description: 'Equipos y servicios de refrigeración industrial con mantenimiento 24/7.', tags: ['Refrigeración', 'Mantenimiento', 'Logística'], verified: true },
-  { id: '7', name: 'MenuTech', category: 'technology', city: 'Bogotá', rating: 4.4, reviews: 54, specialty: 'Menús digitales y QR', description: 'Plataforma de menús digitales interactivos con integración a redes sociales.', tags: ['Menú QR', 'Pedidos online', 'Analytics'], verified: false },
-  { id: '8', name: 'Finca La Esperanza', category: 'ingredients', city: 'Eje Cafetero', rating: 4.7, reviews: 123, specialty: 'Café de especialidad', description: 'Café de origen único, tostado artesanal con trazabilidad completa.', tags: ['Café', 'Trazabilidad', 'Premium'], verified: true },
-  { id: '9', name: 'Brand & Fork', category: 'design', city: 'Bogotá', rating: 4.9, reviews: 45, specialty: 'Branding gastronómico', description: 'Identidad de marca, packaging y material gráfico especializado en gastronomía.', tags: ['Logo', 'Packaging', 'Redes sociales'], verified: true },
 ];
 
 const Services = () => {
@@ -35,10 +25,23 @@ const Services = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
 
-  const cities = [...new Set(providers.map(p => p.city))];
+  const { data: providers = [] } = useQuery({
+    queryKey: ['service-providers-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('service_providers')
+        .select('*')
+        .eq('is_active', true)
+        .order('average_rating', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const filtered = providers.filter(p => {
-    const matchSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.specialty.toLowerCase().includes(searchTerm.toLowerCase());
+  const cities = [...new Set(providers.map((p: any) => p.city))];
+
+  const filtered = providers.filter((p: any) => {
+    const matchSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.specialty || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory = activeCategory === 'all' || p.category === activeCategory;
     const matchCity = cityFilter === 'all' || p.city === cityFilter;
     return matchSearch && matchCategory && matchCity;
@@ -71,7 +74,7 @@ const Services = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas las ciudades</SelectItem>
-                    {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {cities.map((c: string) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Button className="bg-gradient-to-r from-purple-medium to-purple-intense text-white font-lato-bold">Buscar</Button>
@@ -79,9 +82,9 @@ const Services = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-6 mt-10 text-white/80">
-              <div className="text-center"><div className="text-2xl font-headline text-white">{providers.length * 15}+</div><div className="text-sm font-lato-light">Proveedores</div></div>
+              <div className="text-center"><div className="text-2xl font-headline text-white">{providers.length}+</div><div className="text-sm font-lato-light">Proveedores</div></div>
+              <div className="text-center"><div className="text-2xl font-headline text-white">{cities.length}</div><div className="text-sm font-lato-light">Ciudades</div></div>
               <div className="text-center"><div className="text-2xl font-headline text-white">5</div><div className="text-sm font-lato-light">Categorías</div></div>
-              <div className="text-center"><div className="text-2xl font-headline text-white">12+</div><div className="text-sm font-lato-light">Ciudades</div></div>
             </div>
           </div>
         </div>
@@ -110,14 +113,14 @@ const Services = () => {
           <p className="text-dark-gray font-lato-regular mb-8">{filtered.length} proveedores encontrados</p>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(provider => (
+            {filtered.map((provider: any) => (
               <Card key={provider.id} className="bg-white hover:shadow-xl transition-all cursor-pointer border border-lavender-light/30 group">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg group-hover:text-purple-medium transition-colors flex items-center gap-2">
                         {provider.name}
-                        {provider.verified && <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">✓ Verificado</Badge>}
+                        {provider.is_verified && <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">✓ Verificado</Badge>}
                       </CardTitle>
                       <p className="text-sm text-purple-medium font-lato-medium mt-1">{provider.specialty}</p>
                     </div>
@@ -128,12 +131,12 @@ const Services = () => {
 
                   <div className="flex items-center gap-3 text-sm text-dark-gray mb-3">
                     <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{provider.city}</span>
-                    <span className="flex items-center gap-1 text-yellow-500"><Star className="h-3 w-3 fill-current" />{provider.rating}</span>
-                    <span className="text-xs">({provider.reviews} reseñas)</span>
+                    <span className="flex items-center gap-1 text-yellow-500"><Star className="h-3 w-3 fill-current" />{provider.average_rating || provider.rating}</span>
+                    <span className="text-xs">({provider.reviews_count} reseñas)</span>
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {provider.tags.map(tag => <Badge key={tag} variant="outline" className="text-xs border-lavender-light text-purple-intense">{tag}</Badge>)}
+                    {(provider.tags || []).map((tag: string) => <Badge key={tag} variant="outline" className="text-xs border-lavender-light text-purple-intense">{tag}</Badge>)}
                   </div>
 
                   <div className="flex gap-2">
