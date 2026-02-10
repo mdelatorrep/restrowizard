@@ -1,8 +1,8 @@
 const metrics = [
-  { value: '+500', label: 'Restaurantes activos' },
-  { value: '$2.3M', label: 'Ahorrados por IA' },
-  { value: '98%', label: 'Satisfacción' },
+  { value: '-12%', label: 'Prime Cost promedio' },
   { value: '-30%', label: 'Rotación de personal' },
+  { value: '+23%', label: 'Rentabilidad neta' },
+  { value: '+500', label: 'Restaurantes activos' },
 ];
 
 const ResultsSection = () => {
