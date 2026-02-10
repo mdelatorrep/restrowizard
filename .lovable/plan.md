@@ -1,86 +1,80 @@
 
 
-# Reajuste del Portal Administrativo del Ecosistema
+# SEO Completo para la Propuesta de Valor de RestroWizard
 
 ## Problema Actual
 
-El panel de administracion del ecosistema esta **escondido** dentro de Configuracion > Ecosistema (una tab anidada dentro de otra tab). Ademas tiene varias carencias:
-
-1. **RestroJobs**: Funcional, tiene CRUD de empleos y pipeline de candidatos, pero le falta estadisticas globales y gestion de perfiles de candidatos
-2. **RestroLearn**: Bien estructurado con sub-tabs (Cursos, Lecciones, Rutas, Generador IA), pero le falta gestion de certificados, resenas e inscripciones
-3. **RestroServices**: Solo tiene CRUD basico de proveedores - **no tiene gestion de solicitudes, propuestas, resenas ni portafolios** del marketplace que ya se implemento
-4. **RestroGrowth**: Solo muestra pre-registros - correcto para su estado actual (proximamente)
+El SEO actual es basico y generico:
+- Un solo titulo y descripcion para toda la plataforma
+- No hay JSON-LD / Schema.org structured data
+- No hay `sitemap.xml`
+- El `robots.txt` no tiene referencia al sitemap
+- Las OG images apuntan a una imagen generica de Lovable (`lovable.dev/opengraph-image-p98pqg.png`)
+- No hay meta tags especificos para las paginas publicas del ecosistema (`/jobs`, `/learn`, `/services`, `/growth`)
+- Falta `canonical URL`, `keywords`, y meta tags de idioma/region
 
 ## Solucion
 
-### 1. Separar el Ecosistema como pagina independiente en el sidebar
+### 1. Mejorar `index.html` con SEO avanzado
 
-Mover el admin del ecosistema de `/r/settings > Ecosistema` a una ruta dedicada `/r/ecosystem-admin` con su propio item en el sidebar, dentro del grupo "Expansion" (junto a Ghost Kitchen y Cadenas). Esto le da la visibilidad que merece y elimina la navegacion anidada.
+- Actualizar `title` y `description` para incluir las 5 soluciones del ecosistema
+- Agregar `canonical URL` apuntando a `https://restrowizard.lovable.app`
+- Agregar meta `keywords` con terminos clave de la industria
+- Agregar meta de idioma/region (`hreflang`, `content-language`)
+- Actualizar OG image a la imagen propia del proyecto (o placeholder hasta tener una dedicada)
+- Agregar Twitter meta tags completos (`twitter:title`, `twitter:description`)
+- Inyectar JSON-LD de tipo `SoftwareApplication` con informacion completa de la plataforma
 
-### 2. Enriquecer RestroServices Admin con sub-tabs
+### 2. Crear `public/sitemap.xml`
 
-Convertir `ProvidersAdminPanel` en un panel con sub-tabs, similar a lo que ya tiene LearnAdminPanel:
+Mapa del sitio estatico con las rutas publicas principales:
+- `/` (Homepage)
+- `/auth` (Login/Registro)
+- `/jobs` (RestroJobs)
+- `/learn` (RestroLearn)
+- `/services` (RestroServices)
+- `/growth` (RestroGrowth)
+- `/diagnosis` (Diagnostico gratuito)
+- `/events` (Eventos)
 
-- **Proveedores**: CRUD existente mejorado con los campos nuevos (headline, years_in_business, certifications, service_areas)
-- **Solicitudes**: Ver/moderar todas las `service_requests` del marketplace - con filtros por estado, categoria y urgencia
-- **Propuestas**: Ver `service_proposals` recibidas, estado de cada una
-- **Resenas**: Moderar `provider_reviews`, responder como admin
-- **Portafolios**: Ver/moderar items de `provider_portfolio`
+### 3. Actualizar `public/robots.txt`
 
-### 3. Enriquecer RestroJobs Admin con estadisticas y gestion de candidatos
+- Agregar referencia al `sitemap.xml`
+- Bloquear rutas privadas (`/r/`, `/c/`, `/admin/`)
 
-Agregar sub-tabs al JobsAdminPanel:
+### 4. Crear componente `SEOHead` reutilizable
 
-- **Empleos**: CRUD actual (sin cambios)
-- **Candidatos**: Vista global de todos los `candidate_profiles` registrados, con busqueda y filtros
-- **Estadisticas**: KPIs del marketplace (total empleos activos, postulaciones recibidas, tasa de contratacion, empleos urgentes)
+Componente React que usa `document.title` y meta tags dinamicos via `useEffect` para cada pagina publica del ecosistema:
+- `/jobs` -> "RestroJobs - Bolsa de Empleo Gastronomico | RestroWizard"
+- `/learn` -> "RestroLearn - Formacion para Restaurantes | RestroWizard"
+- `/services` -> "RestroServices - Proveedores Gastronomicos | RestroWizard"
+- `/growth` -> "RestroGrowth - Emprendimiento Gastronomico | RestroWizard"
 
-### 4. Enriquecer RestroLearn Admin con certificados e inscripciones
+### 5. Inyectar JSON-LD en la homepage
 
-Agregar sub-tabs adicionales al LearnAdminPanel:
-
-- **Cursos**: Existente
-- **Lecciones**: Existente
-- **Rutas**: Existente
-- **Generador IA**: Existente
-- **Inscripciones**: Ver `course_enrollments` con progreso de cada estudiante
-- **Certificados**: Ver `course_certificates` emitidos
-- **Resenas**: Moderar `course_reviews`
-
-### 5. Dashboard resumen del ecosistema
-
-Agregar una vista de resumen al inicio de la pagina de administracion con KPIs globales en cards:
-
-- RestroJobs: Empleos activos, candidatos totales, contrataciones del mes
-- RestroLearn: Cursos publicados, estudiantes inscritos, certificados emitidos
-- RestroServices: Proveedores activos, solicitudes abiertas, proyectos completados
-- RestroGrowth: Pre-registros totales
+Schema.org structured data en `Index.tsx` como `SoftwareApplication` + `Organization` con:
+- Nombre, descripcion, logo, URL oficial
+- Ofertas del ecosistema como `hasOfferCatalog`
+- Tipo de aplicacion, categoria, sistema operativo
 
 ---
 
 ## Detalle Tecnico
 
 ### Archivos nuevos
-- `src/pages/restaurant/EcosystemAdmin.tsx` - Pagina independiente con dashboard de KPIs + tabs del ecosistema
-- `src/components/admin/ServicesAdminPanel.tsx` - Panel con sub-tabs para RestroServices (reemplaza ProvidersAdminPanel directo)
-- `src/components/admin/ServiceRequestsManager.tsx` - CRUD/moderacion de solicitudes
-- `src/components/admin/ServiceProposalsManager.tsx` - Vista de propuestas
-- `src/components/admin/ServiceReviewsManager.tsx` - Moderacion de resenas de proveedores
-- `src/components/admin/JobsStatsPanel.tsx` - Estadisticas de RestroJobs
-- `src/components/admin/CandidatesManager.tsx` - Vista global de perfiles de candidatos
-- `src/components/admin/EnrollmentsManager.tsx` - Vista de inscripciones a cursos
-- `src/components/admin/CertificatesManager.tsx` - Vista de certificados emitidos
-- `src/components/admin/CourseReviewsManager.tsx` - Moderacion de resenas de cursos
-- `src/components/admin/EcosystemDashboard.tsx` - KPIs resumen de todo el ecosistema
+- `public/sitemap.xml` - Mapa del sitio estatico con rutas publicas
+- `src/components/SEOHead.tsx` - Componente reutilizable para meta tags dinamicos por pagina
 
 ### Archivos modificados
-- `src/App.tsx` - Agregar ruta `/r/ecosystem-admin`
-- `src/components/navigation/AppSidebar.tsx` - Agregar item "Admin Ecosistema" en el grupo de expansion
-- `src/components/admin/EcosystemAdminTab.tsx` - Refactorizar para usar los nuevos paneles enriquecidos
-- `src/components/admin/JobsAdminPanel.tsx` - Envolver en sub-tabs (Empleos, Candidatos, Estadisticas)
-- `src/components/admin/LearnAdminPanel.tsx` - Agregar sub-tabs de Inscripciones, Certificados, Resenas
-- `src/pages/restaurant/Settings.tsx` - Eliminar la tab "Ecosistema" (ya tiene su propia pagina)
+- `index.html` - Meta tags completos, canonical, keywords, hreflang, JSON-LD principal, OG image corregida
+- `public/robots.txt` - Referencia al sitemap + bloqueo de rutas privadas
+- `src/pages/Index.tsx` - Inyectar JSON-LD de Organization + SoftwareApplication
+- `src/pages/Jobs.tsx` - Agregar SEOHead con titulo y descripcion especificos
+- `src/pages/learn/LearnHome.tsx` - Agregar SEOHead
+- `src/pages/services/ServicesHome.tsx` - Agregar SEOHead
+- `src/pages/Growth.tsx` - Agregar SEOHead
+- `src/pages/Diagnosis.tsx` - Agregar SEOHead
 
 ### Sin cambios de base de datos
-No se requieren migraciones SQL. Todas las tablas necesarias ya existen (`service_requests`, `service_proposals`, `provider_reviews`, `provider_portfolio`, `candidate_profiles`, `course_enrollments`, `course_certificates`, `course_reviews`). Solo se necesitan queries de lectura y moderacion.
+No se requieren migraciones. Todo es contenido estatico y meta tags en el frontend.
 
