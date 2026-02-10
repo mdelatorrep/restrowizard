@@ -1,22 +1,36 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGlobe, faCalendarCheck, faChartLine } from '@fortawesome/free-solid-svg-icons';
-import { faRobot } from '@fortawesome/free-solid-svg-icons';
+import { faDollarSign, faUsers, faBoxesStacked, faGlobe, faRobot } from '@fortawesome/free-solid-svg-icons';
 
-const features = [
+const painPoints = [
+  {
+    icon: faDollarSign,
+    title: 'Control Financiero',
+    stat: 'El 38% de restaurantes no es rentable',
+    solution: 'Prime Cost en tiempo real, Estado de Resultados (P&L) automatizado y alertas cuando tus costos se desbordan.',
+  },
+  {
+    icon: faUsers,
+    title: 'Gestión de Talento',
+    stat: 'El 45% no encuentra personal calificado',
+    solution: 'Turnos inteligentes, control de ausencias, programas de formación y beneficios que reducen la rotación.',
+  },
+  {
+    icon: faBoxesStacked,
+    title: 'Inventario y Proveedores',
+    stat: '30% de merma descontrolada',
+    solution: 'Inventario con recetas vinculadas, deducción automática por venta y análisis de proveedores con IA.',
+  },
   {
     icon: faGlobe,
-    title: 'Sitio web profesional',
-    description: 'Publica tu restaurante con dominio propio, menú digital y pedidos online en minutos.',
+    title: 'Presencia Digital',
+    stat: 'El 60% no tiene sitio web',
+    solution: 'Sitio web, menú digital, reservas y delivery sin comisiones, listo en minutos.',
   },
   {
-    icon: faCalendarCheck,
-    title: 'Reservas y delivery',
-    description: 'Tus clientes reservan mesa o piden a domicilio directo desde tu sitio. Sin comisiones.',
-  },
-  {
-    icon: faChartLine,
-    title: 'Inteligencia artificial',
-    description: 'Finanzas, inventario, talento y operaciones optimizados por IA que aprende de tu negocio.',
+    icon: faRobot,
+    title: 'Copiloto IA',
+    stat: 'Decisiones basadas en intuición',
+    solution: 'Un copiloto que analiza tu operación y te dice qué hacer antes de que sea tarde.',
   },
 ];
 
@@ -52,44 +66,45 @@ const ProductShowcase = () => {
                 </div>
               </div>
 
-              {/* Simplified dashboard content */}
+              {/* Financial dashboard metrics */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white/10 rounded-2xl p-5 border border-white/10">
-                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Reservas hoy</p>
-                  <p className="text-3xl font-headline text-white">24</p>
+                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Prime Cost</p>
+                  <p className="text-3xl font-headline text-white">58.2%</p>
                 </div>
                 <div className="bg-white/10 rounded-2xl p-5 border border-white/10">
-                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Pedidos web</p>
-                  <p className="text-3xl font-headline text-white">47</p>
+                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Costo laboral</p>
+                  <p className="text-3xl font-headline text-white">22.1%</p>
                 </div>
                 <div className="bg-white/10 rounded-2xl p-5 border border-white/10">
-                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Rentabilidad</p>
-                  <p className="text-3xl font-headline text-white">18.5%</p>
+                  <p className="text-white/50 text-xs mb-1 font-lato-regular">Staff activo hoy</p>
+                  <p className="text-3xl font-headline text-white">12/14</p>
                 </div>
               </div>
 
-              {/* AI alert */}
+              {/* AI alert - financial focus */}
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 flex items-center gap-4">
                 <div className="w-10 h-10 bg-lavender-light/20 rounded-xl flex items-center justify-center flex-shrink-0">
                   <FontAwesomeIcon icon={faRobot} className="text-lavender-light" />
                 </div>
                 <p className="text-white/70 text-sm font-lato-regular">
-                  Tienes 3 reservas para las 8pm pero solo 2 meseros. ¿Quieres que contacte a María?
+                  Tu Prime Cost subió 3.2% esta semana. El costo de proteínas aumentó un 15%. Te sugiero renegociar con tu proveedor.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Three features */}
-        <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-          {features.map((feature, i) => (
+        {/* Five pain-point blocks */}
+        <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+          {painPoints.map((point, i) => (
             <div key={i} className="text-center">
               <div className="w-14 h-14 bg-purple-intense/5 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <FontAwesomeIcon icon={feature.icon} className="text-purple-intense text-xl" />
+                <FontAwesomeIcon icon={point.icon} className="text-purple-intense text-xl" />
               </div>
-              <h3 className="text-xl font-headline text-purple-intense mb-3">{feature.title}</h3>
-              <p className="text-dark-gray font-lato-light leading-relaxed">{feature.description}</p>
+              <h3 className="text-lg font-headline text-purple-intense mb-2">{point.title}</h3>
+              <p className="text-purple-medium text-sm font-lato-regular mb-3">{point.stat}</p>
+              <p className="text-dark-gray font-lato-light text-sm leading-relaxed">{point.solution}</p>
             </div>
           ))}
         </div>
