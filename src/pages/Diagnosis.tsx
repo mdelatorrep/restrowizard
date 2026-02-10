@@ -15,6 +15,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faArrowLeft, faPollH, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import { Sparkles, BarChart3, Target, Brain, Loader2 } from 'lucide-react';
 
+// SEO constants for Diagnosis page
+const DIAGNOSIS_SEO_TITLE = 'Diagnóstico de Madurez para Restaurantes - Gratis con IA | RestroWizard';
+const DIAGNOSIS_SEO_DESC = 'Evalúa el nivel de madurez de tu restaurante en 5 minutos. Análisis con IA, benchmark vs industria y plan de acción personalizado. 100% gratuito.';
+
 type DiagnosisStep = 'welcome' | 'context' | 'questions' | 'loading' | 'results';
 
 interface ExtendedDiagnosisResult extends DiagnosisResult {
@@ -49,6 +53,12 @@ const Diagnosis = () => {
       navigate('/c/dashboard', { replace: true });
     }
   }, [user, userType, typeLoading, navigate]);
+
+  useEffect(() => {
+    document.title = DIAGNOSIS_SEO_TITLE;
+    const descMeta = document.querySelector('meta[name="description"]');
+    if (descMeta) descMeta.setAttribute('content', DIAGNOSIS_SEO_DESC);
+  }, []);
 
   const startDiagnosis = () => {
     setCurrentStep('context');

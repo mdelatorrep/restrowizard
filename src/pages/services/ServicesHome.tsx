@@ -11,6 +11,7 @@ import ProviderCard from '@/components/services/ProviderCard';
 import RequestCard from '@/components/services/RequestCard';
 import ServiceRequestForm from '@/components/services/ServiceRequestForm';
 import restroservicesLogo from '@/assets/logos/restroservices.png';
+import SEOHead from '@/components/SEOHead';
 import { useProviders, useServiceRequests } from '@/hooks/useServiceMarketplace';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +40,11 @@ const ServicesHome = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="RestroServices - Proveedores y Servicios Gastronómicos | RestroWizard"
+        description="Marketplace de proveedores verificados para restaurantes. Equipamiento, tecnología, ingredientes, consultoría y diseño. Cotizaciones comparables y contrataciones seguras."
+        canonical="https://restrowizard.lovable.app/services"
+      />
       <Header />
 
       {/* Hero */}
