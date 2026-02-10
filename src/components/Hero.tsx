@@ -47,10 +47,10 @@ const Hero = () => {
   };
 
   const features = [
-    { icon: faChartLine, label: 'Finanzas IA', color: 'from-green-400 to-emerald-500' },
-    { icon: faGlobe, label: 'Sitio Web Propio', color: 'from-blue-400 to-cyan-500' },
-    { icon: faUsers, label: 'Reservas Online', color: 'from-purple-400 to-pink-500' },
-    { icon: faUtensils, label: 'Delivery Integrado', color: 'from-orange-400 to-red-500' },
+    { icon: faChartLine, label: 'Finanzas IA', color: 'from-purple-medium to-purple-intense' },
+    { icon: faGlobe, label: 'Sitio Web Propio', color: 'from-purple-intense to-soft-black' },
+    { icon: faUsers, label: 'Reservas Online', color: 'from-lavender-light to-purple-medium' },
+    { icon: faUtensils, label: 'Delivery Integrado', color: 'from-purple-medium to-purple-intense' },
   ];
 
   return (
@@ -90,8 +90,8 @@ const Hero = () => {
         }}></div>
         
         {/* Glowing Orbs */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-green-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-purple-medium/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-lavender-light/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-purple-medium/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lavender-light/10 rounded-full blur-3xl"></div>
       </div>
 
@@ -100,12 +100,12 @@ const Hero = () => {
           {/* Left Column */}
           <div className="text-center lg:text-left text-off-white space-y-6">
             {/* Live Savings Badge */}
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md border border-green-500/40 rounded-full px-5 py-3 animate-glow">
+            <div className="inline-flex items-center gap-3 bg-lavender-light/15 backdrop-blur-md border border-lavender-light/40 rounded-full px-5 py-3 animate-glow">
               <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lavender-light opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-lavender-light"></span>
               </span>
-              <span className="text-sm md:text-base font-lato-bold text-green-300 tabular-nums">
+              <span className="text-sm md:text-base font-lato-bold text-lavender-light tabular-nums">
                 {formatCurrency(counter)} ahorrados hoy
               </span>
             </div>
@@ -114,16 +114,16 @@ const Hero = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline leading-tight">
               <span className="block mb-2">Tu Restaurante</span>
               <span className="relative inline-block">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-300 to-cyan-400 animate-gradient-text">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-lavender-light via-off-white to-lavender-light animate-gradient-text">
                   100% Digital
                 </span>
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
                   <path d="M2 8C80 3 220 3 298 8" stroke="url(#hero-underline)" strokeWidth="4" strokeLinecap="round"/>
                   <defs>
                     <linearGradient id="hero-underline" x1="0" y1="0" x2="300" y2="0">
-                      <stop stopColor="#4ade80"/>
-                      <stop offset="0.5" stopColor="#34d399"/>
-                      <stop offset="1" stopColor="#22d3ee"/>
+                      <stop stopColor="#D4A5DB"/>
+                      <stop offset="0.5" stopColor="#93339E"/>
+                      <stop offset="1" stopColor="#D4A5DB"/>
                     </linearGradient>
                   </defs>
                 </svg>
@@ -157,15 +157,15 @@ const Hero = () => {
             {/* Trust Badges */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-6 py-2">
               <div className="flex items-center gap-2 text-sm text-off-white/70">
-                <FontAwesomeIcon icon={faShieldAlt} className="text-green-400" />
+                <FontAwesomeIcon icon={faShieldAlt} className="text-lavender-light" />
                 <span>Sin tarjeta requerida</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-off-white/70">
-                <FontAwesomeIcon icon={faClock} className="text-cyan-400" />
+                <FontAwesomeIcon icon={faClock} className="text-lavender-light" />
                 <span>Activo en 10 min</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-off-white/70">
-                <FontAwesomeIcon icon={faStar} className="text-yellow-400" />
+                <FontAwesomeIcon icon={faStar} className="text-lavender-light" />
                 <span>+500 restaurantes</span>
               </div>
             </div>
@@ -174,10 +174,10 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
               <button 
                 onClick={() => user ? navigate(getLoggedInPath()) : navigate('/auth')}
-                className="group relative bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-lato-bold text-lg px-8 py-5 rounded-2xl shadow-2xl shadow-green-500/30 transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
+                className="group relative bg-gradient-to-r from-purple-medium to-purple-intense hover:from-purple-medium/90 hover:to-purple-intense/90 text-off-white font-lato-bold text-lg px-8 py-5 rounded-2xl shadow-2xl shadow-purple-intense/30 transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
-                <FontAwesomeIcon icon={faBolt} className="text-yellow-300 text-xl" />
+                <FontAwesomeIcon icon={faBolt} className="text-lavender-light text-xl" />
                 <span>{user ? 'Ir al Dashboard' : 'Crear Mi Sitio Web Gratis'}</span>
                 <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
               </button>
@@ -227,10 +227,10 @@ const Hero = () => {
                   </div>
                   <div>
                     <h3 className="font-headline text-white text-lg">RestroWizard</h3>
-                    <p className="text-xs text-green-400 flex items-center gap-1">
+                      <p className="text-xs text-lavender-light flex items-center gap-1">
                       <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lavender-light opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-lavender-light"></span>
                       </span>
                       IA activa
                     </p>
@@ -238,42 +238,42 @@ const Hero = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-off-white/60">Hoy</p>
-                  <p className="text-lg font-headline text-green-400">+$4,230</p>
+                  <p className="text-lg font-headline text-lavender-light">+$4,230</p>
                 </div>
               </div>
               
               {/* KPI Grid */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl p-4 border border-green-500/20">
+                <div className="bg-lavender-light/10 rounded-xl p-4 border border-lavender-light/20">
                   <p className="text-xs text-off-white/60 mb-1">Reservas Hoy</p>
-                  <p className="text-2xl font-headline text-green-400">24</p>
-                  <p className="text-xs text-green-400/70">↑ +8 vs ayer</p>
+                  <p className="text-2xl font-headline text-lavender-light">24</p>
+                  <p className="text-xs text-lavender-light/70">↑ +8 vs ayer</p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 rounded-xl p-4 border border-blue-500/20">
+                <div className="bg-off-white/5 rounded-xl p-4 border border-off-white/15">
                   <p className="text-xs text-off-white/60 mb-1">Pedidos Web</p>
-                  <p className="text-2xl font-headline text-blue-400">47</p>
-                  <p className="text-xs text-blue-400/70">↑ +12 vs ayer</p>
+                  <p className="text-2xl font-headline text-off-white">47</p>
+                  <p className="text-xs text-off-white/70">↑ +12 vs ayer</p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500/20 to-purple-500/5 rounded-xl p-4 border border-purple-500/20">
+                <div className="bg-purple-medium/15 rounded-xl p-4 border border-purple-medium/25">
                   <p className="text-xs text-off-white/60 mb-1">Rentabilidad</p>
-                  <p className="text-2xl font-headline text-purple-400">18.5%</p>
-                  <p className="text-xs text-purple-400/70">↑ +3.2% mes</p>
+                  <p className="text-2xl font-headline text-purple-medium">18.5%</p>
+                  <p className="text-xs text-purple-medium/70">↑ +3.2% mes</p>
                 </div>
-                <div className="bg-gradient-to-br from-orange-500/20 to-orange-500/5 rounded-xl p-4 border border-orange-500/20">
+                <div className="bg-lavender-light/8 rounded-xl p-4 border border-lavender-light/15">
                   <p className="text-xs text-off-white/60 mb-1">Alertas IA</p>
-                  <p className="text-2xl font-headline text-orange-400">3</p>
-                  <p className="text-xs text-orange-400/70">1 urgente</p>
+                  <p className="text-2xl font-headline text-off-white/90">3</p>
+                  <p className="text-xs text-off-white/60">1 urgente</p>
                 </div>
               </div>
               
               {/* AI Alert */}
-              <div className="bg-gradient-to-r from-orange-500/20 to-red-500/10 border border-orange-500/30 rounded-xl p-4">
+              <div className="bg-purple-medium/15 border border-purple-medium/30 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-orange-500/30 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
-                    <FontAwesomeIcon icon={faBolt} className="text-orange-400" />
+                  <div className="w-10 h-10 bg-purple-medium/30 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
+                    <FontAwesomeIcon icon={faBolt} className="text-lavender-light" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-lato-bold text-orange-300 mb-1">🤖 Alerta de IA</p>
+                    <p className="text-sm font-lato-bold text-lavender-light mb-1">🤖 Alerta de IA</p>
                     <p className="text-xs text-off-white/70">Tienes 3 reservas para las 8pm pero solo 2 meseros programados. ¿Quieres que contacte a María?</p>
                   </div>
                 </div>
@@ -281,42 +281,42 @@ const Hero = () => {
             </div>
             
             {/* Floating Cards */}
-            <div className="absolute -left-16 top-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 shadow-xl animate-float border border-green-400/30">
+            <div className="absolute -left-16 top-16 bg-gradient-to-br from-purple-intense to-soft-black rounded-2xl p-4 shadow-xl animate-float border border-purple-medium/30">
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faGlobe} className="text-white text-xl" />
+                <FontAwesomeIcon icon={faGlobe} className="text-lavender-light text-xl" />
                 <div>
-                  <p className="text-sm font-lato-bold text-white">Sitio Web</p>
-                  <p className="text-xs text-white/70">Publicado ✓</p>
+                  <p className="text-sm font-lato-bold text-off-white">Sitio Web</p>
+                  <p className="text-xs text-off-white/70">Publicado ✓</p>
                 </div>
               </div>
             </div>
             
-            <div className="absolute -right-12 top-1/3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-xl animate-float border border-blue-400/30" style={{ animationDelay: '0.5s' }}>
+            <div className="absolute -right-12 top-1/3 bg-gradient-to-br from-purple-medium to-purple-intense rounded-2xl p-4 shadow-xl animate-float border border-lavender-light/30" style={{ animationDelay: '0.5s' }}>
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faUsers} className="text-white text-xl" />
+                <FontAwesomeIcon icon={faUsers} className="text-off-white text-xl" />
                 <div>
-                  <p className="text-sm font-lato-bold text-white">Nueva Reserva</p>
-                  <p className="text-xs text-white/70">Mesa para 4</p>
+                  <p className="text-sm font-lato-bold text-off-white">Nueva Reserva</p>
+                  <p className="text-xs text-off-white/70">Mesa para 4</p>
                 </div>
               </div>
             </div>
             
-            <div className="absolute -left-8 bottom-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-4 shadow-xl animate-float border border-purple-400/30" style={{ animationDelay: '1s' }}>
+            <div className="absolute -left-8 bottom-16 bg-gradient-to-br from-lavender-light/20 to-purple-medium/30 backdrop-blur-sm rounded-2xl p-4 shadow-xl animate-float border border-lavender-light/25" style={{ animationDelay: '1s' }}>
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faChartLine} className="text-white text-xl" />
+                <FontAwesomeIcon icon={faChartLine} className="text-off-white text-xl" />
                 <div>
-                  <p className="text-sm font-lato-bold text-white">+$1,200</p>
-                  <p className="text-xs text-white/70">IA ahorró hoy</p>
+                  <p className="text-sm font-lato-bold text-off-white">+$1,200</p>
+                  <p className="text-xs text-off-white/70">IA ahorró hoy</p>
                 </div>
               </div>
             </div>
             
-            <div className="absolute -right-4 bottom-24 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-4 shadow-xl animate-float border border-orange-400/30" style={{ animationDelay: '1.5s' }}>
+            <div className="absolute -right-4 bottom-24 bg-gradient-to-br from-soft-black to-purple-intense rounded-2xl p-4 shadow-xl animate-float border border-purple-medium/30" style={{ animationDelay: '1.5s' }}>
               <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faUtensils} className="text-white text-xl" />
+                <FontAwesomeIcon icon={faUtensils} className="text-lavender-light text-xl" />
                 <div>
-                  <p className="text-sm font-lato-bold text-white">Nuevo Pedido</p>
-                  <p className="text-xs text-white/70">Delivery #247</p>
+                  <p className="text-sm font-lato-bold text-off-white">Nuevo Pedido</p>
+                  <p className="text-xs text-off-white/70">Delivery #247</p>
                 </div>
               </div>
             </div>
