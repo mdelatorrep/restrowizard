@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RestroWizard - Sin Conexión</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Lato', 'Inter', sans-serif;
+      background: linear-gradient(135deg, #EFE2F2 0%, #d4b8e0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #3E1064;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 420px;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { font-size: 1rem; opacity: 0.8; margin-bottom: 1.5rem; }
+    button {
+      background: #3E1064;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>Sin conexión a internet</h1>
+    <p>Verifica tu conexión y vuelve a intentarlo. Algunos datos guardados pueden estar disponibles.</p>
+    <button onclick="location.reload()">Reintentar</button>
+  </div>
+</body>
+</html>
