@@ -8700,6 +8700,7 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["team_member_role"] }
         Returns: Json
       }
+      get_platform_stats: { Args: never; Returns: Json }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       has_module_access: {
         Args: {
@@ -8730,6 +8731,7 @@ export type Database = {
         Returns: undefined
       }
       increment_job_views: { Args: { job_id: string }; Returns: undefined }
+      seed_platform_admin: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff" | "user" | "consultant"
