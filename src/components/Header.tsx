@@ -58,9 +58,9 @@ const Header = () => {
   const solutionItems = [
     { logo: restrowizardLogo, name: 'RestroWizard', desc: 'Gestión integral con IA', action: () => scrollToSection('ecosistema') },
     { logo: restrojobsLogo, name: 'RestroJobs', desc: 'Bolsa de empleo gastronómica', action: () => navigate('/jobs') },
-    { logo: restrolearnLogo, name: 'RestroLearn', desc: 'Formación y capacitación', action: () => navigate('/events') },
-    { logo: restroservicesLogo, name: 'RestroServices', desc: 'Proveedores y servicios', action: () => {} },
-    { logo: restrogrowthLogo, name: 'RestroGrowth', desc: 'Inversión y emprendimiento', action: null },
+    { logo: restrolearnLogo, name: 'RestroLearn', desc: 'Formación y capacitación', action: () => navigate('/learn') },
+    { logo: restroservicesLogo, name: 'RestroServices', desc: 'Proveedores y servicios', action: () => navigate('/services') },
+    { logo: restrogrowthLogo, name: 'RestroGrowth', desc: 'Inversión y emprendimiento', action: () => navigate('/growth') },
   ];
 
   const navLinks = [

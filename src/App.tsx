@@ -17,6 +17,9 @@ import Onboarding from "./pages/Onboarding";
 import Diagnosis from "./pages/Diagnosis";
 import Events from "./pages/Events";
 import Jobs from "./pages/Jobs";
+import Learn from "./pages/Learn";
+import Services from "./pages/Services";
+import Growth from "./pages/Growth";
 import Menus from "./pages/Menus";
 import PublicMenu from "./pages/PublicMenu";
 import PublicFeedback from "./pages/PublicFeedback";
@@ -109,6 +112,9 @@ const App = () => (
               <Route path="/diagnosis" element={<Diagnosis />} />
               <Route path="/events" element={<Events />} />
               <Route path="/jobs" element={<Jobs />} />
+              <Route path="/learn" element={<Learn />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/growth" element={<Growth />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />
 
