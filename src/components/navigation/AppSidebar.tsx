@@ -299,12 +299,12 @@ const consultantManagementItems = [
 // Stage color mapping
 const getStageColor = (stage: RestaurantStage): string => {
   const colors: Record<RestaurantStage, string> = {
-    conception: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    enablement: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    pre_opening: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    first_90_days: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    normal_operation: 'bg-muted text-muted-foreground border-muted',
-    no_project: 'bg-muted text-muted-foreground border-muted',
+    conception: 'bg-sidebar-accent/60 text-sidebar-foreground/80 border-sidebar-border',
+    enablement: 'bg-sidebar-accent/80 text-sidebar-foreground border-sidebar-border',
+    pre_opening: 'bg-sidebar-primary/20 text-sidebar-foreground border-sidebar-primary/30',
+    first_90_days: 'bg-sidebar-primary/30 text-sidebar-foreground border-sidebar-primary/40',
+    normal_operation: 'bg-sidebar-accent text-sidebar-foreground/70 border-sidebar-border',
+    no_project: 'bg-sidebar-accent text-sidebar-foreground/60 border-sidebar-border',
   };
   return colors[stage];
 };
