@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLinkedin, faInstagram, faFacebook, faTwitter, faYoutube } from '@fortawesome/free-brands-svg-icons';
 import { faEnvelope, faShieldAlt, faLock, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import restrowizardLogo from '@/assets/logos/restrowizard.png';
+import restrojobsLogo from '@/assets/logos/restrojobs.png';
+import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
+import restrolearnLogo from '@/assets/logos/restrolearn.png';
+import restroservicesLogo from '@/assets/logos/restroservices.png';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -61,14 +66,31 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="md:col-span-2">
             <img 
-              src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
+              src={restrowizardLogo}
               alt="RestroWizard" 
-              className="h-10 w-auto mb-4 brightness-0 invert opacity-80"
+              className="h-10 w-auto mb-4"
             />
-            <p className="text-off-white/60 font-lato-light mb-6 max-w-sm">
+            <p className="text-off-white/60 font-lato-light mb-4 max-w-sm">
               Tu Co-Piloto de IA para la rentabilidad de tu restaurante. 
               7 módulos inteligentes que trabajan 24/7 para optimizar tu negocio.
             </p>
+            
+            {/* Solution Logos */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              {[
+                { logo: restrojobsLogo, alt: 'RestroJobs' },
+                { logo: restrolearnLogo, alt: 'RestroLearn' },
+                { logo: restroservicesLogo, alt: 'RestroServices' },
+                { logo: restrogrowthLogo, alt: 'RestroGrowth' },
+              ].map((item) => (
+                <img
+                  key={item.alt}
+                  src={item.logo}
+                  alt={item.alt}
+                  className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity brightness-0 invert"
+                />
+              ))}
+            </div>
             
             {/* Social Icons */}
             <div className="flex gap-4">
