@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const pillars = [
   { icon: TrendingUp, title: 'Inversionistas', description: 'Conecta con oportunidades de inversión en conceptos gastronómicos validados con datos reales de mercado.', features: ['Deal flow curado', 'Due diligence asistida por IA', 'Reportes de rendimiento'] },
@@ -20,10 +22,28 @@ const Growth = () => {
   const [interestType, setInterestType] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && interestType) {
-      setSubmitted(true);
+    if (!email || !interestType) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('growth_preregistrations').insert({ email, interest_type: interestType });
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Este correo ya está pre-registrado');
+        } else {
+          throw error;
+        }
+      } else {
+        setSubmitted(true);
+        toast.success('¡Pre-registro exitoso!');
+      }
+    } catch {
+      toast.error('Error al registrar. Intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,7 +142,7 @@ const Growth = () => {
                     <SelectItem value="curious">Solo quiero explorar</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button type="submit" size="lg" className="w-full bg-white text-purple-intense hover:bg-off-white font-lato-bold h-12">
+                <Button type="submit" size="lg" disabled={isSubmitting} className="w-full bg-white text-purple-intense hover:bg-off-white font-lato-bold h-12">
                   Pre-registrarme <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
                 <p className="text-white/50 text-xs font-lato-light">Sin spam. Solo una notificación cuando lancemos.</p>

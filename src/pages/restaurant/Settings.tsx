@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Bell, Shield, Building2, Users } from 'lucide-react';
+import { User, Bell, Shield, Building2, Users, Layers } from 'lucide-react';
 import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
 import TeamManagementTab from '@/components/team/TeamManagementTab';
+import EcosystemAdminTab from '@/components/admin/EcosystemAdminTab';
 
 const Settings: React.FC = () => {
   return (
@@ -33,6 +34,10 @@ const Settings: React.FC = () => {
           <TabsTrigger value="payments">Pasarelas de Pago</TabsTrigger>
           <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
           <TabsTrigger value="security">Seguridad</TabsTrigger>
+          <TabsTrigger value="ecosystem">
+            <Layers className="h-4 w-4 mr-1" />
+            Ecosistema
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -177,6 +182,10 @@ const Settings: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ecosystem">
+          <EcosystemAdminTab />
         </TabsContent>
       </Tabs>
     </div>
