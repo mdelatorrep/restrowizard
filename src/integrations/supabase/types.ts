@@ -1628,6 +1628,27 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_preregistrations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          interest_type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          interest_type: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          interest_type?: string
+        }
+        Relationships: []
+      }
       industry_benchmarks: {
         Row: {
           avg_value: number
