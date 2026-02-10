@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CoursesAdminPanel from './CoursesAdminPanel';
 import LessonsManager from './LessonsManager';
 import TracksManager from './TracksManager';
 import AIContentGenerator from './AIContentGenerator';
-import { BookOpen, FileText, GraduationCap, Sparkles } from 'lucide-react';
+import EnrollmentsManager from './EnrollmentsManager';
+import CertificatesManager from './CertificatesManager';
+import CourseReviewsManager from './CourseReviewsManager';
+import { BookOpen, FileText, GraduationCap, Sparkles, Users, Award, Star } from 'lucide-react';
 
 const LearnAdminPanel: React.FC = () => {
   return (
@@ -15,11 +18,17 @@ const LearnAdminPanel: React.FC = () => {
           <TabsTrigger value="lessons" className="flex items-center gap-2"><FileText className="h-4 w-4" />Lecciones</TabsTrigger>
           <TabsTrigger value="tracks" className="flex items-center gap-2"><GraduationCap className="h-4 w-4" />Rutas</TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-2"><Sparkles className="h-4 w-4" />Generador IA</TabsTrigger>
+          <TabsTrigger value="enrollments" className="flex items-center gap-2"><Users className="h-4 w-4" />Inscripciones</TabsTrigger>
+          <TabsTrigger value="certificates" className="flex items-center gap-2"><Award className="h-4 w-4" />Certificados</TabsTrigger>
+          <TabsTrigger value="reviews" className="flex items-center gap-2"><Star className="h-4 w-4" />Reseñas</TabsTrigger>
         </TabsList>
         <TabsContent value="courses"><CoursesAdminPanel /></TabsContent>
         <TabsContent value="lessons"><LessonsManager /></TabsContent>
         <TabsContent value="tracks"><TracksManager /></TabsContent>
         <TabsContent value="ai"><AIContentGenerator /></TabsContent>
+        <TabsContent value="enrollments"><EnrollmentsManager /></TabsContent>
+        <TabsContent value="certificates"><CertificatesManager /></TabsContent>
+        <TabsContent value="reviews"><CourseReviewsManager /></TabsContent>
       </Tabs>
     </div>
   );
