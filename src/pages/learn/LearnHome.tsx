@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import TrackCard from '@/components/learn/TrackCard';
 import CourseCard from '@/components/learn/CourseCard';
 import restrolearnLogo from '@/assets/logos/restrolearn.png';
+import SEOHead from '@/components/SEOHead';
 import { useLearnData } from '@/hooks/useLearnData';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +41,11 @@ const LearnHome = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="RestroLearn - Formación y Certificaciones para Restaurantes | RestroWizard"
+        description="Cursos y rutas de aprendizaje diseñadas para cada rol de la industria gastronómica. Certificaciones profesionales, contenido generado con IA y formación continua."
+        canonical="https://restrowizard.lovable.app/learn"
+      />
       <Header />
 
       {/* Hero */}

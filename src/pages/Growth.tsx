@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
+import SEOHead from '@/components/SEOHead';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -49,6 +50,11 @@ const Growth = () => {
 
   return (
     <div className="min-h-screen bg-off-white">
+      <SEOHead
+        title="RestroGrowth - Inversión y Emprendimiento Gastronómico | RestroWizard"
+        description="Conecta inversionistas con restauranteros. Valida tu concepto gastronómico, encuentra capital y socios estratégicos con herramientas de análisis de mercado e IA."
+        canonical="https://restrowizard.lovable.app/growth"
+      />
       <Header />
 
       {/* Hero */}

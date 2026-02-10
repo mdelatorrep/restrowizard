@@ -13,6 +13,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import JobCard from '@/components/jobs/JobCard';
 import restrojobsLogo from '@/assets/logos/restrojobs.png';
+import SEOHead from '@/components/SEOHead';
 
 const categoryOptions = [
   { value: 'all', label: 'Todas' },
@@ -80,6 +81,11 @@ const Jobs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="RestroJobs - Bolsa de Empleo Gastronómico | RestroWizard"
+        description="Encuentra empleo en gastronomía o contrata talento para tu restaurante. Ofertas de cocina, servicio, gestión, bartender y más en la bolsa de trabajo especializada."
+        canonical="https://restrowizard.lovable.app/jobs"
+      />
       <Header />
 
       {/* Hero */}
