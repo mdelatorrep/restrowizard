@@ -208,7 +208,7 @@ const Header = () => {
                 onClick={() => navigate('/auth')}
                 className={`font-lato-bold group ${
                   isScrolled 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg' 
+                    ? 'bg-purple-intense hover:bg-purple-intense/90 text-white shadow-lg' 
                     : 'bg-white text-purple-intense hover:bg-white/90'
                 }`}
               >
@@ -280,7 +280,7 @@ const Header = () => {
                       navigate('/auth');
                       setIsMenuOpen(false);
                     }}
-                    className="block w-full text-center px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-lato-bold hover:opacity-90 transition-all"
+                    className="block w-full text-center px-4 py-3 rounded-lg bg-purple-intense text-white font-lato-bold hover:opacity-90 transition-all"
                   >
                     Comenzar Gratis
                   </button>
