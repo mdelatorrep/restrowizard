@@ -17,6 +17,8 @@ import Onboarding from "./pages/Onboarding";
 import Diagnosis from "./pages/Diagnosis";
 import Events from "./pages/Events";
 import Jobs from "./pages/Jobs";
+import JobDetail from "./pages/JobDetail";
+import CandidateDashboard from "./pages/CandidateDashboard";
 import Learn from "./pages/Learn";
 import Services from "./pages/Services";
 import Growth from "./pages/Growth";
@@ -112,6 +114,8 @@ const App = () => (
               <Route path="/diagnosis" element={<Diagnosis />} />
               <Route path="/events" element={<Events />} />
               <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/jobs/mi-perfil" element={<CandidateDashboard />} />
               <Route path="/learn" element={<Learn />} />
               <Route path="/services" element={<Services />} />
               <Route path="/growth" element={<Growth />} />

@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.website-public-order]
 verify_jwt = false
+
+[functions.job-ai-profile]
+verify_jwt = false
