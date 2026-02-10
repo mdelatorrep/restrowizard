@@ -7,7 +7,7 @@ import restrolearnLogo from '@/assets/logos/restrolearn.png';
 import restroservicesLogo from '@/assets/logos/restroservices.png';
 import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
 import JobsAdminPanel from './JobsAdminPanel';
-import CoursesAdminPanel from './CoursesAdminPanel';
+import LearnAdminPanel from './LearnAdminPanel';
 import ProvidersAdminPanel from './ProvidersAdminPanel';
 import GrowthAdminPanel from './GrowthAdminPanel';
 
@@ -39,7 +39,7 @@ const EcosystemAdminTab: React.FC = () => {
           </TabsList>
 
           <TabsContent value="jobs"><JobsAdminPanel /></TabsContent>
-          <TabsContent value="courses"><CoursesAdminPanel /></TabsContent>
+          <TabsContent value="courses"><LearnAdminPanel /></TabsContent>
           <TabsContent value="providers"><ProvidersAdminPanel /></TabsContent>
           <TabsContent value="growth"><GrowthAdminPanel /></TabsContent>
         </Tabs>
