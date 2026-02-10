@@ -24,7 +24,11 @@ import TrackDetail from "./pages/learn/TrackDetail";
 import CourseDetail from "./pages/learn/CourseDetail";
 import LessonViewer from "./pages/learn/LessonViewer";
 import StudentDashboard from "./pages/learn/StudentDashboard";
-import Services from "./pages/Services";
+import ServicesHome from "./pages/services/ServicesHome";
+import ProviderDetail from "./pages/services/ProviderDetail";
+import RequestDetail from "./pages/services/RequestDetail";
+import ProviderDashboard from "./pages/services/ProviderDashboard";
+import ProviderRegister from "./pages/services/ProviderRegister";
 import Growth from "./pages/Growth";
 import Menus from "./pages/Menus";
 import PublicMenu from "./pages/PublicMenu";
@@ -125,7 +129,11 @@ const App = () => (
               <Route path="/learn/course/:id" element={<CourseDetail />} />
               <Route path="/learn/course/:id/lesson/:lessonId" element={<LessonViewer />} />
               <Route path="/learn/mi-progreso" element={<StudentDashboard />} />
-              <Route path="/services" element={<Services />} />
+              <Route path="/services" element={<ServicesHome />} />
+              <Route path="/services/provider/:id" element={<ProviderDetail />} />
+              <Route path="/services/request/:id" element={<RequestDetail />} />
+              <Route path="/services/dashboard" element={<ProviderDashboard />} />
+              <Route path="/services/register" element={<ProviderRegister />} />
               <Route path="/growth" element={<Growth />} />
               <Route path="/menus" element={<Menus />} />
               <Route path="/menu/:slug" element={<PublicMenu />} />

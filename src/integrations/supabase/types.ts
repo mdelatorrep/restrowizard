@@ -4767,6 +4767,107 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_portfolio: {
+        Row: {
+          category: Database["public"]["Enums"]["service_category"] | null
+          client_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          project_date: string | null
+          provider_id: string
+          title: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["service_category"] | null
+          client_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          project_date?: string | null
+          provider_id: string
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["service_category"] | null
+          client_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          project_date?: string | null
+          provider_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_portfolio_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_reviews: {
+        Row: {
+          comment: string | null
+          communication_rating: number | null
+          created_at: string
+          id: string
+          provider_id: string
+          punctuality_rating: number | null
+          quality_rating: number | null
+          rating: number
+          request_id: string | null
+          response: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          communication_rating?: number | null
+          created_at?: string
+          id?: string
+          provider_id: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
+          rating: number
+          request_id?: string | null
+          response?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          communication_rating?: number | null
+          created_at?: string
+          id?: string
+          provider_id?: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
+          rating?: number
+          request_id?: string | null
+          response?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_reviews_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           created_at: string | null
@@ -6614,7 +6715,10 @@ export type Database = {
           event_id: string | null
           id: string
           notes: string | null
+          proposal_id: string | null
           provider_id: string
+          request_id: string | null
+          review_id: string | null
           service_date: string
           status: Database["public"]["Enums"]["booking_status"]
           total_price: number | null
@@ -6626,7 +6730,10 @@ export type Database = {
           event_id?: string | null
           id?: string
           notes?: string | null
+          proposal_id?: string | null
           provider_id: string
+          request_id?: string | null
+          review_id?: string | null
           service_date: string
           status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number | null
@@ -6638,7 +6745,10 @@ export type Database = {
           event_id?: string | null
           id?: string
           notes?: string | null
+          proposal_id?: string | null
           provider_id?: string
+          request_id?: string | null
+          review_id?: string | null
           service_date?: string
           status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number | null
@@ -6654,10 +6764,85 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_bookings_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "service_proposals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_bookings_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "provider_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_proposals: {
+        Row: {
+          attachments: string[] | null
+          created_at: string
+          estimated_delivery_days: number | null
+          id: string
+          message: string
+          price: number | null
+          provider_id: string
+          request_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          created_at?: string
+          estimated_delivery_days?: number | null
+          id?: string
+          message: string
+          price?: number | null
+          provider_id: string
+          request_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: string[] | null
+          created_at?: string
+          estimated_delivery_days?: number | null
+          id?: string
+          message?: string
+          price?: number | null
+          provider_id?: string
+          request_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_proposals_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_proposals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -6666,12 +6851,16 @@ export type Database = {
         Row: {
           average_rating: number | null
           category: Database["public"]["Enums"]["service_category"]
+          certifications: string[] | null
           city: string
+          completed_projects: number | null
           contact_email: string | null
           contact_phone: string | null
           country: string
+          cover_image_url: string | null
           created_at: string
           description: string | null
+          headline: string | null
           id: string
           is_active: boolean
           is_verified: boolean | null
@@ -6682,23 +6871,32 @@ export type Database = {
           price_max: number | null
           price_min: number | null
           rating: number | null
+          response_time_hours: number | null
           reviews_count: number
+          service_areas: string[] | null
           services_offered: string[] | null
+          social_links: Json | null
           specialty: string | null
           state: string | null
           tags: string[] | null
+          team_size: string | null
           updated_at: string
           website_url: string | null
+          years_in_business: number | null
         }
         Insert: {
           average_rating?: number | null
           category?: Database["public"]["Enums"]["service_category"]
+          certifications?: string[] | null
           city: string
+          completed_projects?: number | null
           contact_email?: string | null
           contact_phone?: string | null
           country?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          headline?: string | null
           id?: string
           is_active?: boolean
           is_verified?: boolean | null
@@ -6709,23 +6907,32 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           rating?: number | null
+          response_time_hours?: number | null
           reviews_count?: number
+          service_areas?: string[] | null
           services_offered?: string[] | null
+          social_links?: Json | null
           specialty?: string | null
           state?: string | null
           tags?: string[] | null
+          team_size?: string | null
           updated_at?: string
           website_url?: string | null
+          years_in_business?: number | null
         }
         Update: {
           average_rating?: number | null
           category?: Database["public"]["Enums"]["service_category"]
+          certifications?: string[] | null
           city?: string
+          completed_projects?: number | null
           contact_email?: string | null
           contact_phone?: string | null
           country?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          headline?: string | null
           id?: string
           is_active?: boolean
           is_verified?: boolean | null
@@ -6736,13 +6943,81 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           rating?: number | null
+          response_time_hours?: number | null
           reviews_count?: number
+          service_areas?: string[] | null
           services_offered?: string[] | null
+          social_links?: Json | null
           specialty?: string | null
           state?: string | null
           tags?: string[] | null
+          team_size?: string | null
           updated_at?: string
           website_url?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          attachments: string[] | null
+          budget_max: number | null
+          budget_min: number | null
+          category: Database["public"]["Enums"]["service_category"] | null
+          city: string | null
+          country: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          id: string
+          proposals_count: number | null
+          requirements: string[] | null
+          selected_proposal_id: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          urgency: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: Database["public"]["Enums"]["service_category"] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          proposals_count?: number | null
+          requirements?: string[] | null
+          selected_proposal_id?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          urgency?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: Database["public"]["Enums"]["service_category"] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          proposals_count?: number | null
+          requirements?: string[] | null
+          selected_proposal_id?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          urgency?: string | null
+          user_id?: string
         }
         Relationships: []
       }
