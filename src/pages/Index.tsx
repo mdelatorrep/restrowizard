@@ -9,6 +9,7 @@ import CopilotDemo from '../components/CopilotDemo';
 import ConsultantSection from '../components/ConsultantSection';
 import Testimonials from '../components/Testimonials';
 import Solution from '../components/Solution';
+import SolutionsShowcase from '../components/SolutionsShowcase';
 import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
 
@@ -30,6 +31,7 @@ const Index = () => {
           <Testimonials />
         </div>
         <Solution />
+        <SolutionsShowcase />
         <FinalCTA />
       </main>
       <Footer />

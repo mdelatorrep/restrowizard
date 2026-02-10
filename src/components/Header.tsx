@@ -1,14 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes, faStar, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faTimes, faStar, faArrowRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
+import restrowizardLogo from '@/assets/logos/restrowizard.png';
+import restrojobsLogo from '@/assets/logos/restrojobs.png';
+import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
+import restrolearnLogo from '@/assets/logos/restrolearn.png';
+import restroservicesLogo from '@/assets/logos/restroservices.png';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showSolutions, setShowSolutions] = useState(false);
+  const solutionsRef = useRef<HTMLDivElement>(null);
+  const solutionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { userType } = useUserType();
@@ -47,7 +55,16 @@ const Header = () => {
     setIsMenuOpen(false);
   };
 
+  const solutionItems = [
+    { logo: restrowizardLogo, name: 'RestroWizard', desc: 'Gestión integral con IA', action: () => scrollToSection('ecosistema') },
+    { logo: restrojobsLogo, name: 'RestroJobs', desc: 'Bolsa de empleo gastronómica', action: () => navigate('/jobs') },
+    { logo: restrolearnLogo, name: 'RestroLearn', desc: 'Formación y capacitación', action: () => navigate('/events') },
+    { logo: restroservicesLogo, name: 'RestroServices', desc: 'Proveedores y servicios', action: () => {} },
+    { logo: restrogrowthLogo, name: 'RestroGrowth', desc: 'Inversión y emprendimiento', action: null },
+  ];
+
   const navLinks = [
+    { label: 'Soluciones', action: () => scrollToSection('soluciones'), isSolutions: true },
     { label: 'Producto', action: () => scrollToSection('ecosistema') },
     { label: 'Consultores', action: () => scrollToSection('consultores') },
     { label: 'Casos de Éxito', action: () => scrollToSection('testimonios') },
@@ -70,7 +87,7 @@ const Header = () => {
           onClick={() => navigate('/')}
         >
           <img 
-            src="/lovable-uploads/4c50cd38-4342-44bc-9a98-cc6a1eba63f4.png" 
+            src={restrowizardLogo}
             alt="RestroWizard" 
             className="h-10 md:h-12 w-auto"
           />
@@ -79,17 +96,75 @@ const Header = () => {
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center space-x-6">
           {navLinks.map((link, index) => (
-            <button 
-              key={index}
-              onClick={link.action}
-              className={`font-lato-medium transition-colors ${
-                isScrolled 
-                  ? 'text-dark-gray hover:text-purple-medium' 
-                  : 'text-white/90 hover:text-white'
-              }`}
-            >
-              {link.label}
-            </button>
+            'isSolutions' in link && link.isSolutions ? (
+              <div
+                key={index}
+                className="relative"
+                ref={solutionsRef}
+                onMouseEnter={() => {
+                  if (solutionsTimeoutRef.current) clearTimeout(solutionsTimeoutRef.current);
+                  setShowSolutions(true);
+                }}
+                onMouseLeave={() => {
+                  solutionsTimeoutRef.current = setTimeout(() => setShowSolutions(false), 200);
+                }}
+              >
+                <button
+                  className={`font-lato-medium transition-colors flex items-center gap-1.5 ${
+                    isScrolled
+                      ? 'text-dark-gray hover:text-purple-medium'
+                      : 'text-white/90 hover:text-white'
+                  }`}
+                >
+                  {link.label}
+                  <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
+                </button>
+
+                {showSolutions && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-purple-medium/10 p-3 z-50">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-l border-t border-purple-medium/10"></div>
+                    {solutionItems.map((item) => (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          if (item.action) {
+                            item.action();
+                            setShowSolutions(false);
+                          }
+                        }}
+                        disabled={!item.action}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
+                          item.action
+                            ? 'hover:bg-lavender-light/40 cursor-pointer'
+                            : 'opacity-50 cursor-default'
+                        }`}
+                      >
+                        <img src={item.logo} alt={item.name} className="h-8 w-auto flex-shrink-0" />
+                        <div>
+                          <p className="font-lato-bold text-sm text-purple-intense">{item.name}</p>
+                          <p className="text-xs text-soft-black/60 font-lato-light">{item.desc}</p>
+                          {!item.action && (
+                            <span className="text-[10px] text-purple-medium font-lato-bold">Próximamente</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button 
+                key={index}
+                onClick={link.action}
+                className={`font-lato-medium transition-colors ${
+                  isScrolled 
+                    ? 'text-dark-gray hover:text-purple-medium' 
+                    : 'text-white/90 hover:text-white'
+                }`}
+              >
+                {link.label}
+              </button>
+            )
           ))}
         </div>
 
