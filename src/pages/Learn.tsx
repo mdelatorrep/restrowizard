@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import restrolearnLogo from '@/assets/logos/restrolearn.png';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const categories = [
   { id: 'all', label: 'Todos', icon: BookOpen },
@@ -16,18 +18,6 @@ const categories = [
   { id: 'marketing', label: 'Marketing', icon: Megaphone },
 ];
 
-const courses = [
-  { id: '1', title: 'Técnicas Avanzadas de Cocina Moderna', instructor: 'Chef María González', duration: 40, level: 'Avanzado', category: 'kitchen', price: 299, rating: 4.8, students: 1240, image: '🍳', skills: ['Sous vide', 'Fermentación', 'Emplatado creativo'], featured: true },
-  { id: '2', title: 'Gestión Financiera para Restaurantes', instructor: 'Roberto Martínez', duration: 24, level: 'Intermedio', category: 'management', price: 199, rating: 4.6, students: 890, image: '📊', skills: ['Control de costes', 'Presupuestos', 'KPIs'], featured: true },
-  { id: '3', title: 'Protocolo y Servicio de Excelencia', instructor: 'Ana Rodríguez', duration: 16, level: 'Principiante', category: 'service', price: 149, rating: 4.9, students: 1560, image: '🍷', skills: ['Protocolo', 'Comunicación', 'Atención al cliente'], featured: true },
-  { id: '4', title: 'Marketing Digital Gastronómico', instructor: 'Carlos Vega', duration: 20, level: 'Intermedio', category: 'marketing', price: 179, rating: 4.7, students: 720, image: '📱', skills: ['Redes sociales', 'SEO local', 'Fotografía culinaria'], featured: false },
-  { id: '5', title: 'Pastelería Profesional', instructor: 'Chef Laura Mendoza', duration: 36, level: 'Avanzado', category: 'kitchen', price: 349, rating: 4.9, students: 680, image: '🎂', skills: ['Repostería fina', 'Chocolatería', 'Decoración'], featured: false },
-  { id: '6', title: 'Liderazgo de Equipos en Cocina', instructor: 'Diego Herrera', duration: 12, level: 'Intermedio', category: 'management', price: 129, rating: 4.5, students: 430, image: '👥', skills: ['Liderazgo', 'Gestión de conflictos', 'Motivación'], featured: false },
-  { id: '7', title: 'Sommelier Nivel 1', instructor: 'Isabella Torres', duration: 30, level: 'Principiante', category: 'service', price: 399, rating: 4.8, students: 560, image: '🍾', skills: ['Cata', 'Maridaje', 'Regiones vinícolas'], featured: false },
-  { id: '8', title: 'Food Styling y Fotografía', instructor: 'Valentina Ríos', duration: 14, level: 'Principiante', category: 'marketing', price: 159, rating: 4.7, students: 910, image: '📸', skills: ['Composición', 'Iluminación', 'Edición'], featured: false },
-  { id: '9', title: 'Cocina Vegana Creativa', instructor: 'Chef Pablo Núñez', duration: 18, level: 'Intermedio', category: 'kitchen', price: 189, rating: 4.6, students: 340, image: '🥗', skills: ['Proteínas vegetales', 'Texturas', 'Sabores umami'], featured: false },
-];
-
 const certifications = [
   { name: 'Certificación en Gestión Gastronómica', hours: 120, modules: 8, icon: '🏆' },
   { name: 'Diploma en Alta Cocina', hours: 200, modules: 12, icon: '👨‍🍳' },
@@ -35,15 +25,38 @@ const certifications = [
   { name: 'Marketing Gastronómico Digital', hours: 60, modules: 5, icon: '📲' },
 ];
 
+const levelLabels: Record<string, string> = {
+  entry: 'Principiante', junior: 'Junior', mid: 'Intermedio', senior: 'Avanzado', lead: 'Experto',
+};
+
+const categoryEmojis: Record<string, string> = {
+  kitchen: '🍳', service: '🍷', management: '📊', marketing: '📱', other: '📚',
+};
+
 const Learn = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 
-  const filteredCourses = courses.filter(c => {
-    const matchSearch = !searchTerm || c.title.toLowerCase().includes(searchTerm.toLowerCase()) || c.instructor.toLowerCase().includes(searchTerm.toLowerCase());
+  const { data: courses = [] } = useQuery({
+    queryKey: ['training-courses-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('training_courses')
+        .select('*')
+        .eq('is_published', true)
+        .order('enrollments_count', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filteredCourses = courses.filter((c: any) => {
+    const matchSearch = !searchTerm || c.title.toLowerCase().includes(searchTerm.toLowerCase()) || (c.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory = activeCategory === 'all' || c.category === activeCategory;
     return matchSearch && matchCategory;
   });
+
+  const featuredCourses = courses.filter((c: any) => c.enrollments_count >= 500).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-off-white">
@@ -70,8 +83,8 @@ const Learn = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-6 mt-10 text-white/80">
-              <div className="text-center"><div className="text-2xl font-headline text-white">{courses.length * 12}+</div><div className="text-sm font-lato-light">Cursos</div></div>
-              <div className="text-center"><div className="text-2xl font-headline text-white">8,500+</div><div className="text-sm font-lato-light">Estudiantes</div></div>
+              <div className="text-center"><div className="text-2xl font-headline text-white">{courses.length}+</div><div className="text-sm font-lato-light">Cursos</div></div>
+              <div className="text-center"><div className="text-2xl font-headline text-white">{courses.reduce((s: number, c: any) => s + (c.enrollments_count || 0), 0).toLocaleString()}+</div><div className="text-sm font-lato-light">Estudiantes</div></div>
               <div className="text-center"><div className="text-2xl font-headline text-white">50+</div><div className="text-sm font-lato-light">Instructores</div></div>
               <div className="text-center"><div className="text-2xl font-headline text-white">4</div><div className="text-sm font-lato-light">Certificaciones</div></div>
             </div>
@@ -93,8 +106,8 @@ const Learn = () => {
         </div>
       </section>
 
-      {/* Featured Courses */}
-      {activeCategory === 'all' && !searchTerm && (
+      {/* Featured */}
+      {activeCategory === 'all' && !searchTerm && featuredCourses.length > 0 && (
         <section className="py-16">
           <div className="container mx-auto px-6">
             <div className="flex items-center gap-3 mb-8">
@@ -102,25 +115,22 @@ const Learn = () => {
               <h2 className="text-2xl md:text-3xl font-headline text-purple-intense">Cursos Destacados</h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {courses.filter(c => c.featured).map(course => (
+              {featuredCourses.map((course: any) => (
                 <Card key={course.id} className="border-2 border-purple-medium/20 hover:border-purple-medium/50 hover:shadow-xl transition-all cursor-pointer group">
                   <CardHeader>
-                    <div className="text-4xl mb-3">{course.image}</div>
-                    <Badge className="w-fit bg-lavender-light/50 text-purple-intense border-0 mb-2">{course.level}</Badge>
+                    <div className="text-4xl mb-3">{categoryEmojis[course.category] || '📚'}</div>
+                    <Badge className="w-fit bg-lavender-light/50 text-purple-intense border-0 mb-2">{levelLabels[course.level] || course.level}</Badge>
                     <CardTitle className="text-lg group-hover:text-purple-medium transition-colors">{course.title}</CardTitle>
-                    <p className="text-sm text-dark-gray font-lato-regular">por {course.instructor}</p>
+                    <p className="text-sm text-dark-gray font-lato-regular">{course.short_description}</p>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-4 text-sm text-dark-gray mb-3">
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{course.duration}h</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{course.students.toLocaleString()}</span>
-                      <span className="flex items-center gap-1 text-yellow-500">★ {course.rating}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {course.skills.map(s => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{course.duration_hours}h</span>
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{(course.enrollments_count || 0).toLocaleString()}</span>
+                      <span className="flex items-center gap-1 text-yellow-500">★ {course.average_rating}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xl font-headline text-purple-intense">€{course.price}</span>
+                      <span className="text-xl font-headline text-purple-intense">{course.is_free ? 'Gratis' : `€${course.price}`}</span>
                       <Button size="sm" className="bg-gradient-to-r from-purple-medium to-purple-intense text-white">Inscribirse</Button>
                     </div>
                   </CardContent>
@@ -139,24 +149,24 @@ const Learn = () => {
             <span className="text-sm font-lato-regular text-dark-gray ml-3">({filteredCourses.length} cursos)</span>
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map(course => (
+            {filteredCourses.map((course: any) => (
               <Card key={course.id} className="bg-white hover:shadow-lg transition-all cursor-pointer border border-lavender-light/30">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <span className="text-3xl">{course.image}</span>
-                    <Badge className="bg-lavender-light/50 text-purple-intense border-0 text-xs">{course.level}</Badge>
+                    <span className="text-3xl">{categoryEmojis[course.category] || '📚'}</span>
+                    <Badge className="bg-lavender-light/50 text-purple-intense border-0 text-xs">{levelLabels[course.level] || course.level}</Badge>
                   </div>
                   <CardTitle className="text-base mt-2">{course.title}</CardTitle>
-                  <p className="text-xs text-dark-gray font-lato-regular">{course.instructor}</p>
+                  <p className="text-xs text-dark-gray font-lato-regular">{course.short_description}</p>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3 text-xs text-dark-gray mb-3">
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{course.duration}h</span>
-                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{course.students.toLocaleString()}</span>
-                    <span className="text-yellow-500">★ {course.rating}</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{course.duration_hours}h</span>
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{(course.enrollments_count || 0).toLocaleString()}</span>
+                    <span className="text-yellow-500">★ {course.average_rating}</span>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-lavender-light/30">
-                    <span className="text-lg font-headline text-purple-intense">€{course.price}</span>
+                    <span className="text-lg font-headline text-purple-intense">{course.is_free ? 'Gratis' : `€${course.price}`}</span>
                     <Button size="sm" variant="outline" className="border-purple-medium text-purple-medium hover:bg-purple-medium hover:text-white text-xs">Ver Curso</Button>
                   </div>
                 </CardContent>
