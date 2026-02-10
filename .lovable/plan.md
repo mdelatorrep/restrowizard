@@ -1,144 +1,87 @@
 
-# Rediseno Homepage Estilo Apple - Minimalismo con Efecto Wow
+# Destacar Finanzas y Talento en la Homepage
 
-## Diagnostico del Estado Actual
+## Problema
+La homepage actual menciona finanzas y talento de forma muy generica:
+- En ProductShowcase, solo hay una linea "Finanzas, inventario, talento y operaciones optimizados por IA" dentro de una feature generica de "Inteligencia artificial"
+- En ResultsSection, solo "-30% Rotacion de personal" alude a talento
+- No hay ninguna seccion que explique el valor concreto del control financiero (Prime Cost, P&L) ni la gestion de personal (turnos, ausencias, formacion)
 
-La pagina actual tiene **10 secciones** que saturan al usuario con informacion repetitiva:
+Estos son los dos mayores dolores de un restaurantero y merecen visibilidad prominente.
 
-1. **Hero** - Demasiados elementos: badge animado, headline, subtitle, feature pills, trust badges, 2 CTAs, CTA secundario, dashboard mockup con 4 floating cards, scroll indicator, modal de demo
-2. **WebsiteShowcase** - 6 features con colores rainbow (blue, green, orange, purple, pink, indigo), stats bar, browser mockup, floating cards, CTA
-3. **Problem** - 4 tarjetas con gradientes rojos, naranjas, purpuras, azules - poca coherencia con la marca
-4. **LiveResults** - Ticker en vivo, 4 metricas before/after con gradientes multicolor, community stats con 4 colores distintos
-5. **Ecosystem** - 7 modulos cada uno con su propio gradiente de color (verde, azul, purpura, naranja, teal, violeta, cyan)
-6. **CopilotDemo** - Chat simulado con gradientes verde/naranja/purpura
-7. **ConsultantSection** - Paleta azul/indigo completamente desconectada de la marca
-8. **Testimonials** - Stats bar, 3 testimonios, trust badges
-9. **Solution** - 3 pasos con timeline
-10. **SolutionsShowcase** - Grid de 5 productos
-11. **FinalCTA** - Formulario con gradientes verde/emerald
-12. **Footer** - Newsletter, links, badges
+## Solucion
 
-### Problemas Principales:
-- **12 secciones** es excesivo - la pagina se siente interminable
-- **+15 colores diferentes** sin relacion con la marca (rojos, naranjas, azules, verdes, cyans, teals, pinks, indigos)
-- Informacion repetida: el CTA "Crear Sitio Web Gratis" aparece 4+ veces
-- El mensaje principal se diluye entre tanta informacion
-- Las animaciones compiten entre si (particles, floating cards, pings, pulses, bounces, tickers)
-- El contraste es pobre en varias secciones (texto claro sobre fondos claros)
+Reemplazar la seccion **ProductShowcase** actual (3 features genericas + mockup) por una seccion de **"Dolores resueltos"** con 5 bloques que comunican los problemas reales y como la plataforma los resuelve, dando protagonismo a Finanzas y Talento.
 
----
-
-## Nuevo Diseno: Filosofia Apple
-
-### Principios:
-1. **Menos es mas** - Reducir de 12 a 6 secciones
-2. **Un solo color de acento** - Solo la paleta de marca (purpura + lavanda)
-3. **Espacio en blanco generoso** - Dejar respirar al contenido
-4. **Una idea por seccion** - Cada pantalla comunica un solo concepto
-5. **Tipografia como protagonista** - Headlines grandes, cuerpo ligero
-6. **Animaciones sutiles** - Solo al hacer scroll (fade-in), sin particulas ni tickers
-
-### Estructura Nueva (6 secciones):
+### Estructura nueva de ProductShowcase
 
 ```text
 +------------------------------------------+
-|  HEADER  (sin cambios funcionales)        |
-|  - Quitar boton verde "Comenzar Gratis"   |
-|  - Unificar a paleta purpura              |
-+------------------------------------------+
+|  "Todo lo que necesitas."                 |
 |                                           |
-|  1. HERO - Minimalista                    |
-|  Fondo: gradiente purpura sutil           |
-|  Solo: headline + subtitulo + 1 CTA       |
-|  Sin: particles, counter, pills,          |
-|       floating cards, demo modal          |
+|  [Finanzas]  [Talento]  [Operaciones]     |
+|  [Digital]   [IA]                         |
 |                                           |
-+------------------------------------------+
-|                                           |
-|  2. PRODUCTO - Lo que haces               |
-|  Fondo blanco, mucho espacio              |
-|  Un mockup centrado del dashboard         |
-|  3 features clave debajo (iconos simples) |
-|                                           |
-+------------------------------------------+
-|                                           |
-|  3. RESULTADOS - Prueba social            |
-|  4 metricas grandes, fondo claro          |
-|  Sin tickers ni animaciones en vivo       |
-|  Tipografia headline como protagonista    |
-|                                           |
-+------------------------------------------+
-|                                           |
-|  4. ECOSISTEMA - Las 5 soluciones         |
-|  Grid limpio con logos                    |
-|  Sin tags, sin gradientes multicolor      |
-|  Solo purpura + blanco                    |
-|                                           |
-+------------------------------------------+
-|                                           |
-|  5. TESTIMONIOS - 3 citas limpias         |
-|  Fondo lavanda suave                      |
-|  Sin module badges ni metricas            |
-|  Solo la cita + nombre + restaurante      |
-|                                           |
-+------------------------------------------+
-|                                           |
-|  6. CTA FINAL - Cierre simple             |
-|  Fondo purpura                            |
-|  Headline + 1 boton                       |
-|  Sin formulario inline                    |
-|                                           |
-+------------------------------------------+
-|  FOOTER  (simplificado)                   |
+|  Cada bloque:                             |
+|  - Icono + Titulo del dolor               |
+|  - Dato de la industria (ej: "97% lucha   |
+|    con costos")                           |
+|  - Que hace RestroWizard al respecto      |
+|    (ej: "Prime Cost en tiempo real,       |
+|     P&L automatizado, alertas de costos") |
 +------------------------------------------+
 ```
 
-### Secciones Eliminadas:
-- **WebsiteShowcase** - Se integra como concepto en el Hero/Producto
-- **Problem** - Negativo y repetitivo, su informacion se destila en Resultados
-- **LiveResults** (ticker/before-after) - Reemplazado por Resultados simples
-- **CopilotDemo** - Interesante pero satura; se puede agregar como pagina separada
-- **ConsultantSection** - Se mueve a una pagina dedicada `/consultores`
-- **Solution** (3 pasos) - Redundante con el producto
+### Los 5 bloques propuestos
+
+1. **Control Financiero** (DollarSign)
+   - Dolor: "El 38% de restaurantes no es rentable"
+   - Solucion: "Prime Cost en tiempo real, Estado de Resultados (P&L) automatizado y alertas cuando tus costos se desbordan"
+
+2. **Gestion de Talento** (Users)
+   - Dolor: "El 45% no encuentra personal calificado"
+   - Solucion: "Turnos inteligentes, control de ausencias, programas de formacion y beneficios que reducen la rotacion"
+
+3. **Inventario y Proveedores** (Package)
+   - Dolor: "30% de merma descontrolada"
+   - Solucion: "Inventario con recetas vinculadas, deduccion automatica por venta y analisis de proveedores con IA"
+
+4. **Presencia Digital** (Globe)
+   - Dolor: "El 60% no tiene sitio web"
+   - Solucion: "Sitio web, menu digital, reservas y delivery sin comisiones, listo en minutos"
+
+5. **Copiloto IA** (Bot)
+   - Dolor: "Decisiones basadas en intuicion"
+   - Solucion: "Un copiloto que analiza tu operacion y te dice que hacer antes de que sea tarde"
+
+### Actualizacion del mockup del dashboard
+
+Reemplazar las 3 metricas genericas del mockup (Reservas/Pedidos/Rentabilidad) por metricas que reflejen finanzas y talento:
+- **Prime Cost**: 58.2%
+- **Costo laboral**: 22.1%
+- **Staff activo hoy**: 12/14
+
+El alert de IA se mantiene pero con un mensaje mas financiero:
+- "Tu Prime Cost subio 3.2% esta semana. El costo de proteinas aumento un 15%. Te sugiero renegociar con tu proveedor."
+
+### ResultsSection actualizada
+
+Cambiar las 4 metricas para incluir finanzas y talento explicitamente:
+- **-12%** Prime Cost promedio
+- **-30%** Rotacion de personal
+- **+23%** Rentabilidad neta
+- **+500** Restaurantes activos
 
 ---
 
 ## Detalle Tecnico
 
-### Archivos Modificados:
-- **`src/pages/Index.tsx`** - Reducir a 6 secciones
-- **`src/components/Hero.tsx`** - Reescribir completamente: fondo limpio, headline grande centrado, 1 subtitulo, 1 CTA, sin particulas/counters/pills/floating cards
-- **`src/components/Header.tsx`** - Unificar CTA a purpura (quitar verde/emerald)
+### Archivos modificados
+- **`src/components/ProductShowcase.tsx`** - Reescribir features array con los 5 bloques (finanzas, talento, inventario, digital, IA), actualizar mockup con metricas financieras, cambiar alert de IA
+- **`src/components/ResultsSection.tsx`** - Actualizar los 4 metrics para incluir Prime Cost y Rentabilidad
 
-### Archivos Nuevos:
-- **`src/components/ProductShowcase.tsx`** - Seccion de producto con mockup centrado y 3 features
-- **`src/components/ResultsSection.tsx`** - 4 metricas grandes estilo Apple (tipografia hero)
-- **`src/components/EcosystemMinimal.tsx`** - Grid limpio de las 5 soluciones
-
-### Archivos que se dejan de importar en Index (no se eliminan):
-- `WebsiteShowcase.tsx`
-- `Problem.tsx`
-- `LiveResults.tsx`
-- `CopilotDemo.tsx`
-- `ConsultantSection.tsx`
-- `Solution.tsx`
-- `SolutionsShowcase.tsx`
-
-### Archivos Simplificados:
-- **`src/components/Testimonials.tsx`** - Reducir a 3 citas limpias sin metricas/badges/stats bar
-- **`src/components/FinalCTA.tsx`** - Solo headline + boton, sin formulario/toggle/features grid
-- **`src/components/Footer.tsx`** - Quitar newsletter section, simplificar
-
-### Paleta Unica Aplicada:
-- Fondos: blanco puro, off-white (#EFE2F2), purpura intenso (#3E1064)
-- Textos: soft-black para cuerpo, purple-intense para headlines
-- Acento unico: lavender-light (#D4A5DB) para detalles sutiles
-- Cero rojos, naranjas, azules, verdes, cyans, pinks en la homepage
-
-### Animaciones:
-- Solo fade-in al scroll (CSS intersection observer o simple opacity transitions)
-- Sin particles, tickers, counters, floating cards, pings, pulses multiples
-- Transiciones hover suaves en botones y cards
+### Paleta
+Se mantiene la paleta sobria actual (purple-intense, purple-medium, lavender-light). Los 5 bloques usan todos el mismo estilo monocromatico, sin colores rainbow.
 
 ### Sin cambios de base de datos
-No se requieren migraciones. Todo es restructuracion de componentes frontend.
+Solo cambios de contenido en componentes frontend.
