@@ -8,7 +8,9 @@ import { ActiveClientProvider } from "./contexts/ActiveClientContext";
 import InactivityManager from "./components/InactivityManager";
 import InstallPWAPrompt from "./components/InstallPWAPrompt";
 import AppLayout from "./layouts/AppLayout";
+import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
+import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
 
 // Public pages
 import Index from "./pages/Index";
@@ -102,6 +104,16 @@ import ConsultantReports from "./pages/consultant/Reports";
 import ConsultantAlerts from "./pages/consultant/Alerts";
 import ConsultantNewBusiness from "./pages/consultant/NewBusiness";
 import PublicQuotationPage from "./pages/PublicQuotation";
+
+// Admin pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminRestaurants from "./pages/admin/AdminRestaurants";
+import AdminJobs from "./pages/admin/AdminJobs";
+import AdminLearn from "./pages/admin/AdminLearn";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminGrowth from "./pages/admin/AdminGrowth";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -243,6 +255,22 @@ const App = () => (
                 <Route path="new-business" element={<ConsultantNewBusiness />} />
                 <Route path="billing" element={<ConsultantBilling />} />
                 <Route path="settings" element={<ConsultantSettings />} />
+              </Route>
+
+              {/* Super Admin routes */}
+              <Route path="/admin" element={
+                <RequireSuperAdmin>
+                  <AdminLayout />
+                </RequireSuperAdmin>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="restaurants" element={<AdminRestaurants />} />
+                <Route path="jobs" element={<AdminJobs />} />
+                <Route path="learn" element={<AdminLearn />} />
+                <Route path="services" element={<AdminServices />} />
+                <Route path="growth" element={<AdminGrowth />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
 
               {/* Catch-all */}
