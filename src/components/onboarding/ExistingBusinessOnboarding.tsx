@@ -75,6 +75,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
           address: formData.address,
           city: formData.city,
           state: formData.state,
+          country: formData.country,
           employee_count: formData.employee_count ? parseInt(formData.employee_count) : null,
           monthly_revenue_range: formData.monthly_revenue_range,
           opening_date: formData.opening_date || null,
