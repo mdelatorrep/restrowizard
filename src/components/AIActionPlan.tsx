@@ -260,7 +260,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {actionPlan.quick_wins.map(action => renderActionItem(action, 'high'))}
+              {(actionPlan.quick_wins || []).map(action => renderActionItem(action, 'high'))}
             </CardContent>
           </Card>
         </TabsContent>
