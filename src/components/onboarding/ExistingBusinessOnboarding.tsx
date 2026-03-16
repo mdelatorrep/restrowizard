@@ -59,6 +59,50 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
   };
 
   const lifecycleInfo = getLifecycleStage();
+  
+  // Dynamic revenue ranges based on selected country
+  const countryInfo = getCountryInfo(formData.country);
+  const currencyCode = countryInfo?.currency || 'USD';
+  const currencySymbol = countryInfo?.currencySymbol || '$';
+  
+  const getRevenueRanges = () => {
+    // COP uses much larger numbers
+    if (currencyCode === 'COP') {
+      return [
+        { value: '0-20m', label: `${currencySymbol}0 - ${currencySymbol}20M ${currencyCode}` },
+        { value: '20m-50m', label: `${currencySymbol}20M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-100m', label: `${currencySymbol}50M - ${currencySymbol}100M ${currencyCode}` },
+        { value: '100m-500m', label: `${currencySymbol}100M - ${currencySymbol}500M ${currencyCode}` },
+        { value: '500m+', label: `${currencySymbol}500M+ ${currencyCode}` },
+      ];
+    }
+    if (currencyCode === 'ARS') {
+      return [
+        { value: '0-5m', label: `${currencySymbol}0 - ${currencySymbol}5M ${currencyCode}` },
+        { value: '5m-20m', label: `${currencySymbol}5M - ${currencySymbol}20M ${currencyCode}` },
+        { value: '20m-50m', label: `${currencySymbol}20M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-200m', label: `${currencySymbol}50M - ${currencySymbol}200M ${currencyCode}` },
+        { value: '200m+', label: `${currencySymbol}200M+ ${currencyCode}` },
+      ];
+    }
+    if (currencyCode === 'CLP') {
+      return [
+        { value: '0-5m', label: `${currencySymbol}0 - ${currencySymbol}5M ${currencyCode}` },
+        { value: '5m-15m', label: `${currencySymbol}5M - ${currencySymbol}15M ${currencyCode}` },
+        { value: '15m-50m', label: `${currencySymbol}15M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-150m', label: `${currencySymbol}50M - ${currencySymbol}150M ${currencyCode}` },
+        { value: '150m+', label: `${currencySymbol}150M+ ${currencyCode}` },
+      ];
+    }
+    // MXN and default
+    return [
+      { value: '0-100k', label: `${currencySymbol}0 - ${currencySymbol}100,000 ${currencyCode}` },
+      { value: '100k-500k', label: `${currencySymbol}100,000 - ${currencySymbol}500,000 ${currencyCode}` },
+      { value: '500k-1m', label: `${currencySymbol}500,000 - ${currencySymbol}1,000,000 ${currencyCode}` },
+      { value: '1m-5m', label: `${currencySymbol}1M - ${currencySymbol}5M ${currencyCode}` },
+      { value: '5m+', label: `${currencySymbol}5M+ ${currencyCode}` },
+    ];
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
