@@ -352,8 +352,10 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
         .update({ progress_percentage: 100, current_phase: 'completed' })
         .eq('id', project.id);
 
-      // 6. Refresh user type
-      await refreshUserType();
+      // 6. Immediately mark onboarding as complete in cache
+      markOnboardingComplete('restaurant_owner');
+      // Background refresh
+      refreshUserType().catch(() => {});
 
       toast({
         title: "¡Felicidades! 🎉",
