@@ -13,7 +13,7 @@ import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, parseISO, format } from 'date-fns';
-import { BUSINESS_TYPES, CUISINE_TYPES } from '@/data/constants';
+import { BUSINESS_TYPES, CUISINE_TYPES, COUNTRIES, getCountryInfo, formatCurrencyByCountry } from '@/data/constants';
 
 interface ExistingBusinessOnboardingProps {
   onBack: () => void;
@@ -34,9 +34,10 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
     address: '',
     city: '',
     state: '',
+    country: 'Colombia',
     employee_count: '',
     monthly_revenue_range: '',
-    opening_date: '', // Added for lifecycle calculation
+    opening_date: '',
   });
 
   const totalSteps = 4; // Added step for opening date
@@ -58,6 +59,50 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
   };
 
   const lifecycleInfo = getLifecycleStage();
+  
+  // Dynamic revenue ranges based on selected country
+  const countryInfo = getCountryInfo(formData.country);
+  const currencyCode = countryInfo?.currency || 'USD';
+  const currencySymbol = countryInfo?.currencySymbol || '$';
+  
+  const getRevenueRanges = () => {
+    // COP uses much larger numbers
+    if (currencyCode === 'COP') {
+      return [
+        { value: '0-20m', label: `${currencySymbol}0 - ${currencySymbol}20M ${currencyCode}` },
+        { value: '20m-50m', label: `${currencySymbol}20M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-100m', label: `${currencySymbol}50M - ${currencySymbol}100M ${currencyCode}` },
+        { value: '100m-500m', label: `${currencySymbol}100M - ${currencySymbol}500M ${currencyCode}` },
+        { value: '500m+', label: `${currencySymbol}500M+ ${currencyCode}` },
+      ];
+    }
+    if (currencyCode === 'ARS') {
+      return [
+        { value: '0-5m', label: `${currencySymbol}0 - ${currencySymbol}5M ${currencyCode}` },
+        { value: '5m-20m', label: `${currencySymbol}5M - ${currencySymbol}20M ${currencyCode}` },
+        { value: '20m-50m', label: `${currencySymbol}20M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-200m', label: `${currencySymbol}50M - ${currencySymbol}200M ${currencyCode}` },
+        { value: '200m+', label: `${currencySymbol}200M+ ${currencyCode}` },
+      ];
+    }
+    if (currencyCode === 'CLP') {
+      return [
+        { value: '0-5m', label: `${currencySymbol}0 - ${currencySymbol}5M ${currencyCode}` },
+        { value: '5m-15m', label: `${currencySymbol}5M - ${currencySymbol}15M ${currencyCode}` },
+        { value: '15m-50m', label: `${currencySymbol}15M - ${currencySymbol}50M ${currencyCode}` },
+        { value: '50m-150m', label: `${currencySymbol}50M - ${currencySymbol}150M ${currencyCode}` },
+        { value: '150m+', label: `${currencySymbol}150M+ ${currencyCode}` },
+      ];
+    }
+    // MXN and default
+    return [
+      { value: '0-100k', label: `${currencySymbol}0 - ${currencySymbol}100,000 ${currencyCode}` },
+      { value: '100k-500k', label: `${currencySymbol}100,000 - ${currencySymbol}500,000 ${currencyCode}` },
+      { value: '500k-1m', label: `${currencySymbol}500,000 - ${currencySymbol}1,000,000 ${currencyCode}` },
+      { value: '1m-5m', label: `${currencySymbol}1M - ${currencySymbol}5M ${currencyCode}` },
+      { value: '5m+', label: `${currencySymbol}5M+ ${currencyCode}` },
+    ];
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -74,6 +119,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
           address: formData.address,
           city: formData.city,
           state: formData.state,
+          country: formData.country,
           employee_count: formData.employee_count ? parseInt(formData.employee_count) : null,
           monthly_revenue_range: formData.monthly_revenue_range,
           opening_date: formData.opening_date || null,
@@ -200,6 +246,22 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="country">País *</Label>
+                  <Select
+                    value={formData.country}
+                    onValueChange={(value) => handleInputChange('country', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona tu país" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="address">Dirección</Label>
                   <Input
                     id="address"
@@ -213,16 +275,16 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                     <Label htmlFor="city">Ciudad *</Label>
                     <Input
                       id="city"
-                      placeholder="Ej: Ciudad de México"
+                      placeholder="Ej: Bogotá"
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">Estado</Label>
+                    <Label htmlFor="state">Estado / Departamento</Label>
                     <Input
                       id="state"
-                      placeholder="Ej: CDMX"
+                      placeholder="Ej: Cundinamarca"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
                     />
@@ -323,11 +385,9 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                       <SelectValue placeholder="Selecciona un rango" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0-100k">$0 - $100,000 MXN</SelectItem>
-                      <SelectItem value="100k-500k">$100,000 - $500,000 MXN</SelectItem>
-                      <SelectItem value="500k-1m">$500,000 - $1,000,000 MXN</SelectItem>
-                      <SelectItem value="1m-5m">$1M - $5M MXN</SelectItem>
-                      <SelectItem value="5m+">$5M+ MXN</SelectItem>
+                      {getRevenueRanges().map(range => (
+                        <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

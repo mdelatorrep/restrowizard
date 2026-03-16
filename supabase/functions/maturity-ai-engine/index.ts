@@ -226,11 +226,23 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
 
     let result;
     try {
-      const content = aiData.choices?.[0]?.message?.content;
+      let content = aiData.choices?.[0]?.message?.content;
+      // Strip markdown code blocks (```json ... ```) that the model sometimes wraps around JSON
+      if (typeof content === 'string') {
+        content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      }
       result = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
-      result = aiData.choices?.[0]?.message?.content;
+      // Return a structured error instead of raw string to prevent frontend crashes
+      result = null;
+    }
+
+    if (!result) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No se pudo procesar la respuesta de IA. Intenta de nuevo.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(

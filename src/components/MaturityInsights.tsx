@@ -37,7 +37,7 @@ const MaturityInsights: React.FC<MaturityInsightsProps> = ({ analysis }) => {
             <CardDescription>Lo que estás haciendo bien</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {analysis.strengths.map((strength, index) => (
+            {(analysis.strengths || []).map((strength, index) => (
               <div 
                 key={index} 
                 className="p-3 rounded-lg bg-success/5 border border-success/20"
@@ -61,7 +61,7 @@ const MaturityInsights: React.FC<MaturityInsightsProps> = ({ analysis }) => {
             <CardDescription>Requieren atención inmediata</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {analysis.critical_areas.map((area, index) => (
+            {(analysis.critical_areas || []).map((area, index) => (
               <div 
                 key={index} 
                 className="p-3 rounded-lg bg-destructive/5 border border-destructive/20"

@@ -89,9 +89,9 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   };
 
   const allActions = [
-    ...actionPlan.quick_wins.map(a => ({ ...a, category: 'quick_wins' as const, priority: 'high' as const })),
-    ...actionPlan.priority_actions.map(a => ({ ...a, category: 'priority' as const, priority: 'medium' as const })),
-    ...actionPlan.strategic_initiatives.map(a => ({ ...a, category: 'strategic' as const, priority: 'low' as const }))
+    ...(actionPlan.quick_wins || []).map(a => ({ ...a, category: 'quick_wins' as const, priority: 'high' as const })),
+    ...(actionPlan.priority_actions || []).map(a => ({ ...a, category: 'priority' as const, priority: 'medium' as const })),
+    ...(actionPlan.strategic_initiatives || []).map(a => ({ ...a, category: 'strategic' as const, priority: 'low' as const }))
   ];
 
   const completedCount = Object.values(actionStatuses).filter(s => s === 'completed').length;
@@ -234,17 +234,17 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
           <TabsTrigger value="quick_wins" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             <span className="hidden sm:inline">Quick Wins</span>
-            <Badge variant="secondary" className="ml-1">{actionPlan.quick_wins.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{(actionPlan.quick_wins || []).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="priority" className="flex items-center gap-2">
             <PlayCircle className="h-4 w-4" />
             <span className="hidden sm:inline">Prioritarias</span>
-            <Badge variant="secondary" className="ml-1">{actionPlan.priority_actions.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{(actionPlan.priority_actions || []).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="strategic" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             <span className="hidden sm:inline">Estratégicas</span>
-            <Badge variant="secondary" className="ml-1">{actionPlan.strategic_initiatives.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{(actionPlan.strategic_initiatives || []).length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -260,7 +260,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {actionPlan.quick_wins.map(action => renderActionItem(action, 'high'))}
+              {(actionPlan.quick_wins || []).map(action => renderActionItem(action, 'high'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -277,7 +277,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {actionPlan.priority_actions.map(action => renderActionItem(action, 'medium'))}
+              {(actionPlan.priority_actions || []).map(action => renderActionItem(action, 'medium'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -294,7 +294,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {actionPlan.strategic_initiatives.map(action => renderActionItem(action, 'low'))}
+              {(actionPlan.strategic_initiatives || []).map(action => renderActionItem(action, 'low'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -313,7 +313,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 gap-4">
-            {actionPlan.kpis.map((kpi, index) => (
+            {(actionPlan.kpis || []).map((kpi, index) => (
               <div 
                 key={index} 
                 className="p-4 rounded-lg bg-muted/30 border border-border"

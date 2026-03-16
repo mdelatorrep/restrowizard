@@ -50,7 +50,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
   };
 
   // Prepare data for radar chart
-  const radarData = benchmark.pillar_comparisons.map(p => ({
+  const radarData = (benchmark.pillar_comparisons || []).map(p => ({
     pillar: p.pillar_name.split(' ')[0], // Shortened name
     'Tu Score': p.user_score,
     'Industria': p.industry_average,
@@ -144,7 +144,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           <CardTitle className="font-headline">Detalle por Pilar</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {benchmark.pillar_comparisons.map((pillar) => (
+          {(benchmark.pillar_comparisons || []).map((pillar) => (
             <div key={pillar.pillar_id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {benchmark.top_opportunities.map((opp, index) => (
+          {(benchmark.top_opportunities || []).map((opp, index) => (
             <div 
               key={index} 
               className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"
