@@ -89,9 +89,9 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   };
 
   const allActions = [
-    ...actionPlan.quick_wins.map(a => ({ ...a, category: 'quick_wins' as const, priority: 'high' as const })),
-    ...actionPlan.priority_actions.map(a => ({ ...a, category: 'priority' as const, priority: 'medium' as const })),
-    ...actionPlan.strategic_initiatives.map(a => ({ ...a, category: 'strategic' as const, priority: 'low' as const }))
+    ...(actionPlan.quick_wins || []).map(a => ({ ...a, category: 'quick_wins' as const, priority: 'high' as const })),
+    ...(actionPlan.priority_actions || []).map(a => ({ ...a, category: 'priority' as const, priority: 'medium' as const })),
+    ...(actionPlan.strategic_initiatives || []).map(a => ({ ...a, category: 'strategic' as const, priority: 'low' as const }))
   ];
 
   const completedCount = Object.values(actionStatuses).filter(s => s === 'completed').length;
