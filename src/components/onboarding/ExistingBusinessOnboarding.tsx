@@ -22,7 +22,7 @@ interface ExistingBusinessOnboardingProps {
 export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshUserType } = useUserType();
+  const { refreshUserType, markOnboardingComplete } = useUserType();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,8 +132,11 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
         description: "Tu restaurante ha sido configurado. Bienvenido a tu dashboard.",
       });
 
-      // Refresh user type cache so OnboardingGuard sees hasCompletedOnboarding = true
-      await refreshUserType();
+      // Immediately mark onboarding as complete in cache (deterministic, no network dependency)
+      markOnboardingComplete('restaurant_owner');
+
+      // Also trigger a background refresh to ensure cache stays in sync
+      refreshUserType().catch(() => {});
 
       navigate('/r/dashboard', { replace: true });
     } catch (error: any) {

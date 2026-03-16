@@ -25,7 +25,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { refreshUserType } = useUserType();
+  const { refreshUserType, markOnboardingComplete } = useUserType();
   const { toast } = useToast();
 
   const projectIdFromUrl = searchParams.get('projectId');
@@ -352,8 +352,10 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
         .update({ progress_percentage: 100, current_phase: 'completed' })
         .eq('id', project.id);
 
-      // 6. Refresh user type
-      await refreshUserType();
+      // 6. Immediately mark onboarding as complete in cache
+      markOnboardingComplete('restaurant_owner');
+      // Background refresh
+      refreshUserType().catch(() => {});
 
       toast({
         title: "¡Felicidades! 🎉",
@@ -374,8 +376,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   };
 
   const handleGoToDashboard = async () => {
-    await refreshUserType();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    markOnboardingComplete('restaurant_owner');
+    refreshUserType().catch(() => {});
     navigate('/r/dashboard', { replace: true });
   };
 
