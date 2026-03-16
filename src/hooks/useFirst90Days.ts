@@ -319,12 +319,19 @@ export function useFirst90Days() {
   });
 
   // Calculate if restaurant is within first 90 days
-  const isNewRestaurant = businessData 
-    ? differenceInDays(new Date(), new Date(businessData.created_at)) <= 90
+  // Use opening_date if available, fallback to created_at
+  const openDate = businessData?.opening_date 
+    ? new Date(businessData.opening_date) 
+    : businessData?.created_at 
+      ? new Date(businessData.created_at) 
+      : null;
+
+  const isNewRestaurant = openDate 
+    ? differenceInDays(new Date(), openDate) <= 90
     : false;
 
-  const daysOpen = businessData 
-    ? differenceInDays(new Date(), new Date(businessData.created_at))
+  const daysOpen = openDate 
+    ? differenceInDays(new Date(), openDate)
     : 0;
 
   const weekNumber = Math.min(Math.ceil(daysOpen / 7), 13);
