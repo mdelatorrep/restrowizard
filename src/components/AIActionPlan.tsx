@@ -244,7 +244,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
           <TabsTrigger value="strategic" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             <span className="hidden sm:inline">Estratégicas</span>
-            <Badge variant="secondary" className="ml-1">{actionPlan.strategic_initiatives.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{(actionPlan.strategic_initiatives || []).length}</Badge>
           </TabsTrigger>
         </TabsList>
 
