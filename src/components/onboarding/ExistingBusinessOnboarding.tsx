@@ -202,6 +202,22 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="country">País *</Label>
+                  <Select
+                    value={formData.country}
+                    onValueChange={(value) => handleInputChange('country', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona tu país" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="address">Dirección</Label>
                   <Input
                     id="address"
@@ -215,16 +231,16 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                     <Label htmlFor="city">Ciudad *</Label>
                     <Input
                       id="city"
-                      placeholder="Ej: Ciudad de México"
+                      placeholder="Ej: Bogotá"
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">Estado</Label>
+                    <Label htmlFor="state">Estado / Departamento</Label>
                     <Input
                       id="state"
-                      placeholder="Ej: CDMX"
+                      placeholder="Ej: Cundinamarca"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
                     />
