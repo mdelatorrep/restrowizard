@@ -194,7 +194,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {benchmark.top_opportunities.map((opp, index) => (
+          {(benchmark.top_opportunities || []).map((opp, index) => (
             <div 
               key={index} 
               className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"

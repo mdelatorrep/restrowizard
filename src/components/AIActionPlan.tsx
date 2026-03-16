@@ -313,7 +313,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 gap-4">
-            {actionPlan.kpis.map((kpi, index) => (
+            {(actionPlan.kpis || []).map((kpi, index) => (
               <div 
                 key={index} 
                 className="p-4 rounded-lg bg-muted/30 border border-border"
