@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, parseISO, format } from 'date-fns';
@@ -21,6 +22,7 @@ interface ExistingBusinessOnboardingProps {
 export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshUserType } = useUserType();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,11 +83,13 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
 
       toast({
         title: "¡Perfecto!",
-        description: "Tu restaurante ha sido configurado. Ahora vamos a hacer un diagnóstico rápido.",
+        description: "Tu restaurante ha sido configurado. Bienvenido a tu dashboard.",
       });
 
-      // Navigate to diagnosis instead of dashboard
-      navigate('/diagnosis');
+      // Refresh user type cache so OnboardingGuard sees hasCompletedOnboarding = true
+      await refreshUserType();
+
+      navigate('/r/dashboard', { replace: true });
     } catch (error: any) {
       toast({
         title: "Error",

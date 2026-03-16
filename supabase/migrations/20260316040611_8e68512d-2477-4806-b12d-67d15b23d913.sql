@@ -1,0 +1,1 @@
+DELETE FROM restaurant_businesses WHERE id IN ('8d9a07b3-c8ff-4d7a-bba9-7b8e9a07e406', '28bec03c-35aa-4b58-8933-29a26fb29bdf');
