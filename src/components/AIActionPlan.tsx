@@ -234,7 +234,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
           <TabsTrigger value="quick_wins" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             <span className="hidden sm:inline">Quick Wins</span>
-            <Badge variant="secondary" className="ml-1">{actionPlan.quick_wins.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{(actionPlan.quick_wins || []).length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="priority" className="flex items-center gap-2">
             <PlayCircle className="h-4 w-4" />
