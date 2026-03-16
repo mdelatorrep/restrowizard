@@ -184,6 +184,7 @@ export const useUserType = () => {
     hasCompletedOnboarding,
     updateUserType,
     refreshUserType,
+    markOnboardingComplete,
     isRestaurant: userType === 'restaurant_owner',
     isConsultant: userType === 'consultant',
   };
