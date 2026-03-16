@@ -8731,6 +8731,18 @@ export type Database = {
         Returns: undefined
       }
       increment_job_views: { Args: { job_id: string }; Returns: undefined }
+      is_business_owner: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_admin: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_lead: {
+        Args: { _business_id: string; _user_id: string }
+        Returns: boolean
+      }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {

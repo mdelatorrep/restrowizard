@@ -41,6 +41,8 @@ export const useTeamPermissions = (): TeamPermissionContext => {
         .from('restaurant_businesses')
         .select('id')
         .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (ownedBusiness) {

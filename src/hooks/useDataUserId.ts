@@ -32,11 +32,17 @@ export const useDataUserId = () => {
       if (!user?.id) return null;
       
       // First check if user owns a business (they are the owner)
-      const { data: ownedBusiness } = await supabase
+      const { data: ownedBusiness, error: ownerError } = await supabase
         .from('restaurant_businesses')
         .select('id, owner_id')
         .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
+      
+      if (ownerError) {
+        console.warn('⚠️ [useDataUserId] Error checking ownership:', ownerError.message);
+      }
       
       if (ownedBusiness) {
         // User is owner, no need to look up team membership
