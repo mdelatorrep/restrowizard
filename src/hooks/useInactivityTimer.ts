@@ -16,9 +16,9 @@ export const useInactivityTimer = ({
   const { user, signOut } = useAuth();
   const { toast } = useToast();
 
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const warningTimeoutRef = useRef<NodeJS.Timeout>();
-  const countdownRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const warningTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const countdownRef = useRef<ReturnType<typeof setTimeout>>();
 
   const resetTimer = useCallback(() => {
     // Limpiar todos los timers existentes

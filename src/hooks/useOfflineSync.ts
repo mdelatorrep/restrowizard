@@ -23,7 +23,7 @@ export const useOfflineSync = () => {
   });
   
   const syncInProgress = useRef(false);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize IndexedDB
   useEffect(() => {
