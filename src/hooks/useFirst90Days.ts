@@ -410,7 +410,7 @@ function calculateWeeklyGrowth(data: any[], field: string): number[] {
   
   const weeklyData: number[] = [];
   const sortedData = [...data].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+    new Date(a.sale_date || a.date || 0).getTime() - new Date(b.sale_date || b.date || 0).getTime()
   );
   
   let weekSum = 0;

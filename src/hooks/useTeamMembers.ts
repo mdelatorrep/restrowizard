@@ -168,6 +168,8 @@ export const useTeamMembers = () => {
         .from('restaurant_businesses')
         .select('id')
         .eq('owner_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (ownedBusiness) return ownedBusiness.id;
