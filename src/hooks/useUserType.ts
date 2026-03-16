@@ -165,6 +165,18 @@ export const useUserType = () => {
     await queryClient.refetchQueries({ queryKey });
   };
 
+  /**
+   * Directly marks onboarding as complete in the cache.
+   * Use after a confirmed successful business/profile creation to avoid
+   * race conditions with network refetches.
+   */
+  const markOnboardingComplete = (type: UserType = 'restaurant_owner') => {
+    queryClient.setQueryData<UserTypeQueryData>(queryKey, {
+      userType: type,
+      hasCompletedOnboarding: true,
+    });
+  };
+
   return {
     userType,
     loading: Boolean(user?.id) && isLoading,
