@@ -83,11 +83,13 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
 
       toast({
         title: "¡Perfecto!",
-        description: "Tu restaurante ha sido configurado. Ahora vamos a hacer un diagnóstico rápido.",
+        description: "Tu restaurante ha sido configurado. Bienvenido a tu dashboard.",
       });
 
-      // Navigate to diagnosis instead of dashboard
-      navigate('/diagnosis');
+      // Refresh user type cache so OnboardingGuard sees hasCompletedOnboarding = true
+      await refreshUserType();
+
+      navigate('/r/dashboard', { replace: true });
     } catch (error: any) {
       toast({
         title: "Error",
