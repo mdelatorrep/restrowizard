@@ -14,6 +14,7 @@ import AIActionPlanComponent from '@/components/AIActionPlan';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faArrowLeft, faPollH, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import { Sparkles, BarChart3, Target, Brain, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // SEO constants for Diagnosis page
 const DIAGNOSIS_SEO_TITLE = 'Diagnóstico de Madurez para Restaurantes - Gratis con IA | RestroWizard';
@@ -42,6 +43,38 @@ const Diagnosis = () => {
   const { userType, loading: typeLoading } = useUserType();
   const { loading, aiLoading, saveDiagnosis, generateAIAnalysis, getAIActionPlan, getBenchmarkComparison } = useDiagnosis();
   const navigate = useNavigate();
+
+  // Pre-load restaurant business data into the context form
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const loadBusinessContext = async () => {
+      const { data: business } = await supabase
+        .from('restaurant_businesses')
+        .select('business_type, city, country, cuisine_type, employee_count, opening_date')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (business) {
+        const yearsOperating = business.opening_date 
+          ? Math.floor((Date.now() - new Date(business.opening_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+          : undefined;
+          
+        setRestaurantContext(prev => ({
+          ...prev,
+          businessType: business.business_type || prev.businessType,
+          location: [business.city, business.country].filter(Boolean).join(', ') || prev.location,
+          cuisineType: business.cuisine_type || prev.cuisineType,
+          employeeCount: business.employee_count || prev.employeeCount,
+          yearsOperating: yearsOperating && yearsOperating > 0 ? yearsOperating : prev.yearsOperating,
+        }));
+      }
+    };
+    
+    loadBusinessContext();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
