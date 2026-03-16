@@ -310,7 +310,7 @@ export function useFirst90Days() {
         .from('daily_sales')
         .select('*')
         .eq('user_id', user!.id)
-        .order('date', { ascending: true });
+        .order('sale_date', { ascending: true });
       
       if (error) throw error;
       return data || [];
