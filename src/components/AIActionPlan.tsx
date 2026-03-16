@@ -277,7 +277,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {actionPlan.priority_actions.map(action => renderActionItem(action, 'medium'))}
+              {(actionPlan.priority_actions || []).map(action => renderActionItem(action, 'medium'))}
             </CardContent>
           </Card>
         </TabsContent>
