@@ -144,7 +144,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           <CardTitle className="font-headline">Detalle por Pilar</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {benchmark.pillar_comparisons.map((pillar) => (
+          {(benchmark.pillar_comparisons || []).map((pillar) => (
             <div key={pillar.pillar_id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
