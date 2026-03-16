@@ -13,7 +13,7 @@ import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, parseISO, format } from 'date-fns';
-import { BUSINESS_TYPES, CUISINE_TYPES } from '@/data/constants';
+import { BUSINESS_TYPES, CUISINE_TYPES, COUNTRIES, getCountryInfo, formatCurrencyByCountry } from '@/data/constants';
 
 interface ExistingBusinessOnboardingProps {
   onBack: () => void;
