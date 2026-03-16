@@ -34,9 +34,10 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
     address: '',
     city: '',
     state: '',
+    country: 'Colombia',
     employee_count: '',
     monthly_revenue_range: '',
-    opening_date: '', // Added for lifecycle calculation
+    opening_date: '',
   });
 
   const totalSteps = 4; // Added step for opening date
