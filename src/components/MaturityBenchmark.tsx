@@ -50,7 +50,7 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
   };
 
   // Prepare data for radar chart
-  const radarData = benchmark.pillar_comparisons.map(p => ({
+  const radarData = (benchmark.pillar_comparisons || []).map(p => ({
     pillar: p.pillar_name.split(' ')[0], // Shortened name
     'Tu Score': p.user_score,
     'Industria': p.industry_average,
