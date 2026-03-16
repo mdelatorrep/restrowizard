@@ -25,7 +25,7 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { refreshUserType } = useUserType();
+  const { refreshUserType, markOnboardingComplete } = useUserType();
   const { toast } = useToast();
 
   const projectIdFromUrl = searchParams.get('projectId');
