@@ -376,8 +376,8 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
   };
 
   const handleGoToDashboard = async () => {
-    await refreshUserType();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    markOnboardingComplete('restaurant_owner');
+    refreshUserType().catch(() => {});
     navigate('/r/dashboard', { replace: true });
   };
 
