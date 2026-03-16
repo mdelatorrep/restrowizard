@@ -385,11 +385,9 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                       <SelectValue placeholder="Selecciona un rango" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0-100k">$0 - $100,000 MXN</SelectItem>
-                      <SelectItem value="100k-500k">$100,000 - $500,000 MXN</SelectItem>
-                      <SelectItem value="500k-1m">$500,000 - $1,000,000 MXN</SelectItem>
-                      <SelectItem value="1m-5m">$1M - $5M MXN</SelectItem>
-                      <SelectItem value="5m+">$5M+ MXN</SelectItem>
+                      {getRevenueRanges().map(range => (
+                        <SelectItem key={range.value} value={range.value}>{range.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
