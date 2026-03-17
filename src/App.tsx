@@ -38,6 +38,10 @@ import PublicFeedback from "./pages/PublicFeedback";
 import PublicLoyalty from "./pages/PublicLoyalty";
 import LoyaltyPortal from "./pages/LoyaltyPortal";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 // Restaurant pages
 import RestaurantOnboarding from "./pages/restaurant/Onboarding";
