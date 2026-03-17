@@ -125,7 +125,7 @@ export const useUserType = () => {
     queryKey,
     enabled: Boolean(user?.id),
     queryFn: () => fetchUserTypeData(user!.id, metaUserType),
-    staleTime: 5_000,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
     retry: 1,
     // Add a timeout to prevent hanging forever
