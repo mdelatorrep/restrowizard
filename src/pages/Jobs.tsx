@@ -179,8 +179,11 @@ const Jobs = () => {
                 <Card>
                   <CardContent className="py-16 text-center">
                     <Briefcase className="h-16 w-16 mx-auto text-muted-foreground/40 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No hay ofertas</h3>
-                    <p className="text-muted-foreground">Prueba cambiando los filtros de búsqueda</p>
+                    <h3 className="text-xl font-semibold mb-2">Aún no hay ofertas publicadas</h3>
+                    <p className="text-muted-foreground mb-4">Sé el primero en publicar una oferta de empleo gastronómico</p>
+                    <Button variant="outline" onClick={() => navigate(user ? '/r/settings' : '/auth')}>
+                      Publicar empleo
+                    </Button>
                   </CardContent>
                 </Card>
               ) : (
