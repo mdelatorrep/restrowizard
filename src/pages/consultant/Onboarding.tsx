@@ -19,7 +19,7 @@ import { pushDebugEvent } from '@/lib/debugEvents';
 const ConsultantOnboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshUserType } = useUserType();
+  const { refreshUserType, markOnboardingComplete } = useUserType();
   const { toast } = useToast();
   
   const [step, setStep] = useState(1);
