@@ -69,7 +69,6 @@ const Header = () => {
     { label: 'Consultores', action: () => scrollToSection('consultores') },
     { label: 'Casos de Éxito', action: () => scrollToSection('testimonios') },
     { label: 'Eventos', action: () => navigate('/events') },
-    { label: 'Jobs', action: () => navigate('/jobs') },
   ];
 
   return (

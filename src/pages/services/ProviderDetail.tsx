@@ -35,11 +35,19 @@ const ProviderDetail = () => {
       {/* Cover */}
       <div className="pt-20">
         {provider.cover_image_url ? (
-          <div className="h-48 md:h-64 w-full bg-gradient-to-r from-purple-intense to-purple-medium">
+          <div className="h-48 md:h-64 w-full bg-gradient-to-r from-primary to-secondary relative">
             <img src={provider.cover_image_url} alt="" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="h-48 md:h-64 w-full bg-gradient-to-r from-purple-intense to-purple-medium" />
+          <div className="h-48 md:h-64 w-full bg-gradient-to-r from-primary to-secondary relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white">
+                <h2 className="text-3xl font-headline mb-1">{provider.name}</h2>
+                <p className="text-white/80 font-lato-regular">{provider.specialty}</p>
+                {provider.city && <p className="text-white/60 text-sm mt-1 flex items-center justify-center gap-1"><MapPin className="h-3 w-3" />{provider.city}, {provider.country}</p>}
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

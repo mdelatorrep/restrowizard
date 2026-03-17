@@ -131,19 +131,28 @@ const Jobs = () => {
               </div>
 
               {showFilters && (
-                <div className="grid grid-cols-3 gap-3 mt-3">
-                  <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Categoría" /></SelectTrigger>
-                    <SelectContent>{categoryOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={jobTypeFilter} onValueChange={(v) => { setJobTypeFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
-                    <SelectContent>{jobTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Nivel" /></SelectTrigger>
-                    <SelectContent>{levelOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Categoría</label>
+                    <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Categoría" /></SelectTrigger>
+                      <SelectContent>{categoryOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Tipo de empleo</label>
+                    <Select value={jobTypeFilter} onValueChange={(v) => { setJobTypeFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                      <SelectContent>{jobTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Nivel de experiencia</label>
+                    <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Nivel" /></SelectTrigger>
+                      <SelectContent>{levelOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>
@@ -170,8 +179,11 @@ const Jobs = () => {
                 <Card>
                   <CardContent className="py-16 text-center">
                     <Briefcase className="h-16 w-16 mx-auto text-muted-foreground/40 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No hay ofertas</h3>
-                    <p className="text-muted-foreground">Prueba cambiando los filtros de búsqueda</p>
+                    <h3 className="text-xl font-semibold mb-2">Aún no hay ofertas publicadas</h3>
+                    <p className="text-muted-foreground mb-4">Sé el primero en publicar una oferta de empleo gastronómico</p>
+                    <Button variant="outline" onClick={() => navigate(user ? '/r/settings' : '/auth')}>
+                      Publicar empleo
+                    </Button>
                   </CardContent>
                 </Card>
               ) : (
@@ -201,10 +213,14 @@ const Jobs = () => {
               <Card>
                 <CardContent className="p-4 space-y-3">
                   <h3 className="font-semibold text-sm">Estadísticas</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Ofertas activas</span><span className="font-semibold">{jobs.length}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Urgentes</span><span className="font-semibold text-destructive">{urgentJobs.length}</span></div>
-                  </div>
+                  {jobs.length > 0 ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Ofertas activas</span><span className="font-semibold">{jobs.length}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Urgentes</span><span className="font-semibold text-destructive">{urgentJobs.length}</span></div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Las estadísticas se mostrarán cuando haya ofertas publicadas.</p>
+                  )}
                 </CardContent>
               </Card>
 

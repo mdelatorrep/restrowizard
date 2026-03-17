@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/hooks/useAuth';
-import { Building2, Users } from 'lucide-react';
+import { Building2, Users, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 type UserType = 'restaurant_owner' | 'consultant';
 
@@ -16,6 +16,7 @@ interface SignupFormProps {
 
 export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteToken }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<UserType>('restaurant_owner');
   const [formData, setFormData] = useState({ 
     email: '', 
@@ -23,17 +24,29 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
     fullName: '', 
     restaurantName: '' 
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { signUp } = useAuth();
 
-  // If coming from an invitation/referral, lock to restaurant owner
   useEffect(() => {
     if (consultantRef || inviteToken) {
       setUserType('restaurant_owner');
     }
   }, [consultantRef, inviteToken]);
 
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.fullName.trim()) errors.fullName = 'El nombre es obligatorio';
+    if (!formData.email) errors.email = 'El email es obligatorio';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email no válido';
+    if (!formData.password) errors.password = 'La contraseña es obligatoria';
+    else if (formData.password.length < 6) errors.password = 'Mínimo 6 caracteres';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setIsLoading(true);
     
     try {
@@ -45,7 +58,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
         userType === 'restaurant_owner' ? formData.restaurantName : undefined
       );
 
-      // Only persist tokens if signup succeeded
       if (!error) {
         if (consultantRef) localStorage.setItem('consultantRef', consultantRef);
         if (inviteToken) localStorage.setItem('clientInviteToken', inviteToken);
@@ -57,10 +69,11 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
     }
   };
 
-  // Google OAuth removed - not enabled in this project
-
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   return (
@@ -126,10 +139,10 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
               type="text"
               value={formData.fullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
-              required
-              className="font-lato-regular"
+              className={`font-lato-regular ${fieldErrors.fullName ? 'border-destructive' : ''}`}
               disabled={isLoading}
             />
+            {fieldErrors.fullName && <p className="text-xs text-destructive mt-1">{fieldErrors.fullName}</p>}
           </div>
           
           {userType === 'restaurant_owner' && (
@@ -149,39 +162,50 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
           )}
           
           <div>
-            <Label htmlFor="email" className="font-lato-medium">Email</Label>
+            <Label htmlFor="signup-email" className="font-lato-medium">Email</Label>
             <Input
-              id="email"
+              id="signup-email"
               type="email"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              required
-              className="font-lato-regular"
+              className={`font-lato-regular ${fieldErrors.email ? 'border-destructive' : ''}`}
               disabled={isLoading}
             />
+            {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
           </div>
           <div>
-            <Label htmlFor="password" className="font-lato-medium">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              required
-              minLength={6}
-              className="font-lato-regular"
-              disabled={isLoading}
-            />
+            <Label htmlFor="signup-password" className="font-lato-medium">Contraseña</Label>
+            <div className="relative">
+              <Input
+                id="signup-password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                minLength={6}
+                className={`font-lato-regular pr-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {fieldErrors.password && <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>}
           </div>
           <Button 
             type="submit" 
             className="w-full font-lato-bold" 
             disabled={isLoading}
           >
-            {isLoading ? 'Creando cuenta...' : `Crear Cuenta como ${userType === 'restaurant_owner' ? 'Restaurante' : 'Consultor'}`}
+            {isLoading ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creando cuenta...</>
+            ) : `Crear Cuenta como ${userType === 'restaurant_owner' ? 'Restaurante' : 'Consultor'}`}
           </Button>
         </form>
-        
       </CardContent>
     </Card>
   );
