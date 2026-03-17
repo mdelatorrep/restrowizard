@@ -131,19 +131,28 @@ const Jobs = () => {
               </div>
 
               {showFilters && (
-                <div className="grid grid-cols-3 gap-3 mt-3">
-                  <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Categoría" /></SelectTrigger>
-                    <SelectContent>{categoryOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={jobTypeFilter} onValueChange={(v) => { setJobTypeFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
-                    <SelectContent>{jobTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); }}>
-                    <SelectTrigger className="text-sm"><SelectValue placeholder="Nivel" /></SelectTrigger>
-                    <SelectContent>{levelOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Categoría</label>
+                    <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Categoría" /></SelectTrigger>
+                      <SelectContent>{categoryOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Tipo de empleo</label>
+                    <Select value={jobTypeFilter} onValueChange={(v) => { setJobTypeFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                      <SelectContent>{jobTypeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Nivel de experiencia</label>
+                    <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); }}>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder="Nivel" /></SelectTrigger>
+                      <SelectContent>{levelOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>
