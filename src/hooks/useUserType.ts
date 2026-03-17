@@ -171,6 +171,8 @@ export const useUserType = () => {
    * race conditions with network refetches.
    */
   const markOnboardingComplete = (type: UserType = 'restaurant_owner') => {
+    // Cancel any in-flight refetches to prevent them from overwriting this optimistic update
+    queryClient.cancelQueries({ queryKey });
     queryClient.setQueryData<UserTypeQueryData>(queryKey, {
       userType: type,
       hasCompletedOnboarding: true,
