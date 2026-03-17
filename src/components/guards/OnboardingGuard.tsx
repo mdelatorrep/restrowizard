@@ -26,7 +26,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
 }) => {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const { userType, hasCompletedOnboarding, loading: typeLoading, isReady } = useUserType();
+  const { userType, hasCompletedOnboarding, loading: typeLoading, isReady, isFetching } = useUserType();
 
   const lastDecisionKeyRef = useRef<string | null>(null);
 
