@@ -134,8 +134,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     // THEN get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('📋 Initial session check:', { hasSession: !!session, userId: session?.user?.id });
+      
+      // Validate that the user still exists on the server
+      if (session) {
+        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
+        if (userError || !validUser) {
+          console.warn('⚠️ Session exists but user is invalid/deleted. Clearing session.');
+          await supabase.auth.signOut({ scope: 'local' });
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
