@@ -181,6 +181,7 @@ export const useUserType = () => {
   return {
     userType,
     loading: Boolean(user?.id) && isLoading,
+    isFetching,
     isReady,
     hasCompletedOnboarding,
     updateUserType,
