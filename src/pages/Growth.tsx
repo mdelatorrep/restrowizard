@@ -67,7 +67,7 @@ const Growth = () => {
           <div className="text-center max-w-4xl mx-auto">
             <Badge className="bg-white/20 text-white border-white/30 mb-6 text-sm font-lato-medium">
               <Rocket className="h-4 w-4 mr-2" />
-              Próximamente
+              Próximamente — Lanzamiento Q3 2026
             </Badge>
 
             <img src={restrogrowthLogo} alt="RestroGrowth" className="h-16 md:h-20 w-auto mx-auto mb-6 brightness-0 invert" />

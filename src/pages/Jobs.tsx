@@ -213,10 +213,14 @@ const Jobs = () => {
               <Card>
                 <CardContent className="p-4 space-y-3">
                   <h3 className="font-semibold text-sm">Estadísticas</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Ofertas activas</span><span className="font-semibold">{jobs.length}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Urgentes</span><span className="font-semibold text-destructive">{urgentJobs.length}</span></div>
-                  </div>
+                  {jobs.length > 0 ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Ofertas activas</span><span className="font-semibold">{jobs.length}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Urgentes</span><span className="font-semibold text-destructive">{urgentJobs.length}</span></div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Las estadísticas se mostrarán cuando haya ofertas publicadas.</p>
+                  )}
                 </CardContent>
               </Card>
 
