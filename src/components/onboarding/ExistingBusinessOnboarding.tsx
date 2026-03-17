@@ -135,8 +135,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
       // Immediately mark onboarding as complete in cache (deterministic, no network dependency)
       markOnboardingComplete('restaurant_owner');
 
-      // Also trigger a background refresh to ensure cache stays in sync
-      refreshUserType().catch(() => {});
+      // NOTE: Do NOT call refreshUserType() here - it overwrites the optimistic cache set by markOnboardingComplete
 
       navigate('/r/dashboard', { replace: true });
     } catch (error: any) {

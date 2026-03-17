@@ -354,8 +354,6 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
       // 6. Immediately mark onboarding as complete in cache
       markOnboardingComplete('restaurant_owner');
-      // Background refresh
-      refreshUserType().catch(() => {});
 
       toast({
         title: "¡Felicidades! 🎉",
@@ -377,7 +375,6 @@ export const NewBusinessOnboarding: React.FC<NewBusinessOnboardingProps> = ({ on
 
   const handleGoToDashboard = async () => {
     markOnboardingComplete('restaurant_owner');
-    refreshUserType().catch(() => {});
     navigate('/r/dashboard', { replace: true });
   };
 

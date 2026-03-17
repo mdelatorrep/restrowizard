@@ -19,7 +19,7 @@ import { pushDebugEvent } from '@/lib/debugEvents';
 const ConsultantOnboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshUserType } = useUserType();
+  const { refreshUserType, markOnboardingComplete } = useUserType();
   const { toast } = useToast();
   
   const [step, setStep] = useState(1);
@@ -148,10 +148,9 @@ const ConsultantOnboarding: React.FC = () => {
 
       toast({ title: "¡Perfecto!", description: "Tu perfil de consultor ha sido creado." });
 
-      // Refresh the cached userType data and wait for it to complete
-      console.log('📝 [ConsultantOnboarding] Calling refreshUserType...');
-      await refreshUserType();
-      console.log('📝 [ConsultantOnboarding] refreshUserType completed');
+      // Set optimistic cache before navigating - do NOT use refreshUserType here
+      console.log('📝 [ConsultantOnboarding] Calling markOnboardingComplete...');
+      markOnboardingComplete('consultant');
 
       // Navigate to dashboard
       console.log('📝 [ConsultantOnboarding] Navigating to /c/dashboard');

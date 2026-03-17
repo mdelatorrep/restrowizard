@@ -26,7 +26,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
 }) => {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const { userType, hasCompletedOnboarding, loading: typeLoading, isReady } = useUserType();
+  const { userType, hasCompletedOnboarding, loading: typeLoading, isReady, isFetching } = useUserType();
 
   const lastDecisionKeyRef = useRef<string | null>(null);
 
@@ -103,6 +103,19 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
   // Route requires onboarding to be complete
   if (requireOnboarding) {
     if (!hasCompletedOnboarding) {
+      // If data is being refetched in background, show loading instead of redirecting
+      // This prevents race conditions where optimistic cache was overwritten by a stale refetch
+      if (isFetching) {
+        console.log('🛡️ [OnboardingGuard] DECISION: Show loading (isFetching, avoid premature redirect)');
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
+              <p className="text-muted-foreground font-lato-light">Cargando...</p>
+            </div>
+          </div>
+        );
+      }
       // User hasn't completed onboarding -> send to onboarding page
       const onboardingPath = requiredUserType === 'restaurant_owner' ? '/r/onboarding' : '/c/onboarding';
       console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', onboardingPath, '(onboarding not complete)');

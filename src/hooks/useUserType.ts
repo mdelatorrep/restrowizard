@@ -121,14 +121,13 @@ export const useUserType = () => {
 
   const queryKey = ['userType', user?.id] as const;
 
-  const { data, isLoading, isFetched, isError } = useQuery({
+  const { data, isLoading, isFetched, isError, isFetching } = useQuery({
     queryKey,
     enabled: Boolean(user?.id),
     queryFn: () => fetchUserTypeData(user!.id, metaUserType),
-    staleTime: 5_000,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
     retry: 1,
-    // Add a timeout to prevent hanging forever
     gcTime: 30_000,
   });
 
@@ -171,6 +170,8 @@ export const useUserType = () => {
    * race conditions with network refetches.
    */
   const markOnboardingComplete = (type: UserType = 'restaurant_owner') => {
+    // Cancel any in-flight refetches to prevent them from overwriting this optimistic update
+    queryClient.cancelQueries({ queryKey });
     queryClient.setQueryData<UserTypeQueryData>(queryKey, {
       userType: type,
       hasCompletedOnboarding: true,
@@ -180,6 +181,7 @@ export const useUserType = () => {
   return {
     userType,
     loading: Boolean(user?.id) && isLoading,
+    isFetching,
     isReady,
     hasCompletedOnboarding,
     updateUserType,
