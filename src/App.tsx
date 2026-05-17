@@ -54,6 +54,7 @@ import RestaurantSustainability from "./pages/restaurant/Sustainability";
 import RestaurantSettings from "./pages/restaurant/Settings";
 import RestaurantEcosystemAdmin from "./pages/restaurant/EcosystemAdmin";
 import RestaurantGhostKitchen from "./pages/restaurant/GhostKitchen";
+import RestaurantRappiIntegration from "./pages/restaurant/integrations/Rappi";
 import RestaurantChainManagement from "./pages/restaurant/ChainManagement";
 import RestaurantBrand from "./pages/restaurant/Brand";
 import RestaurantFeedback from "./pages/restaurant/Feedback";
@@ -224,6 +225,7 @@ const App = () => (
                 <Route path="staff-schedule" element={<Navigate to="/r/talent?tab=schedule" replace />} />
                 <Route path="inventory" element={<RestaurantInventory />} />
                 <Route path="delivery" element={<RestaurantDelivery />} />
+                <Route path="integrations/rappi" element={<RestaurantRappiIntegration />} />
                 {/* Redirect suppliers to inventory */}
                 <Route path="suppliers" element={<Navigate to="/r/inventory?tab=suppliers" replace />} />
                 <Route path="settings" element={<RestaurantSettings />} />
