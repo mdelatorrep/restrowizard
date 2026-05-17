@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useConsultantProfile } from '@/hooks/useConsultantProfile';
-import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { useZodForm } from '@/lib/forms';
 import {
   Settings as SettingsIcon,
-  User,
   Building2,
   Palette,
   Bell,
@@ -20,54 +20,86 @@ import {
   Upload,
   Globe,
   Linkedin,
-  Mail
+  Mail,
 } from 'lucide-react';
+
+const SettingsSchema = z.object({
+  company_name: z.string().max(120, 'Máximo 120 caracteres').optional().or(z.literal('')),
+  bio: z.string().max(1000, 'Máximo 1000 caracteres').optional().or(z.literal('')),
+  specializations: z.string().optional().or(z.literal('')),
+  years_experience: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), 'Solo números enteros')
+    .refine((v) => !v || parseInt(v) <= 80, 'Valor irreal'),
+  hourly_rate: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+(\.\d{1,2})?$/.test(v), 'Monto inválido'),
+  website_url: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/.+/i.test(v), 'Debe iniciar con http(s)://'),
+  linkedin_url: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/(www\.)?linkedin\.com\/.+/i.test(v), 'URL de LinkedIn inválida'),
+});
+
+type SettingsValues = z.infer<typeof SettingsSchema>;
 
 const Settings: React.FC = () => {
   const { profile, loading, updateProfile } = useConsultantProfile();
-  const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
-    company_name: profile?.company_name || '',
-    bio: profile?.bio || '',
-    specializations: profile?.specializations?.join(', ') || '',
-    years_experience: profile?.years_experience?.toString() || '',
-    hourly_rate: profile?.hourly_rate?.toString() || '',
-    website_url: profile?.website_url || '',
-    linkedin_url: profile?.linkedin_url || ''
+  const form = useZodForm<SettingsValues>(SettingsSchema, {
+    defaultValues: {
+      company_name: '',
+      bio: '',
+      specializations: '',
+      years_experience: '',
+      hourly_rate: '',
+      website_url: '',
+      linkedin_url: '',
+    },
   });
 
-  // Update form when profile loads
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  const companyName = watch('company_name');
+
   React.useEffect(() => {
     if (profile) {
-      setFormData({
+      reset({
         company_name: profile.company_name || '',
         bio: profile.bio || '',
         specializations: profile.specializations?.join(', ') || '',
         years_experience: profile.years_experience?.toString() || '',
         hourly_rate: profile.hourly_rate?.toString() || '',
         website_url: profile.website_url || '',
-        linkedin_url: profile.linkedin_url || ''
+        linkedin_url: profile.linkedin_url || '',
       });
     }
-  }, [profile]);
+  }, [profile, reset]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await updateProfile({
-        company_name: formData.company_name || null,
-        bio: formData.bio || null,
-        specializations: formData.specializations.split(',').map(s => s.trim()).filter(Boolean),
-        years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
-        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-        website_url: formData.website_url || null,
-        linkedin_url: formData.linkedin_url || null
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const onSubmit = async (values: SettingsValues) => {
+    await updateProfile({
+      company_name: values.company_name || null,
+      bio: values.bio || null,
+      specializations: (values.specializations || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      years_experience: values.years_experience ? parseInt(values.years_experience) : null,
+      hourly_rate: values.hourly_rate ? parseFloat(values.hourly_rate) : null,
+      website_url: values.website_url || null,
+      linkedin_url: values.linkedin_url || null,
+    });
   };
 
   if (loading) {
@@ -95,7 +127,7 @@ const Settings: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Settings */}
-        <div className="lg:col-span-2 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-2 space-y-6" noValidate>
           {/* Company Info */}
           <Card>
             <CardHeader>
@@ -112,11 +144,11 @@ const Settings: React.FC = () => {
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={profile?.logo_url || ''} />
                   <AvatarFallback className="text-xl">
-                    {formData.company_name?.slice(0, 2).toUpperCase() || 'CO'}
+                    {companyName?.slice(0, 2).toUpperCase() || 'CO'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" size="sm">
+                  <Button type="button" variant="outline" size="sm">
                     <Upload className="h-4 w-4 mr-2" />
                     Subir Logo
                   </Button>
@@ -128,65 +160,90 @@ const Settings: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nombre de la empresa</Label>
-                  <Input 
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({...formData, company_name: e.target.value})}
+                  <Label htmlFor="company_name">Nombre de la empresa</Label>
+                  <Input
+                    id="company_name"
+                    autoComplete="organization"
                     placeholder="Mi Consultoría"
+                    aria-invalid={!!errors.company_name}
+                    {...register('company_name')}
                   />
+                  {errors.company_name && (
+                    <p className="text-sm text-destructive">{errors.company_name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Años de experiencia</Label>
-                  <Input 
+                  <Label htmlFor="years_experience">Años de experiencia</Label>
+                  <Input
+                    id="years_experience"
                     type="number"
-                    value={formData.years_experience}
-                    onChange={(e) => setFormData({...formData, years_experience: e.target.value})}
+                    inputMode="numeric"
                     placeholder="10"
+                    aria-invalid={!!errors.years_experience}
+                    {...register('years_experience')}
                   />
+                  {errors.years_experience && (
+                    <p className="text-sm text-destructive">{errors.years_experience.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Especialidades (separadas por coma)</Label>
-                <Input 
-                  value={formData.specializations}
-                  onChange={(e) => setFormData({...formData, specializations: e.target.value})}
+                <Label htmlFor="specializations">Especialidades (separadas por coma)</Label>
+                <Input
+                  id="specializations"
                   placeholder="Finanzas, Operaciones, Marketing"
+                  {...register('specializations')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Biografía</Label>
-                <Textarea 
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                <Label htmlFor="bio">Biografía</Label>
+                <Textarea
+                  id="bio"
                   placeholder="Cuéntanos sobre tu experiencia y enfoque..."
                   rows={4}
+                  aria-invalid={!!errors.bio}
+                  {...register('bio')}
                 />
+                {errors.bio && (
+                  <p className="text-sm text-destructive">{errors.bio.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label htmlFor="website_url" className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
                     Sitio Web
                   </Label>
-                  <Input 
-                    value={formData.website_url}
-                    onChange={(e) => setFormData({...formData, website_url: e.target.value})}
+                  <Input
+                    id="website_url"
+                    type="url"
+                    autoComplete="url"
                     placeholder="https://tuconsultoria.com"
+                    aria-invalid={!!errors.website_url}
+                    {...register('website_url')}
                   />
+                  {errors.website_url && (
+                    <p className="text-sm text-destructive">{errors.website_url.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label htmlFor="linkedin_url" className="flex items-center gap-2">
                     <Linkedin className="h-4 w-4" />
                     LinkedIn
                   </Label>
-                  <Input 
-                    value={formData.linkedin_url}
-                    onChange={(e) => setFormData({...formData, linkedin_url: e.target.value})}
+                  <Input
+                    id="linkedin_url"
+                    type="url"
                     placeholder="https://linkedin.com/in/tu-perfil"
+                    aria-invalid={!!errors.linkedin_url}
+                    {...register('linkedin_url')}
                   />
+                  {errors.linkedin_url && (
+                    <p className="text-sm text-destructive">{errors.linkedin_url.message}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -206,13 +263,18 @@ const Settings: React.FC = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tarifa por hora (MXN)</Label>
-                  <Input 
+                  <Label htmlFor="hourly_rate">Tarifa por hora (MXN)</Label>
+                  <Input
+                    id="hourly_rate"
                     type="number"
-                    value={formData.hourly_rate}
-                    onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
+                    inputMode="decimal"
                     placeholder="1500"
+                    aria-invalid={!!errors.hourly_rate}
+                    {...register('hourly_rate')}
                   />
+                  {errors.hourly_rate && (
+                    <p className="text-sm text-destructive">{errors.hourly_rate.message}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -220,12 +282,12 @@ const Settings: React.FC = () => {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button type="submit" disabled={isSubmitting}>
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </div>
-        </div>
+        </form>
 
         {/* Sidebar */}
         <div className="space-y-6">

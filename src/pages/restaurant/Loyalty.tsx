@@ -37,7 +37,9 @@ import {
 } from 'lucide-react';
 import { useLoyaltyData, type LoyaltyCustomer, type LoyaltyTier, type RewardsCatalogItem } from '@/hooks/useLoyaltyData';
 import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
-import { TierBadge, CustomerCard, RewardCard } from '@/components/loyalty/LoyaltyCards';
+import { TierBadge } from '@/components/loyalty/LoyaltyCards';
+import { CustomersTab } from '@/components/loyalty/CustomersTab';
+import { RewardsTab } from '@/components/loyalty/RewardsTab';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { cn } from '@/lib/utils';
 
@@ -460,78 +462,29 @@ const Loyalty = () => {
         </TabsContent>
 
         {/* Customers Tab */}
-        <TabsContent value="customers" className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Button onClick={() => setShowNewCustomerDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
-            </Button>
-          </div>
-
-          {filteredCustomers.length === 0 ? (
-            <EmptyState
-              icon={<Users className="w-12 h-12" />}
-              title="Sin clientes en el programa"
-              description="Registra tu primer cliente para comenzar a construir lealtad"
-              actionLabel="Agregar Cliente"
-              onAction={() => setShowNewCustomerDialog(true)}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredCustomers.map(customer => (
-                <CustomerCard
-                  key={customer.id}
-                  customer={customer}
-                  onViewDetails={() => {}}
-                  onAwardPoints={() => {
-                    setSelectedCustomer(customer);
-                    setShowAwardPointsDialog(true);
-                  }}
-                  onShowQR={() => {
-                    setSelectedCustomer(customer);
-                    setShowQRDialog(true);
-                  }}
-                />
-              ))}
-            </div>
-          )}
+        <TabsContent value="customers">
+          <CustomersTab
+            customers={filteredCustomers}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onNewCustomer={() => setShowNewCustomerDialog(true)}
+            onAwardPoints={(c) => {
+              setSelectedCustomer(c);
+              setShowAwardPointsDialog(true);
+            }}
+            onShowQR={(c) => {
+              setSelectedCustomer(c);
+              setShowQRDialog(true);
+            }}
+          />
         </TabsContent>
 
         {/* Rewards Tab */}
-        <TabsContent value="rewards" className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setShowNewRewardDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" /> Nueva Recompensa
-            </Button>
-          </div>
-
-          {catalog.length === 0 ? (
-            <EmptyState
-              icon={<Gift className="w-12 h-12" />}
-              title="Sin recompensas configuradas"
-              description="Crea recompensas atractivas para que tus clientes canjeen sus puntos"
-              actionLabel="Crear Recompensa"
-              onAction={() => setShowNewRewardDialog(true)}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {catalog.map(reward => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  onEdit={() => {}}
-                />
-              ))}
-            </div>
-          )}
+        <TabsContent value="rewards">
+          <RewardsTab
+            catalog={catalog}
+            onNewReward={() => setShowNewRewardDialog(true)}
+          />
         </TabsContent>
 
         {/* Tiers Tab */}
