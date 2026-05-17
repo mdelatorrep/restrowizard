@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useRealtimeTable } from './useRealtimeTable';
 import { useToast } from './use-toast';
 
 export interface RestaurantTable {
