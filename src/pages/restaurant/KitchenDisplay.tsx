@@ -91,76 +91,62 @@ const KitchenDisplay: React.FC = () => {
     }
   };
 
-  // Subscribe to realtime updates
+  // Initial fetch
   useEffect(() => {
     if (!user) return;
-
     fetchOrders();
+  }, [user]);
 
-    const channel = supabase
-      .channel('kitchen-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'restaurant_orders',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Kitchen realtime update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newOrder = payload.new as any;
-            if (newOrder.kitchen_status !== 'served') {
-              const formattedOrder: KitchenOrder = {
-                id: newOrder.id,
-                order_number: newOrder.order_number,
-                items: Array.isArray(newOrder.items) ? newOrder.items : [],
-                kitchen_status: newOrder.kitchen_status || 'pending',
-                kitchen_notes: newOrder.kitchen_notes,
-                kitchen_started_at: newOrder.kitchen_started_at,
-                kitchen_ready_at: newOrder.kitchen_ready_at,
-                created_at: newOrder.created_at,
-                order_type: newOrder.order_type,
-                table_id: newOrder.table_id
-              };
-              setOrders(prev => [...prev, formattedOrder]);
-              
-              // Play sound for new order
-              if (soundEnabled) {
-                playNotificationSound();
-              }
-              toast.info(`🆕 Nuevo pedido #${newOrder.order_number}`);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedOrder = payload.new as any;
-            if (updatedOrder.kitchen_status === 'served') {
-              setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
-            } else {
-              setOrders(prev => prev.map(o => 
-                o.id === updatedOrder.id 
-                  ? {
-                      ...o,
-                      kitchen_status: updatedOrder.kitchen_status,
-                      kitchen_notes: updatedOrder.kitchen_notes,
-                      kitchen_started_at: updatedOrder.kitchen_started_at,
-                      kitchen_ready_at: updatedOrder.kitchen_ready_at
-                    }
-                  : o
-              ));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+  // Subscribe to realtime updates
+  useRealtimeTable({
+    table: 'restaurant_orders',
+    filter: user ? `user_id=eq.${user.id}` : undefined,
+    enabled: !!user,
+    onChange: (payload) => {
+      if (payload.eventType === 'INSERT') {
+        const newOrder = payload.new as any;
+        if (newOrder.kitchen_status !== 'served') {
+          const formattedOrder: KitchenOrder = {
+            id: newOrder.id,
+            order_number: newOrder.order_number,
+            items: Array.isArray(newOrder.items) ? newOrder.items : [],
+            kitchen_status: newOrder.kitchen_status || 'pending',
+            kitchen_notes: newOrder.kitchen_notes,
+            kitchen_started_at: newOrder.kitchen_started_at,
+            kitchen_ready_at: newOrder.kitchen_ready_at,
+            created_at: newOrder.created_at,
+            order_type: newOrder.order_type,
+            table_id: newOrder.table_id
+          };
+          setOrders(prev => [...prev, formattedOrder]);
+
+          if (soundEnabled) {
+            playNotificationSound();
           }
+          toast.info(`🆕 Nuevo pedido #${newOrder.order_number}`);
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, soundEnabled]);
+      } else if (payload.eventType === 'UPDATE') {
+        const updatedOrder = payload.new as any;
+        if (updatedOrder.kitchen_status === 'served') {
+          setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
+        } else {
+          setOrders(prev => prev.map(o =>
+            o.id === updatedOrder.id
+              ? {
+                  ...o,
+                  kitchen_status: updatedOrder.kitchen_status,
+                  kitchen_notes: updatedOrder.kitchen_notes,
+                  kitchen_started_at: updatedOrder.kitchen_started_at,
+                  kitchen_ready_at: updatedOrder.kitchen_ready_at,
+                }
+              : o
+          ));
+        }
+      } else if (payload.eventType === 'DELETE') {
+        setOrders(prev => prev.filter(o => o.id !== (payload.old as any).id));
+      }
+    },
+  });
 
   const playNotificationSound = () => {
     try {
