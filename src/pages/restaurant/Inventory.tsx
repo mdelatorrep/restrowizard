@@ -20,8 +20,7 @@ import { InventoryTabsBar } from '@/components/inventory/InventoryTabsBar';
 import { InventoryKPIsBar } from '@/components/inventory/InventoryKPIsBar';
 import { Package, Plus, Sparkles, Brain, Scan, MoveHorizontal } from 'lucide-react';
 import { useEnterpriseInventory, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
-import { useAIAgent } from '@/hooks/useAIAgent';
-import { toast } from 'sonner';
+import { useInventoryAI } from '@/hooks/useInventoryAI';
 import { supabase } from '@/integrations/supabase/client';
 import { ModulePageLayout, PageHeader } from '@/components/layout';
 
@@ -65,12 +64,10 @@ const Inventory: React.FC = () => {
     // Waste
     recordWaste
   } = useEnterpriseInventory();
-  
-  const { optimizeReorders, loading: aiLoading } = useAIAgent();
+
+  const { insights: aiInsights, open: showAIPanel, loading: aiLoading, analyze, close: closeAI } = useInventoryAI();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('items');
-  const [aiInsights, setAiInsights] = useState<string | null>(null);
-  const [showAIPanel, setShowAIPanel] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemExtended | null>(null);
@@ -101,41 +98,7 @@ const Inventory: React.FC = () => {
     }
   };
 
-  // getStockStatus extracted to src/components/inventory/InventoryStockTable.tsx
-
-  const handleAIAnalysis = async () => {
-    if (inventory.length === 0) {
-      toast.error('Agrega items al inventario para poder analizarlos');
-      return;
-    }
-    
-    const inventoryData = inventory.map(item => ({
-      nombre: item.item_name,
-      categoria: item.category,
-      stock_actual: item.current_stock,
-      par_level: item.par_level,
-      punto_reorden: item.reorder_point,
-      costo_unitario: item.unit_cost,
-      unidad: item.unit,
-      proveedor: item.supplier_name,
-      vencimiento: item.expiration_date
-    }));
-
-    const result = await optimizeReorders({
-      items: inventoryData,
-      total_items: kpis?.totalItems || 0,
-      valor_total: kpis?.totalValue || 0,
-      items_stock_bajo: kpis?.lowStockItems || 0,
-      items_agotados: kpis?.outOfStockItems || 0,
-      items_por_vencer: kpis?.expiringItems || 0,
-      items_bajo_par: kpis?.belowParItems || 0
-    });
-    
-    if (result) {
-      setAiInsights(result);
-      setShowAIPanel(true);
-    }
-  };
+  const handleAIAnalysis = () => analyze(inventory, kpis);
 
   if (loading) {
     return (
@@ -188,7 +151,7 @@ const Inventory: React.FC = () => {
           insights={aiInsights}
           loading={aiLoading}
           onAnalyze={handleAIAnalysis}
-          onClose={() => setShowAIPanel(false)}
+          onClose={closeAI}
           icon={<Brain className="w-5 h-5 text-primary" />}
         />
       )}
