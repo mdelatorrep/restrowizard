@@ -16,46 +16,70 @@ export type Database = {
     Tables: {
       aggregator_integrations: {
         Row: {
+          access_token_encrypted: string | null
           api_key_encrypted: string | null
           brand_id: string | null
+          client_id: string | null
+          client_secret_encrypted: string | null
           commission_percent: number | null
           config: Json | null
           created_at: string
+          environment: string | null
           id: string
           is_active: boolean | null
           last_sync_at: string | null
           platform: Database["public"]["Enums"]["delivery_platform"]
           store_id: string | null
+          store_ids: string[] | null
+          sync_status: Json | null
+          token_expires_at: string | null
           updated_at: string
           user_id: string
+          webhook_secret: string | null
         }
         Insert: {
+          access_token_encrypted?: string | null
           api_key_encrypted?: string | null
           brand_id?: string | null
+          client_id?: string | null
+          client_secret_encrypted?: string | null
           commission_percent?: number | null
           config?: Json | null
           created_at?: string
+          environment?: string | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
           platform: Database["public"]["Enums"]["delivery_platform"]
           store_id?: string | null
+          store_ids?: string[] | null
+          sync_status?: Json | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id: string
+          webhook_secret?: string | null
         }
         Update: {
+          access_token_encrypted?: string | null
           api_key_encrypted?: string | null
           brand_id?: string | null
+          client_id?: string | null
+          client_secret_encrypted?: string | null
           commission_percent?: number | null
           config?: Json | null
           created_at?: string
+          environment?: string | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
           platform?: Database["public"]["Enums"]["delivery_platform"]
           store_id?: string | null
+          store_ids?: string[] | null
+          sync_status?: Json | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id?: string
+          webhook_secret?: string | null
         }
         Relationships: [
           {
@@ -72,8 +96,10 @@ export type Database = {
           brand_id: string | null
           commission: number | null
           completed_at: string | null
+          courier_info: Json | null
           created_at: string
           customer_name: string | null
+          customer_phone: string | null
           delivery_address: string | null
           estimated_delivery: string | null
           external_order_id: string | null
@@ -81,16 +107,23 @@ export type Database = {
           items: Json
           net_total: number | null
           order_status: string | null
+          pickup_code: string | null
           platform: Database["public"]["Enums"]["delivery_platform"]
+          raw_payload: Json | null
+          rejection_reason: string | null
+          status_history: Json | null
           subtotal: number | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           brand_id?: string | null
           commission?: number | null
           completed_at?: string | null
+          courier_info?: Json | null
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           estimated_delivery?: string | null
           external_order_id?: string | null
@@ -98,16 +131,23 @@ export type Database = {
           items?: Json
           net_total?: number | null
           order_status?: string | null
+          pickup_code?: string | null
           platform: Database["public"]["Enums"]["delivery_platform"]
+          raw_payload?: Json | null
+          rejection_reason?: string | null
+          status_history?: Json | null
           subtotal?: number | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           brand_id?: string | null
           commission?: number | null
           completed_at?: string | null
+          courier_info?: Json | null
           created_at?: string
           customer_name?: string | null
+          customer_phone?: string | null
           delivery_address?: string | null
           estimated_delivery?: string | null
           external_order_id?: string | null
@@ -115,8 +155,13 @@ export type Database = {
           items?: Json
           net_total?: number | null
           order_status?: string | null
+          pickup_code?: string | null
           platform?: Database["public"]["Enums"]["delivery_platform"]
+          raw_payload?: Json | null
+          rejection_reason?: string | null
+          status_history?: Json | null
           subtotal?: number | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -5195,6 +5240,208 @@ export type Database = {
             columns: ["service_provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rappi_menu_sync: {
+        Row: {
+          created_at: string
+          external_item_id: string | null
+          id: string
+          integration_id: string
+          last_error: string | null
+          last_synced_at: string | null
+          menu_item_id: string | null
+          status: string
+          store_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_item_id?: string | null
+          id?: string
+          integration_id: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          menu_item_id?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_item_id?: string | null
+          id?: string
+          integration_id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          menu_item_id?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rappi_menu_sync_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "aggregator_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rappi_menu_sync_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rappi_menu_sync_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rappi_settlements: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          currency: string | null
+          gross_amount: number
+          id: string
+          integration_id: string
+          net_amount: number
+          orders_count: number
+          raw_payload: Json | null
+          settlement_date: string
+          store_id: string | null
+          user_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          created_at?: string
+          currency?: string | null
+          gross_amount?: number
+          id?: string
+          integration_id: string
+          net_amount?: number
+          orders_count?: number
+          raw_payload?: Json | null
+          settlement_date: string
+          store_id?: string | null
+          user_id: string
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          currency?: string | null
+          gross_amount?: number
+          id?: string
+          integration_id?: string
+          net_amount?: number
+          orders_count?: number
+          raw_payload?: Json | null
+          settlement_date?: string
+          store_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rappi_settlements_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "aggregator_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rappi_store_status: {
+        Row: {
+          changed_at: string
+          id: string
+          integration_id: string
+          pause_until: string | null
+          reason: string | null
+          status: string
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          id?: string
+          integration_id: string
+          pause_until?: string | null
+          reason?: string | null
+          status: string
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          id?: string
+          integration_id?: string
+          pause_until?: string | null
+          reason?: string | null
+          status?: string
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rappi_store_status_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "aggregator_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rappi_webhook_events: {
+        Row: {
+          event_id: string | null
+          event_type: string | null
+          id: string
+          integration_id: string | null
+          payload: Json
+          process_error: string | null
+          processed: boolean
+          received_at: string
+          signature: string | null
+        }
+        Insert: {
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          integration_id?: string | null
+          payload: Json
+          process_error?: string | null
+          processed?: boolean
+          received_at?: string
+          signature?: string | null
+        }
+        Update: {
+          event_id?: string | null
+          event_type?: string | null
+          id?: string
+          integration_id?: string | null
+          payload?: Json
+          process_error?: string | null
+          processed?: boolean
+          received_at?: string
+          signature?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rappi_webhook_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "aggregator_integrations"
             referencedColumns: ["id"]
           },
         ]

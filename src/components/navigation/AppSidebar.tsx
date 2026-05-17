@@ -166,6 +166,14 @@ const salesItems: MenuItem[] = [
     permissionModule: 'delivery'
   },
   { 
+    title: 'Rappi', 
+    icon: Truck, 
+    path: '/r/integrations/rappi',
+    stages: ['first_90_days', 'normal_operation'],
+    moduleKey: 'delivery',
+    permissionModule: 'delivery'
+  },
+  { 
     title: 'Reservaciones', 
     icon: CalendarCheck, 
     path: '/r/reservations',
