@@ -13,6 +13,9 @@ import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
 import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
 
+import { RouteErrorBoundary } from "./components/errors/RouteErrorBoundary";
+import { PageSkeleton } from "./components/ui/skeletons";
+
 // Eager: critical landing/auth/SEO pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -127,12 +130,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const RouteFallback = () => (
-  <div className="min-h-[60vh] flex items-center justify-center" role="status" aria-live="polite">
-    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-    <span className="sr-only">Cargando…</span>
-  </div>
-);
+const RouteFallback = () => <PageSkeleton />;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -144,7 +142,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ActiveClientProvider>
-            <Suspense fallback={<RouteFallback />}>
+            <RouteErrorBoundary label="app">
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
@@ -291,6 +290,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </RouteErrorBoundary>
           </ActiveClientProvider>
         </AuthProvider>
       </BrowserRouter>
