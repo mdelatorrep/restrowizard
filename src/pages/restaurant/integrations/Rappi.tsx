@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRappiIntegration, useRappiOrders, useRappiSettlements } from "@/hooks/useRappiIntegration";
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function RappiIntegrationPage() {
   const { integration, isLoading, save, test, syncMenu, storeControl, orderAction } = useRappiIntegration();
