@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useRealtimeTable } from './useRealtimeTable';
 import { useToast } from './use-toast';
 
 export interface RestaurantTable {
@@ -201,37 +202,22 @@ export const usePOSTables = () => {
   };
 
   // Subscribe to realtime updates
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('restaurant_tables_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'restaurant_tables',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setTables(prev => [...prev, payload.new as RestaurantTable]);
-          } else if (payload.eventType === 'UPDATE') {
-            setTables(prev => prev.map(t => 
-              t.id === payload.new.id ? payload.new as RestaurantTable : t
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setTables(prev => prev.filter(t => t.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
+  useRealtimeTable<RestaurantTable>({
+    table: 'restaurant_tables',
+    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
+    enabled: !!user?.id,
+    onChange: (payload) => {
+      if (payload.eventType === 'INSERT') {
+        setTables(prev => [...prev, payload.new as RestaurantTable]);
+      } else if (payload.eventType === 'UPDATE') {
+        setTables(prev => prev.map(t =>
+          t.id === (payload.new as RestaurantTable).id ? payload.new as RestaurantTable : t
+        ));
+      } else if (payload.eventType === 'DELETE') {
+        setTables(prev => prev.filter(t => t.id !== (payload.old as RestaurantTable).id));
+      }
+    },
+  });
 
   useEffect(() => {
     fetchTables();

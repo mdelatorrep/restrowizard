@@ -1,5 +1,6 @@
 // Accept / reject / mark ready / delivered for a Rappi order
 import { corsHeaders, jsonResponse, errorResponse, requireUser, rappiFetch, supabaseService } from "../_shared/rappi.ts";
+import { z, validateBody } from "../_shared/validate.ts";
 
 const ACTIONS: Record<string, { method: string; path: (id: string) => string; body?: any }> = {
   accept: { method: "POST", path: id => `/api/v2/restaurants/orders/${id}/accept` },
@@ -8,14 +9,20 @@ const ACTIONS: Record<string, { method: string; path: (id: string) => string; bo
   delivered: { method: "POST", path: id => `/api/v2/restaurants/orders/${id}/delivered` },
 };
 
+const BodySchema = z.object({
+  order_id: z.string().uuid(),
+  action: z.enum(["accept", "reject", "ready", "delivered"]),
+  reason: z.string().trim().max(500).optional(),
+});
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { userId } = await requireUser(req);
-    const { order_id, action, reason } = await req.json();
-    if (!order_id || !action) return errorResponse("order_id y action requeridos", 400);
+    const parsed = await validateBody(req, BodySchema);
+    if (parsed.error) return parsed.error;
+    const { order_id, action, reason } = parsed.data;
     const map = ACTIONS[action];
-    if (!map) return errorResponse("Acción inválida", 400);
 
     const sb = supabaseService();
     const { data: order } = await sb.from("aggregator_orders")

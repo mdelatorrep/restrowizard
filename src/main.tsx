@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './i18n';
 
 // Register Service Worker for PWA (only in production to avoid cache issues during development)
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
