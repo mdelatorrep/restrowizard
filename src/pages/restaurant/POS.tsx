@@ -83,12 +83,8 @@ const POS = () => {
     return matchesSearch && matchesCategory && item.is_available;
   });
 
-  // Filtered customers
-  const filteredCustomers = customers.filter(c => 
-    c.customer_name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    (c as any).email?.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    (c as any).phone?.includes(customerSearch)
-  ).slice(0, 5);
+
+
 
   const handleAddToCart = (item: any) => {
     addItem({
