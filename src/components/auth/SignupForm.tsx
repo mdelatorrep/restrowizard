@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,6 +6,8 @@ import { Card, CardHeader, CardContent, CardDescription, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/hooks/useAuth';
 import { Building2, Users, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { z } from 'zod';
+import { useZodForm } from '@/lib/forms';
 
 type UserType = 'restaurant_owner' | 'consultant';
 
@@ -14,67 +16,48 @@ interface SignupFormProps {
   inviteToken?: string | null;
 }
 
+const SignupSchema = z.object({
+  fullName: z.string().trim().min(1, { message: 'El nombre es obligatorio' }).max(100),
+  email: z.string().trim().min(1, { message: 'El email es obligatorio' }).email({ message: 'Email no válido' }).max(255),
+  password: z.string().min(6, { message: 'Mínimo 6 caracteres' }).max(72),
+  restaurantName: z.string().trim().max(120).optional().or(z.literal('')),
+});
+type SignupValues = z.infer<typeof SignupSchema>;
+
 export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteToken }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<UserType>('restaurant_owner');
-  const [formData, setFormData] = useState({ 
-    email: '', 
-    password: '', 
-    fullName: '', 
-    restaurantName: '' 
-  });
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { signUp } = useAuth();
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useZodForm<SignupValues>(SignupSchema, {
+    defaultValues: { fullName: '', email: '', password: '', restaurantName: '' },
+  });
+
   useEffect(() => {
-    if (consultantRef || inviteToken) {
-      setUserType('restaurant_owner');
-    }
+    if (consultantRef || inviteToken) setUserType('restaurant_owner');
   }, [consultantRef, inviteToken]);
 
-  const validate = () => {
-    const errors: Record<string, string> = {};
-    if (!formData.fullName.trim()) errors.fullName = 'El nombre es obligatorio';
-    if (!formData.email) errors.email = 'El email es obligatorio';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email no válido';
-    if (!formData.password) errors.password = 'La contraseña es obligatoria';
-    else if (formData.password.length < 6) errors.password = 'Mínimo 6 caracteres';
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setIsLoading(true);
-    
+  const onSubmit = handleSubmit(async (values) => {
     try {
       const { error } = await signUp(
-        formData.email, 
-        formData.password, 
-        formData.fullName,
+        values.email,
+        values.password,
+        values.fullName,
         userType,
-        userType === 'restaurant_owner' ? formData.restaurantName : undefined
+        userType === 'restaurant_owner' ? values.restaurantName || undefined : undefined,
       );
-
       if (!error) {
         if (consultantRef) localStorage.setItem('consultantRef', consultantRef);
         if (inviteToken) localStorage.setItem('clientInviteToken', inviteToken);
       }
-    } catch (error) {
-      console.error('Signup error:', error);
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      console.error('Signup error:', e);
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
-      setFieldErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
+  });
 
   return (
     <Card>
@@ -85,20 +68,17 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* User Type Selection */}
         <div className="space-y-3">
           <Label className="font-lato-medium">¿Qué tipo de cuenta necesitas?</Label>
-          <RadioGroup 
-            value={userType} 
+          <RadioGroup
+            value={userType}
             onValueChange={(value) => setUserType(value as UserType)}
             className="grid grid-cols-2 gap-3"
           >
-            <Label 
+            <Label
               htmlFor="restaurant_owner"
               className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                userType === 'restaurant_owner' 
-                  ? 'border-primary bg-primary/5' 
-                  : 'border-border hover:border-primary/50'
+                userType === 'restaurant_owner' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
               }`}
             >
               <RadioGroupItem value="restaurant_owner" id="restaurant_owner" className="sr-only" />
@@ -106,17 +86,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
               <span className={`font-lato-bold text-sm text-center ${userType === 'restaurant_owner' ? 'text-primary' : ''}`}>
                 Restaurante
               </span>
-              <span className="text-xs text-muted-foreground text-center">
-                Soy dueño o gerente
-              </span>
+              <span className="text-xs text-muted-foreground text-center">Soy dueño o gerente</span>
             </Label>
-            
-            <Label 
+
+            <Label
               htmlFor="consultant"
               className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                userType === 'consultant' 
-                  ? 'border-secondary bg-secondary/5' 
-                  : 'border-border hover:border-secondary/50'
+                userType === 'consultant' ? 'border-secondary bg-secondary/5' : 'border-border hover:border-secondary/50'
               }`}
             >
               <RadioGroupItem value="consultant" id="consultant" className="sr-only" />
@@ -124,27 +100,26 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
               <span className={`font-lato-bold text-sm text-center ${userType === 'consultant' ? 'text-secondary' : ''}`}>
                 Consultor
               </span>
-              <span className="text-xs text-muted-foreground text-center">
-                Asesoro restaurantes
-              </span>
+              <span className="text-xs text-muted-foreground text-center">Asesoro restaurantes</span>
             </Label>
           </RadioGroup>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div>
             <Label htmlFor="fullName" className="font-lato-medium">Nombre Completo</Label>
             <Input
               id="fullName"
               type="text"
-              value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
-              className={`font-lato-regular ${fieldErrors.fullName ? 'border-destructive' : ''}`}
-              disabled={isLoading}
+              autoComplete="name"
+              aria-invalid={!!errors.fullName}
+              className={`font-lato-regular ${errors.fullName ? 'border-destructive' : ''}`}
+              disabled={isSubmitting}
+              {...register('fullName')}
             />
-            {fieldErrors.fullName && <p className="text-xs text-destructive mt-1">{fieldErrors.fullName}</p>}
+            {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName.message}</p>}
           </div>
-          
+
           {userType === 'restaurant_owner' && (
             <div>
               <Label htmlFor="restaurantName" className="font-lato-medium">
@@ -153,55 +128,54 @@ export const SignupForm: React.FC<SignupFormProps> = ({ consultantRef, inviteTok
               <Input
                 id="restaurantName"
                 type="text"
-                value={formData.restaurantName}
-                onChange={(e) => handleInputChange('restaurantName', e.target.value)}
                 className="font-lato-regular"
-                disabled={isLoading}
+                disabled={isSubmitting}
+                {...register('restaurantName')}
               />
             </div>
           )}
-          
+
           <div>
             <Label htmlFor="signup-email" className="font-lato-medium">Email</Label>
             <Input
               id="signup-email"
               type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`font-lato-regular ${fieldErrors.email ? 'border-destructive' : ''}`}
-              disabled={isLoading}
+              autoComplete="email"
+              aria-invalid={!!errors.email}
+              className={`font-lato-regular ${errors.email ? 'border-destructive' : ''}`}
+              disabled={isSubmitting}
+              {...register('email')}
             />
-            {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
+            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
           </div>
+
           <div>
             <Label htmlFor="signup-password" className="font-lato-medium">Contraseña</Label>
             <div className="relative">
               <Input
                 id="signup-password"
                 type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                minLength={6}
-                className={`font-lato-regular pr-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
-                disabled={isLoading}
+                autoComplete="new-password"
+                aria-invalid={!!errors.password}
+                className={`font-lato-regular pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                disabled={isSubmitting}
+                {...register('password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {fieldErrors.password && <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>}
+            {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
           </div>
-          <Button 
-            type="submit" 
-            className="w-full font-lato-bold" 
-            disabled={isLoading}
-          >
-            {isLoading ? (
+
+          <Button type="submit" className="w-full font-lato-bold" disabled={isSubmitting}>
+            {isSubmitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creando cuenta...</>
             ) : `Crear Cuenta como ${userType === 'restaurant_owner' ? 'Restaurante' : 'Consultor'}`}
           </Button>
