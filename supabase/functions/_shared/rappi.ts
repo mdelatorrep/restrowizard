@@ -30,11 +30,15 @@ export const supabaseAsUser = (authHeader: string) =>
   );
 
 // --- Crypto (AES-GCM, key derived from RAPPI_ENCRYPTION_KEY via SHA-256) ---
+// Falls back to SUPABASE_SERVICE_ROLE_KEY (always present & secret) so no manual setup is needed.
 async function getKey(): Promise<CryptoKey> {
-  const passphrase = Deno.env.get("RAPPI_ENCRYPTION_KEY") ?? "dev-key-change-me";
+  const passphrase =
+    Deno.env.get("RAPPI_ENCRYPTION_KEY") ??
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+    "dev-key-change-me";
   const raw = await crypto.subtle.digest(
     "SHA-256",
-    new TextEncoder().encode(passphrase),
+    new TextEncoder().encode("rappi:" + passphrase),
   );
   return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
