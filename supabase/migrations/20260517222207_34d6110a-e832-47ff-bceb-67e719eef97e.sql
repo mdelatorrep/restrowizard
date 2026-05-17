@@ -1,0 +1,1 @@
+ALTER VIEW public.unified_orders_view SET (security_invoker = true);
