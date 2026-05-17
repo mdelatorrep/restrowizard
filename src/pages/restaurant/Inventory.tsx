@@ -16,17 +16,14 @@ import { TransferDialog } from '@/components/inventory/TransferDialog';
 import { InventoryItemDetail } from '@/components/inventory/InventoryItemDetail';
 import { InventoryReports } from '@/components/inventory/InventoryReports';
 import { InventoryItemsTab } from '@/components/inventory/InventoryItemsTab';
-import { 
-  Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
-  RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
-   ClipboardList, ClipboardCheck, Trash2, Scan,
-   Calendar, ChefHat, Clock, MoveHorizontal, Eye, BarChart3, Edit
-} from 'lucide-react';
-import { useEnterpriseInventory, InventoryItemExtended, PurchaseOrder } from '@/hooks/useEnterpriseInventory';
+import { InventoryTabsBar } from '@/components/inventory/InventoryTabsBar';
+import { InventoryKPIsBar } from '@/components/inventory/InventoryKPIsBar';
+import { Package, Plus, Sparkles, Brain, Scan, MoveHorizontal } from 'lucide-react';
+import { useEnterpriseInventory, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
- import { ModulePageLayout, PageHeader, KPIGrid, KPICardData, QuickStats, ResponsiveTabs } from '@/components/layout';
+import { ModulePageLayout, PageHeader } from '@/components/layout';
 
 const Inventory: React.FC = () => {
   const { 
