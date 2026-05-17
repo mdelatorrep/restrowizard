@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRappiIntegration, useRappiOrders, useRappiSettlements } from "@/hooks/useRappiIntegration";
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink } from "lucide-react";
+import { useRappiIntegration, useRappiOrders, useRappiSettlements, useRappiMenuSyncByStore } from "@/hooks/useRappiIntegration";
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+
+type StoreSyncState = { status: "idle" | "syncing" | "success" | "error"; progress: number; itemsSynced?: number; error?: string; at?: string };
 
 export default function RappiIntegrationPage() {
   const { integration, isLoading, save, test, syncMenu, storeControl, orderAction } = useRappiIntegration();
@@ -206,31 +209,7 @@ export default function RappiIntegrationPage() {
 
         {/* MENÚ */}
         <TabsContent value="menu" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sincronización de menú</CardTitle>
-              <CardDescription>Publica tu menú actual en cada tienda Rappi configurada.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {(integration?.store_ids ?? []).map(sid => (
-                <div key={sid} className="flex items-center justify-between p-3 border rounded">
-                  <div>
-                    <p className="font-medium">Tienda {sid}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Última sync: {integration?.last_sync_at ? format(new Date(integration.last_sync_at), "dd/MM/yyyy HH:mm") : "nunca"}
-                    </p>
-                  </div>
-                  <Button size="sm" onClick={() => syncMenu.mutate({ integration_id: integration!.id, store_id: sid })} disabled={syncMenu.isPending}>
-                    {syncMenu.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                    Sincronizar
-                  </Button>
-                </div>
-              ))}
-              {(!integration?.store_ids || integration.store_ids.length === 0) && (
-                <p className="text-sm text-muted-foreground">Configura al menos un Store ID en la pestaña Conexión.</p>
-              )}
-            </CardContent>
-          </Card>
+          <MenuSyncSection integration={integration} syncMenu={syncMenu} />
         </TabsContent>
 
         {/* TIENDA */}
@@ -352,5 +331,133 @@ export default function RappiIntegrationPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function MenuSyncSection({ integration, syncMenu }: { integration: any; syncMenu: any }) {
+  const stores: string[] = integration?.store_ids ?? [];
+  const { data: syncMap, refetch } = useRappiMenuSyncByStore(integration?.id);
+  const [states, setStates] = useState<Record<string, StoreSyncState>>({});
+  const [allProgress, setAllProgress] = useState<number | null>(null);
+  const timers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  useEffect(() => () => { Object.values(timers.current).forEach(clearInterval); }, []);
+
+  const startProgress = (storeId: string) => {
+    setStates(s => ({ ...s, [storeId]: { status: "syncing", progress: 5 } }));
+    if (timers.current[storeId]) clearInterval(timers.current[storeId]);
+    timers.current[storeId] = setInterval(() => {
+      setStates(s => {
+        const cur = s[storeId];
+        if (!cur || cur.status !== "syncing") return s;
+        const next = Math.min(cur.progress + Math.random() * 8 + 2, 90);
+        return { ...s, [storeId]: { ...cur, progress: next } };
+      });
+    }, 300);
+  };
+
+  const finishProgress = (storeId: string, ok: boolean, payload?: { items?: number; error?: string }) => {
+    if (timers.current[storeId]) { clearInterval(timers.current[storeId]); delete timers.current[storeId]; }
+    setStates(s => ({
+      ...s,
+      [storeId]: {
+        status: ok ? "success" : "error",
+        progress: 100,
+        itemsSynced: payload?.items,
+        error: payload?.error,
+        at: new Date().toISOString(),
+      },
+    }));
+  };
+
+  const syncOne = async (storeId: string) => {
+    if (!integration) return;
+    startProgress(storeId);
+    try {
+      const res: any = await syncMenu.mutateAsync({ integration_id: integration.id, store_id: storeId });
+      finishProgress(storeId, true, { items: res?.items_synced });
+    } catch (e: any) {
+      finishProgress(storeId, false, { error: e?.message ?? "Error" });
+    } finally {
+      refetch();
+    }
+  };
+
+  const syncAll = async () => {
+    if (!stores.length) return;
+    setAllProgress(0);
+    for (let i = 0; i < stores.length; i++) {
+      await syncOne(stores[i]);
+      setAllProgress(Math.round(((i + 1) / stores.length) * 100));
+    }
+    setTimeout(() => setAllProgress(null), 1500);
+  };
+
+  const anySyncing = Object.values(states).some(v => v.status === "syncing") || allProgress !== null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <CardTitle>Sincronización de menú</CardTitle>
+            <CardDescription>Publica tu menú actual en cada tienda Rappi configurada.</CardDescription>
+          </div>
+          <Button onClick={syncAll} disabled={anySyncing || !stores.length}>
+            {anySyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Sincronizar todas
+          </Button>
+        </div>
+        {allProgress !== null && (
+          <div className="pt-2 space-y-1">
+            <Progress value={allProgress} />
+            <p className="text-xs text-muted-foreground">Progreso global: {allProgress}%</p>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {stores.map(sid => {
+          const st = states[sid];
+          const summary = syncMap?.[sid];
+          const isSyncing = st?.status === "syncing";
+          const StatusBadge = () => {
+            if (isSyncing) return <Badge variant="secondary" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Sincronizando</Badge>;
+            if (st?.status === "success") return <Badge className="gap-1"><CheckCircle2 className="w-3 h-3" /> Sincronizado</Badge>;
+            if (st?.status === "error" || (summary?.errors ?? 0) > 0) return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" /> Con errores</Badge>;
+            if ((summary?.synced ?? 0) > 0) return <Badge variant="outline" className="gap-1"><CheckCircle2 className="w-3 h-3" /> Publicado</Badge>;
+            return <Badge variant="outline" className="gap-1"><Circle className="w-3 h-3" /> Sin sincronizar</Badge>;
+          };
+          const last = st?.at ?? summary?.last ?? null;
+          return (
+            <div key={sid} className="p-3 border rounded space-y-2">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium">Tienda {sid}</p>
+                    <StatusBadge />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {summary ? `${summary.synced}/${summary.total} items` : "Sin historial"}
+                    {last && ` · Última sync: ${format(new Date(last), "dd/MM/yyyy HH:mm")}`}
+                    {st?.itemsSynced != null && ` · ${st.itemsSynced} items publicados`}
+                  </p>
+                  {st?.error && <p className="text-xs text-destructive mt-1 break-all">{st.error}</p>}
+                </div>
+                <Button size="sm" onClick={() => syncOne(sid)} disabled={isSyncing}>
+                  {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  {isSyncing ? "Sincronizando" : "Sincronizar"}
+                </Button>
+              </div>
+              {(isSyncing || st?.status === "success" || st?.status === "error") && (
+                <Progress value={st?.progress ?? 0} className={st?.status === "error" ? "[&>div]:bg-destructive" : undefined} />
+              )}
+            </div>
+          );
+        })}
+        {stores.length === 0 && (
+          <p className="text-sm text-muted-foreground">Configura al menos un Store ID en la pestaña Conexión.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
