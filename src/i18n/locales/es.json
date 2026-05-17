@@ -1,0 +1,29 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "retry": "Reintentar",
+    "error": "Ocurrió un error",
+    "success": "Operación exitosa"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "settings": "Ajustes",
+    "team": "Equipo",
+    "inventory": "Inventario",
+    "pos": "POS",
+    "kds": "Cocina"
+  }
+}
