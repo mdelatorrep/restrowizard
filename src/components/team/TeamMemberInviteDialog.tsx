@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,11 +18,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { z } from 'zod';
+import { useZodForm } from '@/lib/forms';
+import { Controller } from 'react-hook-form';
 import {
   useTeamMembers,
   ROLE_LABELS,
   DEFAULT_PERMISSIONS,
-  TeamMemberRole
+  TeamMemberRole,
 } from '@/hooks/useTeamMembers';
 
 interface TeamMemberInviteDialogProps {
@@ -30,57 +33,60 @@ interface TeamMemberInviteDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const ROLES: TeamMemberRole[] = ['admin', 'manager', 'cashier', 'kitchen', 'staff'];
+
+const InviteSchema = z.object({
+  email: z
+    .string({ required_error: 'El email es requerido' })
+    .min(1, 'El email es requerido')
+    .email('Ingresa un email válido'),
+  role: z.enum(['admin', 'manager', 'cashier', 'kitchen', 'staff'] as const),
+});
+
+type InviteValues = z.infer<typeof InviteSchema>;
+
 export const TeamMemberInviteDialog: React.FC<TeamMemberInviteDialogProps> = ({
   open,
-  onOpenChange
+  onOpenChange,
 }) => {
   const { inviteTeamMember, isInviting } = useTeamMembers();
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<TeamMemberRole>('staff');
-  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const form = useZodForm<InviteValues>(InviteSchema, {
+    defaultValues: { email: '', role: 'staff' },
+  });
 
-    if (!email) {
-      setError('El email es requerido');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors },
+  } = form;
 
-    if (!email.includes('@')) {
-      setError('Ingresa un email válido');
-      return;
-    }
+  const role = watch('role');
 
+  const onSubmit = async (values: InviteValues) => {
     try {
       await inviteTeamMember({
-        email,
-        role,
-        permissions: DEFAULT_PERMISSIONS[role]
+        email: values.email,
+        role: values.role,
+        permissions: DEFAULT_PERMISSIONS[values.role],
       });
-      
-      // Reset form and close
-      setEmail('');
-      setRole('staff');
+      reset({ email: '', role: 'staff' });
       onOpenChange(false);
-    } catch (err) {
-      // Error already handled in hook
+    } catch {
+      /* handled in hook */
     }
   };
 
   const handleClose = () => {
-    setEmail('');
-    setRole('staff');
-    setError('');
+    reset({ email: '', role: 'staff' });
     onOpenChange(false);
   };
 
-  // Roles available for invitation (excluding owner)
-  const availableRoles: TeamMemberRole[] = ['admin', 'manager', 'cashier', 'kitchen', 'staff'];
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(o) : handleClose())}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -93,64 +99,74 @@ export const TeamMemberInviteDialog: React.FC<TeamMemberInviteDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="invite-email">Email</Label>
             <Input
-              id="email"
+              id="invite-email"
               type="email"
+              autoComplete="email"
               placeholder="correo@ejemplo.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError('');
-              }}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'invite-email-error' : undefined}
               disabled={isInviting}
+              {...register('email')}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {errors.email && (
+              <p id="invite-email-error" className="text-sm text-destructive">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Rol</Label>
-            <Select
-              value={role}
-              onValueChange={(value) => setRole(value as TeamMemberRole)}
-              disabled={isInviting}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un rol" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableRoles.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    <div className="flex flex-col items-start">
-                      <span>{ROLE_LABELS[r]}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {r === 'admin' && 'Acceso completo excepto eliminar negocio'}
-                        {r === 'manager' && 'Gestión de ventas, inventario y turnos'}
-                        {r === 'cashier' && 'POS, pedidos y reservaciones'}
-                        {r === 'kitchen' && 'Pedidos, recetas e inventario (lectura)'}
-                        {r === 'staff' && 'Ver turnos y dashboard básico'}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="invite-role">Rol</Label>
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as TeamMemberRole)}
+                  disabled={isInviting}
+                >
+                  <SelectTrigger id="invite-role">
+                    <SelectValue placeholder="Selecciona un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        <div className="flex flex-col items-start">
+                          <span>{ROLE_LABELS[r]}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {r === 'admin' && 'Acceso completo excepto eliminar negocio'}
+                            {r === 'manager' && 'Gestión de ventas, inventario y turnos'}
+                            {r === 'cashier' && 'POS, pedidos y reservaciones'}
+                            {r === 'kitchen' && 'Pedidos, recetas e inventario (lectura)'}
+                            {r === 'staff' && 'Ver turnos y dashboard básico'}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="bg-muted rounded-lg p-3">
             <p className="text-sm font-medium mb-2">Permisos del rol {ROLE_LABELS[role]}:</p>
             <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-              {Object.entries(DEFAULT_PERMISSIONS[role]).map(([module, level]) => (
-                level !== 'none' && (
-                  <div key={module} className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-primary/60" />
-                    <span className="capitalize">{module}</span>
-                    <span className="text-muted-foreground/60">({level})</span>
-                  </div>
-                )
-              ))}
+              {Object.entries(DEFAULT_PERMISSIONS[role]).map(
+                ([module, level]) =>
+                  level !== 'none' && (
+                    <div key={module} className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-primary/60" />
+                      <span className="capitalize">{module}</span>
+                      <span className="text-muted-foreground/60">({level})</span>
+                    </div>
+                  )
+              )}
             </div>
           </div>
 
