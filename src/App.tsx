@@ -130,12 +130,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const RouteFallback = () => (
-  <div className="min-h-[60vh] flex items-center justify-center" role="status" aria-live="polite">
-    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-    <span className="sr-only">Cargando…</span>
-  </div>
-);
+const RouteFallback = () => <PageSkeleton />;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
