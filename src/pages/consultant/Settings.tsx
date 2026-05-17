@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useConsultantProfile } from '@/hooks/useConsultantProfile';
-import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { useZodForm } from '@/lib/forms';
 import {
   Settings as SettingsIcon,
-  User,
   Building2,
   Palette,
   Bell,
@@ -20,54 +20,86 @@ import {
   Upload,
   Globe,
   Linkedin,
-  Mail
+  Mail,
 } from 'lucide-react';
+
+const SettingsSchema = z.object({
+  company_name: z.string().max(120, 'Máximo 120 caracteres').optional().or(z.literal('')),
+  bio: z.string().max(1000, 'Máximo 1000 caracteres').optional().or(z.literal('')),
+  specializations: z.string().optional().or(z.literal('')),
+  years_experience: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), 'Solo números enteros')
+    .refine((v) => !v || parseInt(v) <= 80, 'Valor irreal'),
+  hourly_rate: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+(\.\d{1,2})?$/.test(v), 'Monto inválido'),
+  website_url: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/.+/i.test(v), 'Debe iniciar con http(s)://'),
+  linkedin_url: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/(www\.)?linkedin\.com\/.+/i.test(v), 'URL de LinkedIn inválida'),
+});
+
+type SettingsValues = z.infer<typeof SettingsSchema>;
 
 const Settings: React.FC = () => {
   const { profile, loading, updateProfile } = useConsultantProfile();
-  const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
-    company_name: profile?.company_name || '',
-    bio: profile?.bio || '',
-    specializations: profile?.specializations?.join(', ') || '',
-    years_experience: profile?.years_experience?.toString() || '',
-    hourly_rate: profile?.hourly_rate?.toString() || '',
-    website_url: profile?.website_url || '',
-    linkedin_url: profile?.linkedin_url || ''
+  const form = useZodForm<SettingsValues>(SettingsSchema, {
+    defaultValues: {
+      company_name: '',
+      bio: '',
+      specializations: '',
+      years_experience: '',
+      hourly_rate: '',
+      website_url: '',
+      linkedin_url: '',
+    },
   });
 
-  // Update form when profile loads
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  const companyName = watch('company_name');
+
   React.useEffect(() => {
     if (profile) {
-      setFormData({
+      reset({
         company_name: profile.company_name || '',
         bio: profile.bio || '',
         specializations: profile.specializations?.join(', ') || '',
         years_experience: profile.years_experience?.toString() || '',
         hourly_rate: profile.hourly_rate?.toString() || '',
         website_url: profile.website_url || '',
-        linkedin_url: profile.linkedin_url || ''
+        linkedin_url: profile.linkedin_url || '',
       });
     }
-  }, [profile]);
+  }, [profile, reset]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await updateProfile({
-        company_name: formData.company_name || null,
-        bio: formData.bio || null,
-        specializations: formData.specializations.split(',').map(s => s.trim()).filter(Boolean),
-        years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
-        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-        website_url: formData.website_url || null,
-        linkedin_url: formData.linkedin_url || null
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const onSubmit = async (values: SettingsValues) => {
+    await updateProfile({
+      company_name: values.company_name || null,
+      bio: values.bio || null,
+      specializations: (values.specializations || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      years_experience: values.years_experience ? parseInt(values.years_experience) : null,
+      hourly_rate: values.hourly_rate ? parseFloat(values.hourly_rate) : null,
+      website_url: values.website_url || null,
+      linkedin_url: values.linkedin_url || null,
+    });
   };
 
   if (loading) {
