@@ -9072,6 +9072,38 @@ export type Database = {
           },
         ]
       }
+      unified_orders_view: {
+        Row: {
+          brand_id: string | null
+          channel: string | null
+          commission: number | null
+          completed_at: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_fee: number | null
+          discount: number | null
+          external_order_id: string | null
+          gross_total: number | null
+          id: string | null
+          items: Json | null
+          net_total: number | null
+          order_type: string | null
+          payment_status: string | null
+          session_id: string | null
+          source: string | null
+          status: string | null
+          subtotal: number | null
+          table_id: string | null
+          tax: number | null
+          tip_amount: number | null
+          updated_at: string | null
+          user_id: string | null
+          waiter_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_menu_item_scores: {
@@ -9159,6 +9191,18 @@ export type Database = {
       is_team_lead: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
+      }
+      log_consultant_impersonation_end: {
+        Args: { p_log_id: string }
+        Returns: undefined
+      }
+      log_consultant_impersonation_start: {
+        Args: {
+          p_client_business_id: string
+          p_client_user_id: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
     }
