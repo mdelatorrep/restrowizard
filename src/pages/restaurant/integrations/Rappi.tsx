@@ -94,6 +94,56 @@ export default function RappiIntegrationPage() {
         <TabsContent value="connection" className="space-y-4">
           <Card>
             <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle>Checklist de configuración</CardTitle>
+                  <CardDescription>Sigue estos pasos para dejar Rappi operativo.</CardDescription>
+                </div>
+                <Badge variant={completed === steps.length ? "default" : "secondary"}>
+                  {completed}/{steps.length} completados
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {steps.map((s, i) => (
+                <div key={s.key} className="flex items-start gap-3 p-3 border rounded-lg">
+                  {s.done
+                    ? <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    : <Circle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium ${s.done ? "text-muted-foreground line-through" : ""}`}>
+                      {i + 1}. {s.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{s.desc}</p>
+                    {s.key === "test" && integration && !s.done && (
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => test.mutate(integration.id)} disabled={test.isPending}>
+                        {test.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                        Probar conexión
+                      </Button>
+                    )}
+                    {s.key === "webhook" && integration && (
+                      <div className="mt-2 space-y-2">
+                        <code className="block p-2 bg-muted rounded text-xs break-all">{webhookUrl}</code>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button size="sm" variant="outline" onClick={copyWebhook}>
+                            <Copy className="w-4 h-4 mr-2" /> Copiar URL
+                          </Button>
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href="https://dev-portal.rappi.com/es/" target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-4 h-4 mr-2" /> Abrir portal Rappi
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Credenciales</CardTitle>
               <CardDescription>Ingresa el Client ID y Client Secret provistos por Rappi en tu portal de aliado.</CardDescription>
             </CardHeader>
