@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useLoyaltyData, type LoyaltyCustomer, type LoyaltyTier, type RewardsCatalogItem } from '@/hooks/useLoyaltyData';
 import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
+import { TierBadge, CustomerCard, RewardCard } from '@/components/loyalty/LoyaltyCards';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { cn } from '@/lib/utils';
 
