@@ -16,8 +16,7 @@ Object.defineProperty(window, "matchMedia", {
 
 // Polyfills frequently needed by Radix/Recharts in jsdom
 if (typeof window.ResizeObserver === "undefined") {
-  // @ts-expect-error - test polyfill
-  window.ResizeObserver = class {
+  (window as any).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
