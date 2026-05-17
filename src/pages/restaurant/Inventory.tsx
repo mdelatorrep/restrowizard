@@ -20,8 +20,7 @@ import { InventoryTabsBar } from '@/components/inventory/InventoryTabsBar';
 import { InventoryKPIsBar } from '@/components/inventory/InventoryKPIsBar';
 import { Package, Plus, Sparkles, Brain, Scan, MoveHorizontal } from 'lucide-react';
 import { useEnterpriseInventory, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
-import { useAIAgent } from '@/hooks/useAIAgent';
-import { toast } from 'sonner';
+import { useInventoryAI } from '@/hooks/useInventoryAI';
 import { supabase } from '@/integrations/supabase/client';
 import { ModulePageLayout, PageHeader } from '@/components/layout';
 
