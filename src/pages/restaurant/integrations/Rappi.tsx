@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRappiIntegration, useRappiOrders, useRappiSettlements } from "@/hooks/useRappiIntegration";
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function RappiIntegrationPage() {
   const { integration, isLoading, save, test, syncMenu, storeControl, orderAction } = useRappiIntegration();
@@ -41,6 +42,27 @@ export default function RappiIntegrationPage() {
     ? `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.functions.supabase.co/rappi-webhook?integration_id=${integration.id}`
     : "—";
 
+  const hasCreds = !!integration?.client_id;
+  const hasStores = !!integration?.store_ids?.length;
+  const tokenOk = !!integration?.token_expires_at && new Date(integration.token_expires_at) > new Date();
+  const webhookConfigured = !!integration?.webhook_secret;
+  const menuSynced = !!integration?.last_sync_at;
+
+  const steps = [
+    { key: "creds", title: "Ingresa Client ID y Client Secret", desc: "Obtenlos en el portal de aliado Rappi.", done: hasCreds },
+    { key: "stores", title: "Configura tus Store IDs", desc: "Identificadores de cada tienda que opera con Rappi.", done: hasStores },
+    { key: "test", title: "Prueba la conexión", desc: "Verifica que las credenciales obtengan un token válido.", done: tokenOk },
+    { key: "webhook", title: "Copia la URL de webhook al portal Rappi", desc: "Pega esta URL en la configuración de webhooks de Rappi y guarda el secret HMAC.", done: webhookConfigured },
+    { key: "menu", title: "Sincroniza tu menú", desc: "Publica tu catálogo en al menos una tienda.", done: menuSynced },
+  ];
+  const completed = steps.filter(s => s.done).length;
+
+  const copyWebhook = async () => {
+    if (!integration) return;
+    await navigator.clipboard.writeText(webhookUrl);
+    toast.success("URL copiada al portapapeles");
+  };
+
   if (isLoading) return <div className="p-6 flex items-center gap-2"><Loader2 className="animate-spin" /> Cargando…</div>;
 
   return (
@@ -70,6 +92,56 @@ export default function RappiIntegrationPage() {
 
         {/* CONEXIÓN */}
         <TabsContent value="connection" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle>Checklist de configuración</CardTitle>
+                  <CardDescription>Sigue estos pasos para dejar Rappi operativo.</CardDescription>
+                </div>
+                <Badge variant={completed === steps.length ? "default" : "secondary"}>
+                  {completed}/{steps.length} completados
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {steps.map((s, i) => (
+                <div key={s.key} className="flex items-start gap-3 p-3 border rounded-lg">
+                  {s.done
+                    ? <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    : <Circle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium ${s.done ? "text-muted-foreground line-through" : ""}`}>
+                      {i + 1}. {s.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{s.desc}</p>
+                    {s.key === "test" && integration && !s.done && (
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => test.mutate(integration.id)} disabled={test.isPending}>
+                        {test.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                        Probar conexión
+                      </Button>
+                    )}
+                    {s.key === "webhook" && integration && (
+                      <div className="mt-2 space-y-2">
+                        <code className="block p-2 bg-muted rounded text-xs break-all">{webhookUrl}</code>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button size="sm" variant="outline" onClick={copyWebhook}>
+                            <Copy className="w-4 h-4 mr-2" /> Copiar URL
+                          </Button>
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href="https://dev-portal.rappi.com/es/" target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-4 h-4 mr-2" /> Abrir portal Rappi
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Credenciales</CardTitle>
