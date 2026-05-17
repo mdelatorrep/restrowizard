@@ -110,25 +110,7 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const getStockStatus = (item: InventoryItemExtended) => {
-    if (item.current_stock <= 0) {
-      return { label: 'Agotado', variant: 'destructive' as const };
-    }
-    if (item.expiration_date) {
-      const expDate = new Date(item.expiration_date);
-      const daysUntil = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      if (daysUntil <= 0) return { label: 'Vencido', variant: 'destructive' as const };
-      if (daysUntil <= 3) return { label: `Vence en ${daysUntil}d`, variant: 'destructive' as const };
-      if (daysUntil <= 7) return { label: `Vence en ${daysUntil}d`, variant: 'secondary' as const };
-    }
-    if (item.par_level > 0 && item.current_stock < item.par_level) {
-      return { label: 'Bajo Par', variant: 'secondary' as const };
-    }
-    if (item.reorder_point && item.current_stock <= item.reorder_point) {
-      return { label: 'Stock Bajo', variant: 'secondary' as const };
-    }
-    return { label: 'Normal', variant: 'default' as const };
-  };
+  // getStockStatus extracted to src/components/inventory/InventoryStockTable.tsx
 
   const handleAIAnalysis = async () => {
     if (inventory.length === 0) {
