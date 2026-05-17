@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.learn-ai-content]
 verify_jwt = false
+
+[functions.rappi-webhook]
+verify_jwt = false
+
+[functions.rappi-orders-poll]
+verify_jwt = false
+
+[functions.rappi-settlements-sync]
+verify_jwt = false
