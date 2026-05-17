@@ -166,3 +166,29 @@ export const useRappiSettlements = () => {
     enabled: !!user,
   });
 };
+
+export const useRappiMenuSyncByStore = (integrationId?: string) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["rappi-menu-sync", user?.id, integrationId],
+    queryFn: async () => {
+      if (!user || !integrationId) return {} as Record<string, { total: number; synced: number; errors: number; last: string | null }>;
+      const { data, error } = await supabase
+        .from("rappi_menu_sync")
+        .select("store_id, status, last_synced_at")
+        .eq("integration_id", integrationId);
+      if (error) throw error;
+      const map: Record<string, { total: number; synced: number; errors: number; last: string | null }> = {};
+      for (const row of (data ?? []) as any[]) {
+        const k = row.store_id as string;
+        if (!map[k]) map[k] = { total: 0, synced: 0, errors: 0, last: null };
+        map[k].total += 1;
+        if (row.status === "synced") map[k].synced += 1;
+        if (row.status === "error") map[k].errors += 1;
+        if (row.last_synced_at && (!map[k].last || row.last_synced_at > map[k].last!)) map[k].last = row.last_synced_at;
+      }
+      return map;
+    },
+    enabled: !!user && !!integrationId,
+  });
+};
