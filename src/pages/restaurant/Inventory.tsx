@@ -290,79 +290,12 @@ const Inventory: React.FC = () => {
                 <Badge variant="outline">{filteredInventory.length} items</Badge>
               </div>
 
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead>Ubicación</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
-                      <TableHead className="text-right">Par Level</TableHead>
-                      <TableHead className="text-right">Costo</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInventory.slice(0, 50).map((item) => {
-                      const status = getStockStatus(item);
-                      return (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item.item_name}</p>
-                              {(item.barcode || item.sku) && (
-                                <p className="text-xs text-muted-foreground">
-                                  {item.sku || item.barcode}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.category || '-'}</TableCell>
-                          <TableCell>
-                            {item.storage_location?.location_name || '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={item.current_stock <= 0 ? 'text-red-600' : ''}>
-                              {item.current_stock} {item.unit}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {item.par_level > 0 ? (
-                              <span className={item.current_stock < item.par_level ? 'text-yellow-600' : ''}>
-                                {item.par_level}
-                              </span>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${(item.unit_cost || 0).toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewDetail(item)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-destructive" 
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </Card>
+              <InventoryStockTable
+                items={filteredInventory}
+                onView={handleViewDetail}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </div>
           )}
         </TabsContent>
