@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
- import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
- import { TabsContent } from '@/components/ui/tabs';
- import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { StorageLocationsManager } from '@/components/inventory/StorageLocationsManager';
@@ -22,17 +16,14 @@ import { TransferDialog } from '@/components/inventory/TransferDialog';
 import { InventoryItemDetail } from '@/components/inventory/InventoryItemDetail';
 import { InventoryReports } from '@/components/inventory/InventoryReports';
 import { InventoryItemsTab } from '@/components/inventory/InventoryItemsTab';
-import { 
-  Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
-  RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
-   ClipboardList, ClipboardCheck, Trash2, Scan,
-   Calendar, ChefHat, Clock, MoveHorizontal, Eye, BarChart3, Edit
-} from 'lucide-react';
-import { useEnterpriseInventory, InventoryItemExtended, PurchaseOrder } from '@/hooks/useEnterpriseInventory';
+import { InventoryTabsBar } from '@/components/inventory/InventoryTabsBar';
+import { InventoryKPIsBar } from '@/components/inventory/InventoryKPIsBar';
+import { Package, Plus, Sparkles, Brain, Scan, MoveHorizontal } from 'lucide-react';
+import { useEnterpriseInventory, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
- import { ModulePageLayout, PageHeader, KPIGrid, KPICardData, QuickStats, ResponsiveTabs } from '@/components/layout';
+import { ModulePageLayout, PageHeader } from '@/components/layout';
 
 const Inventory: React.FC = () => {
   const { 
@@ -186,24 +177,8 @@ const Inventory: React.FC = () => {
         />
       )}
 
-      {/* KPIs */}
-       {kpis && (<KPIGrid
-         columns={5}
-         kpis={[
-           { label: 'Total Items', value: kpis.totalItems, icon: Package, iconColor: 'text-primary' },
-           { label: 'Valor Total', value: `$${kpis.totalValue.toLocaleString()}`, icon: DollarSign, iconColor: 'text-green-600' },
-           { label: 'Bajo Par Level', value: kpis.belowParItems, icon: TrendingDown, iconColor: 'text-yellow-600', highlight: kpis.belowParItems > 0, highlightColor: 'warning' },
-           { label: 'Por Vencer', value: kpis.expiringItems, icon: Calendar, iconColor: 'text-orange-500', highlight: kpis.expiringItems > 0, highlightColor: 'warning' },
-           { label: 'Agotados', value: kpis.outOfStockItems, icon: AlertTriangle, iconColor: 'text-destructive', highlight: kpis.outOfStockItems > 0, highlightColor: 'danger' }
-         ] as KPICardData[]}
-       />)}
-
-      {/* Quick stats row */}
-       {kpis && (<QuickStats items={[
-         { icon: ClipboardList, value: kpis.pendingOrders, label: 'OC pendientes' },
-         { icon: ClipboardCheck, value: kpis.openCounts, label: 'conteos abiertos' },
-         { icon: Trash2, value: `$${kpis.wasteThisMonth.toLocaleString()}`, label: 'merma este mes', variant: 'danger' }
-       ]} />)}
+      {/* KPIs + Quick stats */}
+      <InventoryKPIsBar kpis={kpis} />
 
       {/* AI Insights Panel */}
       {showAIPanel && (
@@ -220,44 +195,7 @@ const Inventory: React.FC = () => {
 
       {/* Main tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex w-full overflow-x-auto">
-          <TabsTrigger value="items" className="gap-1">
-            <Package className="h-4 w-4" />
-            <span className="hidden md:inline">Inventario</span>
-          </TabsTrigger>
-          <TabsTrigger value="locations" className="gap-1">
-            <Warehouse className="h-4 w-4" />
-            <span className="hidden md:inline">Ubicaciones</span>
-          </TabsTrigger>
-          <TabsTrigger value="suppliers" className="gap-1">
-            <Truck className="h-4 w-4" />
-            <span className="hidden md:inline">Proveedores</span>
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="gap-1">
-            <ClipboardList className="h-4 w-4" />
-            <span className="hidden md:inline">Compras</span>
-          </TabsTrigger>
-          <TabsTrigger value="counts" className="gap-1">
-            <ClipboardCheck className="h-4 w-4" />
-            <span className="hidden md:inline">Conteos</span>
-          </TabsTrigger>
-          <TabsTrigger value="waste" className="gap-1">
-            <Trash2 className="h-4 w-4" />
-            <span className="hidden md:inline">Mermas</span>
-          </TabsTrigger>
-          <TabsTrigger value="expirations" className="gap-1">
-            <Clock className="h-4 w-4" />
-            <span className="hidden md:inline">Vencimientos</span>
-          </TabsTrigger>
-          <TabsTrigger value="recipes" className="gap-1">
-            <ChefHat className="h-4 w-4" />
-            <span className="hidden md:inline">Recetas</span>
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="gap-1">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden md:inline">Reportes</span>
-          </TabsTrigger>
-        </TabsList>
+        <InventoryTabsBar />
 
         {/* Inventory Items Tab */}
         <TabsContent value="items" className="mt-4">
