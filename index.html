@@ -12,6 +12,11 @@
     <link rel="alternate" hreflang="es" href="https://restrowizard.lovable.app/" />
     <link rel="icon" href="/favicon.png" type="image/png" />
 
+    <!-- Security headers (meta-equivalents; HTTP headers should be set at the edge) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(), geolocation=(self), payment=(self), usb=(), accelerometer=(), gyroscope=()" />
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#3E1064" media="(prefers-color-scheme: light)" />
