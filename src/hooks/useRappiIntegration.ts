@@ -135,15 +135,12 @@ export const useRappiOrders = () => {
     enabled: !!user,
   });
 
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel("rappi-orders-rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "aggregator_orders", filter: `user_id=eq.${user.id}` },
-        () => qc.invalidateQueries({ queryKey: ["rappi-orders", user.id] }))
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, qc]);
+  useRealtimeTable({
+    table: "aggregator_orders",
+    filter: user ? `user_id=eq.${user.id}` : undefined,
+    enabled: !!user,
+    onChange: () => qc.invalidateQueries({ queryKey: ["rappi-orders", user?.id] }),
+  });
 
   return query;
 };
