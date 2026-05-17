@@ -4,12 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Controller } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Warehouse, Plus, Thermometer, Edit, Trash2 } from 'lucide-react';
 import { StorageLocation } from '@/hooks/useEnterpriseInventory';
+import { useZodForm } from '@/lib/forms';
+import { StorageLocationSchema, type StorageLocationValues } from '@/lib/schemas/storageLocation';
 
 interface Props {
   locations: StorageLocation[];
@@ -27,56 +30,41 @@ const locationTypes = [
   { value: 'display', label: 'Exhibición', icon: '🪟' },
 ];
 
+const EMPTY: StorageLocationValues = {
+  location_name: '', location_type: 'dry_storage', temperature_range: '',
+  description: '', is_active: true, sort_order: 0,
+};
+
 export const StorageLocationsManager = ({ locations, onCreate, onUpdate, onDelete }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StorageLocation | null>(null);
-  const [formData, setFormData] = useState({
-    location_name: '',
-    location_type: 'dry_storage',
-    temperature_range: '',
-    description: '',
-    is_active: true,
-    sort_order: 0
-  });
+  const form = useZodForm<StorageLocationValues>(StorageLocationSchema as any, { defaultValues: EMPTY });
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = form;
 
-  const resetForm = () => {
-    setFormData({
-      location_name: '',
-      location_type: 'dry_storage',
-      temperature_range: '',
-      description: '',
-      is_active: true,
-      sort_order: 0
-    });
-    setEditing(null);
-  };
+  const resetAll = () => { reset(EMPTY); setEditing(null); };
 
   const handleEdit = (loc: StorageLocation) => {
     setEditing(loc);
-    setFormData({
+    reset({
       location_name: loc.location_name,
       location_type: loc.location_type,
       temperature_range: loc.temperature_range || '',
       description: loc.description || '',
       is_active: loc.is_active,
-      sort_order: loc.sort_order
+      sort_order: loc.sort_order,
     });
     setDialogOpen(true);
   };
 
-  const handleSubmit = async () => {
-    if (editing) {
-      await onUpdate(editing.id, formData);
-    } else {
-      await onCreate(formData);
-    }
+  const onSubmit = handleSubmit(async (values) => {
+    if (editing) await onUpdate(editing.id, values);
+    else await onCreate(values);
     setDialogOpen(false);
-    resetForm();
-  };
+    resetAll();
+  });
 
-  const getTypeInfo = (type: string) => {
-    return locationTypes.find(t => t.value === type) || { label: type, icon: '📦' };
-  };
+  const getTypeInfo = (type: string) =>
+    locationTypes.find(t => t.value === type) || { label: type, icon: '📦' };
 
   return (
     <div className="space-y-4">
@@ -85,77 +73,62 @@ export const StorageLocationsManager = ({ locations, onCreate, onUpdate, onDelet
           <Warehouse className="h-5 w-5 text-primary" />
           Ubicaciones de Almacenamiento
         </h3>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+        <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetAll(); }}>
           <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Ubicación
-            </Button>
+            <Button size="sm"><Plus className="h-4 w-4 mr-2" />Nueva Ubicación</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editing ? 'Editar Ubicación' : 'Nueva Ubicación'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4" noValidate>
               <div>
-                <Label>Nombre *</Label>
-                <Input
-                  value={formData.location_name}
-                  onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
-                  placeholder="Ej: Refrigerador Principal"
-                />
+                <Label htmlFor="location_name">Nombre *</Label>
+                <Input id="location_name" placeholder="Ej: Refrigerador Principal"
+                  aria-invalid={!!errors.location_name} {...register('location_name')} />
+                {errors.location_name && (
+                  <p className="text-xs text-destructive mt-1">{errors.location_name.message}</p>
+                )}
               </div>
               <div>
                 <Label>Tipo</Label>
-                <Select value={formData.location_type} onValueChange={(v) => setFormData({ ...formData, location_type: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locationTypes.filter(type => type.value).map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.icon} {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller name="location_type" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {locationTypes.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.icon} {t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div>
-                <Label className="flex items-center gap-2">
-                  <Thermometer className="h-4 w-4" />
-                  Rango de Temperatura
+                <Label htmlFor="temperature_range" className="flex items-center gap-2">
+                  <Thermometer className="h-4 w-4" /> Rango de Temperatura
                 </Label>
-                <Input
-                  value={formData.temperature_range}
-                  onChange={(e) => setFormData({ ...formData, temperature_range: e.target.value })}
-                  placeholder="Ej: 2-4°C"
-                />
+                <Input id="temperature_range" placeholder="Ej: 2-4°C" {...register('temperature_range')} />
               </div>
               <div>
-                <Label>Descripción</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Notas adicionales..."
-                  rows={2}
-                />
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea id="description" rows={2} placeholder="Notas adicionales..." {...register('description')} />
               </div>
               <div className="flex items-center justify-between">
                 <Label>Activa</Label>
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
-                />
+                <Controller name="is_active" control={control} render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                )} />
               </div>
               <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => { setDialogOpen(false); resetForm(); }}>
+                <Button type="button" variant="outline" className="flex-1"
+                  onClick={() => { setDialogOpen(false); resetAll(); }}>
                   Cancelar
                 </Button>
-                <Button className="flex-1" onClick={handleSubmit} disabled={!formData.location_name}>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
                   {editing ? 'Guardar' : 'Crear'}
                 </Button>
               </div>
-            </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -170,7 +143,7 @@ export const StorageLocationsManager = ({ locations, onCreate, onUpdate, onDelet
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {locations.map((loc) => {
+          {(locations || []).map((loc) => {
             const typeInfo = getTypeInfo(loc.location_type);
             return (
               <Card key={loc.id} className={!loc.is_active ? 'opacity-60' : ''}>
@@ -202,16 +175,8 @@ export const StorageLocationsManager = ({ locations, onCreate, onUpdate, onDelet
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(loc)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-destructive"
-                      onClick={() => {
-                        if (confirm('¿Eliminar esta ubicación?')) {
-                          onDelete(loc.id);
-                        }
-                      }}
-                    >
+                    <Button variant="ghost" size="sm" className="text-destructive"
+                      onClick={() => { if (confirm('¿Eliminar esta ubicación?')) onDelete(loc.id); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
