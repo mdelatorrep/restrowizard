@@ -42,6 +42,27 @@ export default function RappiIntegrationPage() {
     ? `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.functions.supabase.co/rappi-webhook?integration_id=${integration.id}`
     : "—";
 
+  const hasCreds = !!integration?.client_id;
+  const hasStores = !!integration?.store_ids?.length;
+  const tokenOk = !!integration?.token_expires_at && new Date(integration.token_expires_at) > new Date();
+  const webhookConfigured = !!integration?.webhook_secret;
+  const menuSynced = !!integration?.last_sync_at;
+
+  const steps = [
+    { key: "creds", title: "Ingresa Client ID y Client Secret", desc: "Obtenlos en el portal de aliado Rappi.", done: hasCreds },
+    { key: "stores", title: "Configura tus Store IDs", desc: "Identificadores de cada tienda que opera con Rappi.", done: hasStores },
+    { key: "test", title: "Prueba la conexión", desc: "Verifica que las credenciales obtengan un token válido.", done: tokenOk },
+    { key: "webhook", title: "Copia la URL de webhook al portal Rappi", desc: "Pega esta URL en la configuración de webhooks de Rappi y guarda el secret HMAC.", done: webhookConfigured },
+    { key: "menu", title: "Sincroniza tu menú", desc: "Publica tu catálogo en al menos una tienda.", done: menuSynced },
+  ];
+  const completed = steps.filter(s => s.done).length;
+
+  const copyWebhook = async () => {
+    if (!integration) return;
+    await navigator.clipboard.writeText(webhookUrl);
+    toast.success("URL copiada al portapapeles");
+  };
+
   if (isLoading) return <div className="p-6 flex items-center gap-2"><Loader2 className="animate-spin" /> Cargando…</div>;
 
   return (
