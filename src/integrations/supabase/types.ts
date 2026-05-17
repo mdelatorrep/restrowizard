@@ -252,6 +252,51 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          business_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          ip: string | null
+          request_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          business_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          ip?: string | null
+          request_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          business_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          ip?: string | null
+          request_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       benefit_requests: {
         Row: {
           benefit_id: string
@@ -932,6 +977,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      consultant_impersonation_log: {
+        Row: {
+          client_business_id: string | null
+          client_user_id: string
+          consultant_id: string
+          ended_at: string | null
+          id: string
+          ip: string | null
+          started_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          client_business_id?: string | null
+          client_user_id: string
+          consultant_id: string
+          ended_at?: string | null
+          id?: string
+          ip?: string | null
+          started_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          client_business_id?: string | null
+          client_user_id?: string
+          consultant_id?: string
+          ended_at?: string | null
+          id?: string
+          ip?: string | null
+          started_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       consultant_profiles: {
         Row: {
@@ -4441,6 +4519,45 @@ export type Database = {
           public_key?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      payment_webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_type: string | null
+          external_event_id: string | null
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          provider: string
+          signature_valid: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          external_event_id?: string | null
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider: string
+          signature_valid?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_type?: string | null
+          external_event_id?: string | null
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider?: string
+          signature_valid?: boolean | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -8358,6 +8475,59 @@ export type Database = {
             columns: ["loyalty_customer_id"]
             isOneToOne: false
             referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_permissions_history: {
+        Row: {
+          business_id: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_permissions: Json | null
+          new_role: string | null
+          new_status: string | null
+          old_permissions: Json | null
+          old_role: string | null
+          old_status: string | null
+          team_member_id: string
+          user_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_permissions?: Json | null
+          new_role?: string | null
+          new_status?: string | null
+          old_permissions?: Json | null
+          old_role?: string | null
+          old_status?: string | null
+          team_member_id: string
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_permissions?: Json | null
+          new_role?: string | null
+          new_status?: string | null
+          old_permissions?: Json | null
+          old_role?: string | null
+          old_status?: string | null
+          team_member_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_permissions_history_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_team_members"
             referencedColumns: ["id"]
           },
         ]
