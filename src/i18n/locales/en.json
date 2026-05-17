@@ -1,0 +1,29 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Retry",
+    "error": "An error occurred",
+    "success": "Operation successful"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "team": "Team",
+    "inventory": "Inventory",
+    "pos": "POS",
+    "kds": "Kitchen"
+  }
+}
