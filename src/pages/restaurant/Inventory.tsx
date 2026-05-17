@@ -21,7 +21,7 @@ import { RecipeIntegrationPanel } from '@/components/inventory/RecipeIntegration
 import { TransferDialog } from '@/components/inventory/TransferDialog';
 import { InventoryItemDetail } from '@/components/inventory/InventoryItemDetail';
 import { InventoryReports } from '@/components/inventory/InventoryReports';
-import { InventoryStockTable, getStockStatus } from '@/components/inventory/InventoryStockTable';
+import { InventoryItemsTab } from '@/components/inventory/InventoryItemsTab';
 import { 
   Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
   RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
@@ -261,43 +261,19 @@ const Inventory: React.FC = () => {
 
         {/* Inventory Items Tab */}
         <TabsContent value="items" className="mt-4">
-          {!hasData ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Sin items de inventario</h3>
-                <p className="text-muted-foreground mb-6">
-                  Agrega tu primer ítem de inventario para comenzar.
-                </p>
-                <Button onClick={() => { setEditingItem(null); setItemFormOpen(true); }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Primer Ítem
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre, categoría, código..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Badge variant="outline">{filteredInventory.length} items</Badge>
-              </div>
-
-              <InventoryStockTable
-                items={filteredInventory}
-                onView={handleViewDetail}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </div>
-          )}
+          <InventoryItemsTab
+            hasData={hasData}
+            items={filteredInventory}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onAdd={() => {
+              setEditingItem(null);
+              setItemFormOpen(true);
+            }}
+            onView={handleViewDetail}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </TabsContent>
 
         {/* Storage Locations Tab */}
