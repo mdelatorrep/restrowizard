@@ -151,7 +151,7 @@ const Inventory: React.FC = () => {
           insights={aiInsights}
           loading={aiLoading}
           onAnalyze={handleAIAnalysis}
-          onClose={() => setShowAIPanel(false)}
+          onClose={closeAI}
           icon={<Brain className="w-5 h-5 text-primary" />}
         />
       )}
