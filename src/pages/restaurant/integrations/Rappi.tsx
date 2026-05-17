@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRappiIntegration, useRappiOrders, useRappiSettlements } from "@/hooks/useRappiIntegration";
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink } from "lucide-react";
+import { useRappiIntegration, useRappiOrders, useRappiSettlements, useRappiMenuSyncByStore } from "@/hooks/useRappiIntegration";
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Power, PauseCircle, PlayCircle, Circle, Copy, ExternalLink, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+
+type StoreSyncState = { status: "idle" | "syncing" | "success" | "error"; progress: number; itemsSynced?: number; error?: string; at?: string };
 
 export default function RappiIntegrationPage() {
   const { integration, isLoading, save, test, syncMenu, storeControl, orderAction } = useRappiIntegration();
