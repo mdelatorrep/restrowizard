@@ -142,7 +142,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ActiveClientProvider>
-            <Suspense fallback={<RouteFallback />}>
+            <RouteErrorBoundary label="app">
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
