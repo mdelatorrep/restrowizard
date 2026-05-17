@@ -13,6 +13,9 @@ import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
 import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
 
+import { RouteErrorBoundary } from "./components/errors/RouteErrorBoundary";
+import { PageSkeleton } from "./components/ui/skeletons";
+
 // Eager: critical landing/auth/SEO pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
