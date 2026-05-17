@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
- import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
- import { TabsContent } from '@/components/ui/tabs';
- import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { StorageLocationsManager } from '@/components/inventory/StorageLocationsManager';
