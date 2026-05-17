@@ -7,38 +7,46 @@ import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { z } from 'zod';
+import { useZodForm } from '@/lib/forms';
+
+const LoginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, { message: 'El email es obligatorio' })
+    .email({ message: 'Email no válido' })
+    .max(255),
+  password: z
+    .string()
+    .min(1, { message: 'La contraseña es obligatoria' })
+    .max(72),
+});
+type LoginValues = z.infer<typeof LoginSchema>;
 
 export const LoginForm = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const { signIn } = useAuth();
 
-  const validate = () => {
-    const errors: typeof fieldErrors = {};
-    if (!formData.email) errors.email = 'El email es obligatorio';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email no válido';
-    if (!formData.password) errors.password = 'La contraseña es obligatoria';
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const form = useZodForm<LoginValues>(LoginSchema, {
+    defaultValues: { email: '', password: '' },
+  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoading || !validate()) return;
-    setIsLoading(true);
+  const onSubmit = handleSubmit(async (values) => {
     try {
-      await signIn(formData.email, formData.password);
+      await signIn(values.email, values.password);
     } catch (error) {
       console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  });
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,17 +60,10 @@ export const LoginForm = () => {
       toast.success('Se envió un enlace de recuperación a tu correo');
       setShowReset(false);
       setResetEmail('');
-    } catch (error: any) {
+    } catch {
       toast.error('Error al enviar el enlace. Verifica tu correo.');
     } finally {
       setResetLoading(false);
-    }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (fieldErrors[field as keyof typeof fieldErrors]) {
-      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -113,19 +114,20 @@ export const LoginForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div>
             <Label htmlFor="email" className="font-lato-medium">Email</Label>
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="tu@email.com"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`font-lato-regular ${fieldErrors.email ? 'border-destructive' : ''}`}
-              disabled={isLoading}
+              aria-invalid={!!errors.email}
+              className={`font-lato-regular ${errors.email ? 'border-destructive' : ''}`}
+              disabled={isSubmitting}
+              {...register('email')}
             />
-            {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
+            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
           </div>
           <div>
             <Label htmlFor="password" className="font-lato-medium">Contraseña</Label>
@@ -133,21 +135,23 @@ export const LoginForm = () => {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`font-lato-regular pr-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
-                disabled={isLoading}
+                autoComplete="current-password"
+                aria-invalid={!!errors.password}
+                className={`font-lato-regular pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                disabled={isSubmitting}
+                {...register('password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 tabIndex={-1}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {fieldErrors.password && <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>}
+            {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
           </div>
           <div className="text-right">
             <button
@@ -158,8 +162,8 @@ export const LoginForm = () => {
               ¿Olvidaste tu contraseña?
             </button>
           </div>
-          <Button type="submit" className="w-full font-lato-bold" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" className="w-full font-lato-bold" disabled={isSubmitting}>
+            {isSubmitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" />Iniciando...</>
             ) : 'Iniciar Sesión'}
           </Button>
