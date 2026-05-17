@@ -209,31 +209,7 @@ export default function RappiIntegrationPage() {
 
         {/* MENÚ */}
         <TabsContent value="menu" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sincronización de menú</CardTitle>
-              <CardDescription>Publica tu menú actual en cada tienda Rappi configurada.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {(integration?.store_ids ?? []).map(sid => (
-                <div key={sid} className="flex items-center justify-between p-3 border rounded">
-                  <div>
-                    <p className="font-medium">Tienda {sid}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Última sync: {integration?.last_sync_at ? format(new Date(integration.last_sync_at), "dd/MM/yyyy HH:mm") : "nunca"}
-                    </p>
-                  </div>
-                  <Button size="sm" onClick={() => syncMenu.mutate({ integration_id: integration!.id, store_id: sid })} disabled={syncMenu.isPending}>
-                    {syncMenu.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                    Sincronizar
-                  </Button>
-                </div>
-              ))}
-              {(!integration?.store_ids || integration.store_ids.length === 0) && (
-                <p className="text-sm text-muted-foreground">Configura al menos un Store ID en la pestaña Conexión.</p>
-              )}
-            </CardContent>
-          </Card>
+          <MenuSyncSection integration={integration} syncMenu={syncMenu} />
         </TabsContent>
 
         {/* TIENDA */}
