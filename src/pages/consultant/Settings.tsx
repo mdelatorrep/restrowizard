@@ -127,7 +127,7 @@ const Settings: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Settings */}
-        <div className="lg:col-span-2 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-2 space-y-6" noValidate>
           {/* Company Info */}
           <Card>
             <CardHeader>
@@ -144,11 +144,11 @@ const Settings: React.FC = () => {
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={profile?.logo_url || ''} />
                   <AvatarFallback className="text-xl">
-                    {formData.company_name?.slice(0, 2).toUpperCase() || 'CO'}
+                    {companyName?.slice(0, 2).toUpperCase() || 'CO'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" size="sm">
+                  <Button type="button" variant="outline" size="sm">
                     <Upload className="h-4 w-4 mr-2" />
                     Subir Logo
                   </Button>
@@ -160,65 +160,90 @@ const Settings: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nombre de la empresa</Label>
-                  <Input 
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({...formData, company_name: e.target.value})}
+                  <Label htmlFor="company_name">Nombre de la empresa</Label>
+                  <Input
+                    id="company_name"
+                    autoComplete="organization"
                     placeholder="Mi Consultoría"
+                    aria-invalid={!!errors.company_name}
+                    {...register('company_name')}
                   />
+                  {errors.company_name && (
+                    <p className="text-sm text-destructive">{errors.company_name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Años de experiencia</Label>
-                  <Input 
+                  <Label htmlFor="years_experience">Años de experiencia</Label>
+                  <Input
+                    id="years_experience"
                     type="number"
-                    value={formData.years_experience}
-                    onChange={(e) => setFormData({...formData, years_experience: e.target.value})}
+                    inputMode="numeric"
                     placeholder="10"
+                    aria-invalid={!!errors.years_experience}
+                    {...register('years_experience')}
                   />
+                  {errors.years_experience && (
+                    <p className="text-sm text-destructive">{errors.years_experience.message}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Especialidades (separadas por coma)</Label>
-                <Input 
-                  value={formData.specializations}
-                  onChange={(e) => setFormData({...formData, specializations: e.target.value})}
+                <Label htmlFor="specializations">Especialidades (separadas por coma)</Label>
+                <Input
+                  id="specializations"
                   placeholder="Finanzas, Operaciones, Marketing"
+                  {...register('specializations')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Biografía</Label>
-                <Textarea 
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                <Label htmlFor="bio">Biografía</Label>
+                <Textarea
+                  id="bio"
                   placeholder="Cuéntanos sobre tu experiencia y enfoque..."
                   rows={4}
+                  aria-invalid={!!errors.bio}
+                  {...register('bio')}
                 />
+                {errors.bio && (
+                  <p className="text-sm text-destructive">{errors.bio.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label htmlFor="website_url" className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
                     Sitio Web
                   </Label>
-                  <Input 
-                    value={formData.website_url}
-                    onChange={(e) => setFormData({...formData, website_url: e.target.value})}
+                  <Input
+                    id="website_url"
+                    type="url"
+                    autoComplete="url"
                     placeholder="https://tuconsultoria.com"
+                    aria-invalid={!!errors.website_url}
+                    {...register('website_url')}
                   />
+                  {errors.website_url && (
+                    <p className="text-sm text-destructive">{errors.website_url.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                  <Label htmlFor="linkedin_url" className="flex items-center gap-2">
                     <Linkedin className="h-4 w-4" />
                     LinkedIn
                   </Label>
-                  <Input 
-                    value={formData.linkedin_url}
-                    onChange={(e) => setFormData({...formData, linkedin_url: e.target.value})}
+                  <Input
+                    id="linkedin_url"
+                    type="url"
                     placeholder="https://linkedin.com/in/tu-perfil"
+                    aria-invalid={!!errors.linkedin_url}
+                    {...register('linkedin_url')}
                   />
+                  {errors.linkedin_url && (
+                    <p className="text-sm text-destructive">{errors.linkedin_url.message}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -238,13 +263,18 @@ const Settings: React.FC = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tarifa por hora (MXN)</Label>
-                  <Input 
+                  <Label htmlFor="hourly_rate">Tarifa por hora (MXN)</Label>
+                  <Input
+                    id="hourly_rate"
                     type="number"
-                    value={formData.hourly_rate}
-                    onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
+                    inputMode="decimal"
                     placeholder="1500"
+                    aria-invalid={!!errors.hourly_rate}
+                    {...register('hourly_rate')}
                   />
+                  {errors.hourly_rate && (
+                    <p className="text-sm text-destructive">{errors.hourly_rate.message}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -252,12 +282,12 @@ const Settings: React.FC = () => {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button type="submit" disabled={isSubmitting}>
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </div>
-        </div>
+        </form>
 
         {/* Sidebar */}
         <div className="space-y-6">
