@@ -1,40 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  CreditCard, 
-  Banknote,
-  Smartphone,
-  Search,
-  Users,
-  UtensilsCrossed,
-  Receipt,
-  Percent,
-  Gift,
-  X,
+import {
   DollarSign,
   Calculator,
-  Clock,
   CheckCircle2,
   AlertCircle,
-  ArrowRightLeft,
-  ChevronRight,
-  Table2,
-  WifiOff
+  WifiOff,
 } from 'lucide-react';
 import { usePOSSession } from '@/hooks/usePOSSession';
-import { usePOSCart, POSCartItem } from '@/hooks/usePOSCart';
+import { usePOSCart } from '@/hooks/usePOSCart';
 import { usePOSTables } from '@/hooks/usePOSTables';
 import { usePOSPayment, PaymentSplit } from '@/hooks/usePOSPayment';
 import { usePOSDiscounts } from '@/hooks/usePOSDiscounts';
@@ -42,16 +18,16 @@ import { useMenuItemsData } from '@/hooks/useMenuItemsData';
 import { useLoyaltyData } from '@/hooks/useLoyaltyData';
 import { useInventoryDeduction } from '@/hooks/useInventoryDeduction';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
-import { OfflineIndicator } from '@/components/pos/OfflineIndicator';
 import { OpenSessionDialog } from '@/components/pos/OpenSessionDialog';
 import { CloseSessionDialog } from '@/components/pos/CloseSessionDialog';
 import { PaymentDialog } from '@/components/pos/PaymentDialog';
+import { MenuGrid } from '@/components/pos/MenuGrid';
+import { CartPanel } from '@/components/pos/CartPanel';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
 
-// Dialog components extracted to src/components/pos/{OpenSessionDialog,CloseSessionDialog,PaymentDialog}.tsx
+// MenuGrid / CartPanel / Dialog components extracted to src/components/pos/
 
 // Main POS Component
 const POS = () => {
