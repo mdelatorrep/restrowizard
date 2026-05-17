@@ -37,6 +37,8 @@ import {
 } from '@/hooks/useQuotations';
 import { useRestaurantZones } from '@/hooks/useRestaurantZones';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { QuotationSchema } from '@/lib/schemas/quotation';
 
 const eventTypes = [
   { value: 'corporativo', label: 'Evento Corporativo' },
@@ -160,6 +162,15 @@ export default function NewQuotation() {
   const totalAmount = totalBeforeMargin + margin;
 
   const handleSave = async () => {
+    // Validate base fields with Zod before persisting
+    const { menu_items, services, gallery, ...rest } = formData;
+    const result = QuotationSchema.safeParse(rest);
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      toast.error(firstError?.message || 'Revisa los campos del formulario');
+      return;
+    }
+
     setSaving(true);
     try {
       const menuCostPerPerson = formData.menu_items.reduce(
