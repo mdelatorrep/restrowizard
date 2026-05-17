@@ -21,6 +21,7 @@ import { RecipeIntegrationPanel } from '@/components/inventory/RecipeIntegration
 import { TransferDialog } from '@/components/inventory/TransferDialog';
 import { InventoryItemDetail } from '@/components/inventory/InventoryItemDetail';
 import { InventoryReports } from '@/components/inventory/InventoryReports';
+import { InventoryStockTable, getStockStatus } from '@/components/inventory/InventoryStockTable';
 import { 
   Package, Plus, AlertTriangle, TrendingDown, DollarSign, 
   RefreshCw, Search, Sparkles, Brain, Warehouse, Truck,
