@@ -34,7 +34,13 @@ const ProposalDialog = ({ open, onOpenChange, requestId, providerId }: ProposalD
       toast.error(parsed.error.issues[0]?.message || 'Revisa los campos');
       return;
     }
-    createProposal.mutate(parsed.data, {
+    createProposal.mutate({
+      request_id: requestId,
+      provider_id: providerId,
+      message: parsed.data.message,
+      price: parsed.data.price,
+      estimated_delivery_days: parsed.data.estimated_delivery_days,
+    }, {
       onSuccess: () => {
         onOpenChange(false);
         setMessage(''); setPrice(''); setDays('');
