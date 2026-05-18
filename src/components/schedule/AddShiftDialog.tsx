@@ -15,18 +15,7 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   staff: StaffOption[];
-  onAdd: (data: {
-    staff_member_id: string;
-    shift_date: string;
-    start_time: string;
-    end_time: string;
-    break_minutes: number;
-    hourly_rate_override: null;
-    actual_start_time: null;
-    actual_end_time: null;
-    status: 'scheduled';
-    notes: string | null;
-  }) => Promise<unknown>;
+  onAdd: (data: any) => Promise<unknown>;
 }
 
 const defaultForm = () => ({
