@@ -1,43 +1,27 @@
  import { useState, useEffect } from 'react';
  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
  import { Button } from '@/components/ui/button';
- import { Input } from '@/components/ui/input';
- import { Label } from '@/components/ui/label';
- import { Badge } from '@/components/ui/badge';
- import { Card, CardContent } from '@/components/ui/card';
  import { ScrollArea } from '@/components/ui/scroll-area';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Package, Check, AlertCircle, Calendar, Hash } from 'lucide-react';
+ import { Package, Check } from 'lucide-react';
  import { PurchaseOrder, PurchaseOrderItem, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
  import { supabase } from '@/integrations/supabase/client';
  import { format } from 'date-fns';
  import { es } from 'date-fns/locale';
  import { ReceiveOrderSchema } from '@/lib/schemas/receiveOrder';
  import { toast } from 'sonner';
+ import { ReceiveOrderItemRow, type ReceivedItem } from './ReceiveOrderItemRow';
+
  interface Props {
    order: PurchaseOrder | null;
    isOpen: boolean;
    onClose: () => void;
    onReceive: (orderId: string, items: { id: string; quantity_received: number; lot_number?: string; expiration_date?: string }[]) => Promise<void>;
  }
- 
+
  interface OrderItemWithDetails extends PurchaseOrderItem {
    inventory_item?: InventoryItemExtended;
  }
- 
- interface ReceivedItem {
-   id: string;
-   inventory_item_id: string;
-   item_name: string;
-   quantity_ordered: number;
-   quantity_previously_received: number;
-   quantity_receiving: number;
-   unit: string;
-   lot_number: string;
-   expiration_date: string;
-   is_receiving: boolean;
- }
- 
+
  export const ReceiveOrderDialog = ({ order, isOpen, onClose, onReceive }: Props) => {
    const [items, setItems] = useState<ReceivedItem[]>([]);
    const [loading, setLoading] = useState(false);
