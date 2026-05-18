@@ -12,7 +12,8 @@
  import { supabase } from '@/integrations/supabase/client';
  import { format } from 'date-fns';
  import { es } from 'date-fns/locale';
- 
+ import { ReceiveOrderSchema } from '@/lib/schemas/receiveOrder';
+ import { toast } from 'sonner';
  interface Props {
    order: PurchaseOrder | null;
    isOpen: boolean;
