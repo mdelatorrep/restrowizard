@@ -230,6 +230,13 @@ const peopleItems: MenuItem[] = [
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'support'
   },
+  {
+    title: 'Base de Conocimiento',
+    icon: BookOpen,
+    path: '/r/knowledge',
+    stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    moduleKey: 'knowledge'
+  },
 ];
 
 // 5. PRESENCIA DIGITAL
