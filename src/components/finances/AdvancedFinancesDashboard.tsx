@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,15 +15,11 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import {
-  TrendingUp, BarChart3, FileText, AlertTriangle, Loader2, Brain,
-} from 'lucide-react';
+import { TrendingUp, BarChart3, FileText, AlertTriangle, Loader2 } from 'lucide-react';
 import { useAggregatedFinances } from '@/hooks/useAggregatedFinances';
-import { useStaffSchedule } from '@/hooks/useStaffSchedule';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { useToast } from '@/hooks/use-toast';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 // Components
 import { PrimeCostGauge } from './PrimeCostGauge';
@@ -32,8 +27,9 @@ import { DailyFlashReport } from './DailyFlashReport';
 import { ProfitLossStatement } from './ProfitLossStatement';
 import { CostAlertsPanel, generateCostAlerts } from './CostAlertsPanel';
 import { FinancesHeader, type PeriodType } from './FinancesHeader';
-import { FinancesKPICards } from './FinancesKPICards';
 import { FinancesTrendsTab } from './FinancesTrendsTab';
+import { FinancesOverviewTab } from './FinancesOverviewTab';
+import { AIInsightsCard } from './AIInsightsCard';
 
 // Register Chart.js components
 ChartJS.register(
