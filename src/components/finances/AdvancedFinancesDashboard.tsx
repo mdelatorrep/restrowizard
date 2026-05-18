@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,13 +14,10 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 } from 'chart.js';
-import { 
-  TrendingUp, TrendingDown, DollarSign, Users, 
-  Calculator, RefreshCw, BarChart3, PieChart,
-  FileText, AlertTriangle, Zap, Calendar, Target,
-  ArrowUpRight, ArrowDownRight, Loader2, Brain
+import {
+  TrendingUp, BarChart3, FileText, AlertTriangle, Loader2, Brain,
 } from 'lucide-react';
 import { useAggregatedFinances } from '@/hooks/useAggregatedFinances';
 import { useStaffSchedule } from '@/hooks/useStaffSchedule';
@@ -36,14 +31,15 @@ import { PrimeCostGauge } from './PrimeCostGauge';
 import { DailyFlashReport } from './DailyFlashReport';
 import { ProfitLossStatement } from './ProfitLossStatement';
 import { CostAlertsPanel, generateCostAlerts } from './CostAlertsPanel';
+import { FinancesHeader, type PeriodType } from './FinancesHeader';
+import { FinancesKPICards } from './FinancesKPICards';
+import { FinancesTrendsTab } from './FinancesTrendsTab';
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 );
-
-type PeriodType = 'week' | 'month' | 'quarter';
 
 const AdvancedFinancesDashboard: React.FC = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
