@@ -233,11 +233,6 @@ export const useModulePrerequisites = () => {
         enabled: true,
         reason: !hasInventory ? 'Tip: registra inventario y proveedores para enlazar facturas automáticamente' : undefined,
       },
-      'kitchen': {
-        enabled: hasMenuItems,
-        reason: !hasMenuItems ? 'Requiere productos en el menú' : undefined,
-        prerequisite: !hasMenuItems ? 'menus' : undefined,
-      },
     };
 
     return {
