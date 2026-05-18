@@ -4,11 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
 import { 
@@ -40,6 +35,10 @@ import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
 import { TierBadge } from '@/components/loyalty/LoyaltyCards';
 import { CustomersTab } from '@/components/loyalty/CustomersTab';
 import { RewardsTab } from '@/components/loyalty/RewardsTab';
+import { NewTierDialog } from '@/components/loyalty/NewTierDialog';
+import { NewCustomerDialog } from '@/components/loyalty/NewCustomerDialog';
+import { NewRewardDialog } from '@/components/loyalty/NewRewardDialog';
+import { AwardPointsDialog } from '@/components/loyalty/AwardPointsDialog';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { cn } from '@/lib/utils';
 
@@ -89,7 +88,7 @@ const Loyalty = () => {
   // Form states
   const [newTier, setNewTier] = useState({ name: '', min_points: 0, points_multiplier: 1.0, color: '#6B7280' });
   const [newCustomer, setNewCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' });
-  const [newReward, setNewReward] = useState({ name: '', description: '', points_required: 100, reward_type: 'discount_percent' as const, reward_value: 10 });
+  const [newReward, setNewReward] = useState<{ name: string; description: string; points_required: number; reward_type: 'discount_percent' | 'discount_fixed' | 'free_item' | 'free_delivery' | 'experience' | 'upgrade'; reward_value: number }>({ name: '', description: '', points_required: 100, reward_type: 'discount_percent', reward_value: 10 });
   const [pointsToAward, setPointsToAward] = useState({ points: 100, reason: 'Compra' });
 
   const filteredCustomers = customers.filter(c =>
@@ -576,212 +575,38 @@ const Loyalty = () => {
         </TabsContent>
       </Tabs>
 
-      {/* New Tier Dialog */}
-      <Dialog open={showNewTierDialog} onOpenChange={setShowNewTierDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Nivel</DialogTitle>
-            <DialogDescription>Define un nuevo nivel para tu programa de fidelización</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nombre del nivel</Label>
-              <Input
-                value={newTier.name}
-                onChange={(e) => setNewTier({ ...newTier, name: e.target.value })}
-                placeholder="Ej: Oro, Platino, VIP..."
-              />
-            </div>
-            <div>
-              <Label>Puntos mínimos requeridos</Label>
-              <Input
-                type="number"
-                value={newTier.min_points}
-                onChange={(e) => setNewTier({ ...newTier, min_points: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label>Multiplicador de puntos</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={newTier.points_multiplier}
-                onChange={(e) => setNewTier({ ...newTier, points_multiplier: parseFloat(e.target.value) || 1 })}
-              />
-            </div>
-            <div>
-              <Label>Color</Label>
-              <Input
-                type="color"
-                value={newTier.color}
-                onChange={(e) => setNewTier({ ...newTier, color: e.target.value })}
-                className="h-10 w-20"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewTierDialog(false)}>Cancelar</Button>
-            <Button onClick={handleCreateTier}>Crear Nivel</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewTierDialog
+        open={showNewTierDialog}
+        onOpenChange={setShowNewTierDialog}
+        value={newTier}
+        onChange={setNewTier}
+        onSubmit={handleCreateTier}
+      />
 
-      {/* New Customer Dialog */}
-      <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Registrar Cliente</DialogTitle>
-            <DialogDescription>Añade un nuevo miembro al programa de fidelización</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nombre *</Label>
-              <Input
-                value={newCustomer.customer_name}
-                onChange={(e) => setNewCustomer({ ...newCustomer, customer_name: e.target.value })}
-                placeholder="Nombre del cliente"
-              />
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={newCustomer.customer_email}
-                onChange={(e) => setNewCustomer({ ...newCustomer, customer_email: e.target.value })}
-                placeholder="cliente@email.com"
-              />
-            </div>
-            <div>
-              <Label>Teléfono</Label>
-              <Input
-                value={newCustomer.customer_phone}
-                onChange={(e) => setNewCustomer({ ...newCustomer, customer_phone: e.target.value })}
-                placeholder="+1 234 567 8900"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewCustomerDialog(false)}>Cancelar</Button>
-            <Button onClick={handleCreateCustomer} disabled={!newCustomer.customer_name}>Registrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewCustomerDialog
+        open={showNewCustomerDialog}
+        onOpenChange={setShowNewCustomerDialog}
+        value={newCustomer}
+        onChange={setNewCustomer}
+        onSubmit={handleCreateCustomer}
+      />
 
-      {/* New Reward Dialog */}
-      <Dialog open={showNewRewardDialog} onOpenChange={setShowNewRewardDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nueva Recompensa</DialogTitle>
-            <DialogDescription>Crea una recompensa para el catálogo de canjes</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nombre *</Label>
-              <Input
-                value={newReward.name}
-                onChange={(e) => setNewReward({ ...newReward, name: e.target.value })}
-                placeholder="Ej: Postre Gratis, 10% Descuento..."
-              />
-            </div>
-            <div>
-              <Label>Descripción</Label>
-              <Textarea
-                value={newReward.description}
-                onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
-                placeholder="Describe la recompensa..."
-              />
-            </div>
-            <div>
-              <Label>Puntos requeridos *</Label>
-              <Input
-                type="number"
-                value={newReward.points_required}
-                onChange={(e) => setNewReward({ ...newReward, points_required: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label>Tipo de recompensa</Label>
-              <Select
-                value={newReward.reward_type}
-                onValueChange={(value) => setNewReward({ ...newReward, reward_type: value as typeof newReward.reward_type })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="discount_percent">Descuento %</SelectItem>
-                  <SelectItem value="discount_fixed">Descuento $</SelectItem>
-                  <SelectItem value="free_item">Producto Gratis</SelectItem>
-                  <SelectItem value="free_delivery">Delivery Gratis</SelectItem>
-                  <SelectItem value="experience">Experiencia</SelectItem>
-                  <SelectItem value="upgrade">Upgrade</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Valor (si aplica)</Label>
-              <Input
-                type="number"
-                value={newReward.reward_value}
-                onChange={(e) => setNewReward({ ...newReward, reward_value: parseFloat(e.target.value) || 0 })}
-                placeholder="Ej: 10 para 10%"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewRewardDialog(false)}>Cancelar</Button>
-            <Button onClick={handleCreateReward} disabled={!newReward.name || !newReward.points_required}>Crear</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewRewardDialog
+        open={showNewRewardDialog}
+        onOpenChange={setShowNewRewardDialog}
+        value={newReward}
+        onChange={setNewReward}
+        onSubmit={handleCreateReward}
+      />
 
-      {/* Award Points Dialog */}
-      <Dialog open={showAwardPointsDialog} onOpenChange={setShowAwardPointsDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Otorgar Puntos</DialogTitle>
-            <DialogDescription>
-              Añade puntos a {selectedCustomer?.customer_name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Puntos a otorgar</Label>
-              <Input
-                type="number"
-                value={pointsToAward.points}
-                onChange={(e) => setPointsToAward({ ...pointsToAward, points: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label>Razón</Label>
-              <Select
-                value={pointsToAward.reason}
-                onValueChange={(value) => setPointsToAward({ ...pointsToAward, reason: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Compra">Compra</SelectItem>
-                  <SelectItem value="Reseña">Reseña</SelectItem>
-                  <SelectItem value="Referido">Referido</SelectItem>
-                  <SelectItem value="Cumpleaños">Cumpleaños</SelectItem>
-                  <SelectItem value="Promoción">Promoción</SelectItem>
-                  <SelectItem value="Ajuste manual">Ajuste manual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAwardPointsDialog(false)}>Cancelar</Button>
-            <Button onClick={handleAwardPoints} disabled={!pointsToAward.points}>
-              <Coins className="w-4 h-4 mr-2" /> Otorgar {pointsToAward.points} puntos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      <AwardPointsDialog
+        open={showAwardPointsDialog}
+        onOpenChange={setShowAwardPointsDialog}
+        value={pointsToAward}
+        onChange={setPointsToAward}
+        customerName={selectedCustomer?.customer_name}
+        onSubmit={handleAwardPoints}
+      />
       {/* QR Dialog */}
       <LoyaltyQRDialog
         customer={selectedCustomer}

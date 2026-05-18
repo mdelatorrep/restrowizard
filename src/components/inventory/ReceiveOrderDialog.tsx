@@ -12,7 +12,8 @@
  import { supabase } from '@/integrations/supabase/client';
  import { format } from 'date-fns';
  import { es } from 'date-fns/locale';
- 
+ import { ReceiveOrderSchema } from '@/lib/schemas/receiveOrder';
+ import { toast } from 'sonner';
  interface Props {
    order: PurchaseOrder | null;
    isOpen: boolean;
@@ -101,7 +102,14 @@
            lot_number: item.lot_number || undefined,
            expiration_date: item.expiration_date || undefined
          }));
- 
+
+       const parsed = ReceiveOrderSchema.safeParse({ items: itemsToReceive });
+       if (!parsed.success) {
+         toast.error(parsed.error.issues[0]?.message || 'Revisa los items');
+         setSubmitting(false);
+         return;
+       }
+
        await onReceive(order.id, itemsToReceive);
        onClose();
      } catch (error) {

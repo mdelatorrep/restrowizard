@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Scan, Plus, Minus, Package, Check, X, Camera, Keyboard } from 'lucide-react';
 import { InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { BarcodeScanSchema } from '@/lib/schemas/barcodeScan';
+import { toast } from 'sonner';
 
 interface Props {
   inventory: InventoryItemExtended[];
@@ -92,17 +94,23 @@ export const BarcodeScanner = ({ inventory, onLookup, onAdjustStock, isOpen, onC
 
   const handleAdjust = async () => {
     if (!foundItem) return;
-    
-    const newQuantity = mode === 'add' 
-      ? foundItem.current_stock + adjustment 
+
+    const parsed = BarcodeScanSchema.safeParse({ barcode, adjustment, mode });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Datos inválidos');
+      return;
+    }
+
+    const newQuantity = mode === 'add'
+      ? foundItem.current_stock + adjustment
       : Math.max(0, foundItem.current_stock - adjustment);
-    
+
     await onAdjustStock(
-      foundItem.id, 
-      newQuantity, 
+      foundItem.id,
+      newQuantity,
       `Escaneo de código de barras: ${mode === 'add' ? 'Entrada' : 'Salida'}`
     );
-    
+
     // Reset for next scan
     setBarcode('');
     setFoundItem(null);
