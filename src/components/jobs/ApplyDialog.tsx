@@ -97,7 +97,7 @@ const ApplyDialog: React.FC<ApplyDialogProps> = ({ open, onOpenChange, job }) =>
       });
       return;
     }
-    applyToJob.mutate(parsed.data, {
+    applyToJob.mutate({ ...parsed.data, job_id: parsed.data.job_id }, {
       onSuccess: () => onOpenChange(false),
     });
   };
