@@ -68,7 +68,9 @@ const Inventory: React.FC = () => {
 
   const { insights: aiInsights, open: showAIPanel, loading: aiLoading, analyze, close: closeAI } = useInventoryAI();
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('items');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'items';
+  const setActiveTab = (v: string) => setSearchParams((p) => { p.set('tab', v); return p; }, { replace: true });
   const [scannerOpen, setScannerOpen] = useState(false);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemExtended | null>(null);
