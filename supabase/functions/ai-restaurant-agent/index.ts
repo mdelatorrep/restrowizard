@@ -554,54 +554,22 @@ Proporciona:
         userPrompt = `Analiza estos datos de restaurante y proporciona insights relevantes: ${JSON.stringify(data)}. Sé específico y práctico en tus recomendaciones. Incluye datos de mercado actuales cuando sea relevante.`;
     }
 
-    console.log(`Sending request to OpenAI GPT-5-mini with web search...`);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 2500,
-        tools: [{ type: 'web_search_preview' }],
-      }),
+    const aiResult = await callAIGateway({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tier: "reasoning",
+      maxTokens: 2500,
+      logPrefix: `[ai-restaurant-agent:${module}/${action}]`,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI API error: ${response.status} - ${errorText}`);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Límite de solicitudes excedido. Por favor intenta de nuevo en unos minutos.', 
-          success: false 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Se requiere agregar créditos al workspace.', 
-          success: false 
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      throw new Error(`OpenAI API error: ${response.status}`);
+    if (!aiResult.ok) {
+      return new Response(
+        JSON.stringify({ error: aiResult.error, success: false }),
+        { status: aiResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
-
-    const aiResponse = await response.json();
-    const analysis = aiResponse.choices?.[0]?.message?.content || 'No se pudo generar el análisis.';
+    const analysis = aiResult.content || "No se pudo generar el análisis.";
 
     console.log(`AI analysis completed successfully for ${module}/${action}`);
 
