@@ -27,7 +27,7 @@ const INITIAL = {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (data: typeof INITIAL) => Promise<void> | void;
+  onCreate: (data: typeof INITIAL) => unknown;
 }
 
 export const CreateRecipeDialog = ({ open, onOpenChange, onCreate }: Props) => {
