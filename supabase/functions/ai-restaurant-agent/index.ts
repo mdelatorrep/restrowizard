@@ -12,15 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not configured');
-      return new Response(JSON.stringify({ error: 'AI service not configured', success: false }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // LOVABLE_API_KEY validation handled centrally by callAIGateway helper
 
     const { module, action, data } = await req.json();
     console.log(`AI Agent request - Module: ${module}, Action: ${action}`);
