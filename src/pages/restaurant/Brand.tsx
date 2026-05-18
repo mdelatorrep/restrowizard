@@ -65,7 +65,7 @@ const Brand = () => {
   const handleCreateBrand = async () => {
     if (!validateOrToast()) return;
     setSaving(true);
-    await createBrand(formData);
+    await createBrand(formData as any);
     setShowCreateDialog(false);
     setSaving(false);
   };
@@ -73,7 +73,7 @@ const Brand = () => {
   const handleUpdateBrand = async () => {
     if (!brand || !validateOrToast()) return;
     setSaving(true);
-    await updateBrand(formData);
+    await updateBrand(formData as any);
     setSaving(false);
   };
 
