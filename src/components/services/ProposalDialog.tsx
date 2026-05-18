@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useCreateProposal } from '@/hooks/useServiceMarketplace';
+import { ProposalSchema } from '@/lib/schemas/proposal';
+import { toast } from 'sonner';
 
 interface ProposalDialogProps {
   open: boolean;
@@ -21,12 +23,23 @@ const ProposalDialog = ({ open, onOpenChange, requestId, providerId }: ProposalD
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createProposal.mutate({
+    const parsed = ProposalSchema.safeParse({
       request_id: requestId,
       provider_id: providerId,
       message,
       price: price ? parseFloat(price) : undefined,
       estimated_delivery_days: days ? parseInt(days) : undefined,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Revisa los campos');
+      return;
+    }
+    createProposal.mutate({
+      request_id: requestId,
+      provider_id: providerId,
+      message: parsed.data.message,
+      price: parsed.data.price,
+      estimated_delivery_days: parsed.data.estimated_delivery_days,
     }, {
       onSuccess: () => {
         onOpenChange(false);

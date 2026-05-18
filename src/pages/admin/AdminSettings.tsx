@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, UserPlus } from 'lucide-react';
+import { SeedAdminSchema } from '@/lib/schemas/adminSeed';
 
 const AdminSettings: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -58,7 +59,14 @@ const AdminSettings: React.FC = () => {
               className="flex-1"
             />
             <Button
-              onClick={() => seedAdmin.mutate(email)}
+              onClick={() => {
+                const parsed = SeedAdminSchema.safeParse({ email });
+                if (!parsed.success) {
+                  toast({ title: 'Email inválido', description: parsed.error.issues[0]?.message, variant: 'destructive' });
+                  return;
+                }
+                seedAdmin.mutate(parsed.data.email);
+              }}
               disabled={!email || seedAdmin.isPending}
             >
               <UserPlus className="h-4 w-4 mr-2" />
