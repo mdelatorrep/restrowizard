@@ -1,5 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callAIGateway, gatewayErrorResponse } from "../_shared/ai-gateway.ts";
+import {
+  convertToModelMessages,
+  streamText,
+  type UIMessage,
+} from "npm:ai";
+import { pickSdkModel } from "../_shared/ai-sdk-gateway.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,34 +21,39 @@ Tu rol es ayudar a gerentes y dueños de restaurantes con:
 - Sostenibilidad y ESG
 
 Responde siempre en español, de forma concisa y práctica. Usa datos cuando estén disponibles.
-Si no tienes datos específicos, ofrece recomendaciones generales basadas en mejores prácticas de la industria.`;
+Si no tienes datos específicos, ofrece recomendaciones generales basadas en mejores prácticas de la industria.
+Usa markdown ligero (negritas, listas) cuando ayude a la lectura.`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, history } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const messages = body?.messages as UIMessage[] | undefined;
 
-    const messages = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
-      ...(Array.isArray(history) ? history : []),
-      { role: "user" as const, content: message },
-    ];
+    if (!Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Payload inválido. Se esperaba { messages: UIMessage[] } (formato AI SDK).",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    const result = await callAIGateway({
-      messages,
-      tier: "fast",
-      maxTokens: 1500,
-      logPrefix: "[copilot-chat]",
+    const result = streamText({
+      model: pickSdkModel("fast"),
+      system: SYSTEM_PROMPT,
+      messages: await convertToModelMessages(messages),
+      abortSignal: req.signal,
     });
 
-    if (!result.ok) return gatewayErrorResponse(result, corsHeaders);
-
-    return new Response(JSON.stringify({ response: result.content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return result.toUIMessageStreamResponse({ headers: corsHeaders });
   } catch (error) {
     console.error("[copilot-chat] Error:", error);
     return new Response(
