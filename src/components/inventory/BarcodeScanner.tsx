@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Scan, Plus, Minus, Package, Check, X, Camera, Keyboard } from 'lucide-react';
 import { InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { BarcodeScanSchema } from '@/lib/schemas/barcodeScan';
+import { toast } from 'sonner';
 
 interface Props {
   inventory: InventoryItemExtended[];
