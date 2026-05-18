@@ -20,6 +20,7 @@ interface KnowledgeSource {
 }
 
 const Knowledge = () => {
+  const { userId: targetUserId, isViewingClient, clientName } = useDataUserId();
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,17 +29,19 @@ const Knowledge = () => {
   const [content, setContent] = useState('');
 
   const load = async () => {
+    if (!targetUserId) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
       .from('knowledge_sources')
       .select('id,title,source_type,source_ref,content,indexed_at,updated_at')
+      .eq('user_id', targetUserId)
       .order('updated_at', { ascending: false });
     if (error) toast.error('No se pudo cargar la base de conocimiento');
     setSources((data as any) || []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [targetUserId]);
 
   const reset = () => {
     setEditingId(null);
@@ -66,6 +69,7 @@ const Knowledge = () => {
         title: title.trim(),
         source_type: 'manual',
         content: content.trim(),
+        target_user_id: targetUserId,
       },
     });
     setSaving(false);
@@ -81,7 +85,7 @@ const Knowledge = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este documento de la base de conocimiento?')) return;
     const { data, error } = await supabase.functions.invoke('knowledge-index', {
-      body: { action: 'delete', source_id: id },
+      body: { action: 'delete', source_id: id, target_user_id: targetUserId },
     });
     if (error || (data as any)?.error) {
       toast.error((data as any)?.error || error?.message || 'Error al eliminar');
