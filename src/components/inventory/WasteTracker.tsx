@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, Plus, AlertCircle, TrendingDown, DollarSign } from 'lucide-react';
 import { InventoryWaste, InventoryItemExtended, StorageLocation } from '@/hooks/useEnterpriseInventory';
+import { WasteRecordSchema } from '@/lib/schemas/wasteRecord';
+import { toast } from 'sonner';
 
 interface Props {
   waste: InventoryWaste[];
