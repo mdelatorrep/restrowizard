@@ -172,34 +172,15 @@ const AdvancedFinancesDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Centro Financiero</h2>
-          <p className="text-muted-foreground">Control en tiempo real de Prime Cost, P&L y rentabilidad</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodType)}>
-            <SelectTrigger className="w-[140px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Esta Semana</SelectItem>
-              <SelectItem value="month">Este Mes</SelectItem>
-              <SelectItem value="quarter">Trimestre</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button onClick={runAIAnalysis} disabled={aiLoading || !kpis}>
-            <Brain className={`h-4 w-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
-            Análisis IA
-          </Button>
-        </div>
-      </div>
+      <FinancesHeader
+        period={period}
+        onPeriodChange={setPeriod}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        aiLoading={aiLoading}
+        onRunAI={runAIAnalysis}
+        aiDisabled={!kpis}
+      />
 
       {/* AI Insights */}
       {aiInsights && (
