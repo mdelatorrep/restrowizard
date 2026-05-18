@@ -35,6 +35,10 @@ import { LoyaltyQRDialog } from '@/components/loyalty/LoyaltyQRDialog';
 import { TierBadge } from '@/components/loyalty/LoyaltyCards';
 import { CustomersTab } from '@/components/loyalty/CustomersTab';
 import { RewardsTab } from '@/components/loyalty/RewardsTab';
+import { NewTierDialog } from '@/components/loyalty/NewTierDialog';
+import { NewCustomerDialog } from '@/components/loyalty/NewCustomerDialog';
+import { NewRewardDialog } from '@/components/loyalty/NewRewardDialog';
+import { AwardPointsDialog } from '@/components/loyalty/AwardPointsDialog';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { cn } from '@/lib/utils';
 
