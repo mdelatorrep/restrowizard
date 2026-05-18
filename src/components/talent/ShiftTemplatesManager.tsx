@@ -10,7 +10,9 @@
    LayoutTemplate, Plus, Trash2, Clock, Copy, 
    Palette
  } from 'lucide-react';
- import { ShiftTemplate } from '@/hooks/useTalentAdvanced';
+import { ShiftTemplate } from '@/hooks/useTalentAdvanced';
+import { ShiftTemplateSchema } from '@/lib/schemas/shiftTemplate';
+import { toast } from 'sonner';
  
  interface Props {
    templates: ShiftTemplate[];
@@ -47,28 +49,32 @@
      description: ''
    });
  
-   const handleCreate = async () => {
-     if (!formData.template_name) return;
-     await onCreate({
-       template_name: formData.template_name,
-       position: formData.position || null,
-       start_time: formData.start_time,
-       end_time: formData.end_time,
-       break_minutes: formData.break_minutes,
-       color: formData.color,
-       description: formData.description || null
-     });
-     setShowCreate(false);
-     setFormData({
-       template_name: '',
-       position: '',
-       start_time: '09:00',
-       end_time: '17:00',
-       break_minutes: 30,
-       color: '#3b82f6',
-       description: ''
-     });
-   };
+  const handleCreate = async () => {
+    const parsed = ShiftTemplateSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Datos inválidos');
+      return;
+    }
+    await onCreate({
+      template_name: formData.template_name,
+      position: formData.position || null,
+      start_time: formData.start_time,
+      end_time: formData.end_time,
+      break_minutes: formData.break_minutes,
+      color: formData.color,
+      description: formData.description || null
+    });
+    setShowCreate(false);
+    setFormData({
+      template_name: '',
+      position: '',
+      start_time: '09:00',
+      end_time: '17:00',
+      break_minutes: 30,
+      color: '#3b82f6',
+      description: ''
+    });
+  };
  
    const calculateHours = (start: string, end: string, breakMin: number) => {
      const [sh, sm] = start.split(':').map(Number);
