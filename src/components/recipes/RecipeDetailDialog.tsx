@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Lock, Users, Clock, DollarSign, Flame, UtensilsCrossed, BookOpen, Link2, Scale } from 'lucide-react';
 import {
-  RecipeWithDetails, MeasurementUnit, Allergen, RecipeIngredient,
+  RecipeWithDetails, MeasurementUnit, Allergen, RecipeIngredient, RecipeNutrition, ScaledRecipe,
 } from '@/hooks/useRecipes';
 import { RecipeIngredientManager } from './RecipeIngredientManager';
 import { RecipeStepsManager } from './RecipeStepsManager';
@@ -25,12 +25,12 @@ interface Props {
   onUpdateStep: (id: string, data: any) => void;
   onRemoveStep: (id: string) => void;
   onReorderSteps: (recipeId: string, ids: string[]) => void;
-  onSaveNutrition: (recipeId: string, data: any) => void;
-  onCalculateNutrition: (recipe: RecipeWithDetails) => void;
+  onSaveNutrition: (recipeId: string, data: Partial<RecipeNutrition>) => unknown;
+  onCalculateNutrition: (recipe: RecipeWithDetails) => Partial<RecipeNutrition>;
   onAddSubRecipe: (recipeId: string, subId: string, qty: number, unit: string) => void;
   onRemoveSubRecipe: (linkId: string, recipeId: string) => void;
   onUpdateRecipe: (id: string, updates: any) => void;
-  onScaleRecipe: (recipe: RecipeWithDetails, portions: number) => void;
+  onScaleRecipe: (recipe: RecipeWithDetails, portions: number) => ScaledRecipe;
 }
 
 export const RecipeDetailDialog = ({
