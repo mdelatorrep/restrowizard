@@ -13,12 +13,28 @@ interface Props {
   onClose: (amount: number, notes?: string) => void;
 }
 
+import { CloseSessionSchema } from '@/lib/schemas/posSession';
+import { useToast } from '@/hooks/use-toast';
+
 export const CloseSessionDialog = ({ open, onOpenChange, session, onClose }: Props) => {
   const [actualCash, setActualCash] = useState('');
   const [notes, setNotes] = useState('');
+  const { toast } = useToast();
 
   const handleSubmit = () => {
-    onClose(parseFloat(actualCash) || 0, notes || undefined);
+    const parsed = CloseSessionSchema.safeParse({
+      actual_cash: actualCash || 0,
+      notes,
+    });
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa el formulario',
+        variant: 'destructive',
+      });
+      return;
+    }
+    onClose(parsed.data.actual_cash, parsed.data.notes || undefined);
     onOpenChange(false);
   };
 

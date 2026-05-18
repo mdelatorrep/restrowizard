@@ -12,6 +12,8 @@ import { useJobApplications } from '@/hooks/useJobApplications';
 import { Loader2, User, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
+import { JobApplicationSchema } from '@/lib/schemas/jobApplication';
+import { useToast } from '@/hooks/use-toast';
 
 interface ApplyDialogProps {
   open: boolean;
@@ -24,6 +26,7 @@ const ApplyDialog: React.FC<ApplyDialogProps> = ({ open, onOpenChange, job }) =>
   const { profile, profileLoading } = useCandidateProfile();
   const { applyToJob } = useJobApplications();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [coverLetter, setCoverLetter] = useState('');
 
   if (!user) {
@@ -77,7 +80,7 @@ const ApplyDialog: React.FC<ApplyDialogProps> = ({ open, onOpenChange, job }) =>
   }
 
   const handleSubmit = () => {
-    applyToJob.mutate({
+    const parsed = JobApplicationSchema.safeParse({
       job_id: job.id,
       cover_letter: coverLetter,
       resume_url: profile.resume_url || undefined,
@@ -85,7 +88,16 @@ const ApplyDialog: React.FC<ApplyDialogProps> = ({ open, onOpenChange, job }) =>
       applicant_name: profile.full_name,
       applicant_email: user.email || undefined,
       applicant_phone: profile.phone || undefined,
-    }, {
+    });
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa la información',
+        variant: 'destructive',
+      });
+      return;
+    }
+    applyToJob.mutate(parsed.data, {
       onSuccess: () => onOpenChange(false),
     });
   };

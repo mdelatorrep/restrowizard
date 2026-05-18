@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useMenus } from '@/hooks/useMenus';
 import { Database } from '@/integrations/supabase/types';
 import { CUISINE_TYPES, getCuisineTypeLabel } from '@/data/constants';
+import { CreateMenuSchema } from '@/lib/schemas/menu';
+import { useToast } from '@/hooks/use-toast';
 
 type CuisineType = Database['public']['Enums']['cuisine_type'];
 
@@ -20,6 +22,7 @@ interface CreateMenuDialogProps {
 
 export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpenChange }) => {
   const { templates, createMenu } = useMenus();
+  const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
@@ -29,19 +32,29 @@ export const CreateMenuDialog: React.FC<CreateMenuDialogProps> = ({ open, onOpen
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.cuisine_type) {
+
+    const parsed = CreateMenuSchema.safeParse({
+      name: formData.name,
+      description: formData.description,
+      cuisine_type: formData.cuisine_type,
+      template_id: selectedTemplate || undefined,
+    });
+
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa el formulario',
+        variant: 'destructive',
+      });
       return;
     }
 
-    const menuData = {
-      name: formData.name,
-      description: formData.description,
-      cuisine_type: formData.cuisine_type as CuisineType,
-      template_id: selectedTemplate || undefined,
-    };
-
-    const result = await createMenu(menuData);
+    const result = await createMenu({
+      name: parsed.data.name,
+      description: parsed.data.description ?? '',
+      cuisine_type: parsed.data.cuisine_type as CuisineType,
+      template_id: parsed.data.template_id,
+    });
     if (result) {
       onOpenChange(false);
       setFormData({ name: '', description: '', cuisine_type: '' as CuisineType | '' });

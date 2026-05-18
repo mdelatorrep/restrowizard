@@ -11,13 +11,28 @@ interface Props {
   onOpen: (name: string, amount: number) => void;
 }
 
+import { OpenSessionSchema } from '@/lib/schemas/posSession';
+import { useToast } from '@/hooks/use-toast';
+
 export const OpenSessionDialog = ({ open, onOpenChange, onOpen }: Props) => {
   const [cashierName, setCashierName] = useState('');
   const [openingCash, setOpeningCash] = useState('');
+  const { toast } = useToast();
 
   const handleSubmit = () => {
-    if (!cashierName.trim()) return;
-    onOpen(cashierName, parseFloat(openingCash) || 0);
+    const parsed = OpenSessionSchema.safeParse({
+      cashier_name: cashierName,
+      opening_cash: openingCash || 0,
+    });
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa el formulario',
+        variant: 'destructive',
+      });
+      return;
+    }
+    onOpen(parsed.data.cashier_name, parsed.data.opening_cash);
     onOpenChange(false);
     setCashierName('');
     setOpeningCash('');
