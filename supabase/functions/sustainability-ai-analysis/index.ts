@@ -12,11 +12,6 @@ serve(async (req) => {
 
   try {
     const { type, data } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
 
     const systemPrompt = `Eres un experto en sostenibilidad y ESG para restaurantes en Latinoamérica. 
 Tienes acceso a búsqueda web para obtener información actualizada sobre:
