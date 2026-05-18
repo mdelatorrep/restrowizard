@@ -39,7 +39,7 @@ export const CreateRecipeDialog = ({ open, onOpenChange, onCreate }: Props) => {
       toast.error(parsed.error.issues[0]?.message || 'Revisa los campos');
       return;
     }
-    await onCreate(form);
+    await Promise.resolve(onCreate(form));
     setForm(INITIAL);
     onOpenChange(false);
   };
