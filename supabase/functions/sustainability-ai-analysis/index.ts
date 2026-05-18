@@ -42,47 +42,22 @@ Incluye:
 4. Estimación de ahorro potencial
 5. Normativas o certificaciones aplicables en la región`;
 
-    console.log('Calling OpenAI GPT-5 with web search for sustainability analysis...');
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 3000,
-        tools: [{ type: 'web_search_preview' }],
-      }),
+    const aiResult = await callAIGateway({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tier: "reasoning",
+      maxTokens: 3000,
+      logPrefix: "[sustainability-ai-analysis]",
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Límite de solicitudes excedido. Intenta más tarde.', success: false }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Se requiere pago. Agrega créditos a tu cuenta.', success: false }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      
-      throw new Error(`OpenAI API error: ${response.status}`);
+    if (!aiResult.ok) {
+      return new Response(
+        JSON.stringify({ error: aiResult.error, success: false }),
+        { status: aiResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
-
-    const result = await response.json();
-    const analysis = result.choices?.[0]?.message?.content || 'No se pudo generar el análisis.';
+    const analysis = aiResult.content || "No se pudo generar el análisis.";
 
     console.log('Sustainability analysis completed successfully');
 
