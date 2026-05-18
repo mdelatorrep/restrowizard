@@ -13,7 +13,7 @@ import {
   Allergen 
 } from '@/hooks/useRecipes';
 import { Plus, Trash2, Edit, AlertTriangle, GripVertical } from 'lucide-react';
-import { RecipeIngredientSchema } from '@/lib/schemas/recipe';
+import { RecipeIngredientExtendedSchema } from '@/lib/schemas/recipe';
 import { toast } from 'sonner';
 
 interface Props {
@@ -71,13 +71,7 @@ export const RecipeIngredientManager = ({
   };
 
   const handleSubmit = () => {
-    const parsed = RecipeIngredientSchema.safeParse({
-      ingredient_name: form.ingredient_name,
-      quantity: form.quantity,
-      unit: form.unit,
-      cost_per_unit: form.cost_per_unit,
-      yield_percentage: form.yield_percentage,
-    });
+    const parsed = RecipeIngredientExtendedSchema.safeParse(form);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message || 'Revisa los datos del ingrediente');
       return;

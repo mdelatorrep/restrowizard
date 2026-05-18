@@ -25,3 +25,19 @@ export const RecipeIngredientSchema = z.object({
 });
 
 export type RecipeIngredientValues = z.infer<typeof RecipeIngredientSchema>;
+
+export const RecipeIngredientExtendedSchema = RecipeIngredientSchema.extend({
+  gross_quantity: z.coerce.number().min(0).max(1_000_000).default(0),
+  preparation_method: z.string().max(60).optional().or(z.literal('')),
+  is_optional: z.boolean().default(false),
+  calories_per_unit: z.coerce.number().min(0).max(100_000).default(0),
+  protein_per_unit: z.coerce.number().min(0).max(10_000).default(0),
+  carbs_per_unit: z.coerce.number().min(0).max(10_000).default(0),
+  fat_per_unit: z.coerce.number().min(0).max(10_000).default(0),
+  allergen_ids: z.array(z.string()).default([]),
+}).refine(
+  (v) => !v.gross_quantity || v.gross_quantity >= v.quantity,
+  { message: 'Cantidad bruta debe ser ≥ cantidad neta', path: ['gross_quantity'] }
+);
+
+export type RecipeIngredientExtendedValues = z.infer<typeof RecipeIngredientExtendedSchema>;
