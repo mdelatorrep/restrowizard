@@ -160,8 +160,8 @@ const Brand = () => {
 
         <TabsContent value="social">
           <SocialLinksEditor
-            socialLinks={brand?.social_links || {}}
-            onChange={(links) => updateBrand({ social_links: links })}
+            socialLinks={(brand?.social_links || {}) as Record<string, string>}
+            onChange={(links) => { void updateBrand({ social_links: links } as any); }}
           />
         </TabsContent>
 
