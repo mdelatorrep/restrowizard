@@ -113,14 +113,14 @@ import { toast } from 'sonner';
                <div>
                  <Label>Posición (opcional)</Label>
                  <Select 
-                   value={formData.position} 
-                   onValueChange={(v) => setFormData({ ...formData, position: v })}
+                   value={formData.position || 'any'} 
+                   onValueChange={(v) => setFormData({ ...formData, position: v === 'any' ? '' : v })}
                  >
                    <SelectTrigger>
                      <SelectValue placeholder="Cualquier posición" />
                    </SelectTrigger>
                    <SelectContent>
-                     <SelectItem value="">Cualquier posición</SelectItem>
+                     <SelectItem value="any">Cualquier posición</SelectItem>
                      {POSITIONS.map(p => (
                        <SelectItem key={p} value={p}>{p}</SelectItem>
                      ))}
