@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TRAINING_CATEGORIES } from '@/hooks/useStaffDevelopment';
+import { TrainingProgramSchema } from '@/lib/schemas/talent';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   open: boolean;
@@ -34,20 +36,29 @@ export const CreateTrainingDialog: React.FC<Props> = ({ open, onOpenChange, onSu
     setPassingScore('70');
   };
 
+  const { toast } = useToast();
+
   const handleSubmit = async () => {
-    if (!title.trim()) return;
-    setSubmitting(true);
-    const result = await onSubmit({
+    const parsed = TrainingProgramSchema.safeParse({
       title: title.trim(),
       description: description.trim() || null,
       category,
       position: position.trim() || null,
-      estimated_hours: parseFloat(estimatedHours) || 1,
+      estimated_hours: estimatedHours,
       is_mandatory: isMandatory,
       is_active: true,
-      passing_score: parseInt(passingScore) || 70,
-      content: { modules: [] },
+      passing_score: passingScore,
     });
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa el formulario',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSubmitting(true);
+    const result = await onSubmit({ ...parsed.data, content: { modules: [] } });
     setSubmitting(false);
     if (result) {
       resetForm();

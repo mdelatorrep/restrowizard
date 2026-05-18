@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { BENEFIT_TYPES } from '@/hooks/useStaffDevelopment';
+import { BenefitSchema } from '@/lib/schemas/talent';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   open: boolean;
@@ -44,16 +46,28 @@ export const CreateBenefitDialog: React.FC<Props> = ({ open, onOpenChange, onSub
     setEligibilityMonths(String(template.months));
   };
 
+  const { toast } = useToast();
+
   const handleSubmit = async () => {
-    if (!name.trim()) return;
-    setSubmitting(true);
-    const result = await onSubmit({
+    const parsed = BenefitSchema.safeParse({
       benefit_name: name.trim(),
       benefit_type: type,
       description: description.trim() || null,
-      value: parseFloat(value) || 0,
+      value,
       value_type: valueType,
-      eligibility_months: parseInt(eligibilityMonths) || 0,
+      eligibility_months: eligibilityMonths,
+    });
+    if (!parsed.success) {
+      toast({
+        title: 'Datos inválidos',
+        description: parsed.error.issues[0]?.message ?? 'Revisa el formulario',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSubmitting(true);
+    const result = await onSubmit({
+      ...parsed.data,
       is_active: true,
       applicable_positions: null,
     });
