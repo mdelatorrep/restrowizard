@@ -55,6 +55,7 @@ import {
   BarChart3,
   Truck,
   Package,
+  ScanLine,
   AlertCircle,
   Lock,
   ChevronDown,
@@ -236,6 +237,13 @@ const peopleItems: MenuItem[] = [
     path: '/r/knowledge',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'knowledge'
+  },
+  {
+    title: 'Facturas con IA',
+    icon: ScanLine,
+    path: '/r/invoices',
+    stages: ['first_90_days', 'normal_operation'],
+    moduleKey: 'invoices'
   },
 ];
 

@@ -8240,6 +8240,89 @@ export type Database = {
           },
         ]
       }
+      supplier_invoices: {
+        Row: {
+          ai_confidence: number | null
+          ai_model: string | null
+          business_id: string | null
+          created_at: string
+          currency: string | null
+          due_date: string | null
+          id: string
+          image_url: string | null
+          invoice_date: string | null
+          invoice_number: string | null
+          items: Json | null
+          notes: string | null
+          raw_text: string | null
+          status: string
+          storage_path: string | null
+          subtotal: number | null
+          supplier_id: string | null
+          supplier_name: string | null
+          tax_amount: number | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_model?: string | null
+          business_id?: string | null
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          image_url?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          items?: Json | null
+          notes?: string | null
+          raw_text?: string | null
+          status?: string
+          storage_path?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_model?: string | null
+          business_id?: string | null
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          image_url?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          items?: Json | null
+          notes?: string | null
+          raw_text?: string | null
+          status?: string
+          storage_path?: string | null
+          subtotal?: number | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
