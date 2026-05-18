@@ -45,12 +45,12 @@ export const useMenuActions = (
         .insert({
           name: `${menu.name} (Copia)`,
           description: menu.description,
-          cuisine_type: menu.cuisine_type,
+          cuisine_type: menu.cuisine_type as any,
           config: menu.config,
           user_id: user.id,
           public_url_slug: slugData,
           status: 'draft',
-        })
+        } as any)
         .select()
         .single();
 
