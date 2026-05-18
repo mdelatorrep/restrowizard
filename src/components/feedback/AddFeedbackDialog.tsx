@@ -11,7 +11,7 @@ import { CustomerFeedbackSchema } from '@/lib/schemas/feedback';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (data: any) => Promise<void>;
+  onAdd: (data: any) => Promise<any>;
 }
 
 export const AddFeedbackDialog = ({ open, onOpenChange, onAdd }: Props) => {

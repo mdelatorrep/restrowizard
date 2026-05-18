@@ -9,7 +9,7 @@ import { FeedbackCampaignSchema } from '@/lib/schemas/feedback';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (data: { name: string; incentive: string }) => Promise<void>;
+  onCreate: (data: { name: string; incentive: string }) => Promise<any>;
 }
 
 export const CreateCampaignDialog = ({ open, onOpenChange, onCreate }: Props) => {
