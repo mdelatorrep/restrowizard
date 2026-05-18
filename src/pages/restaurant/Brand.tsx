@@ -153,7 +153,7 @@ const Brand = () => {
             <GalleryManager
               userId={userId}
               photos={brand?.gallery_photos || []}
-              onUpdate={(photos) => updateBrand({ gallery_photos: photos })}
+              onUpdate={async (photos) => { await updateBrand({ gallery_photos: photos } as any); }}
             />
           )}
         </TabsContent>
