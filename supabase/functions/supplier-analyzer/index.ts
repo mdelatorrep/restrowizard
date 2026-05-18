@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,11 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
-
+    // LOVABLE_API_KEY validated centrally by callAIGateway
     const { itemName, currentCost, currentSupplier, unit, city, country = 'México' }: SupplierRequest = await req.json();
 
     if (!itemName || !city) {
