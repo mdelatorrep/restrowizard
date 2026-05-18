@@ -18,8 +18,10 @@
    AlertTriangle,
    Save
  } from 'lucide-react';
- import { InventoryCount, InventoryCountItem, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
- import { supabase } from '@/integrations/supabase/client';
+  import { InventoryCount, InventoryCountItem, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+  import { supabase } from '@/integrations/supabase/client';
+  import { CountedItemSchema } from '@/lib/schemas/countedItem';
+  import { toast } from 'sonner';
  
  interface Props {
    count: InventoryCount | null;
@@ -114,14 +116,20 @@
      }
    };
  
-   const handleSaveAndNext = async () => {
-     const currentItem = items[currentIndex];
-     if (!currentItem || !count) return;
- 
-     setSaving(true);
-     try {
-       const qty = parseFloat(countedValue) || 0;
-       await onUpdateItem(count.id, currentItem.id, qty, notes || undefined);
+    const handleSaveAndNext = async () => {
+      const currentItem = items[currentIndex];
+      if (!currentItem || !count) return;
+  
+      const parsed = CountedItemSchema.safeParse({ counted_quantity: countedValue, notes });
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0]?.message || 'Cantidad inválida');
+        return;
+      }
+      const qty = parsed.data.counted_quantity;
+  
+      setSaving(true);
+      try {
+        await onUpdateItem(count.id, currentItem.id, qty, parsed.data.notes || undefined);
        
        // Update local state
        setItems(prev => prev.map((item, idx) => 
