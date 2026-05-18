@@ -14,6 +14,8 @@ import {
 import { Loader2 } from 'lucide-react';
 import { BusinessProject } from '@/hooks/useBusinessProject';
 import { getCurrencyCode, getCurrencySymbol } from '@/data/constants';
+import { toast } from 'sonner';
+import { ProjectDetailsSchema } from '@/lib/schemas/projectDetails';
 
 interface EditProjectDetailsDialogProps {
   project: BusinessProject;
@@ -41,13 +43,18 @@ export function EditProjectDetailsDialog({
   }, [project]);
 
   const handleSave = async () => {
+    const parsed = ProjectDetailsSchema.safeParse({
+      target_opening_date: targetOpeningDate || undefined,
+      estimated_budget: estimatedBudget ? parseFloat(estimatedBudget) : undefined,
+      description: description || undefined,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Datos inválidos');
+      return;
+    }
     setIsSaving(true);
     try {
-      await onSave({
-        target_opening_date: targetOpeningDate || undefined,
-        estimated_budget: estimatedBudget ? parseFloat(estimatedBudget) : undefined,
-        description: description || undefined,
-      });
+      await onSave(parsed.data);
       onOpenChange(false);
     } finally {
       setIsSaving(false);
