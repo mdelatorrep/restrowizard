@@ -135,7 +135,7 @@ const Brand = () => {
                 logo_square_url: brand?.logo_square_url,
                 favicon_url: brand?.favicon_url,
               }}
-              onUpdate={(updates) => updateBrand(updates as any)}
+              onUpdate={async (updates) => { await updateBrand(updates as any); }}
             />
           )}
         </TabsContent>
