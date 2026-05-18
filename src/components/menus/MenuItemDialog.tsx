@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
+import { toast } from 'sonner';
+import { MenuItemSchema } from '@/lib/schemas/menuItem';
 
 type MenuItem = Tables<'menu_items'>;
 type MenuCategory = Tables<'menu_categories'>;
@@ -152,30 +154,33 @@ export const MenuItemDialog: React.FC<MenuItemDialogProps> = ({
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.category) return;
+    const parsed = MenuItemSchema.safeParse({
+      name: formData.name.trim(),
+      description: formData.description || null,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      category: formData.category,
+      category_id: formData.category_id || null,
+      dietary_tags: formData.dietary_tags,
+      allergens: formData.allergens,
+      is_available: formData.is_available,
+      is_featured: formData.is_featured,
+      is_new: formData.is_new,
+      is_bestseller: formData.is_bestseller,
+      preparation_time_minutes: formData.preparation_time_minutes ? parseInt(formData.preparation_time_minutes) : null,
+      calories: formData.calories ? parseInt(formData.calories) : null,
+      spicy_level: formData.spicy_level || null,
+      cost: formData.cost ? parseFloat(formData.cost) : null,
+      recipe_id: formData.recipe_id || null,
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Datos inválidos');
+      return;
+    }
 
     setSaving(true);
     try {
-      const dataToSave: any = {
-        name: formData.name,
-        description: formData.description || null,
-        price: formData.price ? parseFloat(formData.price) : 0,
-        category: formData.category,
-        category_id: formData.category_id || null,
-        dietary_tags: formData.dietary_tags,
-        allergens: formData.allergens,
-        is_available: formData.is_available,
-        is_featured: formData.is_featured,
-        is_new: formData.is_new,
-        is_bestseller: formData.is_bestseller,
-        preparation_time_minutes: formData.preparation_time_minutes ? parseInt(formData.preparation_time_minutes) : null,
-        calories: formData.calories ? parseInt(formData.calories) : null,
-        spicy_level: formData.spicy_level || null,
-        cost: formData.cost ? parseFloat(formData.cost) : null,
-        recipe_id: formData.recipe_id || null,
-      };
-
-      const result = await onSave(dataToSave);
+      const result = await onSave(parsed.data as Partial<TablesInsert<'menu_items'>>);
       
       // Upload image if new file selected
       if (result && selectedFile && onUploadImage) {
