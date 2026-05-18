@@ -16,6 +16,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
+import { BenefitAssignmentSchema } from '@/lib/schemas/talentAssignments';
+import { toast } from 'sonner';
 
 interface Props {
   benefits: StaffBenefit[];
@@ -66,12 +68,18 @@ export const BenefitsManager: React.FC<Props> = ({
   const getBenefitAssignments = (benefitId: string) => assignments.filter(a => a.benefit_id === benefitId);
 
   const handleAssign = async () => {
-    if (selectedStaffId && selectedBenefitId) {
-      await onAssignBenefit(selectedStaffId, selectedBenefitId);
-      setAssignOpen(false);
-      setSelectedStaffId('');
-      setSelectedBenefitId('');
+    const parsed = BenefitAssignmentSchema.safeParse({
+      staff_member_id: selectedStaffId,
+      benefit_id: selectedBenefitId,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Datos inválidos');
+      return;
     }
+    await onAssignBenefit(selectedStaffId, selectedBenefitId);
+    setAssignOpen(false);
+    setSelectedStaffId('');
+    setSelectedBenefitId('');
   };
 
   return (

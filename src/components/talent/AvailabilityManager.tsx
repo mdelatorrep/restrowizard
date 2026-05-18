@@ -9,7 +9,9 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
  import { ScrollArea } from '@/components/ui/scroll-area';
  import { Calendar, Clock, Check, X, Edit, Save } from 'lucide-react';
- import { StaffMemberExtended, StaffAvailability } from '@/hooks/useTalentAdvanced';
+import { StaffMemberExtended, StaffAvailability } from '@/hooks/useTalentAdvanced';
+import { AvailabilitySlotsSchema } from '@/lib/schemas/talentAssignments';
+import { toast } from 'sonner';
  
  interface Props {
    staff: StaffMemberExtended[];
@@ -87,16 +89,24 @@
  
    const handleSave = async () => {
      if (!selectedStaff) return;
-     setSaving(true);
-     await onSave(selectedStaff.id, slots.map(s => ({
-       ...s,
-       effective_from: null,
-       effective_until: null
-     })));
-     setSaving(false);
-     setEditMode(false);
-     setSelectedStaff(null);
-   };
+    const parsed = AvailabilitySlotsSchema.safeParse(slots);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Horarios inválidos');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(selectedStaff.id, slots.map(s => ({
+        ...s,
+        effective_from: null,
+        effective_until: null
+      })));
+      setEditMode(false);
+      setSelectedStaff(null);
+    } finally {
+      setSaving(false);
+    }
+  };
  
    const getDaySlot = (member: StaffMemberExtended, day: number) => {
      return member.availability?.find(a => a.day_of_week === day);
