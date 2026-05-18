@@ -35,26 +35,16 @@ Responde SOLO con un JSON válido (sin markdown):
   "weaknesses": ["<debilidad 1>", "<debilidad 2>"]
 }`;
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      }),
+    const aiResult = await callAIGateway({
+      messages: [{ role: "user", content: prompt }],
+      tier: "fast",
+      temperature: 0.3,
+      logPrefix: "[job-ai-profile]",
     });
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '{}';
-    
-    let result;
-    try {
-      result = JSON.parse(content);
-    } catch {
-      result = { match_score: 50, summary: content, strengths: [], weaknesses: [] };
-    }
+    const fallback = { match_score: 50, summary: "", strengths: [], weaknesses: [] };
+    const result = aiResult.ok
+      ? (safeParseJson(aiResult.content) ?? { ...fallback, summary: aiResult.content })
+      : fallback;
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
