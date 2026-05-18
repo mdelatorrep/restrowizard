@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Banknote, CreditCard, Smartphone, DollarSign } from 'lucide-react';
 import { usePOSPayment, type PaymentSplit } from '@/hooks/usePOSPayment';
+import { buildCashPaymentSchema } from '@/lib/schemas/payment';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -39,7 +41,16 @@ export const PaymentDialog = ({ open, onOpenChange, total, onComplete }: Props) 
 
   const handlePayment = () => {
     const method = paymentMethods.find((m) => m.id === selectedMethod);
-    if (!method) return;
+    const isCash = method?.method_type === 'cash';
+    const parsed = buildCashPaymentSchema(finalTotal).safeParse({
+      selectedMethodId: selectedMethod ?? '',
+      tipAmount,
+      cashReceived: isCash ? parseFloat(cashReceived) || 0 : finalTotal,
+    });
+    if (!parsed.success || !method) {
+      toast.error(parsed.success ? 'Método inválido' : parsed.error.issues[0]?.message ?? 'Datos inválidos');
+      return;
+    }
     onComplete(
       [{ method_id: method.id, method_name: method.method_name, amount: finalTotal }],
       tipAmount,
