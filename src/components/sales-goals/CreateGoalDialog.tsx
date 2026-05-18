@@ -12,7 +12,7 @@ import { SalesGoalSchema } from '@/lib/schemas/salesGoal';
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onCreate: (form: any) => Promise<void> | void;
+  onCreate: (form: any) => Promise<any> | any;
   trigger?: boolean;
 }
 
