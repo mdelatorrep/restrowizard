@@ -256,6 +256,7 @@ const App = () => (
                     <AppLayout requiredUserType="consultant" />
                   </OnboardingGuard>
                 }>
+                  <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<ConsultantDashboard />} />
                   <Route path="finances" element={<ConsultantFinances />} />
                   <Route path="operations" element={<ConsultantOperations />} />

@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
-    const userId = userData.user.id;
+    const requesterId = userData.user.id;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -62,7 +62,35 @@ Deno.serve(async (req) => {
       storage_path,         // alternativa: ruta en bucket "invoices"
       supplier_id = null,
       save = true,
+      target_user_id,
     } = body ?? {};
+
+    const userId: string = target_user_id || requesterId;
+
+    // Authorize: requester acts on its own account OR consultant of target OR team member of business owned by target.
+    if (userId !== requesterId) {
+      const [{ data: consultantLink }, { data: teamLink }] = await Promise.all([
+        admin
+          .from("consultant_clients")
+          .select("id")
+          .eq("consultant_id", requesterId)
+          .eq("client_user_id", userId)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle(),
+        admin
+          .from("restaurant_team_members")
+          .select("id, restaurant_businesses!inner(owner_id)")
+          .eq("user_id", requesterId)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const teamOwner = (teamLink as any)?.restaurant_businesses?.owner_id;
+      if (!consultantLink && teamOwner !== userId) {
+        return json({ error: "Forbidden: cannot operate on this account" }, 403);
+      }
+    }
 
     let imageDataUrl: string | null = null;
     let resolvedStoragePath: string | null = storage_path ?? null;

@@ -29,10 +29,12 @@ const Invoices = () => {
   const [scanning, setScanning] = useState(false);
 
   const load = async () => {
+    if (!userId) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
       .from('supplier_invoices')
       .select('id,supplier_name,invoice_number,invoice_date,currency,total_amount,status,ai_confidence,storage_path,created_at,items')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) toast.error('No se pudieron cargar las facturas');
@@ -40,7 +42,7 @@ const Invoices = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [userId]);
 
   const handleFile = async (file: File) => {
     if (!userId) return;
@@ -50,9 +52,14 @@ const Invoices = () => {
     }
     setScanning(true);
     try {
-      // 1. Subir al bucket privado
+      // El path en storage SIEMPRE debe ir bajo la carpeta del usuario autenticado
+      // (la policy RLS valida auth.uid()::text = foldername[1]).
+      const { data: authData } = await supabase.auth.getUser();
+      const authUid = authData.user?.id;
+      if (!authUid) throw new Error('Sesión no válida');
+
       const ext = file.name.split('.').pop() || 'jpg';
-      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${authUid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('invoices').upload(path, file, {
         contentType: file.type,
         upsert: false,
@@ -67,12 +74,13 @@ const Invoices = () => {
         reader.readAsDataURL(file);
       });
 
-      // 3. Llamar OCR
+      // 3. Llamar OCR — la fila se guarda con user_id = userId (cliente activo en modo consultor)
       const { data, error } = await supabase.functions.invoke('invoice-ocr', {
         body: {
           image_base64: base64,
           mime_type: file.type,
           storage_path: path,
+          target_user_id: userId,
         },
       });
       if (error || (data as any)?.error) {

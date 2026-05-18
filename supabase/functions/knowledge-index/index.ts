@@ -29,12 +29,41 @@ Deno.serve(async (req) => {
     if (userErr || !userData.user) {
       return json({ error: "Unauthorized" }, 401);
     }
-    const userId = userData.user.id;
+    const requesterId = userData.user.id;
 
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const body = await req.json().catch(() => ({}));
     const action = body?.action ?? "index";
+    const targetUserId: string = body?.target_user_id || requesterId;
+
+    // Authorize: requester must equal target, OR be an active consultant of target,
+    // OR be an active team member of a business owned by target.
+    if (targetUserId !== requesterId) {
+      const [{ data: consultantLink }, { data: teamLink }] = await Promise.all([
+        adminClient
+          .from("consultant_clients")
+          .select("id")
+          .eq("consultant_id", requesterId)
+          .eq("client_user_id", targetUserId)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle(),
+        adminClient
+          .from("restaurant_team_members")
+          .select("id, restaurant_businesses!inner(owner_id)")
+          .eq("user_id", requesterId)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const teamOwner = (teamLink as any)?.restaurant_businesses?.owner_id;
+      if (!consultantLink && teamOwner !== targetUserId) {
+        return json({ error: "Forbidden: cannot operate on this account" }, 403);
+      }
+    }
+
+    const userId = targetUserId;
 
     if (action === "index") {
       const { title, source_type, source_ref, content, metadata, source_id } = body;

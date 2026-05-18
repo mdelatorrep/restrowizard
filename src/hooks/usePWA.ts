@@ -21,9 +21,24 @@ export const usePWA = () => {
 
     setIsInstalled(checkInstalled());
 
-    // Register SW
+    // Register SW (skip in Lovable preview/iframe to avoid stale-cache pollution)
+    const isPreviewHost =
+      window.location.hostname.includes('lovableproject.com') ||
+      window.location.hostname.includes('id-preview--');
+    const isInIframe = (() => {
+      try { return window.self !== window.top; } catch { return true; }
+    })();
+
     const registerSW = async () => {
       if (!('serviceWorker' in navigator)) return;
+      if (isPreviewHost || isInIframe) {
+        // Clean up any previously-registered SW in preview contexts
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        } catch { /* noop */ }
+        return;
+      }
       try {
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         setRegistration(reg);

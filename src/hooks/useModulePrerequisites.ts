@@ -226,6 +226,13 @@ export const useModulePrerequisites = () => {
       // Social y Soporte
       'social-listening': { enabled: true },
       'support': { enabled: true },
+
+      // IA y documentos — Phase 2/3
+      'knowledge': { enabled: true },
+      'invoices': {
+        enabled: true,
+        reason: !hasInventory ? 'Tip: registra inventario y proveedores para enlazar facturas automáticamente' : undefined,
+      },
     };
 
     return {
