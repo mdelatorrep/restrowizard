@@ -1,45 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  Utensils,
-  AlertTriangle,
-  Lightbulb,
-  Clock,
-  Leaf,
-  Store,
-  ChevronRight
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Navigate } from 'react-router-dom';
+import { DollarSign, TrendingUp, Users, Utensils, Clock, Leaf, Store } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ActionPlan from '@/components/ActionPlan';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
 import { useFinancesData } from '@/hooks/useFinancesData';
 import { useRestaurantLifecycle } from '@/hooks/useRestaurantLifecycle';
-
-interface KPIData {
-  label: string;
-  value: string;
-  change: number;
-  icon: React.ReactNode;
-  trend: 'up' | 'down' | 'neutral';
-}
-
-interface Alert {
-  id: string;
-  type: 'warning' | 'info' | 'success';
-  title: string;
-  message: string;
-  action?: string;
-}
+import { DashboardHero } from '@/components/dashboard/DashboardHero';
+import { DashboardKPIs, type KPIData } from '@/components/dashboard/DashboardKPIs';
+import { CopilotAlertsCard, type DashboardAlert } from '@/components/dashboard/CopilotAlertsCard';
+import { QuickActionsCard, type QuickAction } from '@/components/dashboard/QuickActionsCard';
+import { WeeklyPerformanceCard } from '@/components/dashboard/WeeklyPerformanceCard';
 
 const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -47,15 +21,11 @@ const RestaurantDashboard: React.FC = () => {
   const [businessName, setBusinessName] = useState('Mi Restaurante');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
-  
-  // Check restaurant lifecycle stage
+
   const lifecycle = useRestaurantLifecycle();
-  
-  // Real data hooks
-  const { alerts: copilotAlerts, unreadAlerts, generateAlerts, dismissAlert, isLoading: alertsLoading } = useCopilotAlerts();
+  const { alerts: copilotAlerts, unreadAlerts } = useCopilotAlerts();
   const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
 
-  // ALL useEffect hooks MUST be called before any conditional returns
   useEffect(() => {
     const fetchBusiness = async () => {
       if (!user) return;
@@ -69,137 +39,110 @@ const RestaurantDashboard: React.FC = () => {
       if (data) setBusinessName(data.name);
     };
 
-    const updateGreeting = () => {
-      const hour = new Date().getHours();
-      if (hour < 12) setGreeting('Buenos días');
-      else if (hour < 18) setGreeting('Buenas tardes');
-      else setGreeting('Buenas noches');
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Buenos días');
+    else if (hour < 18) setGreeting('Buenas tardes');
+    else setGreeting('Buenas noches');
 
-      setCurrentTime(new Date().toLocaleDateString('es-MX', {
+    setCurrentTime(
+      new Date().toLocaleDateString('es-MX', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
-      }));
-    };
+        day: 'numeric',
+      })
+    );
 
     fetchBusiness();
-    updateGreeting();
   }, [user]);
 
-  // Redirect based on lifecycle stage - AFTER all hooks
   if (!lifecycle.isLoading) {
-    if (lifecycle.stage === 'pre_opening') {
-      return <Navigate to="/r/pre-opening" replace />;
-    }
-    if (lifecycle.stage === 'first_90_days') {
-      return <Navigate to="/r/first-90-days" replace />;
-    }
-    if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement') {
+    if (lifecycle.stage === 'pre_opening') return <Navigate to="/r/pre-opening" replace />;
+    if (lifecycle.stage === 'first_90_days') return <Navigate to="/r/first-90-days" replace />;
+    if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement')
       return <Navigate to="/r/new-business" replace />;
-    }
   }
 
-  // KPI data - use real data when available, fallback to demo
-  const kpis: KPIData[] = hasFinanceData && financeKpis ? [
-    {
-      label: 'Ventas (7 días)',
-      value: `$${(financeKpis.totalRevenue / 1000).toFixed(1)}k`,
-      change: 12.5,
-      icon: <DollarSign className="h-5 w-5" />,
-      trend: 'up',
-    },
-    {
-      label: 'Food Cost',
-      value: `${financeKpis.foodCostPercentage.toFixed(1)}%`,
-      change: financeKpis.foodCostPercentage > 32 ? 2.1 : -1.5,
-      icon: <Utensils className="h-5 w-5" />,
-      trend: financeKpis.foodCostPercentage <= 32 ? 'up' : 'down',
-    },
-    {
-      label: 'Ticket Promedio',
-      value: `$${financeKpis.averageTicket.toFixed(0)}`,
-      change: 5.2,
-      icon: <Users className="h-5 w-5" />,
-      trend: 'up',
-    },
-    {
-      label: 'Clientes (7 días)',
-      value: financeKpis.totalCovers.toString(),
-      change: 8.3,
-      icon: <TrendingUp className="h-5 w-5" />,
-      trend: 'up',
-    },
-  ] : [
-    {
-      label: 'Ventas Hoy',
-      value: '$42,580',
-      change: 12.5,
-      icon: <DollarSign className="h-5 w-5" />,
-      trend: 'up',
-    },
-    {
-      label: 'Food Cost',
-      value: '28.4%',
-      change: -2.1,
-      icon: <Utensils className="h-5 w-5" />,
-      trend: 'up',
-    },
-    {
-      label: 'Labor Cost',
-      value: '24.2%',
-      change: 0.5,
-      icon: <Users className="h-5 w-5" />,
-      trend: 'down',
-    },
-    {
-      label: 'Margen Neto',
-      value: '18.6%',
-      change: 3.2,
-      icon: <TrendingUp className="h-5 w-5" />,
-      trend: 'up',
-    },
-  ];
+  const kpis: KPIData[] =
+    hasFinanceData && financeKpis
+      ? [
+          {
+            label: 'Ventas (7 días)',
+            value: `$${(financeKpis.totalRevenue / 1000).toFixed(1)}k`,
+            change: 12.5,
+            icon: <DollarSign className="h-5 w-5" />,
+            trend: 'up',
+          },
+          {
+            label: 'Food Cost',
+            value: `${financeKpis.foodCostPercentage.toFixed(1)}%`,
+            change: financeKpis.foodCostPercentage > 32 ? 2.1 : -1.5,
+            icon: <Utensils className="h-5 w-5" />,
+            trend: financeKpis.foodCostPercentage <= 32 ? 'up' : 'down',
+          },
+          {
+            label: 'Ticket Promedio',
+            value: `$${financeKpis.averageTicket.toFixed(0)}`,
+            change: 5.2,
+            icon: <Users className="h-5 w-5" />,
+            trend: 'up',
+          },
+          {
+            label: 'Clientes (7 días)',
+            value: financeKpis.totalCovers.toString(),
+            change: 8.3,
+            icon: <TrendingUp className="h-5 w-5" />,
+            trend: 'up',
+          },
+        ]
+      : [
+          { label: 'Ventas Hoy', value: '$42,580', change: 12.5, icon: <DollarSign className="h-5 w-5" />, trend: 'up' },
+          { label: 'Food Cost', value: '28.4%', change: -2.1, icon: <Utensils className="h-5 w-5" />, trend: 'up' },
+          { label: 'Labor Cost', value: '24.2%', change: 0.5, icon: <Users className="h-5 w-5" />, trend: 'down' },
+          { label: 'Margen Neto', value: '18.6%', change: 3.2, icon: <TrendingUp className="h-5 w-5" />, trend: 'up' },
+        ];
 
-  // Map copilot alerts to display format
   const getAlertType = (priority: string | null): 'warning' | 'info' | 'success' => {
     if (priority === 'critical' || priority === 'high') return 'warning';
     if (priority === 'low') return 'success';
     return 'info';
   };
 
-  const displayAlerts: Alert[] = copilotAlerts.length > 0 
-    ? copilotAlerts.slice(0, 4).map(a => ({
-        id: a.id,
-        type: getAlertType(a.priority),
-        title: a.title,
-        message: a.message,
-        action: a.action_url ? 'Ver más' : undefined
-      }))
-    : [
-        {
-          id: '1',
-          type: 'warning',
-          title: 'Food Cost por arriba del target',
-          message: 'Tu food cost subió 2.1% esta semana. Te recomiendo revisar los precios con tu proveedor de carnes.',
-          action: 'Ver análisis',
-        },
-        {
-          id: '2',
-          type: 'info',
-          title: 'Oportunidad de optimización',
-          message: 'Detecté que los miércoles tienes 40% menos ventas. ¿Qué tal una promoción de mitad de semana?',
-          action: 'Crear promoción',
-        },
-        {
-          id: '3',
-          type: 'success',
-          title: 'Inventario optimizado',
-          message: 'El desperdicio se redujo 15% este mes. ¡Excelente trabajo del equipo!',
-        },
-      ];
+  const displayAlerts: DashboardAlert[] =
+    copilotAlerts.length > 0
+      ? copilotAlerts.slice(0, 4).map((a) => ({
+          id: a.id,
+          type: getAlertType(a.priority),
+          title: a.title,
+          message: a.message,
+          action: a.action_url ? 'Ver más' : undefined,
+        }))
+      : [
+          {
+            id: '1',
+            type: 'warning',
+            title: 'Food Cost por arriba del target',
+            message:
+              'Tu food cost subió 2.1% esta semana. Te recomiendo revisar los precios con tu proveedor de carnes.',
+            action: 'Ver análisis',
+          },
+          {
+            id: '2',
+            type: 'info',
+            title: 'Oportunidad de optimización',
+            message:
+              'Detecté que los miércoles tienes 40% menos ventas. ¿Qué tal una promoción de mitad de semana?',
+            action: 'Crear promoción',
+          },
+          {
+            id: '3',
+            type: 'success',
+            title: 'Inventario optimizado',
+            message: 'El desperdicio se redujo 15% este mes. ¡Excelente trabajo del equipo!',
+          },
+        ];
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     { label: 'Finanzas IA', path: '/r/finances', icon: DollarSign },
     { label: 'Operaciones', path: '/r/operations', icon: Clock },
     { label: 'Talento', path: '/r/talent', icon: Users },
@@ -210,33 +153,8 @@ const RestaurantDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
-      {/* Welcome Section */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-foreground truncate">
-            {greeting}, Carlos
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground font-lato-light capitalize truncate">
-            {currentTime} • {businessName}
-            </p>
-          </div>
-          <Badge variant="outline" className="shrink-0 ml-2 hidden sm:flex">
-            <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />
-            En línea
-          </Badge>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-          <Button variant="outline" size="sm" onClick={() => navigate('/diagnosis')} className="shrink-0 text-xs sm:text-sm">
-            Ver Diagnóstico
-          </Button>
-          <Button size="sm" onClick={() => navigate('/r/finances')} className="shrink-0 text-xs sm:text-sm">
-            Ver Reportes
-          </Button>
-        </div>
-      </div>
+      <DashboardHero greeting={greeting} currentTime={currentTime} businessName={businessName} />
 
-      {/* Tabs for Dashboard vs Action Plan */}
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-10">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -244,148 +162,14 @@ const RestaurantDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4 md:space-y-6 mt-4">
+          <DashboardKPIs kpis={kpis} />
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-        {kpis.map((kpi, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow border-0 bg-gradient-to-br from-card to-muted/30">
-            <CardContent className="p-3 sm:p-4 md:p-5">
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <div className={`p-1.5 sm:p-2 rounded-lg ${
-                  kpi.trend === 'up' ? 'bg-success/10 text-success' :
-                  kpi.trend === 'down' ? 'bg-destructive/10 text-destructive' :
-                  'bg-muted text-muted-foreground'
-                }`}>
-                  {React.cloneElement(kpi.icon as React.ReactElement, { className: 'h-4 w-4 sm:h-5 sm:w-5' })}
-                </div>
-                <Badge variant={kpi.trend === 'up' ? 'default' : 'destructive'} className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0.5">
-                  {kpi.trend === 'up' ? <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
-                  {Math.abs(kpi.change)}%
-                </Badge>
-              </div>
-              <div>
-                <p className="text-lg sm:text-xl md:text-2xl font-headline font-bold">{kpi.value}</p>
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground font-lato-light truncate">{kpi.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-        {/* AI Copilot Alerts */}
-        <Card className="lg:col-span-2 border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
-          <CardHeader className="pb-2 sm:pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 font-headline text-base sm:text-lg">
-                  <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
-                  Co-Piloto RestroWizard
-                </CardTitle>
-                <CardDescription className="font-lato-light text-xs sm:text-sm hidden sm:block">
-                  Alertas y recomendaciones basadas en tus datos
-                </CardDescription>
-              </div>
-              <Badge variant="secondary" className="text-xs">{unreadAlerts.length || 3} nuevas</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3">
-            {displayAlerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`p-3 sm:p-4 rounded-xl border ${
-                  alert.type === 'warning' ? 'bg-warning/5 border-warning/20' :
-                  alert.type === 'success' ? 'bg-success/5 border-success/20' :
-                  'bg-info/5 border-info/20'
-                }`}
-              >
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className={`p-1 sm:p-1.5 rounded-full shrink-0 ${
-                    alert.type === 'warning' ? 'bg-warning/20' :
-                    alert.type === 'success' ? 'bg-success/20' :
-                    'bg-info/20'
-                  }`}>
-                    {alert.type === 'warning' ? (
-                      <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
-                    ) : (
-                      <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-info" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-lato-bold text-xs sm:text-sm line-clamp-1">{alert.title}</h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">{alert.message}</p>
-                    {alert.action && (
-                      <Button variant="link" className="p-0 h-auto mt-1 sm:mt-2 text-primary text-xs sm:text-sm">
-                        {alert.action} <ChevronRight className="h-3 w-3 ml-0.5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
-          <CardHeader className="pb-2 sm:pb-4">
-            <CardTitle className="font-headline text-base sm:text-lg">Acceso Rápido</CardTitle>
-            <CardDescription className="font-lato-light text-xs sm:text-sm hidden sm:block">
-              Módulos de gestión con IA
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-            {quickActions.map((action) => (
-              <Button
-                key={action.path}
-                variant="outline"
-                className="w-full justify-start gap-2 h-10 sm:h-11 text-xs sm:text-sm"
-                onClick={() => navigate(action.path)}
-              >
-                <action.icon className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate">{action.label}</span>
-                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground shrink-0 hidden sm:block" />
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Weekly Performance */}
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
-        <CardHeader className="pb-2 sm:pb-4">
-          <CardTitle className="font-headline text-base sm:text-lg">Rendimiento Semanal</CardTitle>
-          <CardDescription className="font-lato-light text-xs sm:text-sm">
-            Comparativa vs semana anterior
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 sm:space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span>Ventas</span>
-                <span className="font-medium">$298k / $320k</span>
-              </div>
-              <Progress value={93} className="h-2" />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span>Clientes</span>
-                <span className="font-medium">1.8k / 2k</span>
-              </div>
-              <Progress value={92} className="h-2" />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span>Ticket Prom.</span>
-                <span className="font-medium">$162 / $150</span>
-              </div>
-              <Progress value={108} className="h-2" />
-            </div>
+          <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
+            <CopilotAlertsCard alerts={displayAlerts} unreadCount={unreadAlerts.length} />
+            <QuickActionsCard actions={quickActions} onNavigate={navigate} />
           </div>
-        </CardContent>
-      </Card>
+
+          <WeeklyPerformanceCard />
         </TabsContent>
 
         <TabsContent value="action-plan" className="mt-4">
