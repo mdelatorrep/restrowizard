@@ -39,6 +39,7 @@ import { useRestaurantZones } from '@/hooks/useRestaurantZones';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { QuotationSchema } from '@/lib/schemas/quotation';
+import { stepSchemas, type StepNumber } from '@/lib/schemas/quotationSteps';
 
 const eventTypes = [
   { value: 'corporativo', label: 'Evento Corporativo' },
