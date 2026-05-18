@@ -313,11 +313,32 @@ const CopilotChat = () => {
                 {messages.map((m) => (
                   <Message key={m.id} from={m.role}>
                     <MessageContent>
-                      {m.parts.map((part, i) =>
-                        part.type === 'text' ? (
-                          <MessageResponse key={i}>{part.text}</MessageResponse>
-                        ) : null,
-                      )}
+                      {m.parts.map((part, i) => {
+                        if (part.type === 'text') {
+                          return <MessageResponse key={i}>{part.text}</MessageResponse>;
+                        }
+                        if (typeof part.type === 'string' && part.type.startsWith('tool-')) {
+                          const tp = part as unknown as {
+                            type: string;
+                            state?: 'input-streaming' | 'input-available' | 'output-available' | 'output-error';
+                            input?: unknown;
+                            output?: unknown;
+                            errorText?: string;
+                          };
+                          return (
+                            <Tool key={i} defaultOpen={false}>
+                              <ToolHeader type={tp.type as `tool-${string}`} state={tp.state ?? 'input-available'} />
+                              <ToolContent>
+                                {tp.input !== undefined && <ToolInput input={tp.input} />}
+                                {(tp.output !== undefined || tp.errorText) && (
+                                  <ToolOutput output={tp.output as React.ReactNode} errorText={tp.errorText} />
+                                )}
+                              </ToolContent>
+                            </Tool>
+                          );
+                        }
+                        return null;
+                      })}
                     </MessageContent>
                   </Message>
                 ))}
