@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRecipeMenuLink, Recipe, MenuItem } from '@/hooks/useRecipeMenuLink';
 import { useMenus } from '@/hooks/useMenus';
 import { Link2, PlusCircle, DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { LinkRecipeSchema, CreateMenuItemFromRecipeSchema } from '@/lib/schemas/publishRecipe';
 
 interface PublishRecipeToMenuDialogProps {
   open: boolean;
@@ -52,9 +54,13 @@ export const PublishRecipeToMenuDialog: React.FC<PublishRecipeToMenuDialogProps>
   const suggestedPrice = recipe.cost_per_portion * (markupPercentage / 100);
 
   const handleLinkExisting = async () => {
-    if (!selectedMenuItem) return;
+    const parsed = LinkRecipeSchema.safeParse({ recipeId: recipe.id, menuItemId: selectedMenuItem });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Datos inválidos');
+      return;
+    }
     setLoading(true);
-    const success = await linkRecipeToMenuItem(recipe.id, selectedMenuItem);
+    const success = await linkRecipeToMenuItem(parsed.data.recipeId, parsed.data.menuItemId);
     setLoading(false);
     if (success) {
       onOpenChange(false);
@@ -63,9 +69,17 @@ export const PublishRecipeToMenuDialog: React.FC<PublishRecipeToMenuDialogProps>
   };
 
   const handleCreateNew = async () => {
-    if (!selectedMenu) return;
+    const parsed = CreateMenuItemFromRecipeSchema.safeParse({
+      recipeId: recipe.id,
+      menuId: selectedMenu,
+      markupPercentage: Number(markupPercentage),
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Datos inválidos');
+      return;
+    }
     setLoading(true);
-    const newItemId = await createMenuItemFromRecipe(recipe, selectedMenu, markupPercentage);
+    const newItemId = await createMenuItemFromRecipe(recipe, parsed.data.menuId, parsed.data.markupPercentage);
     setLoading(false);
     if (newItemId) {
       onOpenChange(false);
