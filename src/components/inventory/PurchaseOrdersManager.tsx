@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ClipboardList, Plus, Send, Package, Check, X, FileText, Wand2 } from 'lucide-react';
 import { PurchaseOrder, InventorySupplier, InventoryItemExtended, PurchaseOrderItem } from '@/hooks/useEnterpriseInventory';
 import { ReceiveOrderDialog } from './ReceiveOrderDialog';
+import { PurchaseOrderSchema } from '@/lib/schemas/purchaseOrder';
+import { toast } from 'sonner';
 
 interface Props {
   orders: PurchaseOrder[];
