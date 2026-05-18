@@ -88,7 +88,7 @@ const Loyalty = () => {
   // Form states
   const [newTier, setNewTier] = useState({ name: '', min_points: 0, points_multiplier: 1.0, color: '#6B7280' });
   const [newCustomer, setNewCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' });
-  const [newReward, setNewReward] = useState({ name: '', description: '', points_required: 100, reward_type: 'discount_percent' as const, reward_value: 10 });
+  const [newReward, setNewReward] = useState<{ name: string; description: string; points_required: number; reward_type: 'discount_percent' | 'discount_fixed' | 'free_item' | 'free_delivery' | 'experience' | 'upgrade'; reward_value: number }>({ name: '', description: '', points_required: 100, reward_type: 'discount_percent', reward_value: 10 });
   const [pointsToAward, setPointsToAward] = useState({ points: 100, reason: 'Compra' });
 
   const filteredCustomers = customers.filter(c =>
