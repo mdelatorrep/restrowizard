@@ -84,82 +84,35 @@ Responde con este formato JSON exacto:
   "best_season": "mejor temporada para comprar si aplica"
 }`;
 
-    // Call OpenAI Responses API with web search tool
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1',
-        input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        tools: [
-          {
-            type: 'web_search_preview',
-            search_context_size: 'high'
-          }
-        ],
-        text: {
-          format: {
-            type: 'json_object'
-          }
-        }
-      }),
+    // Migrado a Lovable AI Gateway (Fase 1.1). Búsqueda web nativa deshabilitada.
+    const aiResult = await callAIGateway({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tier: "reasoning",
+      maxTokens: 2500,
+      jsonMode: true,
+      logPrefix: "[supplier-analyzer]",
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+    if (!aiResult.ok) {
+      return new Response(
+        JSON.stringify({ error: aiResult.error, success: false }),
+        { status: aiResult.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const data = await response.json();
-    console.log('OpenAI response received');
-
-    // Extract the text content from the response
-    let analysisResult;
-    
-    // The Responses API returns output array with different item types
-    const outputItems = data.output || [];
-    let textContent = '';
-    
-    for (const item of outputItems) {
-      if (item.type === 'message' && item.content) {
-        for (const content of item.content) {
-          if (content.type === 'output_text') {
-            textContent = content.text;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!textContent) {
-      // Fallback: try to find text in different structure
-      if (data.output_text) {
-        textContent = data.output_text;
-      } else if (typeof data.output === 'string') {
-        textContent = data.output;
-      }
-    }
-
-    try {
-      analysisResult = JSON.parse(textContent);
-    } catch (parseError) {
-      console.error('Failed to parse JSON response:', textContent);
-      // Create a structured response from the text
-      analysisResult = {
-        suppliers: [],
-        market_insights: textContent || 'No se encontró información específica para este producto en esta ubicación.',
-        recommendations: ['Consultar directamente en la central de abastos local', 'Contactar a distribuidores de alimentos de la zona'],
-        average_market_price: null,
-        best_season: null
-      };
-    }
+    const analysisResult = safeParseJson<any>(aiResult.content) ?? {
+      suppliers: [],
+      market_insights: aiResult.content || "No se encontró información específica para este producto en esta ubicación.",
+      recommendations: [
+        "Consultar directamente en la central de abastos local",
+        "Contactar a distribuidores de alimentos de la zona",
+      ],
+      average_market_price: null,
+      best_season: null,
+    };
 
     // Calculate potential savings
     const potentialSavings = analysisResult.suppliers?.reduce((maxSaving: number, supplier: any) => {
