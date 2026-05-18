@@ -12,6 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { ClipboardCheck, Plus, Play, CheckCircle, AlertTriangle, Scan } from 'lucide-react';
 import { InventoryCount, StorageLocation, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
 import { CountingSession } from './CountingSession';
+import { InventoryCountSchema } from '@/lib/schemas/inventoryCount';
+import { toast } from 'sonner';
 
 interface Props {
   counts: InventoryCount[];
