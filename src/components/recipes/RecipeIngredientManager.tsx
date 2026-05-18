@@ -13,7 +13,7 @@ import {
   Allergen 
 } from '@/hooks/useRecipes';
 import { Plus, Trash2, Edit, AlertTriangle, GripVertical } from 'lucide-react';
-import { RecipeIngredientSchema } from '@/lib/schemas/recipe';
+import { RecipeIngredientExtendedSchema } from '@/lib/schemas/recipe';
 import { toast } from 'sonner';
 
 interface Props {
