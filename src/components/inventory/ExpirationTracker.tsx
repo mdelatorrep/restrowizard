@@ -15,9 +15,11 @@
    Calendar,
    ArrowUpDown
  } from 'lucide-react';
- import { InventoryItemExtended, StorageLocation, InventoryWaste } from '@/hooks/useEnterpriseInventory';
- import { differenceInDays, format, addDays } from 'date-fns';
- import { es } from 'date-fns/locale';
+import { InventoryItemExtended, StorageLocation, InventoryWaste } from '@/hooks/useEnterpriseInventory';
+import { differenceInDays, format, addDays } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { WasteRecordSchema } from '@/lib/schemas/wasteRecord';
+import { toast } from 'sonner';
  
  interface Props {
    inventory: InventoryItemExtended[];
@@ -105,22 +107,33 @@
      };
    }, [inventory]);
  
-   const handleMarkAsWaste = async (item: InventoryItemExtended & { daysUntil: number }) => {
-     if (!confirm(`¿Registrar ${item.current_stock} ${item.unit} de "${item.item_name}" como merma por vencimiento?`)) {
-       return;
-     }
-     await onRecordWaste({
-       inventory_item_id: item.id,
-       quantity: item.current_stock,
-       unit: item.unit,
-       unit_cost: item.unit_cost || undefined,
-       waste_reason: 'expiration',
-       is_preventable: item.daysUntil >= 0,
-       lot_number: item.lot_number || undefined,
-       storage_location_id: item.storage_location_id || undefined,
-       notes: `Vencimiento: ${item.expiration_date}`
-     });
-   };
+  const handleMarkAsWaste = async (item: InventoryItemExtended & { daysUntil: number }) => {
+    if (!confirm(`¿Registrar ${item.current_stock} ${item.unit} de "${item.item_name}" como merma por vencimiento?`)) {
+      return;
+    }
+    const payload = {
+      inventory_item_id: item.id,
+      quantity: item.current_stock,
+      waste_reason: 'expired' as const,
+      is_preventable: item.daysUntil >= 0,
+      lot_number: item.lot_number || '',
+      storage_location_id: item.storage_location_id || '',
+      notes: `Vencimiento: ${item.expiration_date}`,
+      reported_by: '',
+    };
+    const parsed = WasteRecordSchema.safeParse(payload);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'No se pudo registrar la merma');
+      return;
+    }
+    await onRecordWaste({
+      ...parsed.data,
+      unit: item.unit,
+      unit_cost: item.unit_cost || undefined,
+      lot_number: parsed.data.lot_number || undefined,
+      storage_location_id: parsed.data.storage_location_id || undefined,
+    });
+  };
  
    const getStatusBadge = (status: string, daysUntil: number) => {
      switch (status) {
