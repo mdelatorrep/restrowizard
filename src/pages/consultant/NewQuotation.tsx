@@ -39,6 +39,7 @@ import { useRestaurantZones } from '@/hooks/useRestaurantZones';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { QuotationSchema } from '@/lib/schemas/quotation';
+import { stepSchemas, type StepNumber } from '@/lib/schemas/quotationSteps';
 
 const eventTypes = [
   { value: 'corporativo', label: 'Evento Corporativo' },
@@ -196,20 +197,29 @@ export default function NewQuotation() {
     }).format(amount);
   };
 
+  const validateStep = (s: number): boolean => {
+    const schema = stepSchemas[s as StepNumber];
+    if (!schema) return true;
+    const result = schema.safeParse(formData);
+    if (!result.success) {
+      const first = result.error.issues[0];
+      toast.error(first?.message || 'Revisa los campos del paso');
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step)) setStep((s) => s + 1);
+  };
+
   const canProceed = () => {
+    // Lightweight gate for Next button (full validation runs onClick).
     switch (step) {
       case 1:
-        return formData.client_contact_name && formData.event_name && formData.event_type;
-      case 2:
-        return true; // Zone is optional
-      case 3:
-        return true; // Menu is optional
-      case 4:
-        return true; // Services are optional
-      case 5:
-        return true;
+        return Boolean(formData.client_contact_name && formData.event_name && formData.event_type);
       default:
-        return false;
+        return true;
     }
   };
 
@@ -863,7 +873,7 @@ export default function NewQuotation() {
         </Button>
 
         {step < totalSteps ? (
-          <Button onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
+          <Button onClick={handleNext} disabled={!canProceed()}>
             Siguiente
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

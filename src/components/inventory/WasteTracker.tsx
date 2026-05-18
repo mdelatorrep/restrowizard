@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, Plus, AlertCircle, TrendingDown, DollarSign } from 'lucide-react';
 import { InventoryWaste, InventoryItemExtended, StorageLocation } from '@/hooks/useEnterpriseInventory';
+import { WasteRecordSchema } from '@/lib/schemas/wasteRecord';
+import { toast } from 'sonner';
 
 interface Props {
   waste: InventoryWaste[];
@@ -56,12 +58,17 @@ export const WasteTracker = ({ waste, inventory, locations, onRecord, wasteThisM
   };
 
   const handleSubmit = async () => {
-    const item = inventory.find(i => i.id === formData.inventory_item_id);
+    const parsed = WasteRecordSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Revisa los datos de la merma');
+      return;
+    }
+    const item = inventory.find(i => i.id === parsed.data.inventory_item_id);
     await onRecord({
-      ...formData,
+      ...parsed.data,
       unit: item?.unit || 'unidades',
       unit_cost: item?.unit_cost || 0,
-      storage_location_id: formData.storage_location_id || undefined
+      storage_location_id: parsed.data.storage_location_id || undefined,
     });
     setDialogOpen(false);
     resetForm();

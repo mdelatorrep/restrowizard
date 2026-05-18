@@ -12,6 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { ClipboardCheck, Plus, Play, CheckCircle, AlertTriangle, Scan } from 'lucide-react';
 import { InventoryCount, StorageLocation, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
 import { CountingSession } from './CountingSession';
+import { InventoryCountSchema } from '@/lib/schemas/inventoryCount';
+import { toast } from 'sonner';
 
 interface Props {
   counts: InventoryCount[];
@@ -58,12 +60,18 @@ export const InventoryCountsManager = ({ counts, locations, inventory = [], onCr
   };
 
   const handleSubmit = async () => {
+    const parsed = InventoryCountSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Revisa los datos del conteo');
+      return;
+    }
+    const d = parsed.data;
     await onCreate({
-      count_name: formData.count_name || `Conteo ${new Date().toLocaleDateString()}`,
-      count_type: formData.count_type,
-      storage_location_id: formData.storage_location_id || undefined,
-      counted_by: formData.counted_by || undefined,
-      notes: formData.notes || undefined
+      count_name: d.count_name || `Conteo ${new Date().toLocaleDateString()}`,
+      count_type: d.count_type,
+      storage_location_id: d.storage_location_id || undefined,
+      counted_by: d.counted_by || undefined,
+      notes: d.notes || undefined,
     });
     setDialogOpen(false);
     resetForm();
