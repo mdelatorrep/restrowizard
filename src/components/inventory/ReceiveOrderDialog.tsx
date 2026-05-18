@@ -1,43 +1,27 @@
  import { useState, useEffect } from 'react';
  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
  import { Button } from '@/components/ui/button';
- import { Input } from '@/components/ui/input';
- import { Label } from '@/components/ui/label';
- import { Badge } from '@/components/ui/badge';
- import { Card, CardContent } from '@/components/ui/card';
  import { ScrollArea } from '@/components/ui/scroll-area';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Package, Check, AlertCircle, Calendar, Hash } from 'lucide-react';
+ import { Package, Check } from 'lucide-react';
  import { PurchaseOrder, PurchaseOrderItem, InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
  import { supabase } from '@/integrations/supabase/client';
  import { format } from 'date-fns';
  import { es } from 'date-fns/locale';
  import { ReceiveOrderSchema } from '@/lib/schemas/receiveOrder';
  import { toast } from 'sonner';
+ import { ReceiveOrderItemRow, type ReceivedItem } from './ReceiveOrderItemRow';
+
  interface Props {
    order: PurchaseOrder | null;
    isOpen: boolean;
    onClose: () => void;
    onReceive: (orderId: string, items: { id: string; quantity_received: number; lot_number?: string; expiration_date?: string }[]) => Promise<void>;
  }
- 
+
  interface OrderItemWithDetails extends PurchaseOrderItem {
    inventory_item?: InventoryItemExtended;
  }
- 
- interface ReceivedItem {
-   id: string;
-   inventory_item_id: string;
-   item_name: string;
-   quantity_ordered: number;
-   quantity_previously_received: number;
-   quantity_receiving: number;
-   unit: string;
-   lot_number: string;
-   expiration_date: string;
-   is_receiving: boolean;
- }
- 
+
  export const ReceiveOrderDialog = ({ order, isOpen, onClose, onReceive }: Props) => {
    const [items, setItems] = useState<ReceivedItem[]>([]);
    const [loading, setLoading] = useState(false);
@@ -148,77 +132,13 @@
            <>
              <ScrollArea className="max-h-[50vh]">
                <div className="space-y-3 pr-4">
-                 {items.map((item) => (
-                   <Card key={item.id} className={item.is_receiving ? 'border-primary/30' : 'opacity-50'}>
-                     <CardContent className="py-4">
-                       <div className="flex items-start gap-3">
-                         <Checkbox 
-                           checked={item.is_receiving}
-                           onCheckedChange={(checked) => updateItem(item.id, 'is_receiving', !!checked)}
-                         />
-                         <div className="flex-1 space-y-3">
-                           <div className="flex items-center justify-between">
-                             <div>
-                               <p className="font-medium">{item.item_name}</p>
-                               <p className="text-xs text-muted-foreground">
-                                 Ordenado: {item.quantity_ordered} {item.unit}
-                                 {item.quantity_previously_received > 0 && (
-                                   <span> • Recibido previamente: {item.quantity_previously_received}</span>
-                                 )}
-                               </p>
-                             </div>
-                             {item.quantity_previously_received > 0 && (
-                               <Badge variant="secondary">Recepción parcial</Badge>
-                             )}
-                           </div>
- 
-                           {item.is_receiving && (
-                             <div className="grid grid-cols-3 gap-3">
-                               <div>
-                                 <Label className="text-xs flex items-center gap-1">
-                                   <Package className="h-3 w-3" />
-                                   Cantidad recibida
-                                 </Label>
-                                 <Input
-                                   type="number"
-                                   min={0}
-                                   max={item.quantity_ordered - item.quantity_previously_received}
-                                   value={item.quantity_receiving}
-                                   onChange={(e) => updateItem(item.id, 'quantity_receiving', Number(e.target.value))}
-                                   className="h-9"
-                                 />
-                               </div>
-                               <div>
-                                 <Label className="text-xs flex items-center gap-1">
-                                   <Hash className="h-3 w-3" />
-                                   Número de Lote
-                                 </Label>
-                                 <Input
-                                   placeholder="Ej: LOT-2024-001"
-                                   value={item.lot_number}
-                                   onChange={(e) => updateItem(item.id, 'lot_number', e.target.value)}
-                                   className="h-9"
-                                 />
-                               </div>
-                               <div>
-                                 <Label className="text-xs flex items-center gap-1">
-                                   <Calendar className="h-3 w-3" />
-                                   Fecha Vencimiento
-                                 </Label>
-                                 <Input
-                                   type="date"
-                                   value={item.expiration_date}
-                                   onChange={(e) => updateItem(item.id, 'expiration_date', e.target.value)}
-                                   className="h-9"
-                                 />
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       </div>
-                     </CardContent>
-                   </Card>
-                 ))}
+                  {items.map((item) => (
+                    <ReceiveOrderItemRow
+                      key={item.id}
+                      item={item}
+                      onUpdate={(field, value) => updateItem(item.id, field, value)}
+                    />
+                  ))}
                </div>
              </ScrollArea>
  

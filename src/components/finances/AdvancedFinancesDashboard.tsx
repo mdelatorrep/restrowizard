@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,13 +14,10 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 } from 'chart.js';
-import { 
-  TrendingUp, TrendingDown, DollarSign, Users, 
-  Calculator, RefreshCw, BarChart3, PieChart,
-  FileText, AlertTriangle, Zap, Calendar, Target,
-  ArrowUpRight, ArrowDownRight, Loader2, Brain
+import {
+  TrendingUp, BarChart3, FileText, AlertTriangle, Loader2, Brain,
 } from 'lucide-react';
 import { useAggregatedFinances } from '@/hooks/useAggregatedFinances';
 import { useStaffSchedule } from '@/hooks/useStaffSchedule';
@@ -36,14 +31,15 @@ import { PrimeCostGauge } from './PrimeCostGauge';
 import { DailyFlashReport } from './DailyFlashReport';
 import { ProfitLossStatement } from './ProfitLossStatement';
 import { CostAlertsPanel, generateCostAlerts } from './CostAlertsPanel';
+import { FinancesHeader, type PeriodType } from './FinancesHeader';
+import { FinancesKPICards } from './FinancesKPICards';
+import { FinancesTrendsTab } from './FinancesTrendsTab';
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 );
-
-type PeriodType = 'week' | 'month' | 'quarter';
 
 const AdvancedFinancesDashboard: React.FC = () => {
   const [period, setPeriod] = useState<PeriodType>('month');
@@ -176,34 +172,15 @@ const AdvancedFinancesDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Centro Financiero</h2>
-          <p className="text-muted-foreground">Control en tiempo real de Prime Cost, P&L y rentabilidad</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodType)}>
-            <SelectTrigger className="w-[140px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Esta Semana</SelectItem>
-              <SelectItem value="month">Este Mes</SelectItem>
-              <SelectItem value="quarter">Trimestre</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button onClick={runAIAnalysis} disabled={aiLoading || !kpis}>
-            <Brain className={`h-4 w-4 mr-2 ${aiLoading ? 'animate-spin' : ''}`} />
-            Análisis IA
-          </Button>
-        </div>
-      </div>
+      <FinancesHeader
+        period={period}
+        onPeriodChange={setPeriod}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        aiLoading={aiLoading}
+        onRunAI={runAIAnalysis}
+        aiDisabled={!kpis}
+      />
 
       {/* AI Insights */}
       {aiInsights && (
@@ -278,82 +255,7 @@ const AdvancedFinancesDashboard: React.FC = () => {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* KPI Cards */}
-          {kpis && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-full p-3 bg-green-100 text-green-600">
-                      <DollarSign className="h-6 w-6" />
-                    </div>
-                    <ArrowUpRight className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-bold">${kpis.totalRevenue.toLocaleString()}</h3>
-                    <p className="text-sm text-muted-foreground">Ingresos Totales</p>
-                    <p className="text-xs text-muted-foreground">{kpis.totalOrders} órdenes</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-full p-3 bg-blue-100 text-blue-600">
-                      <Calculator className="h-6 w-6" />
-                    </div>
-                    {kpis.grossMargin >= 60 
-                      ? <ArrowUpRight className="h-5 w-5 text-green-600" />
-                      : <ArrowDownRight className="h-5 w-5 text-red-600" />
-                    }
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-bold">{kpis.grossMargin.toFixed(1)}%</h3>
-                    <p className="text-sm text-muted-foreground">Margen Bruto</p>
-                    <p className="text-xs text-muted-foreground">Meta: ≥60%</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-full p-3 bg-orange-100 text-orange-600">
-                      <PieChart className="h-6 w-6" />
-                    </div>
-                    {kpis.foodCostPercentage <= 32 
-                      ? <ArrowDownRight className="h-5 w-5 text-green-600" />
-                      : <ArrowUpRight className="h-5 w-5 text-red-600" />
-                    }
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-bold">{kpis.foodCostPercentage.toFixed(1)}%</h3>
-                    <p className="text-sm text-muted-foreground">Food Cost</p>
-                    <p className="text-xs text-muted-foreground">${kpis.totalFoodCost.toLocaleString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-full p-3 bg-purple-100 text-purple-600">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    {kpis.laborCostPercentage <= 28 
-                      ? <ArrowDownRight className="h-5 w-5 text-green-600" />
-                      : <ArrowUpRight className="h-5 w-5 text-red-600" />
-                    }
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="text-2xl font-bold">{kpis.laborCostPercentage.toFixed(1)}%</h3>
-                    <p className="text-sm text-muted-foreground">Labor Cost</p>
-                    <p className="text-xs text-muted-foreground">${kpis.totalLaborCost.toLocaleString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          {kpis && <FinancesKPICards kpis={kpis} />}
 
           {/* Charts */}
           <div className="grid lg:grid-cols-3 gap-6">
@@ -432,141 +334,8 @@ const AdvancedFinancesDashboard: React.FC = () => {
         </TabsContent>
 
         {/* Trends Tab */}
-        <TabsContent value="trends" className="space-y-6">
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolución del Prime Cost</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <Line 
-                    data={{
-                      labels: dailySales.slice(-14).map(d => format(new Date(d.date), 'd MMM', { locale: es })),
-                      datasets: [
-                        {
-                          label: 'Prime Cost',
-                          data: dailySales.slice(-14).map(d => d.food_cost_percentage + d.labor_cost_percentage),
-                          borderColor: 'hsl(var(--primary))',
-                          backgroundColor: 'hsl(var(--primary) / 0.1)',
-                          fill: true,
-                          tension: 0.4
-                        },
-                        {
-                          label: 'Objetivo (60%)',
-                          data: Array(14).fill(60),
-                          borderColor: 'hsl(0 84% 60%)',
-                          borderDash: [5, 5],
-                          pointRadius: 0
-                        }
-                      ]
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: { legend: { position: 'bottom' } },
-                      scales: { y: { min: 0, max: 100 } }
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Food Cost vs Labor Cost</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <Line 
-                    data={{
-                      labels: dailySales.slice(-14).map(d => format(new Date(d.date), 'd MMM', { locale: es })),
-                      datasets: [
-                        {
-                          label: 'Food Cost %',
-                          data: dailySales.slice(-14).map(d => d.food_cost_percentage),
-                          borderColor: 'hsl(25 95% 53%)',
-                          tension: 0.4
-                        },
-                        {
-                          label: 'Labor Cost %',
-                          data: dailySales.slice(-14).map(d => d.labor_cost_percentage),
-                          borderColor: 'hsl(262 83% 58%)',
-                          tension: 0.4
-                        }
-                      ]
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: { legend: { position: 'bottom' } },
-                      scales: { y: { min: 0, max: 50 } }
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Daily Breakdown Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalle por Día</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-2">Fecha</th>
-                      <th className="text-right py-3 px-2">Ingresos</th>
-                      <th className="text-right py-3 px-2">Órdenes</th>
-                      <th className="text-right py-3 px-2">Food Cost</th>
-                      <th className="text-right py-3 px-2">Labor Cost</th>
-                      <th className="text-right py-3 px-2">Prime Cost</th>
-                      <th className="text-right py-3 px-2">Margen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dailySales.slice(-10).reverse().map((day) => (
-                      <tr key={day.date} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-2">
-                          {format(new Date(day.date), "EEE d MMM", { locale: es })}
-                        </td>
-                        <td className="text-right py-2 px-2 font-medium">
-                          ${day.total_revenue.toLocaleString()}
-                        </td>
-                        <td className="text-right py-2 px-2">{day.order_count}</td>
-                        <td className="text-right py-2 px-2">
-                          <span className={day.food_cost_percentage > 32 ? 'text-red-600' : ''}>
-                            {day.food_cost_percentage.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="text-right py-2 px-2">
-                          <span className={day.labor_cost_percentage > 28 ? 'text-red-600' : ''}>
-                            {day.labor_cost_percentage.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="text-right py-2 px-2">
-                          <Badge variant={
-                            day.food_cost_percentage + day.labor_cost_percentage <= 55 ? 'default' :
-                            day.food_cost_percentage + day.labor_cost_percentage <= 60 ? 'secondary' : 'destructive'
-                          }>
-                            {(day.food_cost_percentage + day.labor_cost_percentage).toFixed(1)}%
-                          </Badge>
-                        </td>
-                        <td className="text-right py-2 px-2">
-                          <span className={day.gross_margin >= 60 ? 'text-green-600' : 'text-yellow-600'}>
-                            {day.gross_margin.toFixed(1)}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="trends">
+          <FinancesTrendsTab dailySales={dailySales} />
         </TabsContent>
 
         {/* Alerts Tab */}
