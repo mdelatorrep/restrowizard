@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { RecipeStep } from '@/hooks/useRecipes';
+import { RecipeStepSchema } from '@/lib/schemas/recipeStep';
+import { toast } from 'sonner';
 import { 
   Plus, Trash2, Edit, Clock, Thermometer, ChefHat, 
   AlertTriangle, GripVertical, Image 
@@ -53,8 +55,12 @@ export const RecipeStepsManager = ({ steps, onAdd, onUpdate, onRemove }: Props) 
   };
 
   const handleSubmit = () => {
-    if (!form.instruction.trim()) return;
-    
+    const parsed = RecipeStepSchema.safeParse(form);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Datos inválidos');
+      return;
+    }
+
     if (editingId) {
       onUpdate(editingId, form);
     } else {
@@ -63,7 +69,7 @@ export const RecipeStepsManager = ({ steps, onAdd, onUpdate, onRemove }: Props) 
         step_number: steps.length + 1
       });
     }
-    
+
     setShowAddDialog(false);
     resetForm();
   };
