@@ -17,6 +17,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
+import { TrainingAssignmentSchema } from '@/lib/schemas/talentAssignments';
+import { toast } from 'sonner';
 
 interface Props {
   programs: TrainingProgram[];
@@ -65,12 +67,18 @@ export const TrainingProgramsManager: React.FC<Props> = ({
   };
 
   const handleAssign = async () => {
-    if (selectedStaffId && selectedProgramId) {
-      await onAssignTraining(selectedStaffId, selectedProgramId);
-      setAssignOpen(false);
-      setSelectedStaffId('');
-      setSelectedProgramId('');
+    const parsed = TrainingAssignmentSchema.safeParse({
+      staff_member_id: selectedStaffId,
+      training_program_id: selectedProgramId,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'Datos inválidos');
+      return;
     }
+    await onAssignTraining(selectedStaffId, selectedProgramId);
+    setAssignOpen(false);
+    setSelectedStaffId('');
+    setSelectedProgramId('');
   };
 
   return (

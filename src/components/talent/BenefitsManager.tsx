@@ -16,6 +16,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
+import { BenefitAssignmentSchema } from '@/lib/schemas/talentAssignments';
+import { toast } from 'sonner';
 
 interface Props {
   benefits: StaffBenefit[];
