@@ -89,6 +89,7 @@ const RestaurantInventory = lazy(() => import("./pages/restaurant/Inventory"));
 const RestaurantDelivery = lazy(() => import("./pages/restaurant/Delivery"));
 const RestaurantMyDevelopment = lazy(() => import("./pages/restaurant/MyDevelopment"));
 const RestaurantKnowledge = lazy(() => import("./pages/restaurant/Knowledge"));
+const RestaurantInvoices = lazy(() => import("./pages/restaurant/Invoices"));
 
 // Lazy: consultant area
 const ConsultantOnboarding = lazy(() => import("./pages/consultant/Onboarding"));
@@ -239,6 +240,7 @@ const App = () => (
                   <Route path="ecosystem-admin" element={<RestaurantEcosystemAdmin />} />
                   <Route path="my-development" element={<RestaurantMyDevelopment />} />
                   <Route path="knowledge" element={<RestaurantKnowledge />} />
+                  <Route path="invoices" element={<RestaurantInvoices />} />
                 </Route>
 
                 {/* Consultant onboarding */}
