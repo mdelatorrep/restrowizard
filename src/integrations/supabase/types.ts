@@ -3127,6 +3127,89 @@ export type Database = {
           },
         ]
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_sources: {
+        Row: {
+          business_id: string | null
+          content: string
+          created_at: string
+          id: string
+          indexed_at: string | null
+          metadata: Json | null
+          source_ref: string | null
+          source_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          indexed_at?: string | null
+          metadata?: Json | null
+          source_ref?: string | null
+          source_type?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          indexed_at?: string | null
+          metadata?: Json | null
+          source_ref?: string | null
+          source_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       learning_track_courses: {
         Row: {
           course_id: string
@@ -9203,6 +9286,22 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      match_knowledge: {
+        Args: {
+          match_count?: number
+          match_user_id: string
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          content: string
+          similarity: number
+          source_id: string
+          source_title: string
+          source_type: string
+        }[]
       }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
     }
