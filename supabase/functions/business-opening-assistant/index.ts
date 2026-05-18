@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callAIGateway } from "../_shared/ai-gateway.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
@@ -437,105 +438,33 @@ class RateLimitError extends Error {
 // HELPER: CALL OPENAI API WITH RETRY AND BACKOFF
 // ═══════════════════════════════════════════════════════════════
 async function callOpenAI(systemPrompt: string, userPrompt: string, projectData: ProjectData): Promise<{ text: string; sources: string[] }> {
-  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+  // Migrado a Lovable AI Gateway (Fase 1.1). Web search nativo deshabilitado;
+  // si necesitas búsqueda web real, considera añadir un tool de búsqueda en Fase 2.
+  const _countryCtx = `${projectData.city}, ${projectData.country}`;
+  void _countryCtx;
 
-  const countryCode = getCountryCode(projectData.country);
-  
-  const maxRetries = 3;
-  let lastError: Error | null = null;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.2',
-          tools: [{
-            type: 'web_search',
-            search_context_size: 'high',
-            user_location: {
-              type: 'approximate',
-              country: countryCode,
-              city: projectData.city,
-              region: projectData.neighborhood || projectData.city
-            }
-          }],
-          reasoning: { effort: 'medium' },
-          input: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-        }),
-      });
+  const aiResult = await callAIGateway({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    tier: "reasoning",
+    maxTokens: 4000,
+    maxRetries: 3,
+    logPrefix: "[business-opening-assistant]",
+  });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[business-opening-assistant] OpenAI API error (attempt ${attempt}):`, response.status, errorText);
-        
-        if (response.status === 429) {
-          // Rate limit - throw specific error after final retry
-          if (attempt === maxRetries) {
-            throw new RateLimitError('Límite de solicitudes excedido. Por favor espera unos segundos e intenta nuevamente.');
-          }
-          // Wait with exponential backoff before retry
-          const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-          console.log(`[business-opening-assistant] Rate limited, waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        
-        if (response.status === 401) throw new Error('API key inválida.');
-        throw new Error(`Error de API: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      let analysisText = '';
-      let sources: string[] = [];
-      
-      if (data.output) {
-        for (const item of data.output) {
-          if (item.type === 'message' && item.content) {
-            for (const content of item.content) {
-              if (content.type === 'output_text') {
-                analysisText = content.text;
-                if (content.annotations) {
-                  const annotationUrls = content.annotations
-                    .filter((a: { type: string; url?: string }) => a.type === 'url_citation' && a.url)
-                    .map((a: { url: string }) => a.url);
-                  sources = [...sources, ...annotationUrls];
-                }
-              }
-            }
-          }
-          if (item.type === 'web_search_call' && item.action?.sources) {
-            const searchSources = item.action.sources
-              .filter((s: { url?: string }) => s.url && !s.url.includes('oai-'))
-              .map((s: { url: string }) => s.url);
-            sources = [...sources, ...searchSources];
-          }
-        }
-      }
-      
-      sources = [...new Set(sources)];
-      
-      if (!analysisText) throw new Error('La respuesta de la IA está vacía');
-      
-      return { text: analysisText, sources };
-      
-    } catch (error) {
-      lastError = error as Error;
-      if (error instanceof RateLimitError) throw error;
-      if (attempt === maxRetries) throw error;
+  if (!aiResult.ok) {
+    if (aiResult.status === 429) {
+      throw new RateLimitError(aiResult.error);
     }
+    throw new Error(aiResult.error);
   }
-  
-  throw lastError || new Error('Error desconocido después de reintentos');
+
+  const analysisText = aiResult.content;
+  if (!analysisText) throw new Error("La respuesta de la IA está vacía");
+
+  return { text: analysisText, sources: [] as string[] };
 }
 
 // ═══════════════════════════════════════════════════════════════

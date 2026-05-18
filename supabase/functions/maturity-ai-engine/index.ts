@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callAIGateway, gatewayErrorResponse, safeParseJson } from "../_shared/ai-gateway.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,10 +44,7 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
+    // LOVABLE_API_KEY handled by callAIGateway helper
 
     const { action, diagnosisData, restaurantContext } = await req.json();
 
@@ -181,62 +179,18 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         throw new Error(`Unknown action: ${action}`);
     }
 
-    console.log('📡 Calling OpenAI API...');
-
-    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
+    const aiResult = await callAIGateway({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tier: "reasoning",
+      maxTokens: 4000,
+      temperature: 0.7,
+      logPrefix: "[maturity-ai-engine]",
     });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('OpenAI API error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Límite de solicitudes excedido. Por favor intenta más tarde.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Se requiere agregar créditos. Por favor contacta a soporte.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`OpenAI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    console.log('✅ AI Response received');
-
-    let result;
-    try {
-      let content = aiData.choices?.[0]?.message?.content;
-      // Strip markdown code blocks (```json ... ```) that the model sometimes wraps around JSON
-      if (typeof content === 'string') {
-        content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-      }
-      result = typeof content === 'string' ? JSON.parse(content) : content;
-    } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      // Return a structured error instead of raw string to prevent frontend crashes
-      result = null;
-    }
+    if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
+    const result = safeParseJson(aiResult.content);
 
     if (!result) {
       return new Response(

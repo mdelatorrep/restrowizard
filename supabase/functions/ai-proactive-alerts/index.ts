@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -25,7 +26,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    // LOVABLE_API_KEY handled by callAIGateway
 
     const { user_id, analysis_type } = await req.json();
 
@@ -143,56 +144,44 @@ serve(async (req) => {
       }
     }
 
-    // 4. Generate AI-powered insights with web search
-    if (OPENAI_API_KEY && salesData && salesData.length > 0) {
+    // 4. Generate AI-powered insights with Lovable AI Gateway
+    if (salesData && salesData.length > 0) {
       try {
-        console.log('Calling OpenAI GPT-5-nano with web search for proactive insights...');
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4.1-nano',
-            messages: [
-              {
-                role: 'system',
-                content: `Eres un analista de restaurantes con acceso a búsqueda web para tendencias actuales. Analiza los datos y genera UNA alerta de oportunidad de negocio en español basada en tendencias actuales de mercado. 
-                Responde solo con un JSON: {"title": "...", "message": "...", "priority": "low|medium"}`
-              },
-              {
-                role: 'user',
-                content: `Datos de ventas últimos 7 días: ${JSON.stringify(salesData.slice(0, 7))}`
-              }
-            ],
-            max_tokens: 300,
-            tools: [{ type: 'web_search_preview' }],
-          }),
+        const aiResult = await callAIGateway({
+          messages: [
+            {
+              role: "system",
+              content:
+                `Eres un analista de restaurantes. Analiza los datos y genera UNA alerta de oportunidad de negocio en español basada en tendencias actuales.
+Responde SOLO con un JSON: {"title": "...", "message": "...", "priority": "low|medium"}`,
+            },
+            {
+              role: "user",
+              content: `Datos de ventas últimos 7 días: ${JSON.stringify(salesData.slice(0, 7))}`,
+            },
+          ],
+          tier: "cheap",
+          maxTokens: 300,
+          jsonMode: true,
+          logPrefix: "[ai-proactive-alerts]",
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) {
-            try {
-              const insight = JSON.parse(content);
-              alerts.push({
-                user_id,
-                alert_type: 'ai_opportunity',
-                title: insight.title || 'Oportunidad detectada',
-                message: insight.message || 'Revisa tus datos para más detalles',
-                priority: insight.priority || 'low',
-                action_url: '/r/dashboard'
-              });
-            } catch {
-              // Skip if JSON parsing fails
-            }
+        if (aiResult.ok) {
+          const insight = safeParseJson<{ title?: string; message?: string; priority?: string }>(
+            aiResult.content,
+          );
+          if (insight) {
+            alerts.push({
+              user_id,
+              alert_type: "ai_opportunity",
+              title: insight.title || "Oportunidad detectada",
+              message: insight.message || "Revisa tus datos para más detalles",
+              priority: insight.priority || "low",
+              action_url: "/r/dashboard",
+            });
           }
         }
       } catch (e) {
-        console.error('AI analysis error:', e);
+        console.error("AI analysis error:", e);
       }
     }
 
