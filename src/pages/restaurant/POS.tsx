@@ -1,14 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import {
-  DollarSign,
-  Calculator,
-  CheckCircle2,
-  AlertCircle,
-  WifiOff,
-} from 'lucide-react';
 import { usePOSSession } from '@/hooks/usePOSSession';
 import { usePOSCart } from '@/hooks/usePOSCart';
 import { usePOSTables } from '@/hooks/usePOSTables';
@@ -23,11 +13,12 @@ import { CloseSessionDialog } from '@/components/pos/CloseSessionDialog';
 import { PaymentDialog } from '@/components/pos/PaymentDialog';
 import { MenuGrid } from '@/components/pos/MenuGrid';
 import { CartPanel } from '@/components/pos/CartPanel';
+import { POSHeader } from '@/components/pos/POSHeader';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-// MenuGrid / CartPanel / Dialog components extracted to src/components/pos/
+// MenuGrid / CartPanel / POSHeader / Dialog components extracted to src/components/pos/
 
 // Main POS Component
 const POS = () => {
