@@ -73,24 +73,33 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
   };
 
   const handleSubmit = async () => {
-    const items: Partial<PurchaseOrderItem>[] = orderItems
-      .filter(item => item.inventory_item_id)
-      .map(item => ({
-        inventory_item_id: item.inventory_item_id,
-        quantity_ordered: item.quantity,
-        unit: inventory.find(i => i.id === item.inventory_item_id)?.unit || 'unidades',
-        unit_cost: item.unit_cost,
-        total_cost: item.quantity * item.unit_cost
-      }));
+    const parsed = PurchaseOrderSchema.safeParse({
+      supplier_id: formData.supplier_id,
+      expected_delivery: formData.expected_delivery,
+      notes: formData.notes,
+      items: orderItems,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || 'Revisa los campos de la orden');
+      return;
+    }
+
+    const items: Partial<PurchaseOrderItem>[] = parsed.data.items.map((item) => ({
+      inventory_item_id: item.inventory_item_id,
+      quantity_ordered: item.quantity,
+      unit: inventory.find((i) => i.id === item.inventory_item_id)?.unit || 'unidades',
+      unit_cost: item.unit_cost,
+      total_cost: item.quantity * item.unit_cost,
+    }));
 
     const subtotal = items.reduce((sum, i) => sum + (i.total_cost || 0), 0);
 
     await onCreate({
-      supplier_id: formData.supplier_id || undefined,
-      expected_delivery: formData.expected_delivery || undefined,
-      notes: formData.notes || undefined,
+      supplier_id: parsed.data.supplier_id || undefined,
+      expected_delivery: parsed.data.expected_delivery || undefined,
+      notes: parsed.data.notes || undefined,
       subtotal,
-      total_amount: subtotal
+      total_amount: subtotal,
     }, items);
 
     setDialogOpen(false);
