@@ -29,10 +29,12 @@ const Invoices = () => {
   const [scanning, setScanning] = useState(false);
 
   const load = async () => {
+    if (!userId) { setLoading(false); return; }
     setLoading(true);
     const { data, error } = await supabase
       .from('supplier_invoices')
       .select('id,supplier_name,invoice_number,invoice_date,currency,total_amount,status,ai_confidence,storage_path,created_at,items')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) toast.error('No se pudieron cargar las facturas');
@@ -40,7 +42,7 @@ const Invoices = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [userId]);
 
   const handleFile = async (file: File) => {
     if (!userId) return;
