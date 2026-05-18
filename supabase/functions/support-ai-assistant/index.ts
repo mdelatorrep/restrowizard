@@ -98,50 +98,17 @@ Busca benchmarks de servicio al cliente para restaurantes y compara.`;
         throw new Error("Acción no válida");
     }
 
-    console.log(`Calling OpenAI GPT-5-mini with web search for support assistant: ${action}`);
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 1500,
-        tools: [{ type: 'web_search_preview' }],
-      }),
+    const aiResult = await callAIGateway({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tier: "fast",
+      maxTokens: 1500,
+      logPrefix: `[support-ai-assistant:${action}]`,
     });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Límite de solicitudes excedido." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Se requiere pago." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content;
-
-    let result;
-    try {
-      result = JSON.parse(content);
-    } catch {
-      result = { response: content };
-    }
+    if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
+    const result = safeParseJson(aiResult.content) ?? { response: aiResult.content };
 
     console.log(`Support AI assistant completed: ${action}`);
 
