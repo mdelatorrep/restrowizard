@@ -1,153 +1,94 @@
+# Fase 1.2 — Streaming en el Copilot
 
-# Plan: Modernización IA de RestroWizard (Fases 1-3)
+Migrar `CopilotChat` a streaming real con AI SDK (`useChat`) + AI Elements, manteniendo el botón flotante, el briefing dinámico y las quick actions actuales.
 
-Default texto: **Mix automático** — `google/gemini-3-flash-preview` para tareas frecuentes, `openai/gpt-5.2` para análisis ejecutivos/planes de apertura, `google/gemini-2.5-flash-lite` para clasificación/resumen masivo.
+## Alcance
 
----
+- Reescribir el edge function `copilot-chat` para responder con `toUIMessageStreamResponse` (stream SSE).
+- Reemplazar la mecánica `supabase.functions.invoke` + estado manual por `useChat` con un `DefaultChatTransport` apuntando al endpoint del function.
+- Renderizar mensajes con AI Elements (`Conversation`, `Message`, `MessageContent`, `MessageResponse`, `PromptInput`, `Shimmer`) en lugar de los `Card`+`ScrollArea` actuales.
+- Conservar UX existente: FAB flotante, header morado, minimizar/cerrar, badge de alertas no leídas, briefing inicial dinámico (`getDynamicBriefing`) y quick actions (consultor vs operador).
+- Botón **Stop** funcional siguiendo el contrato (`stop` desde `useChat`, `abortSignal: request.signal` en el server, ícono cuadrado desde `submitted`).
+- No persistimos historial (sin BD/threads): conversación in-memory de la sesión, "Nueva conversación" para limpiar.
 
-## Fase 1 — Cimientos IA (impacto: -70% costo, +UX streaming)
+## Fuera de alcance
 
-**Objetivo**: dejar de pagar OpenAI directo, unificar telemetría, modernizar Copilot.
+- Tool-calling agéntico, RAG, persistencia de threads (esos van en Fase 2).
+- Cambios de auth, RLS, modelos por defecto (sigue `pickModel('fast')` = Gemini 3 Flash).
+- Rediseño visual del FAB/burbujas más allá de adaptarlo a AI Elements + tokens del design system.
 
-### 1.1 Migrar 13 edge functions a Lovable AI Gateway
+## Pasos
 
-Funciones a migrar (todas usan hoy `https://api.openai.com/v1/chat/completions` + `OPENAI_API_KEY`):
+### 1. Backend — `supabase/functions/copilot-chat/index.ts`
+- Reemplazar `callAIGateway` por AI SDK directo usando el helper de gateway:
+  - Crear `supabase/functions/_shared/ai-sdk-gateway.ts` que exporte `createLovableAiGatewayProvider` (headers `Lovable-API-Key` + `X-Lovable-AIG-SDK: vercel-ai-sdk`) y un `pickSdkModel(tier)` espejo del existente.
+  - En `copilot-chat/index.ts`: `streamText({ model: pickSdkModel('fast'), system: SYSTEM_PROMPT, messages: await convertToModelMessages(messages), abortSignal: req.signal })` y devolver `result.toUIMessageStreamResponse({ headers: corsHeaders })`.
+- Mantener CORS headers actuales (incluyendo cabeceras `x-supabase-client-*`).
+- Aceptar payload `{ messages: UIMessage[] }` (formato AI SDK). Si llega el formato viejo `{ message, history }`, devolver 400 con mensaje claro (el cliente nuevo no lo usa).
+- 402/429 del gateway: dejar que el stream propague el error; AI SDK lo entrega como `onError`.
 
-`ai-proactive-alerts`, `ai-restaurant-agent`, `brand-ai-generator`, `business-opening-assistant`, `copilot-chat`, `feedback-ai-analysis`, `job-ai-profile`, `maturity-ai-engine`, `recipe-ai-assistant`, `sales-ai-projections`, `social-ai-analysis`, `supplier-analyzer`, `support-ai-assistant`, `sustainability-ai-analysis`.
+### 2. Instalación de AI Elements
+- Ejecutar `bunx ai-elements@latest add conversation message prompt-input shimmer` para traer los primitives a `src/components/ai-elements/`.
+- Verificar que `ai` y `@ai-sdk/react` queden instalados (los añade el CLI; si no, `bun add ai @ai-sdk/react`).
 
-Patrón único en `supabase/functions/_shared/ai-gateway.ts`:
-- Helper `createLovableAiGatewayProvider(LOVABLE_API_KEY)` con headers `Lovable-API-Key` + `X-Lovable-AIG-SDK`.
-- Helper `pickModel(task: 'fast'|'reasoning'|'cheap')` que retorna el modelo correcto del mix.
-- Manejo unificado de 429/402, retries con backoff exponencial.
+### 3. Frontend — refactor `src/components/CopilotChat.tsx`
+- Conservar shell actual (FAB, estados `isOpen`/`isMinimized`, badge de alertas, header, briefing, quick actions).
+- Reemplazar `messages`/`inputValue`/`isLoading`/`handleSendMessage` por:
+  ```ts
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
+    transport: new DefaultChatTransport({
+      api: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/copilot-chat`,
+      headers: () => ({ Authorization: `Bearer ${session?.access_token ?? VITE_SUPABASE_PUBLISHABLE_KEY}` }),
+    }),
+    onError: (e) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+  ```
+- Sustituir la lista actual por:
+  ```tsx
+  <Conversation>
+    <ConversationContent>
+      {messages.map(m => (
+        <Message key={m.id} from={m.role}>
+          <MessageContent>
+            {m.parts.map((p, i) => p.type === 'text'
+              ? <MessageResponse key={i}>{p.text}</MessageResponse>
+              : null)}
+          </MessageContent>
+        </Message>
+      ))}
+      {status === 'submitted' && <Shimmer>Pensando…</Shimmer>}
+    </ConversationContent>
+    <ConversationScrollButton />
+  </Conversation>
+  ```
+- Composer con `PromptInput` + `PromptInputTextarea` + `PromptInputFooter` (`justify-end`) + `PromptInputSubmit` con `status`/`onStop={stop}`.
+- Quick actions: al hacer click → `sendMessage({ text: action })`.
+- Briefing inicial: insertar como primer mensaje assistant vía `setMessages` cuando se abre el chat por primera vez y `messages.length === 0`.
+- Botón "Nueva conversación" (icono `RefreshCw` ya importado): `setMessages([])` + reinyectar briefing.
+- Focus del textarea al abrir, después de enviar y tras completar stream (`status === 'ready'`).
+- Mantener uso de tokens semánticos (`bg-primary`, `text-primary-foreground`, etc.). Mensajes assistant sin fondo; user bubble con `bg-primary text-primary-foreground`.
 
-Eliminar dependencia de `OPENAI_API_KEY` cuando la migración esté completa.
+### 4. Patch `PromptInputSubmit` (vendored)
+- En `src/components/ai-elements/prompt-input.tsx` cambiar el branch de `submitted` para mostrar `SquareIcon` (no spinner), como exige el contrato de abort/cancel.
 
-### 1.2 Streaming en Copilot (`AICopilot.tsx` + `copilot-chat`)
-
-- Reescribir `copilot-chat/index.ts` con `streamText` del AI SDK (`npm:ai`) y `toUIMessageStreamResponse`.
-- Cliente: instalar AI Elements (`conversation`, `message`, `prompt-input`, `tool`, `shimmer`) y `useChat` con `DefaultChatTransport`.
-- Renderizar `message.parts`, indicador "Pensando…" durante `submitted`, botón stop con `abortSignal`.
-- Mantener estilo Apple-like minimal (memoria: `#3E1064` / `#D4A5DB`).
-
-### 1.3 Structured Output (AI SDK Output API)
-
-Reemplazar el patrón "pide JSON → strip ```json → JSON.parse" en:
-- `maturity-ai-engine`, `feedback-ai-analysis`, `sales-ai-projections`, `social-ai-analysis`, `supplier-analyzer`, `recipe-ai-assistant`.
-
-Usar `Output.object({ schema: z.object({...}) })` con Zod. Elimina los crashes de parseo (memoria: "AI Parsing Robustness").
-
----
-
-## Fase 2 — Agente accionable + RAG
-
-**Objetivo**: el Copilot deja de "solo conversar" y empieza a ejecutar acciones; responde con contexto real del restaurante.
-
-### 2.1 Tool-calling agéntico en Copilot
-
-Definir tools del AI SDK en `copilot-chat`, con `stopWhen: stepCountIs(50)`:
-
-| Tool | Acción | needsApproval |
-|---|---|---|
-| `get_kpis` | Lee Prime Cost, Food Cost, ventas semanales | no |
-| `analyze_menu_engineering` | Devuelve Estrellas/Caballos/Perros/Puzzles | no |
-| `find_recipe_by_name` | Búsqueda + costeo | no |
-| `update_menu_item_price` | Ajusta precio de venta | **sí** |
-| `create_inventory_purchase_order` | Genera OC a proveedor | **sí** |
-| `trigger_proactive_alert_scan` | Lanza `ai-proactive-alerts` en background | no |
-| `summarize_recent_feedback` | Llama a `feedback-ai-analysis` | no |
-| `search_knowledge_base` | RAG (ver 2.2) | no |
-
-UI: mostrar cada tool-call con `<Tool>` (status, input plegado, output formateado).
-
-### 2.2 RAG con pgvector
-
-Nuevas tablas:
-- `knowledge_chunks(business_id, source_type, source_id, content, embedding vector(768), metadata jsonb)`
-- `knowledge_sources(business_id, type, name, indexed_at)` — para tracking de qué se ha indexado.
-
-Pipeline de indexación (edge function `knowledge-index`):
-- Triggers cuando el usuario crea/edita: recetas, manuales SOP, políticas, descripción del negocio, reseñas largas, planes de apertura.
-- Embeddings con `google/text-embedding-004` vía Gateway (768 dims).
-- Chunking ~500 tokens con overlap 50.
-
-Función RPC `match_knowledge(query_embedding, business_id, threshold, count)` con índice IVFFlat.
-
-Tool `search_knowledge_base` del Copilot consume esa RPC y devuelve top-5 chunks como contexto.
-
-UI nueva: página `/r/knowledge` (lista de fuentes indexadas, reindex manual, estado).
-
----
-
-## Fase 3 — Multimodal + Realtime
-
-**Objetivo**: capacidades visibles que diferencian la propuesta de valor frente a competencia.
-
-### 3.1 OCR de facturas de proveedor (Vision)
-
-- Nueva edge function `invoice-ocr` con Gemini 3 Flash multimodal.
-- Input: imagen/PDF (subido a Supabase Storage bucket `invoices`).
-- Output structured: `{ supplier, date, lines: [{ sku, name, qty, unit_price, total }], total, tax }`.
-- UI: botón "Subir factura" en módulo Inventario → preview + edición → confirmar → crea movimientos de stock con coste real (alimenta FIFO).
-
-### 3.2 Foto-costeo de plato
-
-- En `MenuItemDialog`, botón "Analizar foto del plato".
-- Edge function `dish-photo-analyze`: Gemini Vision identifica ingredientes visibles, sugiere receta + porciones, cruza con inventario para coste estimado.
-- El usuario revisa y guarda.
-
-### 3.3 Transcripción de voz (Whisper / Gemini audio)
-
-- Componente `<VoiceCapture>` reutilizable (graba audio del browser).
-- Edge function `audio-transcribe` → Gemini 3 Flash audio (o ElevenLabs Scribe v2 como alternativa).
-- Casos de uso:
-  - Quejas verbales de clientes → entra en `feedback-ai-analysis` como texto.
-  - Notas de voz del manager en cierre de turno → estructura JSON con incidencias/ventas/observaciones.
-  - Dictado de recetas en cocina.
-
-### 3.4 Realtime AI Alerts (push proactivo)
-
-- Habilitar `supabase_realtime` para `ai_alerts`.
-- Hook `useRealtimeAlerts(businessId)` suscrito al canal; toast + badge en sidebar.
-- `ai-proactive-alerts` ya existe → se programa con `pg_cron` cada 30 min: detecta Food Cost spike >5%, stock crítico, caída de tráfico web, picos de quejas → inserta en `ai_alerts` → realtime push.
-- Integración con `send-push-notification` para PWA cuando el usuario está fuera de la app (memoria: `useNativeCapabilities`).
-
----
+### 5. Verificación
+- `supabase.functions.deploy copilot-chat` (automático).
+- Probar: abrir Copilot, enviar mensaje → ver tokens streaming; pulsar Stop durante stream → corta y deja el parcial visible; quick action → envía; "Nueva conversación" → limpia y reinyecta briefing; minimizar/cerrar/FAB intactos.
+- Confirmar que no quedan referencias al payload viejo `{ message, history }` en el cliente.
 
 ## Detalles técnicos
 
-### Secrets necesarios
-- `LOVABLE_API_KEY` (ya provisionado por Lovable Cloud).
-- `OPENAI_API_KEY` se mantiene durante la migración y se borra al final de Fase 1.
-- Opcional Fase 3.3: `ELEVENLABS_API_KEY` si se usa Scribe v2 en vez de Gemini audio.
+- **Modelo**: `pickSdkModel('fast')` → `google/gemini-3-flash-preview` vía Lovable AI Gateway (consistente con Fase 1.1).
+- **Sin persistencia**: respeta el contrato chat-agent (one conversation + no persistence). No se crean tablas ni rutas nuevas.
+- **Auth**: el endpoint sigue público (`verify_jwt = false` por defecto). El header `Authorization` con la anon key basta para CORS/funciones.
+- **Tipos**: usar `UIMessage` de `ai` para los mensajes; eliminar la interfaz local `Message`.
+- **Timer types**: cualquier `setTimeout` que se añada usa `ReturnType<typeof setTimeout>` (regla del proyecto).
 
-### Migraciones DB
-- `knowledge_sources`, `knowledge_chunks` (con extensión `vector`).
-- `ai_alerts` (si no existe ya con la forma correcta) + `ALTER PUBLICATION supabase_realtime ADD TABLE ai_alerts`.
-- `invoice_uploads(business_id, storage_path, status, parsed_json, created_inventory_movements)`.
-- Storage bucket `invoices` privado con RLS por `business_id`.
-- RLS en todo lo nuevo con la función `is_business_owner` existente.
+## Archivos afectados
 
-### Refactor de componentes grandes (oportunista)
-Durante Fase 1.2 se reescribe `src/components/AICopilot.tsx` con AI Elements — aprovechar para extraer:
-- `CopilotMessage.tsx`, `CopilotToolCall.tsx`, `CopilotComposer.tsx`, `CopilotEmptyState.tsx`.
-
-### Memoria a actualizar
-- `mem://technical/ai-configuration-standards`: marcar AI SDK + Gateway como estándar único, prohibir `fetch` directo a OpenAI.
-- Nueva `mem://features/ai-agent-tools`: catálogo de tools del Copilot y cuáles requieren `needsApproval`.
-- Nueva `mem://features/rag-knowledge-base`: cómo indexar y consultar.
-- Nueva `mem://technical/multimodal-pipelines`: convenciones OCR/Vision/Audio.
-
-### Orden de ejecución sugerido
-1. Fase 1.1 (migración Gateway) — base obligatoria.
-2. Fase 1.3 (Structured Output) — junto con cada migración.
-3. Fase 1.2 (Streaming Copilot) — primer impacto visible.
-4. Fase 2.2 (RAG infra) antes que 2.1.
-5. Fase 2.1 (Tool-calling).
-6. Fase 3.1 (OCR facturas) → mayor ROI demostrable.
-7. Fase 3.4 (Realtime alerts).
-8. Fase 3.2 y 3.3 (foto-costeo y voz) — features "wow".
-
-### Fuera de alcance
-- Cambiar arquitectura de auth o RLS existente.
-- Reemplazar `@react-pdf/renderer` u otros generadores ya estables.
-- Reescribir módulos POS / Loyalty / Sustainability (solo se les conectan tools si aplica).
+- `supabase/functions/_shared/ai-sdk-gateway.ts` (nuevo)
+- `supabase/functions/copilot-chat/index.ts` (reescrito a `streamText`)
+- `src/components/ai-elements/*` (instalado por CLI)
+- `src/components/ai-elements/prompt-input.tsx` (patch de ícono Stop)
+- `src/components/CopilotChat.tsx` (refactor a `useChat` + AI Elements)
+- `package.json` / lockfile (deps `ai`, `@ai-sdk/react` si faltan)
