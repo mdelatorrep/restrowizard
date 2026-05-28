@@ -147,13 +147,26 @@ Deno.serve(async (req) => {
     const raw = aiJson?.choices?.[0]?.message?.content ?? "";
     const parsed = safeParseJson<any>(raw) ?? {};
 
+    // P1-3: Auto-link supplier by fuzzy name match if not provided
+    let resolvedSupplierId: string | null = supplier_id;
+    if (!resolvedSupplierId && parsed.supplier_name) {
+      const { data: matchedSupplier } = await admin
+        .from("inventory_suppliers")
+        .select("id, supplier_name")
+        .eq("user_id", userId)
+        .ilike("supplier_name", `%${String(parsed.supplier_name).slice(0, 40)}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedSupplier?.id) resolvedSupplierId = matchedSupplier.id;
+    }
+
     let invoiceId: string | null = null;
     if (save) {
       const { data: ins, error: insErr } = await admin
         .from("supplier_invoices")
         .insert({
           user_id: userId,
-          supplier_id,
+          supplier_id: resolvedSupplierId,
           supplier_name: parsed.supplier_name ?? null,
           invoice_number: parsed.invoice_number ?? null,
           invoice_date: parsed.invoice_date ?? null,
@@ -180,7 +193,8 @@ Deno.serve(async (req) => {
       invoiceId = ins!.id;
     }
 
-    return json({ ok: true, invoice_id: invoiceId, extracted: parsed });
+    return json({ ok: true, invoice_id: invoiceId, extracted: parsed, linked_supplier_id: resolvedSupplierId });
+
   } catch (e) {
     console.error("[invoice-ocr]", e);
     return json({ error: (e as Error).message }, 500);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, ChevronDown } from 'lucide-react';
+import { Bell, User, ChevronDown, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,13 +15,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { cn } from '@/lib/utils';
 
 export const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { userType } = useUserType();
   const [businessName, setBusinessName] = useState<string>('');
-  const [unreadAlerts, setUnreadAlerts] = useState(0);
+  const { alerts, unreadAlerts, markAsRead } = useCopilotAlerts();
 
   useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -48,26 +50,21 @@ export const AppHeader: React.FC = () => {
       }
     };
 
-    const fetchAlerts = async () => {
-      if (!user) return;
-      const { count } = await supabase
-        .from('copilot_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-      setUnreadAlerts(count || 0);
-    };
-
     fetchBusinessInfo();
-    fetchAlerts();
   }, [user, userType]);
 
   const handleLogout = async () => {
-    // signOut now handles navigation internally with a hard refresh
     await signOut();
   };
 
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
+  const allAlertsPath = userType === 'restaurant_owner' ? '/r/dashboard' : '/c/alerts';
+
+  // P1-4: navigate to alert origin via action_url
+  const handleAlertClick = (alertId: string, actionUrl: string | null) => {
+    markAsRead(alertId);
+    if (actionUrl) navigate(actionUrl);
+  };
 
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
@@ -84,22 +81,64 @@ export const AppHeader: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          onClick={() => navigate(userType === 'restaurant_owner' ? '/r/dashboard' : '/c/alerts')}
-        >
-          <Bell className="h-5 w-5" />
-          {unreadAlerts > 0 && (
-            <Badge 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive"
-            >
-              {unreadAlerts > 9 ? '9+' : unreadAlerts}
-            </Badge>
-          )}
-        </Button>
+        {/* P1-4: Notifications dropdown with deep-link navigation */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {unreadAlerts.length > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
+                  {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>Alertas</span>
+              {unreadAlerts.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{unreadAlerts.length} sin leer</Badge>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {(alerts || []).length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
+                <Inbox className="h-6 w-6 opacity-50" />
+                <p className="text-xs">Sin alertas pendientes</p>
+              </div>
+            ) : (
+              <>
+                {(alerts || []).slice(0, 6).map((alert) => (
+                  <DropdownMenuItem
+                    key={alert.id}
+                    onClick={() => handleAlertClick(alert.id, alert.action_url)}
+                    className={cn(
+                      'flex flex-col items-start gap-1 py-2 cursor-pointer',
+                      !alert.is_read && 'bg-accent/30'
+                    )}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <span
+                        className={cn(
+                          'h-2 w-2 rounded-full flex-shrink-0',
+                          alert.priority === 'critical' || alert.priority === 'high'
+                            ? 'bg-destructive'
+                            : 'bg-primary'
+                        )}
+                      />
+                      <span className="text-sm font-medium truncate flex-1">{alert.title}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 pl-4">{alert.message}</p>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate(allAlertsPath)} className="text-center justify-center text-primary text-sm">
+                  Ver todas
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User Menu */}
         <DropdownMenu>

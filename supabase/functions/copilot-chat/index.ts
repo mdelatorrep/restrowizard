@@ -354,6 +354,77 @@ function buildTools(admin: Admin, userId: string | null) {
         return { ok: true, po_id: po.id, order_number: po.order_number, total: round(total) };
       },
     }),
+
+    // P1-7: Invoices tool
+    list_pending_invoices: tool({
+      description: "Lista facturas de proveedores pendientes con monto, fecha y proveedor.",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(30).default(10),
+      }),
+      execute: async ({ limit }) => {
+        const uid = requireUser();
+        const { data, error } = await admin
+          .from("supplier_invoices")
+          .select("id, supplier_name, invoice_number, invoice_date, due_date, total_amount, currency, status")
+          .eq("user_id", uid)
+          .eq("status", "pending")
+          .order("invoice_date", { ascending: false, nullsFirst: false })
+          .limit(limit);
+        if (error) return { error: error.message };
+        const total_pending = (data ?? []).reduce((s, i) => s + Number(i.total_amount ?? 0), 0);
+        return { count: data?.length ?? 0, total_pending: round(total_pending), invoices: data ?? [] };
+      },
+    }),
+
+    // P1-7: Talent tool
+    list_team_members: tool({
+      description: "Lista miembros activos del equipo con cargo, departamento y rendimiento.",
+      inputSchema: z.object({
+        department: z.string().optional(),
+        limit: z.number().int().min(1).max(50).default(20),
+      }),
+      execute: async ({ department, limit }) => {
+        const uid = requireUser();
+        let q = admin
+          .from("staff_members")
+          .select("id, name, position, department, performance_score, training_progress, hire_date")
+          .eq("user_id", uid)
+          .eq("is_active", true)
+          .order("name")
+          .limit(limit);
+        if (department) q = q.ilike("department", `%${department}%`);
+        const { data, error } = await q;
+        if (error) return { error: error.message };
+        return { count: data?.length ?? 0, members: data ?? [] };
+      },
+    }),
+
+    // P1-7: Reservations tool
+    list_upcoming_reservations: tool({
+      description: "Lista próximas reservas de mesa (default: próximos 7 días).",
+      inputSchema: z.object({
+        days_ahead: z.number().int().min(1).max(30).default(7),
+        limit: z.number().int().min(1).max(50).default(20),
+      }),
+      execute: async ({ days_ahead, limit }) => {
+        const uid = requireUser();
+        const today = new Date().toISOString().split("T")[0];
+        const future = new Date(Date.now() + days_ahead * 86400000).toISOString().split("T")[0];
+        const { data, error } = await admin
+          .from("table_reservations")
+          .select("id, customer_name, party_size, reservation_date, reservation_time, status, special_requests")
+          .eq("user_id", uid)
+          .gte("reservation_date", today)
+          .lte("reservation_date", future)
+          .in("status", ["pending", "confirmed"])
+          .order("reservation_date")
+          .order("reservation_time")
+          .limit(limit);
+        if (error) return { error: error.message };
+        const total_covers = (data ?? []).reduce((s, r) => s + Number(r.party_size ?? 0), 0);
+        return { count: data?.length ?? 0, total_covers, reservations: data ?? [] };
+      },
+    }),
   };
 }
 
