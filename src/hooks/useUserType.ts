@@ -195,6 +195,9 @@ export const useUserType = () => {
       userType: type,
       hasCompletedOnboarding: true,
     });
+    if (user?.id) {
+      try { localStorage.setItem(onboardingCacheKey(user.id), '1'); } catch {}
+    }
   };
 
   return {
@@ -202,7 +205,7 @@ export const useUserType = () => {
     loading: Boolean(user?.id) && isLoading,
     isFetching,
     isReady,
-    hasCompletedOnboarding,
+    hasCompletedOnboarding: effectiveHasCompleted,
     updateUserType,
     refreshUserType,
     markOnboardingComplete,
