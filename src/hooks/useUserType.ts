@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+
+const onboardingCacheKey = (userId: string) => `onboarding_complete:${userId}`;
 
 export type UserType = 'restaurant_owner' | 'consultant' | null;
 
@@ -134,6 +137,22 @@ export const useUserType = () => {
   const userType: UserType = data?.userType ?? null;
   const hasCompletedOnboarding = data?.hasCompletedOnboarding ?? false;
 
+  // Persist a positive onboarding flag in localStorage so a transient fetch failure
+  // on reload doesn't bounce a known-complete user back to the onboarding flow.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (data?.hasCompletedOnboarding) {
+      try { localStorage.setItem(onboardingCacheKey(user.id), '1'); } catch {}
+    }
+  }, [user?.id, data?.hasCompletedOnboarding]);
+
+  const cachedComplete = (() => {
+    if (!user?.id) return false;
+    try { return localStorage.getItem(onboardingCacheKey(user.id)) === '1'; } catch { return false; }
+  })();
+
+  const effectiveHasCompleted = hasCompletedOnboarding || cachedComplete;
+
   // isReady means we have fetched at least once (even if result is null) OR there was an error
   const isReady = Boolean(user?.id) ? (isFetched || isError) : true;
 
@@ -176,6 +195,9 @@ export const useUserType = () => {
       userType: type,
       hasCompletedOnboarding: true,
     });
+    if (user?.id) {
+      try { localStorage.setItem(onboardingCacheKey(user.id), '1'); } catch {}
+    }
   };
 
   return {
@@ -183,7 +205,7 @@ export const useUserType = () => {
     loading: Boolean(user?.id) && isLoading,
     isFetching,
     isReady,
-    hasCompletedOnboarding,
+    hasCompletedOnboarding: effectiveHasCompleted,
     updateUserType,
     refreshUserType,
     markOnboardingComplete,
