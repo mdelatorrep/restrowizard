@@ -124,6 +124,12 @@ export const useAuth = () => {
       keysToRemove.forEach((key) => {
         if (localStorage.getItem(key)) localStorage.removeItem(key);
       });
+      // Clear cached onboarding completion flags
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('onboarding_complete:'))
+          .forEach((k) => localStorage.removeItem(k));
+      } catch {}
 
       if ('caches' in window) {
         try {
