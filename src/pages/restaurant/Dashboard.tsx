@@ -18,7 +18,7 @@ import { WeeklyPerformanceCard } from '@/components/dashboard/WeeklyPerformanceC
 const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [businessName, setBusinessName] = useState('Mi Restaurante');
+  const [businessName, setBusinessName] = useState('');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
@@ -96,10 +96,10 @@ const RestaurantDashboard: React.FC = () => {
           },
         ]
       : [
-          { label: 'Ventas Hoy', value: '$42,580', change: 12.5, icon: <DollarSign className="h-5 w-5" />, trend: 'up' },
-          { label: 'Food Cost', value: '28.4%', change: -2.1, icon: <Utensils className="h-5 w-5" />, trend: 'up' },
-          { label: 'Labor Cost', value: '24.2%', change: 0.5, icon: <Users className="h-5 w-5" />, trend: 'down' },
-          { label: 'Margen Neto', value: '18.6%', change: 3.2, icon: <TrendingUp className="h-5 w-5" />, trend: 'up' },
+          { label: 'Ventas (7 días)', value: '—', change: 0, icon: <DollarSign className="h-5 w-5" />, trend: 'up' },
+          { label: 'Food Cost', value: '—', change: 0, icon: <Utensils className="h-5 w-5" />, trend: 'up' },
+          { label: 'Ticket Promedio', value: '—', change: 0, icon: <Users className="h-5 w-5" />, trend: 'up' },
+          { label: 'Clientes (7 días)', value: '—', change: 0, icon: <TrendingUp className="h-5 w-5" />, trend: 'up' },
         ];
 
   const getAlertType = (priority: string | null): 'warning' | 'info' | 'success' => {
@@ -108,39 +108,13 @@ const RestaurantDashboard: React.FC = () => {
     return 'info';
   };
 
-  const displayAlerts: DashboardAlert[] =
-    copilotAlerts.length > 0
-      ? copilotAlerts.slice(0, 4).map((a) => ({
-          id: a.id,
-          type: getAlertType(a.priority),
-          title: a.title,
-          message: a.message,
-          action: a.action_url ? 'Ver más' : undefined,
-        }))
-      : [
-          {
-            id: '1',
-            type: 'warning',
-            title: 'Food Cost por arriba del target',
-            message:
-              'Tu food cost subió 2.1% esta semana. Te recomiendo revisar los precios con tu proveedor de carnes.',
-            action: 'Ver análisis',
-          },
-          {
-            id: '2',
-            type: 'info',
-            title: 'Oportunidad de optimización',
-            message:
-              'Detecté que los miércoles tienes 40% menos ventas. ¿Qué tal una promoción de mitad de semana?',
-            action: 'Crear promoción',
-          },
-          {
-            id: '3',
-            type: 'success',
-            title: 'Inventario optimizado',
-            message: 'El desperdicio se redujo 15% este mes. ¡Excelente trabajo del equipo!',
-          },
-        ];
+  const displayAlerts: DashboardAlert[] = copilotAlerts.slice(0, 4).map((a) => ({
+    id: a.id,
+    type: getAlertType(a.priority),
+    title: a.title,
+    message: a.message,
+    action: a.action_url ? 'Ver más' : undefined,
+  }));
 
   const quickActions: QuickAction[] = [
     { label: 'Finanzas IA', path: '/r/finances', icon: DollarSign },

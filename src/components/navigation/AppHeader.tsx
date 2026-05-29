@@ -37,7 +37,7 @@ export const AppHeader: React.FC = () => {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        setBusinessName(data?.name || 'Mi Restaurante');
+        if (data?.name) setBusinessName(data.name);
       } else if (userType === 'consultant') {
         const { data } = await supabase
           .from('consultant_profiles')
@@ -46,7 +46,7 @@ export const AppHeader: React.FC = () => {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        setBusinessName(data?.company_name || 'Mi Consultoría');
+        if (data?.company_name) setBusinessName(data.company_name);
       }
     };
 
