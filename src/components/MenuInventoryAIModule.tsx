@@ -126,12 +126,12 @@ const MenuInventoryAIModule: React.FC = () => {
             {
                 label: 'Stock Actual',
                 data: inventory.slice(0, 6).map(i => i.current_stock),
-                backgroundColor: 'hsl(var(--muted))'
+                backgroundColor: '#e2e8f0'
             },
             {
                 label: 'Punto de Reorden',
                 data: inventory.slice(0, 6).map(i => i.reorder_point || 0),
-                backgroundColor: 'hsl(var(--primary))'
+                backgroundColor: '#3E1064'
             }
         ]
     };

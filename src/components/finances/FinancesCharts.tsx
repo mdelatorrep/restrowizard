@@ -39,8 +39,8 @@ export const FinancesCharts: React.FC<Props> = ({ sales, kpis, benchmarks }) => 
     datasets: [{
       label: 'Ingresos',
       data: last12Sales.map(s => s.total_revenue),
-      borderColor: 'hsl(var(--primary))',
-      backgroundColor: 'hsl(var(--primary) / 0.1)',
+      borderColor: '#3E1064',
+      backgroundColor: 'rgba(62, 16, 100, 0.1)',
       fill: true,
       tension: 0.4,
     }],
@@ -51,7 +51,7 @@ export const FinancesCharts: React.FC<Props> = ({ sales, kpis, benchmarks }) => 
     datasets: [{
       label: 'Costos',
       data: [kpis?.totalFoodCost || 0, kpis?.totalLaborCost || 0, kpis?.totalOtherCosts || 0],
-      backgroundColor: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'],
+      backgroundColor: ['#3E1064', '#D4A5DB', '#22c55e'],
     }],
   };
 

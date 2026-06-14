@@ -19,7 +19,7 @@ export const GhostKitchenAnalyticsTab: React.FC<Props> = ({ displayBrands, commi
             datasets: [{
               label: 'Ingresos',
               data: displayBrands.map((b) => b.revenue_today),
-              backgroundColor: 'hsl(var(--primary))',
+              backgroundColor: '#3E1064',
               borderRadius: 8,
             }],
           }}

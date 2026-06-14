@@ -106,8 +106,8 @@ export const AggregatedFinancesDashboard: React.FC = () => {
       {
         label: 'Ingresos',
         data: trends.map(t => t.revenue),
-        borderColor: 'hsl(var(--primary))',
-        backgroundColor: 'hsl(var(--primary) / 0.1)',
+        borderColor: '#3E1064',
+        backgroundColor: 'rgba(62, 16, 100, 0.1)',
         fill: true,
         tension: 0.4
       },

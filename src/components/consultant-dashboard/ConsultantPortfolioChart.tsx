@@ -23,7 +23,7 @@ export function ConsultantPortfolioChart({ activeClients }: Props) {
       {
         label: 'Puntuación Madurez',
         data: activeClients.slice(0, 6).map((c) => c.diagnosis?.overall_score || 0),
-        backgroundColor: 'hsl(var(--chart-1))',
+        backgroundColor: '#3E1064',
       },
     ],
   };
