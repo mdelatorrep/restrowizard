@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Tables } from '@/integrations/supabase/types';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type MenuItem = Tables<'menu_items'>;
 
