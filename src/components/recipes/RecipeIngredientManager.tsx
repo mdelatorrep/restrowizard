@@ -102,18 +102,24 @@ export const RecipeIngredientManager = ({
       return;
     }
 
+    const payload = {
+      ...form,
+      inventory_item_id: form.inventory_item_id ? form.inventory_item_id : null,
+    };
+
     if (editingId) {
-      onUpdate(editingId, form);
+      onUpdate(editingId, payload as Partial<RecipeIngredient>);
     } else {
       onAdd({
-        ...form,
-        sort_order: ingredients.length
-      });
+        ...payload,
+        sort_order: ingredients.length,
+      } as Partial<RecipeIngredient>);
     }
-    
+
     setShowAddDialog(false);
     resetForm();
   };
+
 
   const handleEdit = (ingredient: RecipeIngredient) => {
     setForm({
