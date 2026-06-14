@@ -19,6 +19,7 @@ const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [businessName, setBusinessName] = useState('');
+  const [userName, setUserName] = useState('');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
