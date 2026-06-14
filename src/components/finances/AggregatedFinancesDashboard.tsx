@@ -222,7 +222,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Labor Cost"
             value={`${kpis.laborCostPercentage.toFixed(1)}%`}
             trend={kpis.laborCostPercentage <= 25 ? 'up' : 'down'}
-            description={`{formatCurrency(kpis.totalLaborCost)}`}
+            description={formatCurrency(kpis.totalLaborCost)}
             colorClass="bg-purple-100 text-purple-600"
           />
         </div>
