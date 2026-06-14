@@ -37,16 +37,28 @@ const MyDevelopment: React.FC = () => {
   if (!isLinked) {
     return (
       <ModulePageLayout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-xl mx-auto">
           <GraduationCap className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold">Cuenta no vinculada</h2>
-          <p className="text-muted-foreground mt-2 max-w-md">
-            Tu cuenta aún no está vinculada a un perfil de empleado. Pide a tu administrador que vincule tu cuenta desde el módulo de Talento.
+          <p className="text-muted-foreground mt-2">
+            Para ver tus formaciones y beneficios, tu cuenta debe estar vinculada a un perfil de empleado.
           </p>
+          <div className="text-left text-sm text-muted-foreground mt-4 space-y-1 bg-muted/40 p-4 rounded-lg w-full">
+            <p className="font-medium text-foreground">Cómo vincularte:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Pide a tu administrador que abra <span className="font-medium">Talento</span> en RestroWizard.</li>
+              <li>Que abra tu perfil de empleado y registre el mismo correo con el que ingresaste aquí.</li>
+              <li>Cierra sesión y vuelve a entrar — el vínculo se activa automáticamente.</li>
+            </ol>
+          </div>
+          <Button asChild variant="outline" className="mt-4">
+            <a href="/restaurant/talent">Abrir Talento</a>
+          </Button>
         </div>
       </ModulePageLayout>
     );
   }
+
 
   const getCategoryInfo = (cat: string) => TRAINING_CATEGORIES.find(c => c.value === cat) || TRAINING_CATEGORIES[5];
   const getTypeInfo = (type: string) => BENEFIT_TYPES.find(t => t.value === type) || BENEFIT_TYPES[7];
