@@ -166,28 +166,52 @@ export function useReservations() {
     reservation_time: string;
     special_requests?: string;
     source?: string;
+    table_id?: string | null;
+    duration_minutes?: number;
   }) => {
     if (!user?.id) return null;
-    
+
+    const duration = reservationData.duration_minutes || 90;
+
+    // TK-J: validar solapamiento si hay mesa asignada
+    if (reservationData.table_id) {
+      const conflict = findOverlappingReservation(
+        reservations,
+        reservationData.table_id,
+        reservationData.reservation_date,
+        reservationData.reservation_time,
+        duration,
+      );
+      if (conflict) {
+        toast({
+          title: "Mesa ocupada",
+          description: `Ya existe una reserva (${conflict.customer_name || conflict.id.slice(0, 6)}) en esa franja. Elige otra mesa u horario.`,
+          variant: "destructive",
+        });
+        return null;
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from('table_reservations')
         .insert({
           ...reservationData,
+          duration_minutes: duration,
           user_id: user.id,
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       setReservations(prev => [...prev, data as Reservation]);
-      
+
       toast({
         title: "Reserva creada",
         description: `Código: ${data.confirmation_code}`,
       });
-      
+
       return data as Reservation;
     } catch (error) {
       console.error('Error creating reservation:', error);
@@ -199,6 +223,7 @@ export function useReservations() {
       return null;
     }
   };
+
 
   return {
     reservations,
