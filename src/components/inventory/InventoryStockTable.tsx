@@ -80,7 +80,7 @@ export const InventoryStockTable = ({ items, onView, onEdit, onDelete, limit = 5
                   '-'
                 )}
               </TableCell>
-              <TableCell className="text-right">${(item.unit_cost || 0).toFixed(2)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(item.unit_cost || 0)}</TableCell>
               <TableCell>
                 <Badge variant={status.variant}>{status.label}</Badge>
               </TableCell>
