@@ -30,7 +30,7 @@ export const FinancesKPICards = ({ kpis }: { kpis: KPI }) => (
           <ArrowUpRight className="h-5 w-5 text-green-600" />
         </div>
         <div className="mt-4">
-          <h3 className="text-2xl font-bold">${formatCurrency(kpis.totalRevenue)}</h3>
+          <h3 className="text-2xl font-bold">{formatCurrency(kpis.totalRevenue)}</h3>
           <p className="text-sm text-muted-foreground">Ingresos Totales</p>
           <p className="text-xs text-muted-foreground">{kpis.totalOrders} órdenes</p>
         </div>
@@ -68,7 +68,7 @@ export const FinancesKPICards = ({ kpis }: { kpis: KPI }) => (
         <div className="mt-4">
           <h3 className="text-2xl font-bold">{kpis.foodCostPercentage.toFixed(1)}%</h3>
           <p className="text-sm text-muted-foreground">Food Cost</p>
-          <p className="text-xs text-muted-foreground">${formatCurrency(kpis.totalFoodCost)}</p>
+          <p className="text-xs text-muted-foreground">{formatCurrency(kpis.totalFoodCost)}</p>
         </div>
       </CardContent>
     </Card>
@@ -86,7 +86,7 @@ export const FinancesKPICards = ({ kpis }: { kpis: KPI }) => (
         <div className="mt-4">
           <h3 className="text-2xl font-bold">{kpis.laborCostPercentage.toFixed(1)}%</h3>
           <p className="text-sm text-muted-foreground">Labor Cost</p>
-          <p className="text-xs text-muted-foreground">${formatCurrency(kpis.totalLaborCost)}</p>
+          <p className="text-xs text-muted-foreground">{formatCurrency(kpis.totalLaborCost)}</p>
         </div>
       </CardContent>
     </Card>
