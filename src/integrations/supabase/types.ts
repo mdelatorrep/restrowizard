@@ -318,7 +318,7 @@ export type Database = {
           reviewed_at?: string | null
           staff_member_id: string
           status?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           benefit_id?: string
@@ -475,7 +475,7 @@ export type Database = {
           project_name: string
           target_opening_date?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           business_type?: string
@@ -1369,7 +1369,7 @@ export type Database = {
           progress_percent?: number
           total_lessons?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           certificate_id?: string | null
@@ -1473,7 +1473,7 @@ export type Database = {
           created_at?: string
           id?: string
           rating: number
-          user_id: string
+          user_id?: string
         }
         Update: {
           comment?: string | null
@@ -1539,7 +1539,7 @@ export type Database = {
           sentiment_score?: number | null
           service_rating?: number | null
           source?: string | null
-          user_id: string
+          user_id?: string
           value_rating?: number | null
         }
         Update: {
@@ -1646,7 +1646,7 @@ export type Database = {
           sale_date?: string
           total_revenue?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           average_ticket?: number | null
@@ -1679,7 +1679,7 @@ export type Database = {
           data?: Json | null
           id?: string
           scope: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           action?: string
@@ -2205,7 +2205,7 @@ export type Database = {
           storage_location_id?: string | null
           total_items?: number | null
           total_variance_value?: number | null
-          user_id: string
+          user_id?: string
           verified_by?: string | null
         }
         Update: {
@@ -2449,7 +2449,7 @@ export type Database = {
           unit?: string
           unit_cost?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           alert_when_low?: boolean | null
@@ -2694,7 +2694,7 @@ export type Database = {
           rating?: number | null
           supplier_name: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           address?: string | null
@@ -2818,7 +2818,7 @@ export type Database = {
           total_cost?: number | null
           unit: string
           unit_cost?: number | null
-          user_id: string
+          user_id?: string
           waste_date?: string | null
           waste_reason: string
         }
@@ -3193,7 +3193,7 @@ export type Database = {
           source_type?: string
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           business_id?: string | null
@@ -3380,7 +3380,7 @@ export type Database = {
           is_active?: boolean
           name: string
           threshold: number
-          user_id: string
+          user_id?: string
         }
         Update: {
           achievement_type?: string
@@ -3438,7 +3438,7 @@ export type Database = {
           target_segment?: string | null
           target_tier_ids?: string[] | null
           updated_at?: string
-          user_id: string
+          user_id?: string
           uses_count?: number | null
         }
         Update: {
@@ -3557,7 +3557,7 @@ export type Database = {
           total_orders?: number
           total_spent?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           ai_insights?: Json | null
@@ -3621,7 +3621,7 @@ export type Database = {
           source: string
           source_id?: string | null
           transaction_type: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           balance_after?: number
@@ -3671,7 +3671,7 @@ export type Database = {
           redeemed_at?: string | null
           redemption_code: string
           status?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           catalog_item_id?: string
@@ -3740,7 +3740,7 @@ export type Database = {
           stock_used?: number | null
           terms?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -3801,7 +3801,7 @@ export type Database = {
           points_multiplier?: number
           sort_order?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           benefits?: Json | null
@@ -3904,7 +3904,7 @@ export type Database = {
           pillar_scores?: Json
           restaurant_context?: Json | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           ai_action_plan?: Json | null
@@ -4414,7 +4414,7 @@ export type Database = {
           status?: string
           total_phases?: number
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           checklist_generated?: boolean | null
@@ -4590,7 +4590,7 @@ export type Database = {
           private_key?: string | null
           public_key?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -4712,7 +4712,7 @@ export type Database = {
           requires_authorization?: boolean | null
           updated_at?: string
           usage_count?: number | null
-          user_id: string
+          user_id?: string
           valid_from?: string | null
           valid_until?: string | null
           value: number
@@ -4763,7 +4763,7 @@ export type Database = {
           provider?: string | null
           requires_reference?: boolean | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           commission_percent?: number | null
@@ -4950,7 +4950,7 @@ export type Database = {
           task_key: string
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           category?: string
@@ -5226,7 +5226,7 @@ export type Database = {
           tax_amount?: number | null
           total_amount?: number | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string | null
@@ -6064,7 +6064,7 @@ export type Database = {
           tips?: string | null
           total_cost?: number | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
           video_url?: string | null
           waste_percentage?: number | null
           yield_quantity?: number | null
@@ -6177,7 +6177,7 @@ export type Database = {
           tagline?: string | null
           target_audience?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
           vision?: string | null
         }
         Update: {
@@ -6350,7 +6350,7 @@ export type Database = {
           template_id?: string | null
           theme_config?: Json | null
           updated_at?: string
-          user_id: string
+          user_id?: string
           view_count?: number | null
         }
         Update: {
@@ -6578,7 +6578,7 @@ export type Database = {
           status?: string
           table_number: string
           updated_at?: string
-          user_id: string
+          user_id?: string
           waiter_id?: string | null
           zone_id?: string | null
         }
@@ -6819,7 +6819,7 @@ export type Database = {
           theme_overrides?: Json | null
           tiktok_pixel_id?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
           whatsapp_message?: string | null
           whatsapp_number?: string | null
         }
@@ -6995,7 +6995,7 @@ export type Database = {
           provider_id?: string | null
           rating: number
           updated_at?: string
-          user_id: string
+          user_id?: string
           venue_id?: string | null
         }
         Update: {
@@ -7060,7 +7060,7 @@ export type Database = {
           period_type?: string | null
           revenue_goal?: number | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           avg_ticket_goal?: number | null
@@ -7185,7 +7185,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -7263,7 +7263,7 @@ export type Database = {
           provider_id: string
           request_id: string
           status?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           attachments?: string[] | null
@@ -7444,7 +7444,7 @@ export type Database = {
           title: string
           updated_at?: string
           urgency?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           attachments?: string[] | null
@@ -7822,7 +7822,7 @@ export type Database = {
           eligibility_months?: number | null
           id?: string
           is_active?: boolean
-          user_id: string
+          user_id?: string
           value?: number | null
           value_type?: string
         }
@@ -7944,7 +7944,7 @@ export type Database = {
           skills?: string[] | null
           training_progress?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           avatar_url?: string | null
@@ -8013,7 +8013,7 @@ export type Database = {
           status?: string | null
           template_id?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           actual_end_time?: string | null
@@ -8142,7 +8142,7 @@ export type Database = {
           sort_order?: number | null
           temperature_range?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string | null
@@ -8356,7 +8356,7 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           address?: string | null
@@ -8457,7 +8457,7 @@ export type Database = {
           ticket_number?: number
           type?: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           ai_category?: string | null
