@@ -113,6 +113,10 @@ const Settings: React.FC = () => {
           <PaymentGatewaySettings />
         </TabsContent>
 
+        <TabsContent value="tax">
+          <POSTaxSettings />
+        </TabsContent>
+
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
