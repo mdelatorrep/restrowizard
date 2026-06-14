@@ -65,11 +65,10 @@ const Diagnosis = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    if (!typeLoading && userType === 'consultant') {
+    // F-01: Diagnosis is the acquisition hook — allow anonymous use.
+    // We only redirect consultants (who have their own dashboard) and only
+    // when they're already authenticated.
+    if (user && !typeLoading && userType === 'consultant') {
       navigate('/c/dashboard', { replace: true });
     }
   }, [user, userType, typeLoading, navigate]);
@@ -94,29 +93,43 @@ const Diagnosis = () => {
   };
 
   const finishDiagnosis = async () => {
-    if (!user) return;
     setCurrentStep('loading');
     setAiStep('analyzing');
 
     try {
-      const result = await saveDiagnosis(userAnswers, user.id, restaurantContext);
+      let result: ExtendedDiagnosisResult;
+
+      if (user?.id) {
+        // Authenticated → persist
+        result = await saveDiagnosis(userAnswers, user.id, restaurantContext);
+      } else {
+        // Anonymous → compute locally, skip DB. Stash answers so a post-signup
+        // hook can persist them once the user creates their account.
+        const anon = await import('@/hooks/useDiagnosis').then(m => m.calculateAnonymousDiagnosis(userAnswers));
+        result = anon;
+        try {
+          sessionStorage.setItem(
+            'pending_diagnosis',
+            JSON.stringify({ answers: userAnswers, context: restaurantContext, result })
+          );
+        } catch { /* sessionStorage may be unavailable */ }
+      }
       setResults(result);
 
-      if (result.diagnosisId) {
-        const analysis = await generateAIAnalysis(result.diagnosisId, result, restaurantContext);
-        if (analysis) setAiAnalysis(analysis);
+      // AI calls work for both anonymous and signed-in users.
+      // `diagnosisId` is only used to persist results in DB; harmless when undefined.
+      const analysis = await generateAIAnalysis(result.diagnosisId || 'anonymous', result, restaurantContext);
+      if (analysis) setAiAnalysis(analysis);
 
-        setAiStep('plan');
-        const plan = await getAIActionPlan(result.diagnosisId, result, restaurantContext);
-        if (plan) setAiActionPlan(plan);
+      setAiStep('plan');
+      const plan = await getAIActionPlan(result.diagnosisId || 'anonymous', result, restaurantContext);
+      if (plan) setAiActionPlan(plan);
 
-        setAiStep('benchmark');
-        const benchmark = await getBenchmarkComparison(result.diagnosisId, result, restaurantContext);
-        if (benchmark) setAiBenchmark(benchmark);
+      setAiStep('benchmark');
+      const benchmark = await getBenchmarkComparison(result.diagnosisId || 'anonymous', result, restaurantContext);
+      if (benchmark) setAiBenchmark(benchmark);
 
-        setAiStep('done');
-      }
-
+      setAiStep('done');
       setCurrentStep('results');
     } catch (error) {
       console.error('❌ Error:', error);
