@@ -484,7 +484,8 @@ export const useEnterpriseInventory = () => {
           storage_location: storageLocations.find(l => l.id === (result as any).storage_location_id),
           preferred_supplier: suppliers.find(s => s.id === (result as any).preferred_supplier_id),
         };
-        setInventory(prev => [enriched, ...prev]);
+        // Dedupe by id to prevent duplicate React keys (P2-7 row concatenation glitch)
+        setInventory(prev => [enriched, ...prev.filter(i => i.id !== enriched.id)]);
       }
       await fetchAll();
       return result;

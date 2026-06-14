@@ -1,5 +1,13 @@
-const STATIC_CACHE = "restrowizard-static-v4";
-const DYNAMIC_CACHE = "restrowizard-dynamic-v4";
+/**
+ * RestroWizard Service Worker — v5
+ *
+ * CRITICAL: never cache the Supabase Data/Auth/Functions/Storage APIs.
+ * Caching them caused stale reads (P1-4): created records appeared missing
+ * because GETs were served from cache. This SW serves the API network-only
+ * and only caches static assets / app shell.
+ */
+const STATIC_CACHE = "restrowizard-static-v5";
+const DYNAMIC_CACHE = "restrowizard-dynamic-v5";
 const OFFLINE_PAGE = "/offline.html";
 
 const STATIC_ASSETS = [
@@ -7,14 +15,27 @@ const STATIC_ASSETS = [
   "/manifest.json",
   "/robots.txt",
   "/offline.html",
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Lato:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap",
 ];
 
-const NETWORK_FIRST = ["/api/", "/functions/v1/"];
+// Any URL matching these patterns must bypass the cache entirely.
+const NEVER_CACHE_PATTERNS = [
+  "/rest/v1/",
+  "/auth/v1/",
+  "/functions/v1/",
+  "/storage/v1/",
+  "/realtime/v1/",
+  "supabase.co",
+  "supabase.in",
+];
+
+function shouldBypassCache(url) {
+  const href = url.href || "";
+  return NEVER_CACHE_PATTERNS.some((p) => href.includes(p));
+}
 
 // ─── INSTALL ────────────────────────────────────────────────
 self.addEventListener("install", (event) => {
-  console.log("🔧 SW v4 installing...");
+  console.log("🔧 SW v5 installing...");
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => cache.addAll(STATIC_ASSETS))
@@ -24,25 +45,53 @@ self.addEventListener("install", (event) => {
 
 // ─── ACTIVATE ───────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
-  console.log("✅ SW v4 activated");
+  console.log("✅ SW v5 activated — purging old caches and stale API responses");
   event.waitUntil(
-    caches.keys()
-      .then((names) =>
-        Promise.all(
-          names
-            .filter((n) => n !== STATIC_CACHE && n !== DYNAMIC_CACHE)
-            .map((n) => caches.delete(n))
-        )
-      )
-      .then(() => self.clients.claim())
+    (async () => {
+      // Drop ALL old caches (including v4 that contained Supabase API responses)
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter((n) => n !== STATIC_CACHE && n !== DYNAMIC_CACHE)
+          .map((n) => caches.delete(n))
+      );
+
+      // Defensive: also evict any Supabase API entries that might have leaked
+      // into the new dynamic cache from a previous SW.
+      try {
+        const dyn = await caches.open(DYNAMIC_CACHE);
+        const reqs = await dyn.keys();
+        await Promise.all(
+          reqs.map((req) => {
+            try {
+              const u = new URL(req.url);
+              if (shouldBypassCache(u)) return dyn.delete(req);
+            } catch { /* noop */ }
+            return Promise.resolve();
+          })
+        );
+      } catch { /* noop */ }
+
+      await self.clients.claim();
+    })()
   );
 });
 
 // ─── FETCH ──────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET" || !request.url.startsWith("http")) return;
-  event.respondWith(handleFetch(request, new URL(request.url)));
+  if (!request.url.startsWith("http")) return;
+
+  let url;
+  try { url = new URL(request.url); } catch { return; }
+
+  // ── Never intercept Supabase API: pure network, no cache reads/writes ──
+  if (shouldBypassCache(url)) return;
+
+  // Only handle GET for caching beyond this point
+  if (request.method !== "GET") return;
+
+  event.respondWith(handleFetch(request, url));
 });
 
 async function handleFetch(request, url) {
@@ -61,30 +110,12 @@ async function handleFetch(request, url) {
     }
   }
 
-  // API → network-first
-  if (NETWORK_FIRST.some((p) => url.href.includes(p))) {
-    try {
-      const res = await fetch(request);
-      if (res.ok) {
-        const cache = await caches.open(DYNAMIC_CACHE);
-        cache.put(request, res.clone());
-      }
-      return res;
-    } catch {
-      return (await caches.match(request)) ||
-        new Response(JSON.stringify({ error: "Sin conexión" }), {
-          status: 503, headers: { "Content-Type": "application/json" },
-        });
-    }
-  }
-
-  // Scripts/styles → network-first (avoid stale chunk issues)
-  const isVite = url.pathname.includes("/node_modules/.vite/");
+  // Scripts/styles → network-first (avoid stale chunks)
   const isCodeAsset =
     request.destination === "script" || request.destination === "style" ||
     url.pathname.endsWith(".js") || url.pathname.endsWith(".css");
 
-  if (isVite || isCodeAsset) {
+  if (isCodeAsset) {
     try {
       const res = await fetch(request);
       if (res.ok) {
@@ -97,7 +128,7 @@ async function handleFetch(request, url) {
     }
   }
 
-  // Everything else → cache-first
+  // Everything else (images, fonts) → cache-first
   const cached = await caches.match(request);
   if (cached) return cached;
   try {
@@ -138,7 +169,6 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(data.title, data));
 });
 
-// ─── NOTIFICATION CLICK ────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   if (event.action === "dismiss") return;
@@ -158,101 +188,7 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// ─── BACKGROUND SYNC ───────────────────────────────────────
-self.addEventListener("sync", (event) => {
-  console.log("🔄 Background sync:", event.tag);
-  if (event.tag === "sync-offline-data") {
-    event.waitUntil(syncOfflineData());
-  }
-  if (event.tag === "sync-pos-transactions") {
-    event.waitUntil(syncPOSTransactions());
-  }
-});
-
-async function syncOfflineData() {
-  console.log("📡 Syncing offline data...");
-  // Read from IndexedDB and POST to server
-  try {
-    const db = await openDB();
-    const tx = db.transaction("offline-queue", "readonly");
-    const store = tx.objectStore("offline-queue");
-    const items = await getAllFromStore(store);
-    
-    for (const item of items) {
-      try {
-        await fetch(item.url, {
-          method: item.method,
-          headers: item.headers,
-          body: JSON.stringify(item.body),
-        });
-        // Remove from queue on success
-        const delTx = db.transaction("offline-queue", "readwrite");
-        delTx.objectStore("offline-queue").delete(item.id);
-      } catch {
-        console.log("⏳ Will retry later:", item.id);
-      }
-    }
-  } catch (e) {
-    console.log("Could not sync:", e);
-  }
-}
-
-async function syncPOSTransactions() {
-  console.log("💳 Syncing POS transactions...");
-}
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("restrowizard-offline", 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("offline-queue")) {
-        db.createObjectStore("offline-queue", { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function getAllFromStore(store) {
-  return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-// ─── PERIODIC BACKGROUND SYNC ──────────────────────────────
-self.addEventListener("periodicsync", (event) => {
-  if (event.tag === "check-alerts") {
-    event.waitUntil(checkForAlerts());
-  }
-  if (event.tag === "update-dashboard") {
-    event.waitUntil(updateDashboardCache());
-  }
-});
-
-async function checkForAlerts() {
-  console.log("🔔 Checking for new alerts...");
-}
-
-async function updateDashboardCache() {
-  console.log("📊 Updating dashboard cache...");
-}
-
-// ─── MESSAGE HANDLER (for skip-waiting, cache control) ─────
+// ─── SKIP WAITING (manual update) ───────────────────────────
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-  if (event.data?.type === "CACHE_URLS") {
-    const urls = event.data.urls || [];
-    caches.open(DYNAMIC_CACHE).then((cache) => cache.addAll(urls));
-  }
-  if (event.data?.type === "CLEAR_CACHE") {
-    caches.keys().then((names) =>
-      Promise.all(names.map((n) => caches.delete(n)))
-    );
-  }
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
