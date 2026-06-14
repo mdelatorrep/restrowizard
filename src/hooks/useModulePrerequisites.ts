@@ -144,6 +144,12 @@ export const useModulePrerequisites = () => {
     };
 
     fetchCounts();
+
+    // P2-10: refetch on demand so lock states (e.g. POS waiting on menu items,
+    // POS Reports waiting on orders) update right after data is created.
+    const onRefresh = () => fetchCounts();
+    window.addEventListener('prerequisites:refresh', onRefresh);
+    return () => window.removeEventListener('prerequisites:refresh', onRefresh);
   }, [userId]);
 
   const prerequisites = useMemo((): ModulePrerequisites => {
