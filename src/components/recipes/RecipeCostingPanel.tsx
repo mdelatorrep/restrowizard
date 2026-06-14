@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { RecipeWithDetails, ScaledRecipe } from '@/hooks/useRecipes';
-import { 
-  DollarSign, TrendingUp, Calculator, Scale, 
-  Clock, Percent, Package 
+import { formatCurrency } from '@/lib/formatCurrency';
+import {
+  DollarSign, TrendingUp, Calculator, Scale,
+  Clock, Percent, Package
 } from 'lucide-react';
 
 interface Props {
