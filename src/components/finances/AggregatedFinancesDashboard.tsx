@@ -214,7 +214,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Food Cost"
             value={`${kpis.foodCostPercentage.toFixed(1)}%`}
             trend={kpis.foodCostPercentage <= 30 ? 'up' : 'down'}
-            description={`{formatCurrency(kpis.totalFoodCost)}`}
+            description={formatCurrency(kpis.totalFoodCost)}
             colorClass="bg-orange-100 text-orange-600"
           />
           <MetricCard
