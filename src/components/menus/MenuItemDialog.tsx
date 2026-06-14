@@ -114,7 +114,8 @@ export const MenuItemDialog: React.FC<MenuItemDialogProps> = ({
       setFormData(prev => ({
         ...prev,
         recipe_id: recipeId,
-        name: prev.name || recipe.name,
+        // C3-03: solo autocompletar nombre si está vacío (no sobrescribir en edición)
+        name: prev.name?.trim() ? prev.name : recipe.name,
         cost: recipe.cost_per_portion?.toString() || prev.cost,
         price: prev.price || (recipe.cost_per_portion ? (recipe.cost_per_portion * 3).toFixed(2) : ''),
       }));
