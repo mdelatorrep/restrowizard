@@ -47,11 +47,19 @@ const Loyalty = () => {
   });
   const [pointsToAward, setPointsToAward] = useState({ points: 100, reason: 'Compra' });
 
-  const filteredCustomers = customers.filter(c =>
-    c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_phone?.includes(searchTerm)
+  const filteredCustomers = useMemo(
+    () =>
+      customers.filter(c =>
+        c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.customer_phone?.includes(searchTerm)
+      ),
+    [customers, searchTerm]
   );
+
+  const atRiskCustomers = useMemo(() => getAtRiskCustomers(), [getAtRiskCustomers]);
+  const vipCustomers = useMemo(() => getVIPCustomers(), [getVIPCustomers]);
+  const tierDistribution = useMemo(() => getCustomersByTier(), [getCustomersByTier]);
 
   const atRiskCustomers = getAtRiskCustomers();
   const vipCustomers = getVIPCustomers();
