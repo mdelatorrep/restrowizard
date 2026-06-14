@@ -376,9 +376,8 @@ export const useRecipes = () => {
         }]);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error adding ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo agregar el ingrediente', variant: 'destructive' });
@@ -394,9 +393,8 @@ export const useRecipes = () => {
         .eq('id', ingredientId);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error updating ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar el ingrediente', variant: 'destructive' });
@@ -412,9 +410,8 @@ export const useRecipes = () => {
         .eq('id', ingredientId);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error removing ingredient:', error);
     }
@@ -558,51 +555,43 @@ export const useRecipes = () => {
     }
   };
 
-  // Recalculate cost (includes sub-recipes and labor)
+  // Recalculate cost using FRESH DB data (state may be stale right after a mutation)
   const recalculateCost = async (recipeId: string) => {
-    const recipe = recipes.find(r => r.id === recipeId);
-    if (!recipe) {
-      // Try to fetch fresh
-      await fetchRecipes();
-      return;
-    }
+    // Fetch recipe + ingredients + sub-recipes fresh
+    const [{ data: recipe }, { data: ingredients }, { data: subLinks }] = await Promise.all([
+      supabase.from('recipes').select('*').eq('id', recipeId).maybeSingle(),
+      supabase.from('recipe_ingredients').select('*').eq('recipe_id', recipeId),
+      supabase.from('recipe_sub_recipes').select('*, sub_recipe:recipes!sub_recipe_id(cost_per_portion)').eq('parent_recipe_id', recipeId),
+    ]);
+    if (!recipe) return;
 
-    // Ingredient costs
-    const ingredientsCost = recipe.ingredients.reduce((sum, ing) => {
-      const effectiveQuantity = ing.gross_quantity || ing.quantity;
+    const ingredientsCost = (ingredients || []).reduce((sum: number, ing: any) => {
+      const effectiveQuantity = ing.gross_quantity || ing.quantity || 0;
       const yieldFactor = (ing.yield_percentage || 100) / 100;
-      return sum + (effectiveQuantity * ing.cost_per_unit / yieldFactor);
+      return sum + (effectiveQuantity * (ing.cost_per_unit || 0) / yieldFactor);
     }, 0);
 
-    // Sub-recipes costs
-    const subRecipesCost = recipe.sub_recipes.reduce((sum, sr) => {
-      if (sr.sub_recipe) {
-        return sum + (sr.quantity * (sr.sub_recipe.cost_per_portion || 0));
-      }
-      return sum;
+    const subRecipesCost = (subLinks || []).reduce((sum: number, sr: any) => {
+      return sum + ((sr.quantity || 0) * (sr.sub_recipe?.cost_per_portion || 0));
     }, 0);
 
-    // Labor cost
-    const laborCost = recipe.labor_time_minutes 
-      ? (recipe.labor_time_minutes / 60) * recipe.labor_cost_per_hour 
+    const laborCost = recipe.labor_time_minutes
+      ? (recipe.labor_time_minutes / 60) * (recipe.labor_cost_per_hour || 0)
       : 0;
 
-    // Total before overhead
     const subtotal = ingredientsCost + subRecipesCost + laborCost;
-    
-    // Apply waste and overhead
-    const wasteAdjustment = subtotal * (recipe.waste_percentage / 100);
-    const overheadCost = subtotal * (recipe.overhead_percentage / 100);
-    
+    const wasteAdjustment = subtotal * ((recipe.waste_percentage || 0) / 100);
+    const overheadCost = subtotal * ((recipe.overhead_percentage || 0) / 100);
+
     const totalCost = subtotal + wasteAdjustment + overheadCost;
     const portions = recipe.portions || recipe.yield_quantity || 1;
     const costPerPortion = portions > 0 ? totalCost / portions : 0;
 
     await supabase
       .from('recipes')
-      .update({ 
-        total_cost: Math.round(totalCost * 100) / 100, 
-        cost_per_portion: Math.round(costPerPortion * 100) / 100 
+      .update({
+        total_cost: Math.round(totalCost * 100) / 100,
+        cost_per_portion: Math.round(costPerPortion * 100) / 100,
       })
       .eq('id', recipeId);
   };

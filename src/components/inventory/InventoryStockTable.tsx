@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Eye, Edit, Trash2 } from 'lucide-react';
 import type { InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 export type StockStatus = { label: string; variant: 'destructive' | 'secondary' | 'default' };
 
@@ -79,7 +80,7 @@ export const InventoryStockTable = ({ items, onView, onEdit, onDelete, limit = 5
                   '-'
                 )}
               </TableCell>
-              <TableCell className="text-right">${(item.unit_cost || 0).toFixed(2)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(item.unit_cost || 0)}</TableCell>
               <TableCell>
                 <Badge variant={status.variant}>{status.label}</Badge>
               </TableCell>

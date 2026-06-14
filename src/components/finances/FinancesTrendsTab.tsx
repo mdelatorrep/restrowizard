@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Line } from 'react-chartjs-2';
 import { format } from 'date-fns';
@@ -124,7 +125,7 @@ export const FinancesTrendsTab = ({ dailySales }: Props) => {
                         {format(new Date(day.date), 'EEE d MMM', { locale: es })}
                       </td>
                       <td className="text-right py-2 px-2 font-medium">
-                        ${day.total_revenue.toLocaleString()}
+                        ${formatCurrency(day.total_revenue)}
                       </td>
                       <td className="text-right py-2 px-2">{day.order_count}</td>
                       <td className="text-right py-2 px-2">

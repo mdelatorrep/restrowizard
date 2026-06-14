@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -72,7 +73,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-1">Ventas del Día</p>
           <p className="text-5xl font-bold text-foreground">
-            ${revenue.toLocaleString()}
+            ${formatCurrency(revenue)}
           </p>
           
           {/* Revenue target progress */}
@@ -80,7 +81,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
             <div className="mt-3 max-w-xs mx-auto">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>{revenueProgress.toFixed(0)}% de la meta</span>
-                <span>${revenueTarget.toLocaleString()}</span>
+                <span>${formatCurrency(revenueTarget)}</span>
               </div>
               <Progress 
                 value={Math.min(revenueProgress, 100)} 
@@ -120,7 +121,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
             <DollarSign className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xl font-bold">${avgTicket.toFixed(0)}</p>
+            <p className="text-xl font-bold">{formatCurrency(avgTicket)}</p>
             <p className="text-xs text-muted-foreground">Ticket Prom.</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
@@ -145,7 +146,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
               value={Math.min(foodCostPercent, 50) * 2} 
               className="h-2 bg-orange-100"
             />
-            <p className="text-xs text-muted-foreground">${foodCost.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">${formatCurrency(foodCost)}</p>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -158,7 +159,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
               value={Math.min(laborCostPercent, 50) * 2} 
               className="h-2 bg-purple-100"
             />
-            <p className="text-xs text-muted-foreground">${laborCost.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">${formatCurrency(laborCost)}</p>
           </div>
         </div>
       </CardContent>
