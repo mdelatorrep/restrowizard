@@ -25,7 +25,15 @@ const RestaurantDashboard: React.FC = () => {
 
   const lifecycle = useRestaurantLifecycle();
   const { alerts: copilotAlerts, unreadAlerts } = useCopilotAlerts();
-  const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
+  // P2-8: read real sales from restaurant_orders (last 7 days), not from daily_sales.
+  const sevenDayRange = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }, []);
+  const { kpis: financeKpis, hasData: hasFinanceData } = useAggregatedFinances(sevenDayRange);
 
   useEffect(() => {
     const fetchBusiness = async () => {
