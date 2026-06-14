@@ -3,29 +3,24 @@ import type { Json } from '@/integrations/supabase/types';
 
 /**
  * Best-effort debug event logger.
- * - Never throws
- * - Never blocks user flow
- * - Stores events in `public.debug_events` (RLS: user can read/write own rows)
+ * - Never throws, never blocks user flow, never logs to console.
+ * - Always inserts with the *current* authenticated user (auth.uid()) to
+ *   avoid 403 when an impersonated client user_id is passed by mistake.
  */
 export const pushDebugEvent = async (
-  userId: string | undefined | null,
+  _userIdHint: string | undefined | null,
   scope: string,
   action: string,
   data?: Record<string, unknown>
 ) => {
-  if (!userId) return;
-
   try {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth?.user?.id;
+    if (!uid) return;
     await supabase.from('debug_events').insert([
-      {
-        user_id: userId,
-        scope,
-        action,
-        data: (data ?? {}) as Json,
-      },
+      { user_id: uid, scope, action, data: (data ?? {}) as Json },
     ]);
-  } catch (e) {
-    // Swallow errors: traceability must never break the product.
-    console.warn('🧾 [debug_events] insert failed:', e);
+  } catch {
+    // Telemetry must never break the product or pollute console.
   }
 };
