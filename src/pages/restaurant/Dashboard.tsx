@@ -101,7 +101,7 @@ const RestaurantDashboard: React.FC = () => {
           },
           {
             label: 'Ticket Promedio',
-            value: `$${financeKpis.averageTicket.toFixed(0)}`,
+            value: `$${financeKpis.avgTicket.toFixed(0)}`,
             change: 5.2,
             icon: <Users className="h-5 w-5" />,
             trend: 'up',
