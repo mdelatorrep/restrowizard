@@ -196,7 +196,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
           <MetricCard
             icon={<DollarSign className="h-6 w-6" />}
             title="Ingresos Totales"
-            value={`$${formatCurrency(kpis.totalRevenue)}`}
+            value={`${formatCurrency(kpis.totalRevenue)}`}
             trend={kpis.totalRevenue > 0 ? 'up' : 'neutral'}
             description={`${kpis.totalOrders} órdenes`}
             colorClass="bg-green-100 text-green-600"
@@ -214,7 +214,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Food Cost"
             value={`${kpis.foodCostPercentage.toFixed(1)}%`}
             trend={kpis.foodCostPercentage <= 30 ? 'up' : 'down'}
-            description={`$${formatCurrency(kpis.totalFoodCost)}`}
+            description={`${formatCurrency(kpis.totalFoodCost)}`}
             colorClass="bg-orange-100 text-orange-600"
           />
           <MetricCard
@@ -222,7 +222,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Labor Cost"
             value={`${kpis.laborCostPercentage.toFixed(1)}%`}
             trend={kpis.laborCostPercentage <= 25 ? 'up' : 'down'}
-            description={`$${formatCurrency(kpis.totalLaborCost)}`}
+            description={`${formatCurrency(kpis.totalLaborCost)}`}
             colorClass="bg-purple-100 text-purple-600"
           />
         </div>
