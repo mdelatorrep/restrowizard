@@ -9,6 +9,9 @@ export const ReservationSchema = z.object({
   reservation_time: z.string().regex(/^\d{2}:\d{2}/, 'Hora inválida'),
   special_requests: z.string().max(1000, 'Notas demasiado largas').optional().or(z.literal('')),
   source: z.enum(['phone', 'walk_in', 'website'], { errorMap: () => ({ message: 'Fuente inválida' }) }),
+  table_id: z.string().uuid().nullable().optional(),
+  duration_minutes: z.coerce.number().int().min(15).max(480).default(90),
 });
 
 export type ReservationValues = z.infer<typeof ReservationSchema>;
+
