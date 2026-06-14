@@ -269,6 +269,9 @@ export const useMenus = () => {
   useEffect(() => {
     loadTemplates();
     loadMenus();
+    const onChanged = () => loadMenus();
+    window.addEventListener('menus:changed', onChanged);
+    return () => window.removeEventListener('menus:changed', onChanged);
   }, []);
 
   return {
