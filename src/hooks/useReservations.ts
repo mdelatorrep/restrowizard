@@ -18,9 +18,45 @@ export interface Reservation {
   confirmation_code: string;
   reminder_sent: boolean;
   notes: string | null;
+  table_id: string | null;
+  duration_minutes: number;
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * TK-J: detecta solapamiento de horario para una mesa.
+ * Considera reservas no canceladas el mismo día cuya ventana [start, start+duration)
+ * intersecta la nueva ventana solicitada.
+ */
+export const findOverlappingReservation = (
+  reservations: Pick<Reservation, 'id' | 'table_id' | 'reservation_date' | 'reservation_time' | 'duration_minutes' | 'status'>[],
+  tableId: string,
+  date: string,
+  time: string,
+  durationMinutes: number,
+  excludeId?: string,
+) => {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const startA = toMin(time);
+  const endA = startA + durationMinutes;
+  return reservations.find(r =>
+    r.id !== excludeId &&
+    r.table_id === tableId &&
+    r.reservation_date === date &&
+    r.status !== 'cancelled' &&
+    r.status !== 'no_show' &&
+    (() => {
+      const startB = toMin(r.reservation_time);
+      const endB = startB + (r.duration_minutes || 90);
+      return startA < endB && startB < endA;
+    })()
+  );
+};
+
 
 export interface ReservationKPIs {
   total: number;
