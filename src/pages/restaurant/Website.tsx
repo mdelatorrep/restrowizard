@@ -112,19 +112,34 @@
      }
    };
  
-   const handleCheckSlug = async () => {
-     if (!newSlug) return;
-     
-     setChecking(true);
-     const available = await checkSlugAvailability(newSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
-     setSlugAvailable(available);
-     setChecking(false);
-   };
- 
-   const handleCreateWebsite = async () => {
-     const slug = newSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-     await createWebsite(slug);
-   };
+  const handleCheckSlug = async () => {
+    if (!newSlug) return;
+    setChecking(true);
+    const available = await checkSlugAvailability(newSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+    setSlugAvailable(available);
+    setChecking(false);
+    return available;
+  };
+
+  // Auto-verificar slug con debounce: el usuario no necesita pulsar "Verificar".
+  useEffect(() => {
+    if (!newSlug) { setSlugAvailable(null); return; }
+    const t = setTimeout(() => { handleCheckSlug(); }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newSlug]);
+
+  const handleCreateWebsite = async () => {
+    const slug = newSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    // Si por alguna razón no se ha verificado todavía, verificar antes de crear.
+    if (slugAvailable === null) {
+      const ok = await handleCheckSlug();
+      if (!ok) return;
+    }
+    if (slugAvailable === false) return;
+    await createWebsite(slug);
+  };
+
  
    const handleSave = async () => {
      setSaving(true);
