@@ -53,9 +53,9 @@ const Hero = () => {
             </button>
           </div>
 
-          {/* Minimal trust line */}
+          {/* Minimal trust line — no unverifiable counts. */}
           <p className="text-sm font-lato-light text-white/40 pt-2">
-            Sin tarjeta de crédito · Activo en 10 minutos · +500 restaurantes
+            Sin tarjeta de crédito · Activo en 10 minutos
           </p>
         </div>
       </div>

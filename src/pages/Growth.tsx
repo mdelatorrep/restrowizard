@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Rocket, TrendingUp, Users, Lightbulb, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,16 @@ const Growth = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [preregCount, setPreregCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    // F-02: muestra el conteo REAL de pre-registros; nunca cifras inventadas.
+    supabase
+      .from('growth_preregistrations')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => setPreregCount(count ?? 0));
+  }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,9 +90,17 @@ const Growth = () => {
             </p>
 
             <div className="flex flex-wrap justify-center gap-8 text-white/80">
-              <div className="text-center"><div className="text-3xl font-headline text-white">2,340+</div><div className="text-sm font-lato-light">Pre-registrados</div></div>
-              <div className="text-center"><div className="text-3xl font-headline text-white">$15M+</div><div className="text-sm font-lato-light">Capital interesado</div></div>
-              <div className="text-center"><div className="text-3xl font-headline text-white">180+</div><div className="text-sm font-lato-light">Proyectos en espera</div></div>
+              <div className="text-center">
+                <div className="text-3xl font-headline text-white tabular-nums">
+                  {preregCount === null ? '—' : preregCount.toLocaleString('es-CO')}
+                </div>
+                <div className="text-sm font-lato-light">Pre-registrados hasta hoy</div>
+              </div>
+              <div className="text-center max-w-xs">
+                <div className="text-sm font-lato-light text-white/70">
+                  Cuando alcancemos masa crítica abriremos deal flow para inversionistas y matchmaking para restauranteros.
+                </div>
+              </div>
             </div>
           </div>
         </div>

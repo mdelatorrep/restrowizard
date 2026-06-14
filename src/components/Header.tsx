@@ -67,7 +67,7 @@ const Header = () => {
     { label: 'Soluciones', action: () => scrollToSection('soluciones'), isSolutions: true },
     { label: 'Producto', action: () => scrollToSection('ecosistema') },
     { label: 'Consultores', action: () => scrollToSection('consultores') },
-    { label: 'Casos de Éxito', action: () => scrollToSection('testimonios') },
+    { label: 'Testimonios', action: () => scrollToSection('testimonios') },
     { label: 'Eventos', action: () => navigate('/events') },
   ];
 
