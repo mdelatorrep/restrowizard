@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRecipes, RecipeWithDetails } from '@/hooks/useRecipes';
@@ -23,7 +23,13 @@ const Recipes = () => {
     addSubRecipe, removeSubRecipe, getSubRecipes, scaleRecipe,
   } = useRecipes();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedRecipe, setSelectedRecipe] = useState<RecipeWithDetails | null>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  // Always derive the selected recipe from the live recipes[] state so edits
+  // to ingredients/steps refresh the open modal without re-opening it.
+  const selectedRecipe = useMemo(
+    () => (selectedRecipeId ? recipes.find(r => r.id === selectedRecipeId) ?? null : null),
+    [selectedRecipeId, recipes]
+  );
   const [publishRecipe, setPublishRecipe] = useState<RecipeWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -151,7 +157,7 @@ const Recipes = () => {
               recipe={recipe}
               recipeAllergens={getRecipeAllergens(recipe)}
               onPublish={() => setPublishRecipe(recipe)}
-              onView={() => setSelectedRecipe(recipe)}
+              onView={() => setSelectedRecipeId(recipe.id)}
               onDelete={() => deleteRecipe(recipe.id)}
             />
           ))}
@@ -178,7 +184,7 @@ const Recipes = () => {
         units={units}
         allergens={allergens}
         availableSubRecipes={getSubRecipes()}
-        onClose={() => setSelectedRecipe(null)}
+        onClose={() => setSelectedRecipeId(null)}
         onAddIngredient={addIngredient}
         onUpdateIngredient={updateIngredient}
         onRemoveIngredient={removeIngredient}

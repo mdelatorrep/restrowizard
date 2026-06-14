@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface OrderItem {
   menu_item_id?: string;
@@ -24,93 +25,99 @@ interface Recipe {
 export const useInventoryDeduction = () => {
   const { user } = useAuth();
 
-  // Fetch recipe for a menu item
+  // Fetch recipe linked to a menu item.
+  // NOTE: We do NOT filter by user_id here — RLS on `recipes` already restricts
+  // visibility, and in multi-business setups the cashier `user.id` may differ
+  // from the recipe owner. `.maybeSingle()` avoids the error-on-zero-rows of
+  // `.single()`.
   const getRecipeForMenuItem = useCallback(async (menuItemId: string): Promise<Recipe | null> => {
-    if (!user) return null;
-
     try {
-      // Get recipe and its ingredients from recipe_ingredients table
       const { data: recipeData, error: recipeError } = await supabase
         .from('recipes')
         .select('id')
-        .eq('user_id', user.id)
         .eq('menu_item_id', menuItemId)
-        .single();
+        .maybeSingle();
 
-      if (recipeError || !recipeData) return null;
+      if (recipeError) {
+        logger.warn('[inventoryDeduction] recipe lookup error', recipeError);
+        return null;
+      }
+      if (!recipeData) return null;
 
-      // Get ingredients for this recipe
       const { data: ingredientsData, error: ingredientsError } = await supabase
         .from('recipe_ingredients')
         .select('inventory_item_id, quantity, unit')
-        .eq('recipe_id', recipeData.id);
+        .eq('recipe_id', recipeData.id)
+        .not('inventory_item_id', 'is', null);
 
-      if (ingredientsError) return null;
+      if (ingredientsError) {
+        logger.warn('[inventoryDeduction] ingredients lookup error', ingredientsError);
+        return null;
+      }
 
       return {
         id: recipeData.id,
         menu_item_id: menuItemId,
-        ingredients: (ingredientsData || []).map(i => ({
-          inventory_item_id: i.inventory_item_id,
-          quantity: Number(i.quantity),
-          unit: i.unit
-        }))
+        ingredients: (ingredientsData || [])
+          .filter((i) => i.inventory_item_id)
+          .map((i) => ({
+            inventory_item_id: i.inventory_item_id as string,
+            quantity: Number(i.quantity),
+            unit: i.unit,
+          })),
       };
     } catch (error) {
-      console.error('Error fetching recipe:', error);
+      logger.error('[inventoryDeduction] getRecipeForMenuItem error', error);
       return null;
     }
-  }, [user]);
+  }, []);
 
-  // Deduct inventory for a single item
+  // Deduct inventory for a single line.
+  // Returns: 'ok' on success, 'no_recipe' if the item is not linked to a recipe
+  // (or recipe has no inventory-linked ingredients), 'error' on failure.
   const deductInventoryForItem = useCallback(async (
     orderId: string,
     menuItemId: string,
     quantity: number
-  ): Promise<boolean> => {
-    if (!user) return false;
+  ): Promise<'ok' | 'no_recipe' | 'error'> => {
+    if (!user) return 'error';
 
     try {
       const recipe = await getRecipeForMenuItem(menuItemId);
       if (!recipe || recipe.ingredients.length === 0) {
-        console.log(`No recipe found for menu item ${menuItemId}`);
-        return true; // Not an error, just no recipe
+        logger.debug(`[inventoryDeduction] no recipe/ingredients for menu_item ${menuItemId}`);
+        return 'no_recipe';
       }
 
-      // Process each ingredient
       for (const ingredient of recipe.ingredients) {
         const deductAmount = ingredient.quantity * quantity;
 
-        // Get current inventory
         const { data: inventoryItem, error: fetchError } = await supabase
           .from('inventory_items')
-          .select('id, current_stock, min_stock_level, item_name')
+          .select('id, current_stock, min_stock_level, item_name, unit_cost')
           .eq('id', ingredient.inventory_item_id)
           .maybeSingle();
 
         if (fetchError || !inventoryItem) {
-          console.error(`Error fetching inventory item ${ingredient.inventory_item_id}:`, fetchError);
+          logger.warn(`[inventoryDeduction] inventory fetch failed ${ingredient.inventory_item_id}`, fetchError);
           continue;
         }
 
-        // Calculate new stock
-        const newStock = Math.max(0, (inventoryItem.current_stock || 0) - deductAmount);
+        const newStock = Math.max(0, (Number(inventoryItem.current_stock) || 0) - deductAmount);
 
-        // Update inventory
         const { error: updateError } = await supabase
           .from('inventory_items')
-          .update({ 
+          .update({
             current_stock: newStock,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', ingredient.inventory_item_id);
 
         if (updateError) {
-          console.error(`Error updating inventory:`, updateError);
+          logger.warn('[inventoryDeduction] inventory update error', updateError);
           continue;
         }
 
-        // Log the deduction
         const { error: logError } = await supabase
           .from('inventory_deductions')
           .insert({
@@ -119,102 +126,99 @@ export const useInventoryDeduction = () => {
             inventory_item_id: ingredient.inventory_item_id,
             recipe_id: recipe.id,
             quantity_deducted: deductAmount,
-            unit: ingredient.unit
+            unit: ingredient.unit,
           });
 
         if (logError) {
-          console.error('Error logging deduction:', logError);
+          logger.warn('[inventoryDeduction] deduction log error', logError);
         }
 
-        // Check for low stock alert
-        if (newStock <= (inventoryItem.min_stock_level || 0)) {
+        if (newStock <= (Number(inventoryItem.min_stock_level) || 0)) {
           toast.warning(`⚠️ Stock bajo: ${inventoryItem.item_name} (${newStock} ${ingredient.unit})`);
         }
       }
 
-      return true;
+      return 'ok';
     } catch (error) {
-      console.error('Error deducting inventory:', error);
-      return false;
+      logger.error('[inventoryDeduction] deductInventoryForItem error', error);
+      return 'error';
     }
   }, [user, getRecipeForMenuItem]);
 
-  // Deduct inventory for an entire order
+  // Deduct inventory for an entire order.
   const deductInventoryForOrder = useCallback(async (
     orderId: string,
     items: OrderItem[]
-  ): Promise<{ success: boolean; deductedCount: number; errors: string[] }> => {
+  ): Promise<{ success: boolean; deductedCount: number; missingRecipeCount: number; errors: string[] }> => {
     if (!user) {
-      return { success: false, deductedCount: 0, errors: ['Usuario no autenticado'] };
+      return { success: false, deductedCount: 0, missingRecipeCount: 0, errors: ['Usuario no autenticado'] };
     }
 
     const errors: string[] = [];
     let deductedCount = 0;
+    let missingRecipeCount = 0;
 
     for (const item of items) {
       if (!item.menu_item_id) {
-        console.log(`Skipping item without menu_item_id: ${item.name}`);
+        logger.warn(`[inventoryDeduction] item without menu_item_id: ${item.name}`);
+        missingRecipeCount++;
         continue;
       }
 
-      const success = await deductInventoryForItem(orderId, item.menu_item_id, item.quantity);
-      if (success) {
+      const result = await deductInventoryForItem(orderId, item.menu_item_id, item.quantity);
+      if (result === 'ok') {
         deductedCount++;
+      } else if (result === 'no_recipe') {
+        missingRecipeCount++;
       } else {
         errors.push(`Error deduciendo inventario para: ${item.name}`);
       }
     }
 
     if (deductedCount > 0) {
-      console.log(`Inventory deducted for ${deductedCount} items in order ${orderId}`);
+      logger.debug(`[inventoryDeduction] deducted ${deductedCount} items for order ${orderId}`);
     }
 
     return {
       success: errors.length === 0,
       deductedCount,
-      errors
+      missingRecipeCount,
+      errors,
     };
   }, [user, deductInventoryForItem]);
 
-  // Reverse inventory deduction (for refunds/cancellations)
   const reverseInventoryDeduction = useCallback(async (orderId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
-      // Get all deductions for this order
       const { data: deductions, error: fetchError } = await supabase
         .from('inventory_deductions')
         .select('*')
         .eq('order_id', orderId);
 
       if (fetchError) throw fetchError;
+      if (!deductions || deductions.length === 0) return true;
 
-      if (!deductions || deductions.length === 0) {
-        return true; // No deductions to reverse
-      }
-
-      // Reverse each deduction
       for (const deduction of deductions) {
         const { data: inventoryItem, error: getError } = await supabase
           .from('inventory_items')
           .select('current_stock')
           .eq('id', deduction.inventory_item_id)
-          .single();
+          .maybeSingle();
 
-        if (getError) continue;
+        if (getError || !inventoryItem) continue;
 
-        const newStock = (inventoryItem.current_stock || 0) + deduction.quantity_deducted;
+        const newStock = (Number(inventoryItem.current_stock) || 0) + Number(deduction.quantity_deducted);
 
         await supabase
           .from('inventory_items')
-          .update({ 
+          .update({
             current_stock: newStock,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', deduction.inventory_item_id);
       }
 
-      // Delete deduction records
       await supabase
         .from('inventory_deductions')
         .delete()
@@ -223,13 +227,12 @@ export const useInventoryDeduction = () => {
       toast.success('Inventario revertido');
       return true;
     } catch (error) {
-      console.error('Error reversing inventory:', error);
+      logger.error('[inventoryDeduction] reverse error', error);
       toast.error('Error al revertir inventario');
       return false;
     }
   }, [user]);
 
-  // Get deduction history for an order
   const getDeductionHistory = useCallback(async (orderId: string) => {
     if (!user) return [];
 
@@ -238,14 +241,14 @@ export const useInventoryDeduction = () => {
         .from('inventory_deductions')
         .select(`
           *,
-          inventory_items (name, unit)
+          inventory_items (item_name, unit)
         `)
         .eq('order_id', orderId);
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching deduction history:', error);
+      logger.error('[inventoryDeduction] history error', error);
       return [];
     }
   }, [user]);
@@ -255,6 +258,6 @@ export const useInventoryDeduction = () => {
     deductInventoryForItem,
     reverseInventoryDeduction,
     getDeductionHistory,
-    getRecipeForMenuItem
+    getRecipeForMenuItem,
   };
 };

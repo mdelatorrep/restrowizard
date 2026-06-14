@@ -474,7 +474,7 @@ export const RecipeIngredientManager = ({
             <div className="flex justify-end mt-4 pt-4 border-t">
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Costo Total Ingredientes</p>
-                <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
               </div>
             </div>
           </>

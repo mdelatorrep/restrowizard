@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Package, CheckCircle, EyeOff, DollarSign } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   stats: { totalItems: number; availableItems: number; unavailableItems: number; avgPrice: number };
@@ -33,7 +34,7 @@ export function MenuEditorStats({ stats }: Props) {
     },
     {
       label: 'Precio Prom.',
-      value: `$${stats.avgPrice.toFixed(2)}`,
+      value: formatCurrency(stats.avgPrice),
       Icon: DollarSign,
       iconWrap: 'from-purple-500/20 to-purple-500/10',
       iconColor: 'text-purple-600',
