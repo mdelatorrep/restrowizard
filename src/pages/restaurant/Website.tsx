@@ -255,15 +255,16 @@
                  </div>
                )}
  
-               <Button 
-                 onClick={handleCreateWebsite} 
-                 disabled={!slugAvailable}
-                 className="w-full h-12 text-base gap-2"
-                 size="lg"
-               >
-                 <Zap className="h-5 w-5" />
-                 Crear mi sitio web gratis
-               </Button>
+                <Button 
+                  onClick={handleCreateWebsite} 
+                  disabled={!newSlug || checking || slugAvailable === false}
+                  className="w-full h-12 text-base gap-2"
+                  size="lg"
+                >
+                  <Zap className="h-5 w-5" />
+                  Crear mi sitio web gratis
+                </Button>
+
  
                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                  <div className="text-center">
