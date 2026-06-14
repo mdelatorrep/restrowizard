@@ -73,63 +73,108 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const startStr = format(range.start, 'yyyy-MM-dd');
       const endStr = format(range.end, 'yyyy-MM-dd');
 
-      // Fetch orders for the date range in a SINGLE query
-      const { data: orders, error: ordersError } = await supabase
+      // 1) Orders (revenue/covers/order_count)
+      const ordersPromise = supabase
         .from('restaurant_orders')
-        .select('id, total, guests_count, status, created_at, items')
+        .select('id, total, guests_count, status, created_at')
         .eq('user_id', userId)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
         .not('status', 'in', '("cancelled","pending")');
 
-      if (ordersError) throw ordersError;
+      // 2) Inventory deductions joined with item unit_cost (food cost from sales)
+      const deductionsPromise = supabase
+        .from('inventory_deductions')
+        .select('deducted_at, quantity_deducted, inventory_items(unit_cost)')
+        .eq('user_id', userId)
+        .gte('deducted_at', `${startStr}T00:00:00`)
+        .lte('deducted_at', `${endStr}T23:59:59`);
 
-      // Fetch daily_sales for cost data in a SINGLE query
-      const { data: dailySalesData, error: salesError } = await supabase
+      // 3) Staff shifts (labor cost)
+      const shiftsPromise = supabase
+        .from('staff_shifts')
+        .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, hourly_rate_override, status, staff_members(hourly_rate)')
+        .eq('user_id', userId)
+        .gte('shift_date', startStr)
+        .lte('shift_date', endStr)
+        .eq('status', 'completed');
+
+      // 4) Manual daily_sales overrides (other_costs and any manually-entered food/labor)
+      const manualPromise = supabase
         .from('daily_sales')
         .select('*')
         .eq('user_id', userId)
         .gte('sale_date', startStr)
-        .lte('sale_date', endStr)
-        .order('sale_date', { ascending: true });
+        .lte('sale_date', endStr);
 
-      if (salesError) throw salesError;
+      const [ordersRes, deductionsRes, shiftsRes, manualRes] = await Promise.all([
+        ordersPromise, deductionsPromise, shiftsPromise, manualPromise,
+      ]);
+
+      if (ordersRes.error) throw ordersRes.error;
+      if (deductionsRes.error) throw deductionsRes.error;
+      if (shiftsRes.error) throw shiftsRes.error;
+      if (manualRes.error) throw manualRes.error;
 
       // Group orders by date
       const ordersByDate: Record<string, { revenue: number; count: number; covers: number }> = {};
-      
-      (orders || []).forEach(order => {
+      (ordersRes.data || []).forEach((order: any) => {
         const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
-        if (!ordersByDate[dateKey]) {
-          ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0 };
-        }
+        if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0 };
         ordersByDate[dateKey].revenue += Number(order.total) || 0;
         ordersByDate[dateKey].count += 1;
         ordersByDate[dateKey].covers += order.guests_count || 0;
       });
 
-      // Create daily sales map from daily_sales table
-      const costsByDate: Record<string, { foodCost: number; laborCost: number }> = {};
-      (dailySalesData || []).forEach(sale => {
-        costsByDate[sale.sale_date] = {
-          foodCost: Number(sale.food_cost) || 0,
-          laborCost: Number(sale.labor_cost) || 0
+      // Food cost by date = Σ(qty_deducted × unit_cost)
+      const foodCostByDate: Record<string, number> = {};
+      (deductionsRes.data || []).forEach((d: any) => {
+        const dateKey = format(new Date(d.deducted_at), 'yyyy-MM-dd');
+        const unitCost = Number(d.inventory_items?.unit_cost) || 0;
+        foodCostByDate[dateKey] = (foodCostByDate[dateKey] || 0) + (Number(d.quantity_deducted) || 0) * unitCost;
+      });
+
+      // Labor cost by date = hours × hourly_rate (override > staff base)
+      const laborCostByDate: Record<string, number> = {};
+      (shiftsRes.data || []).forEach((s: any) => {
+        const dateKey = s.shift_date as string;
+        const start = s.actual_start_time || s.start_time;
+        const end = s.actual_end_time || s.end_time;
+        if (!start || !end) return;
+        const toMs = (t: string) => {
+          const [h, m, sec] = String(t).split(':').map(Number);
+          return ((h || 0) * 3600 + (m || 0) * 60 + (sec || 0)) * 1000;
+        };
+        const hours = Math.max(0, (toMs(end) - toMs(start)) / 3_600_000);
+        const rate = Number(s.hourly_rate_override) || Number(s.staff_members?.hourly_rate) || 0;
+        laborCostByDate[dateKey] = (laborCostByDate[dateKey] || 0) + hours * rate;
+      });
+
+      // Manual overrides: if user typed a value in daily_sales, ADD to computed
+      // (allows recording costs not captured by POS, e.g. waste, off-shift labor).
+      const manualByDate: Record<string, { food: number; labor: number }> = {};
+      (manualRes.data || []).forEach((m: any) => {
+        manualByDate[m.sale_date] = {
+          food: Number(m.food_cost) || 0,
+          labor: Number(m.labor_cost) || 0,
         };
       });
 
-      // Merge data into aggregated format
-      const allDates = new Set([...Object.keys(ordersByDate), ...Object.keys(costsByDate)]);
-      const salesData: AggregatedDailySales[] = [];
+      const allDates = new Set([
+        ...Object.keys(ordersByDate),
+        ...Object.keys(foodCostByDate),
+        ...Object.keys(laborCostByDate),
+        ...Object.keys(manualByDate),
+      ]);
 
+      const salesData: AggregatedDailySales[] = [];
       allDates.forEach(dateStr => {
         const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0 };
-        const costData = costsByDate[dateStr] || { foodCost: 0, laborCost: 0 };
-        
+        const foodCost = (foodCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.food || 0);
+        const laborCost = (laborCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.labor || 0);
         const revenue = orderData.revenue;
-        const foodCost = costData.foodCost;
-        const laborCost = costData.laborCost;
 
-        if (revenue > 0 || orderData.count > 0) {
+        if (revenue > 0 || orderData.count > 0 || foodCost > 0 || laborCost > 0) {
           salesData.push({
             date: dateStr,
             total_revenue: revenue,
@@ -140,7 +185,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
             avg_ticket: orderData.count > 0 ? revenue / orderData.count : 0,
             gross_margin: revenue > 0 ? ((revenue - foodCost) / revenue) * 100 : 0,
             food_cost_percentage: revenue > 0 ? (foodCost / revenue) * 100 : 0,
-            labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0
+            labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0,
           });
         }
       });
