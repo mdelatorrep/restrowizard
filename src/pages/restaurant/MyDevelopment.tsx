@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, Gift, CheckCircle2, Clock, AlertTriangle, BookOpen, Play, Send, Loader2 } from 'lucide-react';
+import { GraduationCap, Gift, CheckCircle2, Clock, AlertTriangle, BookOpen, Play, Send, Loader2, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +13,58 @@ import { ModulePageLayout, PageHeader } from '@/components/layout/ModulePageLayo
 import { useMyDevelopment } from '@/hooks/useMyDevelopment';
 import { TRAINING_CATEGORIES, BENEFIT_TYPES } from '@/hooks/useStaffDevelopment';
 import type { KPICardData } from '@/components/layout/KPIGrid';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const MyDevelopment: React.FC = () => {
   const {
     loading, isLinked, staffName, staffPosition,
     training, benefits, requests, availableBenefits, stats,
-    updateMyProgress, requestBenefit
+    updateMyProgress, requestBenefit, refetch,
   } = useMyDevelopment();
+  const { user } = useAuthContext();
+  const { toast } = useToast();
+  const [linking, setLinking] = useState(false);
+
+  const handleSelfLink = async () => {
+    if (!user?.id || !user.email) return;
+    setLinking(true);
+    try {
+      // Verifica si ya existe staff con ese correo (de cualquier negocio del owner)
+      const { data: existing } = await supabase
+        .from('staff_members')
+        .select('id, user_id, linked_user_id')
+        .eq('user_id', user.id)
+        .ilike('email', user.email)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('staff_members')
+          .update({ linked_user_id: user.id })
+          .eq('id', existing.id);
+      } else {
+        const fullName = (user.user_metadata as any)?.full_name || user.email.split('@')[0];
+        const { error } = await supabase.from('staff_members').insert({
+          user_id: user.id,
+          linked_user_id: user.id,
+          name: fullName,
+          email: user.email,
+          position: 'Propietario',
+          employment_type: 'full_time',
+          status: 'active',
+          hire_date: new Date().toISOString().split('T')[0],
+        } as any);
+        if (error) throw error;
+      }
+      toast({ title: 'Vínculo creado', description: 'Tu cuenta ahora está vinculada a Mi Desarrollo.' });
+      await refetch();
+    } catch (error: any) {
+      toast({ title: 'Error al vincular', description: error.message, variant: 'destructive' });
+    } finally {
+      setLinking(false);
+    }
+  };
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [selectedBenefitId, setSelectedBenefitId] = useState('');
@@ -43,11 +88,23 @@ const MyDevelopment: React.FC = () => {
           <p className="text-muted-foreground mt-2">
             Para ver tus formaciones y beneficios, tu cuenta debe estar vinculada a un perfil de empleado.
           </p>
-          <div className="text-left text-sm text-muted-foreground mt-4 space-y-1 bg-muted/40 p-4 rounded-lg w-full">
-            <p className="font-medium text-foreground">Cómo vincularte:</p>
+
+          {/* BL-01: auto-vínculo para owner/admin */}
+          <div className="mt-6 w-full">
+            <Button onClick={handleSelfLink} disabled={linking} className="w-full">
+              {linking ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+              Vincularme como empleado
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Si eres dueño/admin del restaurante, esto crea tu perfil de Talento al instante.
+            </p>
+          </div>
+
+          <div className="text-left text-sm text-muted-foreground mt-6 space-y-1 bg-muted/40 p-4 rounded-lg w-full">
+            <p className="font-medium text-foreground">¿Tu administrador te va a vincular?</p>
             <ol className="list-decimal list-inside space-y-1">
-              <li>Pide a tu administrador que abra <span className="font-medium">Talento</span> en RestroWizard.</li>
-              <li>Que abra tu perfil de empleado y registre el mismo correo con el que ingresaste aquí.</li>
+              <li>Pide que abra <span className="font-medium">Talento</span> en RestroWizard.</li>
+              <li>Que registre tu perfil con el mismo correo de tu cuenta.</li>
               <li>Cierra sesión y vuelve a entrar — el vínculo se activa automáticamente.</li>
             </ol>
           </div>
