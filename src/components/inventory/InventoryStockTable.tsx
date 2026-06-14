@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Eye, Edit, Trash2 } from 'lucide-react';
 import type { InventoryItemExtended } from '@/hooks/useEnterpriseInventory';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 export type StockStatus = { label: string; variant: 'destructive' | 'secondary' | 'default' };
 
