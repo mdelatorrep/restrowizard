@@ -376,9 +376,8 @@ export const useRecipes = () => {
         }]);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error adding ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo agregar el ingrediente', variant: 'destructive' });
@@ -394,9 +393,8 @@ export const useRecipes = () => {
         .eq('id', ingredientId);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error updating ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar el ingrediente', variant: 'destructive' });
@@ -412,9 +410,8 @@ export const useRecipes = () => {
         .eq('id', ingredientId);
 
       if (error) throw error;
-      
-      await fetchRecipes();
       await recalculateCost(recipeId);
+      await fetchRecipes();
     } catch (error) {
       console.error('Error removing ingredient:', error);
     }
