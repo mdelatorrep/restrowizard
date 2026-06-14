@@ -18,7 +18,7 @@ export const DashboardHero: React.FC<Props> = ({ greeting, currentTime, business
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-foreground truncate">
-            {greeting}, Carlos
+            {greeting}, {displayName}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground font-lato-light capitalize truncate">
             {currentTime} • {businessName}
