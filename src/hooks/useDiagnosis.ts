@@ -82,49 +82,44 @@ export interface AIBenchmark {
   competitive_insight: string;
 }
 
+// Pure scoring logic — extracted so anonymous diagnosis (no hook context)
+// can compute results without DB writes.
+const computeScores = (answers: Record<number, number>): DiagnosisResult => {
+  const pillarScores: Record<string, { total: number; count: number }> = {};
+  maturityModel.pillars.forEach(p => { pillarScores[p.id] = { total: 0, count: 0 }; });
+  maturityModel.questions.forEach((q, index) => {
+    const answerValue = answers[index] || 0;
+    pillarScores[q.pillarId].total += answerValue;
+    pillarScores[q.pillarId].count++;
+  });
+  const pillarAverages: Record<string, number> = {};
+  let totalScore = 0;
+  let totalCount = 0;
+  maturityModel.pillars.forEach(p => {
+    const avg = pillarScores[p.id].count > 0 ? pillarScores[p.id].total / pillarScores[p.id].count : 0;
+    pillarAverages[p.id] = avg;
+    totalScore += pillarScores[p.id].total;
+    totalCount += pillarScores[p.id].count;
+  });
+  const overallAverage = totalCount > 0 ? totalScore / totalCount : 0;
+  const overallLevel = getLevelFromScore(overallAverage);
+  return {
+    pillarScores: pillarAverages,
+    overallScore: overallAverage,
+    overallLevel: overallLevel.name,
+  };
+};
+
+export const calculateAnonymousDiagnosis = (
+  answers: Record<number, number>
+): DiagnosisResult & { diagnosisId?: string } => computeScores(answers);
+
 export const useDiagnosis = () => {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const { toast } = useToast();
 
-  const calculateScores = (answers: Record<number, number>): DiagnosisResult => {
-    const pillarScores: Record<string, { total: number; count: number }> = {};
-    
-    // Initialize pillar scores
-    maturityModel.pillars.forEach(p => {
-      pillarScores[p.id] = { total: 0, count: 0 };
-    });
-
-    // Calculate scores
-    maturityModel.questions.forEach((q, index) => {
-      const answerValue = answers[index] || 0;
-      pillarScores[q.pillarId].total += answerValue;
-      pillarScores[q.pillarId].count++;
-    });
-
-    // Calculate averages
-    const pillarAverages: Record<string, number> = {};
-    let totalScore = 0;
-    let totalCount = 0;
-
-    maturityModel.pillars.forEach(p => {
-      const avg = pillarScores[p.id].count > 0 
-        ? pillarScores[p.id].total / pillarScores[p.id].count 
-        : 0;
-      pillarAverages[p.id] = avg;
-      totalScore += pillarScores[p.id].total;
-      totalCount += pillarScores[p.id].count;
-    });
-    
-    const overallAverage = totalCount > 0 ? totalScore / totalCount : 0;
-    const overallLevel = getLevelFromScore(overallAverage);
-
-    return {
-      pillarScores: pillarAverages,
-      overallScore: overallAverage,
-      overallLevel: overallLevel.name
-    };
-  };
+  const calculateScores = computeScores;
 
   const saveDiagnosis = async (answers: Record<number, number>, userId: string, context?: RestaurantContext) => {
     console.log('🔍 Starting saveDiagnosis with:', { userId, answersCount: Object.keys(answers).length });
