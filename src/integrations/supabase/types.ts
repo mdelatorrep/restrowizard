@@ -9350,6 +9350,10 @@ export type Database = {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
       }
+      is_consultant_of: {
+        Args: { _client_user: string; _consultant_user: string }
+        Returns: boolean
+      }
       is_team_admin: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
