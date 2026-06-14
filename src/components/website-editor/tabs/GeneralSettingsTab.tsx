@@ -90,7 +90,7 @@
              <Input
                value={(formData as any).footer_text || ''}
                onChange={e => updateField('footer_text' as keyof RestaurantWebsite, e.target.value as never)}
-               placeholder="© 2025 Mi Restaurante. Todos los derechos reservados."
+               placeholder={`© ${new Date().getFullYear()} ${brand?.brand_name || (formData.site_title as string) || 'Mi Restaurante'}. Todos los derechos reservados.`}
                className="h-11"
              />
            </div>
