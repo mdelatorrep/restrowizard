@@ -125,7 +125,7 @@ export const FinancesTrendsTab = ({ dailySales }: Props) => {
                         {format(new Date(day.date), 'EEE d MMM', { locale: es })}
                       </td>
                       <td className="text-right py-2 px-2 font-medium">
-                        ${formatCurrency(day.total_revenue)}
+                        {formatCurrency(day.total_revenue)}
                       </td>
                       <td className="text-right py-2 px-2">{day.order_count}</td>
                       <td className="text-right py-2 px-2">

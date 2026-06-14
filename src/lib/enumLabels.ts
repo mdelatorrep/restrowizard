@@ -74,6 +74,24 @@ export const ENUM_LABELS = {
     reviews: 'Reseñas',
     custom: 'Personalizado',
   },
+  menu_category: {
+    appetizers: 'Aperitivos',
+    salads: 'Ensaladas',
+    soups: 'Sopas',
+    main_courses: 'Platos Principales',
+    pasta: 'Pasta',
+    pizza: 'Pizza',
+    seafood: 'Mariscos',
+    meat: 'Carnes',
+    poultry: 'Aves',
+    vegetarian: 'Vegetariano',
+    desserts: 'Postres',
+    beverages: 'Bebidas',
+    wine: 'Vinos',
+    cocktails: 'Cócteles',
+    kids: 'Niños',
+    specials: 'Especiales',
+  },
 } as const;
 
 type EnumGroup = keyof typeof ENUM_LABELS;

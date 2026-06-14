@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { RecipeWithDetails, ScaledRecipe } from '@/hooks/useRecipes';
-import { 
-  DollarSign, TrendingUp, Calculator, Scale, 
-  Clock, Percent, Package 
+import { formatCurrency } from '@/lib/formatCurrency';
+import {
+  DollarSign, TrendingUp, Calculator, Scale,
+  Clock, Percent, Package
 } from 'lucide-react';
 
 interface Props {
@@ -76,43 +77,43 @@ export const RecipeCostingPanel = ({ recipe, onUpdate, onScale }: Props) => {
             <div className="space-y-2">
               <div className="flex justify-between py-2 border-b">
                 <span>Ingredientes</span>
-                <span className="font-mono">${ingredientsCost.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(ingredientsCost)}</span>
               </div>
               {subRecipesCost > 0 && (
                 <div className="flex justify-between py-2 border-b">
                   <span>Sub-recetas</span>
-                  <span className="font-mono">${subRecipesCost.toFixed(2)}</span>
+                  <span className="font-mono">{formatCurrency(subRecipesCost)}</span>
                 </div>
               )}
               {laborCost > 0 && (
                 <div className="flex justify-between py-2 border-b">
                   <span>Mano de Obra</span>
-                  <span className="font-mono">${laborCost.toFixed(2)}</span>
+                  <span className="font-mono">{formatCurrency(laborCost)}</span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b text-muted-foreground">
                 <span>Subtotal</span>
-                <span className="font-mono">${subtotal.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(subtotal)}</span>
               </div>
               {wasteCost > 0 && (
                 <div className="flex justify-between py-2 border-b text-orange-600">
                   <span>+ Merma ({recipe.waste_percentage}%)</span>
-                  <span className="font-mono">${wasteCost.toFixed(2)}</span>
+                  <span className="font-mono">{formatCurrency(wasteCost)}</span>
                 </div>
               )}
               {overheadCost > 0 && (
                 <div className="flex justify-between py-2 border-b text-blue-600">
                   <span>+ Overhead ({recipe.overhead_percentage}%)</span>
-                  <span className="font-mono">${overheadCost.toFixed(2)}</span>
+                  <span className="font-mono">{formatCurrency(overheadCost)}</span>
                 </div>
               )}
               <div className="flex justify-between py-3 font-bold text-lg">
                 <span>Costo Total</span>
-                <span className="font-mono">${totalCost.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(totalCost)}</span>
               </div>
               <div className="flex justify-between py-3 bg-primary/10 rounded-lg px-4 -mx-4">
                 <span className="font-bold">Costo por Porción</span>
-                <span className="font-mono text-xl font-bold">${costPerPortion.toFixed(2)}</span>
+                <span className="font-mono text-xl font-bold">{formatCurrency(costPerPortion)}</span>
               </div>
             </div>
           </div>
@@ -192,17 +193,17 @@ export const RecipeCostingPanel = ({ recipe, onUpdate, onScale }: Props) => {
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30">
               <p className="text-sm text-muted-foreground">Food Cost 25%</p>
-              <p className="text-2xl font-bold text-green-600">${priceAt25.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(priceAt25)}</p>
               <p className="text-xs text-muted-foreground">Margen: 75%</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500">
               <p className="text-sm text-muted-foreground">Food Cost 30%</p>
-              <p className="text-2xl font-bold text-yellow-600">${priceAt30.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-yellow-600">{formatCurrency(priceAt30)}</p>
               <p className="text-xs text-muted-foreground">Recomendado</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-orange-50 dark:bg-orange-950/30">
               <p className="text-sm text-muted-foreground">Food Cost 35%</p>
-              <p className="text-2xl font-bold text-orange-600">${priceAt35.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-orange-600">{formatCurrency(priceAt35)}</p>
               <p className="text-xs text-muted-foreground">Margen: 65%</p>
             </div>
           </div>
@@ -238,7 +239,7 @@ export const RecipeCostingPanel = ({ recipe, onUpdate, onScale }: Props) => {
           {suggestedPrice > 0 && (
             <div className="mt-4 p-4 bg-primary/10 rounded-lg text-center">
               <p className="text-sm text-muted-foreground">Precio sugerido al {foodCostTarget}% food cost</p>
-              <p className="text-3xl font-bold">${suggestedPrice.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatCurrency(suggestedPrice)}</p>
             </div>
           )}
         </CardContent>
@@ -284,14 +285,14 @@ export const RecipeCostingPanel = ({ recipe, onUpdate, onScale }: Props) => {
                     <span>{ing.name}</span>
                     <span className="font-mono">
                       {ing.quantity} {ing.unit} 
-                      <span className="text-muted-foreground ml-2">(${ing.cost.toFixed(2)})</span>
+                      <span className="text-muted-foreground ml-2">({formatCurrency(ing.cost)})</span>
                     </span>
                   </div>
                 ))}
               </div>
               <div className="bg-primary/10 px-4 py-3 font-bold flex justify-between">
                 <span>Costo Total ({targetPortions} porciones)</span>
-                <span className="font-mono">${scaledRecipe.totalCost.toFixed(2)}</span>
+                <span className="font-mono">{formatCurrency(scaledRecipe.totalCost)}</span>
               </div>
             </div>
           )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -68,6 +68,31 @@ export const MenuItemDialog: React.FC<MenuItemDialogProps> = ({
     recipe_id: (item as any)?.recipe_id || '',
   });
 
+  // C3-02: Reset form when item changes or dialog opens
+  useEffect(() => {
+    if (!open) return;
+    setFormData({
+      name: item?.name || '',
+      description: item?.description || '',
+      price: item?.price?.toString() || '',
+      category: item?.category || '',
+      category_id: (item as any)?.category_id || '',
+      dietary_tags: item?.dietary_tags || [],
+      allergens: item?.allergens || [],
+      is_available: item?.is_available ?? true,
+      is_featured: item?.is_featured ?? false,
+      is_new: (item as any)?.is_new ?? false,
+      is_bestseller: (item as any)?.is_bestseller ?? false,
+      preparation_time_minutes: (item as any)?.preparation_time_minutes?.toString() || '',
+      calories: (item as any)?.calories?.toString() || '',
+      spicy_level: (item as any)?.spicy_level || 0,
+      cost: (item as any)?.cost?.toString() || '',
+      recipe_id: (item as any)?.recipe_id || '',
+    });
+    setPreviewImage(item?.image_url || null);
+    setSelectedFile(null);
+  }, [item, open]);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -89,7 +114,8 @@ export const MenuItemDialog: React.FC<MenuItemDialogProps> = ({
       setFormData(prev => ({
         ...prev,
         recipe_id: recipeId,
-        name: prev.name || recipe.name,
+        // C3-03: solo autocompletar nombre si está vacío (no sobrescribir en edición)
+        name: prev.name?.trim() ? prev.name : recipe.name,
         cost: recipe.cost_per_portion?.toString() || prev.cost,
         price: prev.price || (recipe.cost_per_portion ? (recipe.cost_per_portion * 3).toFixed(2) : ''),
       }));

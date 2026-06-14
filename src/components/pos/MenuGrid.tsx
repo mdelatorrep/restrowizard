@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { labelFor } from '@/lib/enumLabels';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface MenuItem {
   id: string;
@@ -64,7 +66,7 @@ export const MenuGrid = ({
                 variant={selectedCategory === cat ? 'default' : 'outline'}
                 onClick={() => onSelectCategory(cat || null)}
               >
-                {cat}
+                {labelFor('menu_category', cat ?? undefined)}
               </Button>
             ))}
           </div>
@@ -99,11 +101,11 @@ export const MenuGrid = ({
                   )}
                   <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
                   <p className="text-primary font-bold mt-1">
-                    ${Number(item.price).toLocaleString()}
+                    {formatCurrency(Number(item.price))}
                   </p>
                   {item.category && (
                     <Badge variant="secondary" className="mt-1 text-xs">
-                      {item.category}
+                      {labelFor('menu_category', item.category)}
                     </Badge>
                   )}
                 </CardContent>

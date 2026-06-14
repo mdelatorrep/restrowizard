@@ -88,11 +88,11 @@ export const MenuItemBasicTab: React.FC<Props> = ({
               {recipes.map((recipe) => (
                 <SelectItem key={recipe.id} value={recipe.id}>
                   {recipe.name}
-                  {recipe.cost_per_portion && (
+                  {recipe.cost_per_portion && recipe.cost_per_portion > 0 ? (
                     <span className="text-muted-foreground ml-2">
-                      ({currencySymbol}{recipe.cost_per_portion.toFixed(2)}/porción)
+                      — {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(recipe.cost_per_portion)}/porción
                     </span>
-                  )}
+                  ) : null}
                 </SelectItem>
               ))}
             </SelectContent>

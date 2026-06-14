@@ -73,7 +73,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-1">Ventas del Día</p>
           <p className="text-5xl font-bold text-foreground">
-            ${formatCurrency(revenue)}
+            {formatCurrency(revenue)}
           </p>
           
           {/* Revenue target progress */}
@@ -81,7 +81,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
             <div className="mt-3 max-w-xs mx-auto">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>{revenueProgress.toFixed(0)}% de la meta</span>
-                <span>${formatCurrency(revenueTarget)}</span>
+                <span>{formatCurrency(revenueTarget)}</span>
               </div>
               <Progress 
                 value={Math.min(revenueProgress, 100)} 
@@ -146,7 +146,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
               value={Math.min(foodCostPercent, 50) * 2} 
               className="h-2 bg-orange-100"
             />
-            <p className="text-xs text-muted-foreground">${formatCurrency(foodCost)}</p>
+            <p className="text-xs text-muted-foreground">{formatCurrency(foodCost)}</p>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -159,7 +159,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
               value={Math.min(laborCostPercent, 50) * 2} 
               className="h-2 bg-purple-100"
             />
-            <p className="text-xs text-muted-foreground">${formatCurrency(laborCost)}</p>
+            <p className="text-xs text-muted-foreground">{formatCurrency(laborCost)}</p>
           </div>
         </div>
       </CardContent>
