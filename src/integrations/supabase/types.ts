@@ -6213,6 +6213,7 @@ export type Database = {
       restaurant_businesses: {
         Row: {
           address: string | null
+          allow_oversell: boolean
           business_type: string | null
           city: string | null
           country: string | null
@@ -6226,11 +6227,13 @@ export type Database = {
           owner_id: string
           phone: string | null
           state: string | null
+          tax_config: Json
           updated_at: string | null
           website: string | null
         }
         Insert: {
           address?: string | null
+          allow_oversell?: boolean
           business_type?: string | null
           city?: string | null
           country?: string | null
@@ -6244,11 +6247,13 @@ export type Database = {
           owner_id: string
           phone?: string | null
           state?: string | null
+          tax_config?: Json
           updated_at?: string | null
           website?: string | null
         }
         Update: {
           address?: string | null
+          allow_oversell?: boolean
           business_type?: string | null
           city?: string | null
           country?: string | null
@@ -6262,6 +6267,7 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           state?: string | null
+          tax_config?: Json
           updated_at?: string | null
           website?: string | null
         }
