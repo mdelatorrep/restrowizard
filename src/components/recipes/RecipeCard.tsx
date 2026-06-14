@@ -61,7 +61,7 @@ export const RecipeCard = ({ recipe, recipeAllergens, onPublish, onView, onDelet
         </div>
         <div className="flex items-center gap-1">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <span>${recipe.cost_per_portion?.toFixed(2) || '0.00'}</span>
+          <span>{formatCurrency(recipe.cost_per_portion || 0)}</span>
         </div>
       </div>
 
