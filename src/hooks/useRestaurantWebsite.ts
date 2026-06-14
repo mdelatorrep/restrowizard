@@ -156,12 +156,33 @@ export function useRestaurantWebsite() {
         return null;
       }
       
+      // Seed title/hero from brand or restaurant profile so the public site
+      // shows the real restaurant name instead of the generic "Restaurante".
+      const [{ data: brandRow }, { data: profileRow }] = await Promise.all([
+        supabase
+          .from('restaurant_brands')
+          .select('brand_name')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('restaurant_name')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
+      const restaurantName =
+        (brandRow?.brand_name as string | null) ||
+        (profileRow?.restaurant_name as string | null) ||
+        null;
+
       const { data, error } = await supabase
         .from('restaurant_websites')
         .insert({
           user_id: user.id,
           slug,
           template_id: templateId || null,
+          site_title: restaurantName,
+          hero_title: restaurantName,
         })
         .select()
         .single();
@@ -179,8 +200,8 @@ export function useRestaurantWebsite() {
       setWebsite(newWebsite);
       
       toast({
-        title: "Sitio web creado",
-        description: `Tu sitio estará disponible en /restaurante/${slug}`,
+        title: "Sitio web creado (borrador)",
+        description: `Pulsa "Publicar" para que sea visible en ${window.location.origin}/p/${slug}`,
       });
       
       return newWebsite;

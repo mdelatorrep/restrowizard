@@ -209,29 +209,33 @@
              <CardContent className="p-6 space-y-6">
                <div className="space-y-3">
                  <label className="text-sm font-medium">URL de tu restaurante</label>
-                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                   <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-lg text-sm text-muted-foreground whitespace-nowrap">
-                     <Globe className="w-4 h-4" />
-                     {window.location.origin}/p/
-                   </div>
-                   <Input
-                     value={newSlug}
-                     onChange={(e) => {
-                       setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
-                       setSlugAvailable(null);
-                     }}
-                     placeholder="mi-restaurante"
-                     className="flex-1 h-11"
-                   />
-                   <Button variant="outline" onClick={handleCheckSlug} disabled={!newSlug || checking} className="h-11">
-                     {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verificar'}
-                   </Button>
-                 </div>
-                 {slugAvailable !== null && (
-                   <p className={`text-sm flex items-center gap-1 ${slugAvailable ? 'text-green-600' : 'text-destructive'}`}>
-                     {slugAvailable ? '✓ ¡Disponible!' : '✗ Este nombre ya está en uso'}
-                   </p>
-                 )}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="flex items-center gap-1 px-3 py-2 bg-muted rounded-lg text-sm text-muted-foreground whitespace-nowrap">
+                      <Globe className="w-4 h-4" />
+                      {window.location.origin}/p/
+                    </div>
+                    <Input
+                      value={newSlug}
+                      onChange={(e) => {
+                        setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+                        setSlugAvailable(null);
+                      }}
+                      placeholder="mi-restaurante"
+                      className="flex-1 h-11"
+                    />
+                  </div>
+                  {newSlug && (
+                    <p className={`text-sm flex items-center gap-1 ${
+                      checking ? 'text-muted-foreground' :
+                      slugAvailable === true ? 'text-green-600' :
+                      slugAvailable === false ? 'text-destructive' : 'text-muted-foreground'
+                    }`}>
+                      {checking ? 'Verificando…'
+                        : slugAvailable === true ? '✓ ¡Disponible!'
+                        : slugAvailable === false ? '✗ Este nombre ya está en uso'
+                        : ''}
+                    </p>
+                  )}
                </div>
  
                {templates.length > 0 && (

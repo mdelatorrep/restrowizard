@@ -476,6 +476,16 @@ export const useEnterpriseInventory = () => {
         .single();
       if (error) throw error;
       toast({ title: "Ítem creado" });
+      // Optimistic update so the list refreshes immediately, even if the
+      // subsequent SELECT is filtered out by RLS/user_id mismatch edge cases.
+      if (result) {
+        const enriched = {
+          ...(result as InventoryItemExtended),
+          storage_location: storageLocations.find(l => l.id === (result as any).storage_location_id),
+          preferred_supplier: suppliers.find(s => s.id === (result as any).preferred_supplier_id),
+        };
+        setInventory(prev => [enriched, ...prev]);
+      }
       await fetchAll();
       return result;
     } catch (error: any) {
