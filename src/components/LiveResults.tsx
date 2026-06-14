@@ -199,7 +199,7 @@ const LiveResults = () => {
                 La Comunidad RestroWizard
               </h3>
               <p className="text-off-white/60 font-lato-light">
-                +500 restaurantes creciendo juntos con IA
+                Restaurantes y consultores que crecen con IA
               </p>
             </div>
             
