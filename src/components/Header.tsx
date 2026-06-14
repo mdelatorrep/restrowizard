@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes, faStar, faArrowRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
@@ -10,6 +8,7 @@ import restrojobsLogo from '@/assets/logos/restrojobs.png';
 import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
 import restrolearnLogo from '@/assets/logos/restrolearn.png';
 import restroservicesLogo from '@/assets/logos/restroservices.png';
+import { ArrowRight, ChevronDown, Menu, Star, X } from 'lucide-react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -116,7 +115,7 @@ const Header = () => {
                   }`}
                 >
                   {link.label}
-                  <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
+                  <ChevronDown className="text-xs" />
                 </button>
 
                 {showSolutions && (
@@ -212,7 +211,7 @@ const Header = () => {
                 }`}
               >
                 Comenzar Gratis
-                <FontAwesomeIcon icon={faArrowRight} className="ml-2 text-sm group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 text-sm group-hover:translate-x-1 transition-transform" />
               </Button>
             </>
           )}

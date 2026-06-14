@@ -1,7 +1,5 @@
 import { Brain, BarChart3, Target } from 'lucide-react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
-
+import { ArrowRight } from 'lucide-react';
 export const DiagnosisWelcome = ({ onStart }: { onStart: () => void }) => (
   <div className="min-h-screen bg-card p-4 md:p-8">
     <div className="container mx-auto max-w-4xl">
@@ -32,7 +30,7 @@ export const DiagnosisWelcome = ({ onStart }: { onStart: () => void }) => (
           onClick={onStart}
           className="bg-primary text-primary-foreground font-lato-bold text-xl px-10 py-4 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
         >
-          Iniciar Diagnóstico <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
+          Iniciar Diagnóstico <ArrowRight className="ml-2" />
         </button>
       </div>
     </div>

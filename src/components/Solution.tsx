@@ -1,9 +1,8 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWandMagicSparkles, faCogs, faRocket, faCheckCircle, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
+import { ArrowDown, CheckCircle2, Rocket, Settings, Sparkles } from 'lucide-react';
 
 const Solution = () => {
   const navigate = useNavigate();
@@ -99,7 +98,7 @@ const Solution = () => {
                   <div className={`grid grid-cols-2 gap-3 ${index % 2 === 1 ? 'lg:justify-items-end' : ''}`}>
                     {step.features.map((feature, idx) => (
                       <div key={idx} className={`flex items-center gap-2 ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
-                        <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-sm" />
+                        <CheckCircle2 className="text-green-500 text-sm" />
                         <span className="text-sm text-soft-black/80 font-lato-light">{feature}</span>
                       </div>
                     ))}
@@ -115,7 +114,7 @@ const Solution = () => {
                   {/* Arrow down (only on non-last items) */}
                   {index < steps.length - 1 && (
                     <div className="hidden lg:flex absolute -bottom-20 left-1/2 -translate-x-1/2 text-purple-medium/30">
-                      <FontAwesomeIcon icon={faArrowDown} className="text-2xl animate-bounce" />
+                      <ArrowDown className="text-2xl animate-bounce" />
                     </div>
                   )}
                 </div>

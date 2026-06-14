@@ -1,6 +1,5 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight, faPollH } from '@fortawesome/free-solid-svg-icons';
 import { maturityModel } from '@/data/maturityModel';
+import { ArrowLeft, ArrowRight, BarChart3 } from 'lucide-react';
 
 interface Props {
   currentQuestionIndex: number;
@@ -83,7 +82,7 @@ export const DiagnosisQuestions = ({ currentQuestionIndex, userAnswers, onAnswer
               currentQuestionIndex === 0 ? 'hidden' : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Anterior
+            <ArrowLeft className="mr-2" /> Anterior
           </button>
           <button
             onClick={() => onNavigate(1)}
@@ -91,9 +90,9 @@ export const DiagnosisQuestions = ({ currentQuestionIndex, userAnswers, onAnswer
             className="bg-primary text-primary-foreground font-lato-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLast ? (
-              <>Finalizar y Ver Resultados <FontAwesomeIcon icon={faPollH} className="ml-2" /></>
+              <>Finalizar y Ver Resultados <BarChart3 className="ml-2" /></>
             ) : (
-              <>Siguiente <FontAwesomeIcon icon={faArrowRight} className="ml-2" /></>
+              <>Siguiente <ArrowRight className="ml-2" /></>
             )}
           </button>
         </div>

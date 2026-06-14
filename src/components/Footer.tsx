@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLinkedin, faInstagram, faFacebook, faYoutube } from '@fortawesome/free-brands-svg-icons';
 import restrowizardLogo from '@/assets/logos/restrowizard.png';
+import { Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -71,11 +70,11 @@ const Footer = () => {
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm font-lato-light">© {new Date().getFullYear()} RestroWizard. Todos los derechos reservados.</p>
           <div className="flex gap-3">
-            {[faLinkedin, faInstagram, faFacebook, faYoutube].map((icon, i) => (
-              <a key={i} href="#" className="w-9 h-9 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
-                <FontAwesomeIcon icon={icon} className="text-sm" />
-              </a>
-            ))}
+            {[Linkedin, Instagram, Facebook, Youtube].map((Icon, i) => (
+            <a key={i} href="#" className="w-9 h-9 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
+              <Icon className="text-sm" />
+            </a>
+          ))}
           </div>
         </div>
       </div>

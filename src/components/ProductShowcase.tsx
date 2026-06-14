@@ -1,6 +1,4 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDollarSign, faUsers, faBoxesStacked, faGlobe, faRobot } from '@fortawesome/free-solid-svg-icons';
-
+import { Bot, Boxes, DollarSign, Globe, Users } from 'lucide-react';
 const painPoints = [
   {
     icon: faDollarSign,
@@ -85,7 +83,7 @@ const ProductShowcase = () => {
               {/* AI alert - financial focus */}
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 flex items-center gap-4">
                 <div className="w-10 h-10 bg-lavender-light/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <FontAwesomeIcon icon={faRobot} className="text-lavender-light" />
+                  <Bot className="text-lavender-light" />
                 </div>
                 <p className="text-white/70 text-sm font-lato-regular">
                   Tu Prime Cost subió 3.2% esta semana. El costo de proteínas aumentó un 15%. Te sugiero renegociar con tu proveedor.
