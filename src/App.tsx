@@ -185,8 +185,9 @@ const App = () => (
                 <Route path="/p/:slug/fidelidad" element={<PublicLoyaltyPage />} />
                 <Route path="/p/:slug/experiencia" element={<PublicExperiencePage />} />
 
-                {/* Legacy */}
-                <Route path="/restaurante/:slug" element={<PublicRestaurant />} />
+                {/* Legacy alias → canonical public hub */}
+                <Route path="/restaurante/:slug" element={<LegacyRestauranteRedirect />} />
+                <Route path="/restaurante/:slug/*" element={<LegacyRestauranteRedirect />} />
 
                 <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
                 <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
