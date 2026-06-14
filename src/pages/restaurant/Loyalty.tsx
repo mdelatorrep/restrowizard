@@ -61,9 +61,7 @@ const Loyalty = () => {
   const vipCustomers = useMemo(() => getVIPCustomers(), [getVIPCustomers]);
   const tierDistribution = useMemo(() => getCustomersByTier(), [getCustomersByTier]);
 
-  const atRiskCustomers = getAtRiskCustomers();
-  const vipCustomers = getVIPCustomers();
-  const tierDistribution = getCustomersByTier();
+
 
   const handleChurnAnalysis = async () => {
     if (atRiskCustomers.length === 0) {
