@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
 import type { Json } from '@/integrations/supabase/types';
+import { createSessionSupabaseClient } from '@/lib/createSessionSupabaseClient';
 
 export interface RestaurantBrand {
   id: string;
@@ -108,6 +109,8 @@ export const useBrandData = () => {
     if (!userId) return null;
     
     try {
+      const sessionSupabase = await createSessionSupabaseClient();
+
       const insertData = {
         brand_name: brandData.brand_name,
         user_id: userId,
@@ -125,7 +128,7 @@ export const useBrandData = () => {
         gallery_photos: (brandData.gallery_photos ?? null) as Json,
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await sessionSupabase
         .from('restaurant_brands')
         .insert([insertData])
         .select()
