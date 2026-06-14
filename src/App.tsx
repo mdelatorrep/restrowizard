@@ -2,7 +2,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
+
+// Legacy redirect: /restaurante/:slug → canonical /p/:slug (preserves sub-path)
+function LegacyRestauranteRedirect() {
+  const { slug } = useParams<{ slug: string }>();
+  const { pathname, search, hash } = useLocation();
+  const rest = pathname.replace(/^\/restaurante\/[^/]+/, '') || '';
+  return <Navigate to={`/p/${slug}${rest}${search}${hash}`} replace />;
+}
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { ActiveClientProvider } from "./contexts/ActiveClientContext";
