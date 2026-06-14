@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import { createSessionSupabaseClient } from '@/lib/createSessionSupabaseClient';
 
 export interface InventoryItem {
   id: string;
@@ -93,7 +94,9 @@ export const useInventoryData = () => {
     if (!userId) return null;
 
     try {
-      const { data, error } = await supabase
+      const sessionSupabase = await createSessionSupabaseClient();
+
+      const { data, error } = await sessionSupabase
         .from('inventory_items')
         .insert({
           ...item,
