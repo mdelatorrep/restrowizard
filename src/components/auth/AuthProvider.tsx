@@ -136,23 +136,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // THEN get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('📋 Initial session check:', { hasSession: !!session, userId: session?.user?.id });
-      
-      // Validate that the user still exists on the server
-      if (session) {
-        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
-        if (userError || !validUser) {
-          console.warn('⚠️ Session exists but user is invalid/deleted. Clearing session.');
-          await supabase.auth.signOut({ scope: 'local' });
-          setSession(null);
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-      }
-      
+
+      // Set session FIRST so route guards see the authenticated state and don't bounce to /auth.
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Validate user existence in the background; only clear session if the server
+      // explicitly says the user is gone (404/user_not_found). A transient network
+      // error must NOT log the user out.
+      if (session) {
+        try {
+          const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
+          const msg = (userError?.message || '').toLowerCase();
+          const isUserGone =
+            !validUser && !!userError && (
+              msg.includes('user not found') ||
+              msg.includes('user_not_found') ||
+              (userError as any)?.status === 404 ||
+              (userError as any)?.status === 403
+            );
+          if (isUserGone) {
+            console.warn('⚠️ Session belongs to a deleted user. Clearing.');
+            await supabase.auth.signOut({ scope: 'local' });
+            setSession(null);
+            setUser(null);
+          }
+        } catch (e) {
+          // Network/transient error — keep the session and let the next request retry.
+          console.warn('⚠️ Could not validate session right now, keeping it.', e);
+        }
+      }
+
       
       // If already logged in on page load at /auth, navigate appropriately
       if (session && window.location.pathname === '/auth') {

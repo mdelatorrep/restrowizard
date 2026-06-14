@@ -53,8 +53,8 @@ const OperationsAIModule: React.FC = () => {
     datasets: [{
       label: 'Satisfacción del Cliente',
       data: satisfactionData,
-      borderColor: 'hsl(var(--primary))',
-      backgroundColor: 'hsl(var(--primary) / 0.1)',
+      borderColor: '#3E1064',
+      backgroundColor: 'rgba(62, 16, 100, 0.1)',
       fill: true,
       tension: 0.4,
     }],
@@ -65,7 +65,7 @@ const OperationsAIModule: React.FC = () => {
     datasets: [{
       label: 'Pedidos por Hora',
       data: kpis?.peakHours?.map(() => kpis?.ordersToday ? Math.ceil(kpis.ordersToday / (kpis.peakHours?.length || 1)) : 0) || [],
-      backgroundColor: 'hsl(var(--primary))',
+      backgroundColor: '#3E1064',
       yAxisID: 'y',
     }],
   };

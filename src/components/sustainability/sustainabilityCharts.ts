@@ -14,10 +14,7 @@ export function buildWasteByCategory(kpis: SustainabilityKPIs | null) {
     labels: Object.keys(kpis?.wasteByCategory || {}).map((c) => wasteCategoryLabels[c] || c),
     datasets: [{
       data: Object.values(kpis?.wasteByCategory || {}),
-      backgroundColor: [
-        'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))',
-        'hsl(var(--chart-4))', 'hsl(var(--chart-5))'
-      ],
+      backgroundColor: ['#3E1064', '#D4A5DB', '#22c55e', '#f59e0b', '#ef4444'],
       borderWidth: 0,
     }],
   };
@@ -29,7 +26,7 @@ export function buildCarbonByCategory(kpis: SustainabilityKPIs | null) {
     datasets: [{
       label: 'kg CO2',
       data: Object.values(kpis?.carbonByCategory || {}),
-      backgroundColor: 'hsl(var(--primary) / 0.8)',
+      backgroundColor: 'rgba(62, 16, 100, 0.8)',
       borderRadius: 8,
     }],
   };
@@ -44,8 +41,8 @@ export function buildWasteTrend(wasteLogs: FoodWasteLog[]) {
       datasets: [{
         label: 'Desperdicio (kg)',
         data: recent.map((w) => w.quantity_kg),
-        borderColor: 'hsl(var(--destructive))',
-        backgroundColor: 'hsl(var(--destructive) / 0.1)',
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
         fill: true,
         tension: 0.4,
       }],

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Doughnut } from 'react-chartjs-2';
 import { Smartphone } from 'lucide-react';
 import type { DisplayBrand } from './ghostKitchenHelpers';
+import { pickPalette } from '@/lib/chartColors';
 
 interface Props {
   ordersByPlatform: Record<string, { orders: number; revenue: number; commission: number }>;
@@ -10,15 +11,16 @@ interface Props {
 }
 
 export const GhostKitchenDashboardTab: React.FC<Props> = ({ ordersByPlatform, displayBrands }) => {
+  const platformKeys = Object.keys(ordersByPlatform);
   const revenueByPlatform = {
-    labels: Object.keys(ordersByPlatform).length > 0
-      ? Object.keys(ordersByPlatform).map((p) => p.replace('_', ' ').toUpperCase())
+    labels: platformKeys.length > 0
+      ? platformKeys.map((p) => p.replace('_', ' ').toUpperCase())
       : ['Sin datos'],
     datasets: [{
-      data: Object.keys(ordersByPlatform).length > 0
+      data: platformKeys.length > 0
         ? Object.values(ordersByPlatform).map((p) => p.revenue)
         : [1],
-      backgroundColor: ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'],
+      backgroundColor: pickPalette(Math.max(platformKeys.length, 1)),
       borderWidth: 0,
     }],
   };

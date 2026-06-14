@@ -36,8 +36,8 @@ export const FinancesTrendsTab = ({ dailySales }: Props) => {
                     {
                       label: 'Prime Cost',
                       data: last14.map((d) => d.food_cost_percentage + d.labor_cost_percentage),
-                      borderColor: 'hsl(var(--primary))',
-                      backgroundColor: 'hsl(var(--primary) / 0.1)',
+                      borderColor: '#3E1064',
+                      backgroundColor: 'rgba(62, 16, 100, 0.1)',
                       fill: true,
                       tension: 0.4,
                     },

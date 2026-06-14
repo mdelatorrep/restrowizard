@@ -2,6 +2,7 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Award } from 'lucide-react';
+import { CHART_COLORS, pickPalette } from '@/lib/chartColors';
 
 interface Performer {
   id: string;
@@ -16,12 +17,15 @@ interface Props {
 }
 
 export const TalentChartsSection: React.FC<Props> = ({ positionBreakdown, topPerformers }) => {
+  const labels = Object.keys(positionBreakdown || {});
   const positionChart = {
-    labels: Object.keys(positionBreakdown || {}),
+    labels,
     datasets: [{
       label: 'Empleados por Posición',
       data: Object.values(positionBreakdown || {}),
-      backgroundColor: 'hsl(var(--primary))',
+      backgroundColor: pickPalette(labels.length),
+      borderColor: CHART_COLORS.primary,
+      borderWidth: 1,
     }],
   };
 
