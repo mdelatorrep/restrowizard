@@ -6,15 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  RecipeIngredient, 
-  MeasurementUnit, 
-  Allergen 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import {
+  RecipeIngredient,
+  MeasurementUnit,
+  Allergen
 } from '@/hooks/useRecipes';
-import { Plus, Trash2, Edit, AlertTriangle, GripVertical } from 'lucide-react';
+import { useEnterpriseInventory } from '@/hooks/useEnterpriseInventory';
+import { Plus, Trash2, Edit, AlertTriangle, GripVertical, Package } from 'lucide-react';
 import { RecipeIngredientExtendedSchema } from '@/lib/schemas/recipe';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   ingredients: RecipeIngredient[];
@@ -25,17 +27,21 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-export const RecipeIngredientManager = ({ 
-  ingredients, 
-  units, 
+const MANUAL_ITEM = '__manual__';
+
+export const RecipeIngredientManager = ({
+  ingredients,
+  units,
   allergens,
-  onAdd, 
-  onUpdate, 
-  onRemove 
+  onAdd,
+  onUpdate,
+  onRemove
 }: Props) => {
+  const { inventory } = useEnterpriseInventory();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
+    inventory_item_id: '' as string | null | '',
     ingredient_name: '',
     quantity: 0,
     unit: 'g',
@@ -53,6 +59,7 @@ export const RecipeIngredientManager = ({
 
   const resetForm = () => {
     setForm({
+      inventory_item_id: '',
       ingredient_name: '',
       quantity: 0,
       unit: 'g',
@@ -70,6 +77,24 @@ export const RecipeIngredientManager = ({
     setEditingId(null);
   };
 
+  // TK-01: al elegir un ítem de inventario, hereda nombre/unidad/costo.
+  const handleInventorySelect = (value: string) => {
+    if (value === MANUAL_ITEM) {
+      setForm(prev => ({ ...prev, inventory_item_id: null as any }));
+      return;
+    }
+    const item = (inventory || []).find(i => i.id === value);
+    if (!item) return;
+    setForm(prev => ({
+      ...prev,
+      inventory_item_id: item.id,
+      ingredient_name: item.item_name,
+      unit: item.unit || prev.unit,
+      cost_per_unit: Number(item.unit_cost) || prev.cost_per_unit,
+    }));
+  };
+
+
   const handleSubmit = () => {
     const parsed = RecipeIngredientExtendedSchema.safeParse(form);
     if (!parsed.success) {
@@ -77,21 +102,28 @@ export const RecipeIngredientManager = ({
       return;
     }
 
+    const payload = {
+      ...form,
+      inventory_item_id: form.inventory_item_id ? form.inventory_item_id : null,
+    };
+
     if (editingId) {
-      onUpdate(editingId, form);
+      onUpdate(editingId, payload as Partial<RecipeIngredient>);
     } else {
       onAdd({
-        ...form,
-        sort_order: ingredients.length
-      });
+        ...payload,
+        sort_order: ingredients.length,
+      } as Partial<RecipeIngredient>);
     }
-    
+
     setShowAddDialog(false);
     resetForm();
   };
 
+
   const handleEdit = (ingredient: RecipeIngredient) => {
     setForm({
+      inventory_item_id: ingredient.inventory_item_id || '',
       ingredient_name: ingredient.ingredient_name,
       quantity: ingredient.quantity,
       unit: ingredient.unit,
@@ -129,6 +161,10 @@ export const RecipeIngredientManager = ({
     return allergens.filter(a => ing.allergen_ids?.includes(a.id));
   };
 
+  const linkedItem = form.inventory_item_id
+    ? (inventory || []).find(i => i.id === form.inventory_item_id)
+    : null;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -143,8 +179,43 @@ export const RecipeIngredientManager = ({
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar Ingrediente' : 'Agregar Ingrediente'}</DialogTitle>
+              <DialogDescription>
+                Vincula el ingrediente con un ítem de inventario para activar costeo automático y descuento de stock al vender.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              {/* TK-01: Inventory picker */}
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <Package className="h-4 w-4" /> Vincular con Inventario
+                </Label>
+                <Select
+                  value={form.inventory_item_id || MANUAL_ITEM}
+                  onValueChange={handleInventorySelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un ítem del inventario..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={MANUAL_ITEM}>— Sin vincular (manual) —</SelectItem>
+                    {(inventory || []).map(item => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.item_name} · {formatCurrency(Number(item.unit_cost) || 0)}/{item.unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {linkedItem ? (
+                  <p className="text-xs text-muted-foreground">
+                    Costo y unidad se actualizan automáticamente desde Inventario. Puedes sobreescribirlos abajo.
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600">
+                    Sin vincular: la receta no descontará stock al vender este platillo.
+                  </p>
+                )}
+              </div>
+
               {/* Basic Info */}
               <div className="grid gap-2">
                 <Label>Nombre del Ingrediente *</Label>
@@ -154,6 +225,7 @@ export const RecipeIngredientManager = ({
                   placeholder="Ej: Harina de trigo"
                 />
               </div>
+
 
               {/* Quantity & Unit */}
               <div className="grid grid-cols-3 gap-4">

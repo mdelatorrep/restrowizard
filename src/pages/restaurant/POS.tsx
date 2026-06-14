@@ -140,6 +140,24 @@ const POS = () => {
     }
 
     try {
+      // TK-02: persistir el método de pago principal (categoría canónica) en la orden.
+      // Si hay pago dividido, se usa el método con mayor monto como principal y se
+      // guarda el desglose completo en metadata.payments. Esto evita que Reportes
+      // muestre "Otros 100%" cuando se cobró en efectivo / tarjeta / etc.
+      const canonical = (name: string): string => {
+        const n = (name || '').toLowerCase();
+        if (n.includes('efectivo') || n.includes('cash')) return 'efectivo';
+        if (n.includes('nequi')) return 'nequi';
+        if (n.includes('davi')) return 'daviplata';
+        if (n.includes('transfer')) return 'transferencia';
+        if (n.includes('crédito') || n.includes('credito') || n.includes('credit')) return 'tarjeta_credito';
+        if (n.includes('débito') || n.includes('debito') || n.includes('debit') || n.includes('tarjeta')) return 'tarjeta_debito';
+        if (n.includes('qr')) return 'qr';
+        return 'otro';
+      };
+      const principal = [...payments].sort((a, b) => b.amount - a.amount)[0];
+      const paymentMethod = principal ? canonical(principal.method_name) : 'otro';
+
       // Create order
       const orderPayload: any = {
         session_id: currentSession?.id,
@@ -157,7 +175,9 @@ const POS = () => {
         status: 'completed',
         order_type: selectedTable ? 'dine_in' : 'takeout',
         is_pos_order: true,
-        guests_count: 1
+        guests_count: 1,
+        payment_method: paymentMethod,
+        payment_status: 'paid',
       };
 
       const { data: order, error: orderError } = await supabase

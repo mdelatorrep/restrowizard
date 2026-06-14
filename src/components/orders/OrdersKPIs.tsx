@@ -1,10 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingBag, DollarSign, Clock } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   kpis: {
     todayOrders?: number;
+    todaySales?: number;
     avgOrderValue?: number;
     pendingOrders?: number;
     completionRate?: number;
@@ -29,7 +31,10 @@ export const OrdersKPIs: React.FC<Props> = ({ kpis }) => (
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Ventas Hoy</p>
-            <p className="text-3xl font-bold">${kpis?.avgOrderValue?.toLocaleString() || 0}</p>
+            <p className="text-3xl font-bold">{formatCurrency(kpis?.todaySales ?? 0)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ticket prom.: {formatCurrency(kpis?.avgOrderValue ?? 0)}
+            </p>
           </div>
           <DollarSign className="h-8 w-8 text-green-500" />
         </div>
