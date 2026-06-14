@@ -4,6 +4,25 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Users, DollarSign, Lock, Trash2, Eye, Link2, Flame, AlertTriangle } from 'lucide-react';
 import { RecipeWithDetails, Allergen } from '@/hooks/useRecipes';
 import { DifficultyBadge } from './DifficultyBadge';
+import { formatCurrency } from '@/lib/formatCurrency';
+
+// Etiquetas ES para categorías de receta comunes
+const RECIPE_CATEGORY_LABELS: Record<string, string> = {
+  entrada: 'Entrada',
+  plato_fuerte: 'Plato fuerte',
+  main_courses: 'Platos fuertes',
+  postre: 'Postre',
+  bebida: 'Bebida',
+  acompanamiento: 'Acompañamiento',
+  ensalada: 'Ensalada',
+  sopa: 'Sopa',
+  desayuno: 'Desayuno',
+  snack: 'Snack',
+  salsa: 'Salsa',
+  guarnicion: 'Guarnición',
+};
+const labelCategory = (c?: string | null) =>
+  !c ? '—' : (RECIPE_CATEGORY_LABELS[c] ?? c.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()));
 
 interface Props {
   recipe: RecipeWithDetails;
