@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
@@ -47,15 +47,21 @@ const Loyalty = () => {
   });
   const [pointsToAward, setPointsToAward] = useState({ points: 100, reason: 'Compra' });
 
-  const filteredCustomers = customers.filter(c =>
-    c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_phone?.includes(searchTerm)
+  const filteredCustomers = useMemo(
+    () =>
+      customers.filter(c =>
+        c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.customer_phone?.includes(searchTerm)
+      ),
+    [customers, searchTerm]
   );
 
-  const atRiskCustomers = getAtRiskCustomers();
-  const vipCustomers = getVIPCustomers();
-  const tierDistribution = getCustomersByTier();
+  const atRiskCustomers = useMemo(() => getAtRiskCustomers(), [getAtRiskCustomers]);
+  const vipCustomers = useMemo(() => getVIPCustomers(), [getVIPCustomers]);
+  const tierDistribution = useMemo(() => getCustomersByTier(), [getCustomersByTier]);
+
+
 
   const handleChurnAnalysis = async () => {
     if (atRiskCustomers.length === 0) {
