@@ -7900,6 +7900,7 @@ export type Database = {
       staff_members: {
         Row: {
           avatar_url: string | null
+          contract_type: string | null
           created_at: string
           department: string | null
           email: string | null
@@ -7924,6 +7925,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          contract_type?: string | null
           created_at?: string
           department?: string | null
           email?: string | null
@@ -7948,6 +7950,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          contract_type?: string | null
           created_at?: string
           department?: string | null
           email?: string | null
