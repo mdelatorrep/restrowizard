@@ -70,11 +70,12 @@ export const useModulePrerequisites = () => {
     // Per-table count that survives transient errors (503, network blips)
     // by resolving to `null` instead of throwing the whole Promise.all.
     const safeCount = async (
-      table: Parameters<typeof supabase.from>[0],
+      table: string,
       filter?: { col: string; val: string }
     ): Promise<number | null> => {
       try {
-        let q = supabase.from(table).select('id', { count: 'exact', head: true });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let q: any = supabase.from(table as any).select('id', { count: 'exact', head: true });
         if (filter) q = q.eq(filter.col, filter.val);
         const { count, error } = await q;
         if (error) {
