@@ -438,7 +438,7 @@ export const RecipeIngredientManager = ({
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        ${effectiveCost.toFixed(2)}
+                        {formatCurrency(effectiveCost)}
                       </TableCell>
                       <TableCell>
                         {ingAllergens.length > 0 && (
