@@ -178,14 +178,6 @@ const POS = () => {
         guests_count: 1,
         payment_method: paymentMethod,
         payment_status: 'paid',
-        metadata: {
-          payments: payments.map(p => ({
-            method_id: p.method_id,
-            method_name: p.method_name,
-            canonical: canonical(p.method_name),
-            amount: p.amount,
-          })),
-        },
       };
 
       const { data: order, error: orderError } = await supabase
