@@ -8587,6 +8587,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          duration_minutes: number
           id: string
           loyalty_customer_id: string | null
           notes: string | null
@@ -8597,6 +8598,7 @@ export type Database = {
           source: string | null
           special_requests: string | null
           status: string | null
+          table_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -8606,6 +8608,7 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          duration_minutes?: number
           id?: string
           loyalty_customer_id?: string | null
           notes?: string | null
@@ -8616,6 +8619,7 @@ export type Database = {
           source?: string | null
           special_requests?: string | null
           status?: string | null
+          table_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -8625,6 +8629,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          duration_minutes?: number
           id?: string
           loyalty_customer_id?: string | null
           notes?: string | null
@@ -8635,6 +8640,7 @@ export type Database = {
           source?: string | null
           special_requests?: string | null
           status?: string | null
+          table_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -8644,6 +8650,13 @@ export type Database = {
             columns: ["loyalty_customer_id"]
             isOneToOne: false
             referencedRelation: "loyalty_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_reservations_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
             referencedColumns: ["id"]
           },
         ]
