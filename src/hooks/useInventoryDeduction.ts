@@ -32,22 +32,43 @@ export const useInventoryDeduction = () => {
   // `.single()`.
   const getRecipeForMenuItem = useCallback(async (menuItemId: string): Promise<Recipe | null> => {
     try {
-      const { data: recipeData, error: recipeError } = await supabase
-        .from('recipes')
-        .select('id')
-        .eq('menu_item_id', menuItemId)
+      // The link can live on either side: menu_items.recipe_id (set when linked
+      // from the menu editor) or recipes.menu_item_id (set when linked from the
+      // recipe editor). A DB trigger keeps them in sync going forward, but we
+      // still defensively check both to be resilient with historical rows.
+      let recipeId: string | null = null;
+
+      const { data: menuItemRow, error: menuItemErr } = await supabase
+        .from('menu_items')
+        .select('recipe_id')
+        .eq('id', menuItemId)
         .maybeSingle();
 
-      if (recipeError) {
-        logger.warn('[inventoryDeduction] recipe lookup error', recipeError);
-        return null;
+      if (menuItemErr) {
+        logger.warn('[inventoryDeduction] menu_item lookup error', menuItemErr);
       }
-      if (!recipeData) return null;
+      recipeId = (menuItemRow?.recipe_id as string | null) || null;
+
+      if (!recipeId) {
+        const { data: recipeData, error: recipeError } = await supabase
+          .from('recipes')
+          .select('id')
+          .eq('menu_item_id', menuItemId)
+          .maybeSingle();
+
+        if (recipeError) {
+          logger.warn('[inventoryDeduction] recipe lookup error', recipeError);
+          return null;
+        }
+        recipeId = recipeData?.id || null;
+      }
+
+      if (!recipeId) return null;
 
       const { data: ingredientsData, error: ingredientsError } = await supabase
         .from('recipe_ingredients')
         .select('inventory_item_id, quantity, unit')
-        .eq('recipe_id', recipeData.id)
+        .eq('recipe_id', recipeId)
         .not('inventory_item_id', 'is', null);
 
       if (ingredientsError) {
@@ -56,7 +77,7 @@ export const useInventoryDeduction = () => {
       }
 
       return {
-        id: recipeData.id,
+        id: recipeId,
         menu_item_id: menuItemId,
         ingredients: (ingredientsData || [])
           .filter((i) => i.inventory_item_id)
