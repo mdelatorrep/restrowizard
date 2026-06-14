@@ -69,11 +69,13 @@ const LearnHome = () => {
                 <Button>Buscar</Button>
               </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-6 mt-10 text-primary-foreground/80">
-              <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{tracks.length}</div><div className="text-sm">Rutas</div></div>
-              <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{courses.length}+</div><div className="text-sm">Cursos</div></div>
-              <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{courses.reduce((s: number, c: any) => s + (c.enrollments_count || 0), 0).toLocaleString()}</div><div className="text-sm">Estudiantes</div></div>
-            </div>
+            {(tracks.length > 0 || courses.length > 0) && (
+              <div className="flex flex-wrap justify-center gap-6 mt-10 text-primary-foreground/80">
+                <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{tracks.length}</div><div className="text-sm">Rutas</div></div>
+                <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{courses.length}</div><div className="text-sm">Cursos</div></div>
+                <div className="text-center"><div className="text-2xl font-headline text-primary-foreground">{categories.length - 1}</div><div className="text-sm">Categorías</div></div>
+              </div>
+            )}
           </div>
         </div>
       </section>
