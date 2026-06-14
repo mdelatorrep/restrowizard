@@ -278,6 +278,9 @@ export const usePOSSession = () => {
         total_sales: Number(prev.total_sales) + saleAmount,
         total_tips: Number(prev.total_tips) + tipAmount
       } : null);
+
+      // P2-9: notify other usePOSSession instances (e.g. POS page) to refresh
+      window.dispatchEvent(new CustomEvent('pos-session:refresh'));
     } catch (error) {
       console.error('Error updating session stats:', error);
     }
@@ -285,6 +288,9 @@ export const usePOSSession = () => {
 
   useEffect(() => {
     fetchCurrentSession();
+    const onRefresh = () => fetchCurrentSession();
+    window.addEventListener('pos-session:refresh', onRefresh);
+    return () => window.removeEventListener('pos-session:refresh', onRefresh);
   }, [fetchCurrentSession]);
 
   return {
