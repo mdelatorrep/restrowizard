@@ -196,7 +196,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     } finally {
       setLoading(false);
     }
-  }, [userId, range.start, range.end, toast]);
+  }, [userId, startDayMs, endDayMs, toast]);
 
   // Fetch realtime today data
   const fetchRealtimeToday = useCallback(async () => {
