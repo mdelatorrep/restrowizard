@@ -314,6 +314,7 @@ const POS = () => {
           items={items}
           subtotal={subtotal}
           taxAmount={taxAmount}
+          taxLabel={taxConfig.label || (taxConfig.type === 'impoconsumo' ? 'Impoconsumo' : taxConfig.type === 'iva' ? 'IVA' : 'Impuesto')}
           total={total}
           hasOpenSession={hasOpenSession}
           tables={tables}
