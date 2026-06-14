@@ -185,19 +185,19 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
       if (inventory_item_id && rest.quantity_kg > 0) {
         const { data: item } = await supabase
           .from('inventory_items')
-          .select('stock, unit_cost')
+          .select('current_stock, unit_cost')
           .eq('id', inventory_item_id)
           .maybeSingle();
 
         if (item) {
-          const before = Number(item.stock) || 0;
+          const before = Number(item.current_stock) || 0;
           const change = rest.quantity_kg;
           const after = Math.max(0, before - change);
           const unitCost = Number(item.unit_cost) || 0;
 
           await supabase
             .from('inventory_items')
-            .update({ stock: after })
+            .update({ current_stock: after })
             .eq('id', inventory_item_id);
 
           await supabase.from('inventory_movements').insert({
@@ -215,6 +215,7 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
           });
         }
       }
+
 
       toast({
         title: "Desperdicio registrado",
