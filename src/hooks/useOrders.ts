@@ -58,6 +58,7 @@ export interface OrderKPIs {
   avgOrderValue: number;
   deliveryOrders: number;
   completionRate: number;
+  todaySales: number;
 }
 
 export const useOrders = () => {
@@ -72,11 +73,16 @@ export const useOrders = () => {
   const calculateKPIs = (data: RestaurantOrder[]): OrderKPIs => {
     const total = data.length;
     if (total === 0) {
-      return { totalOrders: 0, todayOrders: 0, pendingOrders: 0, avgOrderValue: 0, deliveryOrders: 0, completionRate: 0 };
+      return { totalOrders: 0, todayOrders: 0, pendingOrders: 0, avgOrderValue: 0, deliveryOrders: 0, completionRate: 0, todaySales: 0 };
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const todayOrders = data.filter(o => o.created_at.startsWith(today)).length;
+    const todayList = data.filter(o => o.created_at.startsWith(today));
+    const todayOrders = todayList.length;
+    // TK-03: Ventas Hoy debe sumar las órdenes del día (no canceladas), igual que Reportes/Dashboard.
+    const todaySales = todayList
+      .filter(o => o.status !== 'cancelled')
+      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const pending = data.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length;
     const avgValue = data.reduce((sum, o) => sum + o.total, 0) / total;
     const delivery = data.filter(o => o.order_type === 'delivery').length;
@@ -85,6 +91,7 @@ export const useOrders = () => {
     return {
       totalOrders: total,
       todayOrders,
+      todaySales: Math.round(todaySales),
       pendingOrders: pending,
       avgOrderValue: Math.round(avgValue),
       deliveryOrders: delivery,
