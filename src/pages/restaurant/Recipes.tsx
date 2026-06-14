@@ -11,6 +11,7 @@ import { RecipesFilterBar } from '@/components/recipes/RecipesFilterBar';
 import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
 import { ChefHat, Plus, Loader2, DollarSign, Lock, Sparkles, BookOpen, UtensilsCrossed, Flame } from 'lucide-react';
 import { ModulePageLayout, PageHeader, KPIGrid, KPICardData } from '@/components/layout';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 const Recipes = () => {
   const {
