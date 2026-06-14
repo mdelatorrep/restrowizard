@@ -92,8 +92,13 @@ export const useMenus = () => {
 
       if (error) throw error;
 
-      await loadMenus();
-      
+      // Optimistic + global notify so other useMenus instances (e.g. the page
+      // mounted behind the dialog) refresh, and prerequisites re-evaluate so
+      // POS / Orders unlock after the menu is created.
+      setMenus(prev => [data as RestaurantMenu, ...(prev || []).filter(m => m.id !== (data as any).id)]);
+      window.dispatchEvent(new CustomEvent('menus:changed'));
+      window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
+
       toast({
         title: 'Éxito',
         description: 'Menú creado exitosamente',
