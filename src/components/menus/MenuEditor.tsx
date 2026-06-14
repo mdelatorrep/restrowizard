@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LEGACY_CATEGORIES } from './menuItemDialogTypes';
 import { Plus, FolderTree, ListOrdered, Settings, Utensils, Package, PieChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
