@@ -18,9 +18,45 @@ export interface Reservation {
   confirmation_code: string;
   reminder_sent: boolean;
   notes: string | null;
+  table_id: string | null;
+  duration_minutes: number;
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * TK-J: detecta solapamiento de horario para una mesa.
+ * Considera reservas no canceladas el mismo día cuya ventana [start, start+duration)
+ * intersecta la nueva ventana solicitada.
+ */
+export const findOverlappingReservation = (
+  reservations: Pick<Reservation, 'id' | 'table_id' | 'reservation_date' | 'reservation_time' | 'duration_minutes' | 'status'>[],
+  tableId: string,
+  date: string,
+  time: string,
+  durationMinutes: number,
+  excludeId?: string,
+) => {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const startA = toMin(time);
+  const endA = startA + durationMinutes;
+  return reservations.find(r =>
+    r.id !== excludeId &&
+    r.table_id === tableId &&
+    r.reservation_date === date &&
+    r.status !== 'cancelled' &&
+    r.status !== 'no_show' &&
+    (() => {
+      const startB = toMin(r.reservation_time);
+      const endB = startB + (r.duration_minutes || 90);
+      return startA < endB && startB < endA;
+    })()
+  );
+};
+
 
 export interface ReservationKPIs {
   total: number;
@@ -130,28 +166,52 @@ export function useReservations() {
     reservation_time: string;
     special_requests?: string;
     source?: string;
+    table_id?: string | null;
+    duration_minutes?: number;
   }) => {
     if (!user?.id) return null;
-    
+
+    const duration = reservationData.duration_minutes || 90;
+
+    // TK-J: validar solapamiento si hay mesa asignada
+    if (reservationData.table_id) {
+      const conflict = findOverlappingReservation(
+        reservations,
+        reservationData.table_id,
+        reservationData.reservation_date,
+        reservationData.reservation_time,
+        duration,
+      );
+      if (conflict) {
+        toast({
+          title: "Mesa ocupada",
+          description: `Ya existe una reserva en esa franja. Elige otra mesa u horario.`,
+          variant: "destructive",
+        });
+        return null;
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from('table_reservations')
         .insert({
           ...reservationData,
+          duration_minutes: duration,
           user_id: user.id,
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       setReservations(prev => [...prev, data as Reservation]);
-      
+
       toast({
         title: "Reserva creada",
         description: `Código: ${data.confirmation_code}`,
       });
-      
+
       return data as Reservation;
     } catch (error) {
       console.error('Error creating reservation:', error);
@@ -163,6 +223,7 @@ export function useReservations() {
       return null;
     }
   };
+
 
   return {
     reservations,
