@@ -154,6 +154,7 @@ const App = () => (
                 <Route path="/diagnosis" element={<Diagnosis />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/eventos" element={<Navigate to="/events" replace />} />
+                {/* Legacy redirect kept for old shared links — F-03 renamed nav to "Testimonios". */}
                 <Route path="/casos-de-exito" element={<Navigate to="/#testimonios" replace />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
