@@ -197,9 +197,12 @@ const POS = () => {
         name: i.name,
         quantity: i.quantity
       })));
-      
-      if (inventoryResult.deductedCount > 0) {
-        console.log(`Inventory deducted for ${inventoryResult.deductedCount} items`);
+
+      if (inventoryResult.deductedCount === 0 && inventoryResult.missingRecipeCount > 0) {
+        toast({
+          title: 'Sin descuento de inventario',
+          description: `${inventoryResult.missingRecipeCount} platillo(s) no tienen receta vinculada. Vincula una receta para costear y descontar stock.`,
+        });
       }
 
       // Award loyalty points if customer selected

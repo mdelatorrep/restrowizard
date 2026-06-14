@@ -11,6 +11,7 @@ import { RecipeNutritionEditor } from './RecipeNutritionEditor';
 import { RecipeCostingPanel } from './RecipeCostingPanel';
 import { RecipeSubRecipesManager } from './RecipeSubRecipesManager';
 import { DifficultyBadge } from './DifficultyBadge';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   recipe: RecipeWithDetails | null;
@@ -60,7 +61,7 @@ export const RecipeDetailDialog = ({
               <span className="flex items-center gap-1"><Users className="h-4 w-4" />{recipe.portions} {recipe.yield_unit}</span>
               <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{recipe.preparation_time_minutes || 0} min</span>
               <span className="flex items-center gap-1 text-green-600 font-semibold">
-                <DollarSign className="h-4 w-4" />${recipe.cost_per_portion?.toFixed(2) || '0.00'}/porción
+                <DollarSign className="h-4 w-4" />{formatCurrency(recipe.cost_per_portion || 0)}/porción
               </span>
               {recipe.nutrition && (
                 <span className="flex items-center gap-1"><Flame className="h-4 w-4 text-orange-500" />{recipe.nutrition.calories} kcal</span>
