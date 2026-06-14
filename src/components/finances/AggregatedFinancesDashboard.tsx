@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -168,7 +169,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-3xl font-bold text-primary">
-                  ${realtimeData.revenue.toLocaleString()}
+                  ${formatCurrency(realtimeData.revenue)}
                 </p>
                 <p className="text-sm text-muted-foreground">Ingresos</p>
               </div>
@@ -195,7 +196,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
           <MetricCard
             icon={<DollarSign className="h-6 w-6" />}
             title="Ingresos Totales"
-            value={`$${kpis.totalRevenue.toLocaleString()}`}
+            value={`$${formatCurrency(kpis.totalRevenue)}`}
             trend={kpis.totalRevenue > 0 ? 'up' : 'neutral'}
             description={`${kpis.totalOrders} órdenes`}
             colorClass="bg-green-100 text-green-600"
@@ -213,7 +214,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Food Cost"
             value={`${kpis.foodCostPercentage.toFixed(1)}%`}
             trend={kpis.foodCostPercentage <= 30 ? 'up' : 'down'}
-            description={`$${kpis.totalFoodCost.toLocaleString()}`}
+            description={`$${formatCurrency(kpis.totalFoodCost)}`}
             colorClass="bg-orange-100 text-orange-600"
           />
           <MetricCard
@@ -221,7 +222,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
             title="Labor Cost"
             value={`${kpis.laborCostPercentage.toFixed(1)}%`}
             trend={kpis.laborCostPercentage <= 25 ? 'up' : 'down'}
-            description={`$${kpis.totalLaborCost.toLocaleString()}`}
+            description={`$${formatCurrency(kpis.totalLaborCost)}`}
             colorClass="bg-purple-100 text-purple-600"
           />
         </div>
@@ -297,7 +298,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Horas Trabajadas</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold">${laborKpis.totalLaborCost.toLocaleString()}</p>
+                <p className="text-2xl font-bold">${formatCurrency(laborKpis.totalLaborCost)}</p>
                 <p className="text-sm text-muted-foreground">Costo Total</p>
               </div>
               <div className="text-center">

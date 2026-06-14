@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { DollarSign, Target, Calculator, Gauge } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 
