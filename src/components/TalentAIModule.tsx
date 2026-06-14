@@ -14,6 +14,8 @@ import { TalentNeedsAttention } from './talent/TalentNeedsAttention';
 
 const initialForm: StaffFormData = {
   name: '', position: '', hourly_rate: '', performance_score: '70', training_progress: '0',
+  employee_id: '', email: '', phone: '', contract_type: '',
+  hire_date: new Date().toISOString().split('T')[0],
 };
 
 const TalentAIModule = () => {
@@ -34,11 +36,15 @@ const TalentAIModule = () => {
       name: formData.name,
       position: formData.position,
       hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-      hire_date: new Date().toISOString().split('T')[0],
+      hire_date: formData.hire_date || new Date().toISOString().split('T')[0],
       performance_score: parseFloat(formData.performance_score),
       training_progress: parseInt(formData.training_progress),
       is_active: true,
-    });
+      employee_id: formData.employee_id || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      contract_type: formData.contract_type || null,
+    } as any);
     setFormData(initialForm);
     setShowAddForm(false);
   };
