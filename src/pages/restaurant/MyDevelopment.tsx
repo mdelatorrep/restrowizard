@@ -51,8 +51,7 @@ const MyDevelopment: React.FC = () => {
           name: fullName,
           email: user.email,
           position: 'Propietario',
-          employment_type: 'full_time',
-          status: 'active',
+          is_active: true,
           hire_date: new Date().toISOString().split('T')[0],
         } as any);
         if (error) throw error;
