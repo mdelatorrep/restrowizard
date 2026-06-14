@@ -66,7 +66,7 @@ export const MenuGrid = ({
                 variant={selectedCategory === cat ? 'default' : 'outline'}
                 onClick={() => onSelectCategory(cat || null)}
               >
-                {cat}
+                {labelFor('menu_category', cat ?? undefined)}
               </Button>
             ))}
           </div>
