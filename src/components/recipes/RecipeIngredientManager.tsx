@@ -254,9 +254,13 @@ export const RecipeIngredientManager = ({
                   <Label>Unidad</Label>
                   <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Seleccionar unidad" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* Fallback: si la unidad del inventario no está en el catálogo, mantenerla disponible */}
+                      {form.unit && !units.some(u => u.abbreviation === form.unit) && (
+                        <SelectItem value={form.unit}>{form.unit}</SelectItem>
+                      )}
                       {units.map(unit => (
                         <SelectItem key={unit.id} value={unit.abbreviation}>
                           {unit.name} ({unit.abbreviation})
