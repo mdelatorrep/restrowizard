@@ -101,11 +101,11 @@ export const MenuGrid = ({
                   )}
                   <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
                   <p className="text-primary font-bold mt-1">
-                    ${Number(item.price).toLocaleString()}
+                    {formatCurrency(Number(item.price))}
                   </p>
                   {item.category && (
                     <Badge variant="secondary" className="mt-1 text-xs">
-                      {item.category}
+                      {labelFor('menu_category', item.category)}
                     </Badge>
                   )}
                 </CardContent>
