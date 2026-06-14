@@ -157,7 +157,7 @@ const Recipes = () => {
               recipe={recipe}
               recipeAllergens={getRecipeAllergens(recipe)}
               onPublish={() => setPublishRecipe(recipe)}
-              onView={() => setSelectedRecipe(recipe)}
+              onView={() => setSelectedRecipeId(recipe.id)}
               onDelete={() => deleteRecipe(recipe.id)}
             />
           ))}
@@ -184,7 +184,7 @@ const Recipes = () => {
         units={units}
         allergens={allergens}
         availableSubRecipes={getSubRecipes()}
-        onClose={() => setSelectedRecipe(null)}
+        onClose={() => setSelectedRecipeId(null)}
         onAddIngredient={addIngredient}
         onUpdateIngredient={updateIngredient}
         onRemoveIngredient={removeIngredient}
