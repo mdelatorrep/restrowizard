@@ -14,6 +14,7 @@ import { DashboardKPIs, type KPIData } from '@/components/dashboard/DashboardKPI
 import { CopilotAlertsCard, type DashboardAlert } from '@/components/dashboard/CopilotAlertsCard';
 import { QuickActionsCard, type QuickAction } from '@/components/dashboard/QuickActionsCard';
 import { WeeklyPerformanceCard } from '@/components/dashboard/WeeklyPerformanceCard';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
