@@ -182,7 +182,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Cubiertos</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold">${realtimeData.avgTicket.toFixed(0)}</p>
+                <p className="text-3xl font-bold">{formatCurrency(realtimeData.avgTicket)}</p>
                 <p className="text-sm text-muted-foreground">Ticket Promedio</p>
               </div>
             </div>
