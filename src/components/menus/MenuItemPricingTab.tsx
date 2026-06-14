@@ -62,7 +62,7 @@ export const MenuItemPricingTab: React.FC<Props> = ({ formData, setFormData, cur
             <div className="text-right text-sm">
               <p className="text-muted-foreground">Ganancia por unidad</p>
               <p className="font-semibold text-lg">
-                {currencySymbol}{(parseFloat(formData.price || '0') - parseFloat(formData.cost || '0')).toFixed(2)}
+                {formatCurrency(parseFloat(formData.price || '0') - parseFloat(formData.cost || '0'), 'COP')}
               </p>
             </div>
           </div>
