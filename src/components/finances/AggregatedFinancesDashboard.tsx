@@ -196,7 +196,7 @@ export const AggregatedFinancesDashboard: React.FC = () => {
           <MetricCard
             icon={<DollarSign className="h-6 w-6" />}
             title="Ingresos Totales"
-            value={`{formatCurrency(kpis.totalRevenue)}`}
+            value={formatCurrency(kpis.totalRevenue)}
             trend={kpis.totalRevenue > 0 ? 'up' : 'neutral'}
             description={`${kpis.totalOrders} órdenes`}
             colorClass="bg-green-100 text-green-600"
