@@ -26,6 +26,7 @@ interface MenuGridProps {
   onSearchChange: (q: string) => void;
   onAddToCart: (item: MenuItem) => void;
   disabled?: boolean;
+  outOfStockIds?: Set<string>;
 }
 
 export const MenuGrid = ({
@@ -37,6 +38,7 @@ export const MenuGrid = ({
   onSearchChange,
   onAddToCart,
   disabled,
+  outOfStockIds,
 }: MenuGridProps) => {
   return (
     <div className="flex-1 flex flex-col border-r">
@@ -82,16 +84,24 @@ export const MenuGrid = ({
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {items.map((item) => (
+            {items.map((item) => {
+              const isOut = outOfStockIds?.has(item.id) ?? false;
+              return (
               <Card
                 key={item.id}
                 className={cn(
-                  'cursor-pointer hover:border-primary transition-colors',
-                  disabled && 'opacity-50 pointer-events-none'
+                  'cursor-pointer hover:border-primary transition-colors relative',
+                  disabled && 'opacity-50 pointer-events-none',
+                  isOut && 'opacity-60'
                 )}
                 onClick={() => onAddToCart(item)}
               >
                 <CardContent className="p-3">
+                  {isOut && (
+                    <Badge variant="destructive" className="absolute top-2 right-2 text-[10px] z-10">
+                      Agotado
+                    </Badge>
+                  )}
                   {item.image_url && (
                     <img
                       src={item.image_url}
@@ -110,7 +120,8 @@ export const MenuGrid = ({
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </ScrollArea>
