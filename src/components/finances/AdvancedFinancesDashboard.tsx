@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,9 +41,9 @@ const AdvancedFinancesDashboard: React.FC = () => {
   const [aiInsights, setAiInsights] = useState<string>('');
   const { toast } = useToast();
 
-  const getDateRange = (p: PeriodType) => {
+  const dateRange = useMemo(() => {
     const now = new Date();
-    switch (p) {
+    switch (period) {
       case 'week':
         return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
       case 'month':
@@ -51,9 +51,7 @@ const AdvancedFinancesDashboard: React.FC = () => {
       case 'quarter':
         return { start: subDays(now, 90), end: now };
     }
-  };
-
-  const dateRange = getDateRange(period);
+  }, [period]);
 
   const { dailySales, kpis, trends, loading, hasData, refetch } = useAggregatedFinances(dateRange);
   const { loading: aiLoading, analyzeFinances } = useAIAgent();

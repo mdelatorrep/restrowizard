@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, Users, Utensils, Clock, Leaf, Store } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ActionPlan from '@/components/ActionPlan';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
-import { useFinancesData } from '@/hooks/useFinancesData';
+import { useAggregatedFinances } from '@/hooks/useAggregatedFinances';
 import { useRestaurantLifecycle } from '@/hooks/useRestaurantLifecycle';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import { DashboardKPIs, type KPIData } from '@/components/dashboard/DashboardKPIs';
@@ -25,7 +25,15 @@ const RestaurantDashboard: React.FC = () => {
 
   const lifecycle = useRestaurantLifecycle();
   const { alerts: copilotAlerts, unreadAlerts } = useCopilotAlerts();
-  const { kpis: financeKpis, hasData: hasFinanceData } = useFinancesData();
+  // P2-8: read real sales from restaurant_orders (last 7 days), not from daily_sales.
+  const sevenDayRange = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }, []);
+  const { kpis: financeKpis, hasData: hasFinanceData } = useAggregatedFinances(sevenDayRange);
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -93,7 +101,7 @@ const RestaurantDashboard: React.FC = () => {
           },
           {
             label: 'Ticket Promedio',
-            value: `$${financeKpis.averageTicket.toFixed(0)}`,
+            value: `$${financeKpis.avgTicket.toFixed(0)}`,
             change: 5.2,
             icon: <Users className="h-5 w-5" />,
             trend: 'up',

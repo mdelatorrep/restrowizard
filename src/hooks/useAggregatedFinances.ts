@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
@@ -49,12 +49,17 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
 
-  const defaultDateRange = {
-    start: subDays(new Date(), 30),
-    end: new Date()
-  };
-
-  const range = dateRange || defaultDateRange;
+  // Use numeric timestamps so deps are stable across renders even if the
+  // parent passes a freshly-constructed { start, end } object each render.
+  const startMs = dateRange ? dateRange.start.getTime() : subDays(new Date(), 30).setHours(0, 0, 0, 0);
+  const endMs = dateRange ? dateRange.end.getTime() : new Date().setHours(23, 59, 59, 999);
+  // Round to the day so re-renders within the same day don't change deps.
+  const startDayMs = Math.floor(startMs / 86400000);
+  const endDayMs = Math.floor(endMs / 86400000);
+  const range = useMemo(
+    () => ({ start: new Date(startDayMs * 86400000), end: new Date((endDayMs + 1) * 86400000 - 1) }),
+    [startDayMs, endDayMs]
+  );
 
   const fetchAggregatedData = useCallback(async () => {
     if (!userId) {
@@ -191,7 +196,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     } finally {
       setLoading(false);
     }
-  }, [userId, range.start, range.end, toast]);
+  }, [userId, startDayMs, endDayMs, toast]);
 
   // Fetch realtime today data
   const fetchRealtimeToday = useCallback(async () => {

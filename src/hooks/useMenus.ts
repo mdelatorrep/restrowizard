@@ -92,8 +92,13 @@ export const useMenus = () => {
 
       if (error) throw error;
 
-      await loadMenus();
-      
+      // Optimistic + global notify so other useMenus instances (e.g. the page
+      // mounted behind the dialog) refresh, and prerequisites re-evaluate so
+      // POS / Orders unlock after the menu is created.
+      setMenus(prev => [data as RestaurantMenu, ...(prev || []).filter(m => m.id !== (data as any).id)]);
+      window.dispatchEvent(new CustomEvent('menus:changed'));
+      window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
+
       toast({
         title: 'Éxito',
         description: 'Menú creado exitosamente',
@@ -185,6 +190,9 @@ export const useMenus = () => {
 
       if (error) throw error;
 
+      // Notify prerequisites (POS unlock waits on menu items count)
+      window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
+
       toast({
         title: 'Éxito',
         description: 'Elemento agregado al menú',
@@ -261,6 +269,9 @@ export const useMenus = () => {
   useEffect(() => {
     loadTemplates();
     loadMenus();
+    const onChanged = () => loadMenus();
+    window.addEventListener('menus:changed', onChanged);
+    return () => window.removeEventListener('menus:changed', onChanged);
   }, []);
 
   return {
