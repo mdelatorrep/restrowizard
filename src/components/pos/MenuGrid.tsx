@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { labelFor } from '@/lib/enumLabels';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface MenuItem {
   id: string;
