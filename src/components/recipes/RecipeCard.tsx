@@ -44,7 +44,7 @@ export const RecipeCard = ({ recipe, recipeAllergens, onPublish, onView, onDelet
               <Badge variant="outline" className="text-purple-600 border-purple-500">Sub-receta</Badge>
             )}
           </CardTitle>
-          <CardDescription>{recipe.category}</CardDescription>
+          <CardDescription>{labelCategory(recipe.category)}</CardDescription>
         </div>
         <DifficultyBadge difficulty={recipe.difficulty} />
       </div>
