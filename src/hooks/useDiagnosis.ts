@@ -208,14 +208,16 @@ export const useDiagnosis = () => {
 
       console.log('✅ AI Analysis received:', data.data);
 
-      // Save to database
-      await supabase
-        .from('maturity_diagnoses')
-        .update({ 
-          ai_analysis: data.data,
-          ai_generated_at: new Date().toISOString()
-        })
-        .eq('id', diagnosisId);
+      // Save to database (skip when anonymous)
+      if (diagnosisId && diagnosisId !== 'anonymous') {
+        await supabase
+          .from('maturity_diagnoses')
+          .update({ 
+            ai_analysis: data.data,
+            ai_generated_at: new Date().toISOString()
+          })
+          .eq('id', diagnosisId);
+      }
 
       return data.data as AIAnalysis;
     } catch (error: any) {
