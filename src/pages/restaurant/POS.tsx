@@ -191,19 +191,9 @@ const POS = () => {
       // Process payment transactions
       await processPayment(order.id, payments, tipAmount);
 
-      // Deduct inventory automatically based on recipes
-      const inventoryResult = await deductInventoryForOrder(order.id, items.map(i => ({
-        menu_item_id: i.menu_item_id,
-        name: i.name,
-        quantity: i.quantity
-      })));
-
-      if (inventoryResult.deductedCount === 0 && inventoryResult.missingRecipeCount > 0) {
-        toast({
-          title: 'Sin descuento de inventario',
-          description: `${inventoryResult.missingRecipeCount} platillo(s) no tienen receta vinculada. Vincula una receta para costear y descontar stock.`,
-        });
-      }
+      // TK-A: El descuento de inventario ahora lo hace un trigger en la BD
+      // (process_order_inventory_deduction) al insertar la orden completada.
+      // Esto garantiza que funcione también en sync offline y bypass de RLS multi-tenant.
 
       // Award loyalty points if customer selected
       if (selectedCustomer) {

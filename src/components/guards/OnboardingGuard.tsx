@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import React, { useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -56,7 +57,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
   };
 
   // ===== TRACEABILITY LOGGING =====
-  console.log('🛡️ [OnboardingGuard] Render:', {
+  logger.debug('🛡️ [OnboardingGuard] Render:', {
     path: location.pathname,
     requireOnboarding,
     requiredUserType,
@@ -70,7 +71,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
 
   // Show loading while auth or userType is being determined
   if (authLoading || typeLoading || !isReady) {
-    console.log('🛡️ [OnboardingGuard] DECISION: Show loading spinner', { authLoading, typeLoading, isReady });
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Show loading spinner', { authLoading, typeLoading, isReady });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -83,20 +84,20 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
 
   // Not authenticated -> go to auth
   if (!user) {
-    console.log('🛡️ [OnboardingGuard] DECISION: Redirect to /auth (no user)');
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Redirect to /auth (no user)');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // No user type selected -> go to type selection onboarding
   if (!userType) {
-    console.log('🛡️ [OnboardingGuard] DECISION: Redirect to /onboarding (no userType)');
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Redirect to /onboarding (no userType)');
     return <Navigate to="/onboarding" replace />;
   }
 
   // Wrong user type for this route -> redirect to correct dashboard
   if (userType !== requiredUserType) {
     const correctPath = userType === 'restaurant_owner' ? '/r/dashboard' : '/c/dashboard';
-    console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', correctPath, '(wrong userType)');
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Redirect to', correctPath, '(wrong userType)');
     return <Navigate to={correctPath} replace />;
   }
 
@@ -106,7 +107,7 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
       // If data is being refetched in background, show loading instead of redirecting
       // This prevents race conditions where optimistic cache was overwritten by a stale refetch
       if (isFetching) {
-        console.log('🛡️ [OnboardingGuard] DECISION: Show loading (isFetching, avoid premature redirect)');
+        logger.debug('🛡️ [OnboardingGuard] DECISION: Show loading (isFetching, avoid premature redirect)');
         return (
           <div className="min-h-screen bg-background flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -118,12 +119,12 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
       }
       // User hasn't completed onboarding -> send to onboarding page
       const onboardingPath = requiredUserType === 'restaurant_owner' ? '/r/onboarding' : '/c/onboarding';
-      console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', onboardingPath, '(onboarding not complete)');
+      logger.debug('🛡️ [OnboardingGuard] DECISION: Redirect to', onboardingPath, '(onboarding not complete)');
       report('redirect_onboarding_incomplete', { to: onboardingPath });
       return <Navigate to={onboardingPath} replace />;
     }
     // User has completed onboarding -> allow access
-    console.log('🛡️ [OnboardingGuard] DECISION: Allow access (onboarding complete)');
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Allow access (onboarding complete)');
     report('allow_onboarding_complete');
     return <>{children}</>;
   }
@@ -132,13 +133,13 @@ const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
   if (hasCompletedOnboarding) {
     // User already completed onboarding -> send to dashboard
     const dashboardPath = requiredUserType === 'restaurant_owner' ? '/r/dashboard' : '/c/dashboard';
-    console.log('🛡️ [OnboardingGuard] DECISION: Redirect to', dashboardPath, '(already onboarded, skip onboarding page)');
+    logger.debug('🛡️ [OnboardingGuard] DECISION: Redirect to', dashboardPath, '(already onboarded, skip onboarding page)');
     report('redirect_already_onboarded', { to: dashboardPath });
     return <Navigate to={dashboardPath} replace />;
   }
 
   // User needs to complete onboarding and is on onboarding page -> allow access
-  console.log('🛡️ [OnboardingGuard] DECISION: Allow access to onboarding page');
+  logger.debug('🛡️ [OnboardingGuard] DECISION: Allow access to onboarding page');
   report('allow_onboarding_page');
   return <>{children}</>;
 };

@@ -14,6 +14,7 @@ import { DashboardKPIs, type KPIData } from '@/components/dashboard/DashboardKPI
 import { CopilotAlertsCard, type DashboardAlert } from '@/components/dashboard/CopilotAlertsCard';
 import { QuickActionsCard, type QuickAction } from '@/components/dashboard/QuickActionsCard';
 import { WeeklyPerformanceCard } from '@/components/dashboard/WeeklyPerformanceCard';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -87,29 +88,29 @@ const RestaurantDashboard: React.FC = () => {
       ? [
           {
             label: 'Ventas (7 días)',
-            value: `$${(financeKpis.totalRevenue / 1000).toFixed(1)}k`,
-            change: 12.5,
+            value: formatCurrency(financeKpis.totalRevenue, 'COP'),
+            change: 0, // TK-E: ocultar badge hasta tener comparativo real con período anterior
             icon: <DollarSign className="h-5 w-5" />,
             trend: 'up',
           },
           {
             label: 'Food Cost',
             value: `${financeKpis.foodCostPercentage.toFixed(1)}%`,
-            change: financeKpis.foodCostPercentage > 32 ? 2.1 : -1.5,
+            change: 0,
             icon: <Utensils className="h-5 w-5" />,
             trend: financeKpis.foodCostPercentage <= 32 ? 'up' : 'down',
           },
           {
             label: 'Ticket Promedio',
-            value: `$${financeKpis.avgTicket.toFixed(0)}`,
-            change: 5.2,
+            value: formatCurrency(financeKpis.avgTicket, 'COP'),
+            change: 0,
             icon: <Users className="h-5 w-5" />,
             trend: 'up',
           },
           {
             label: 'Clientes (7 días)',
             value: financeKpis.totalCovers.toString(),
-            change: 8.3,
+            change: 0,
             icon: <TrendingUp className="h-5 w-5" />,
             trend: 'up',
           },

@@ -9393,6 +9393,14 @@ export type Database = {
           source_type: string
         }[]
       }
+      process_order_inventory_deduction: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      reverse_order_inventory_deduction: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {

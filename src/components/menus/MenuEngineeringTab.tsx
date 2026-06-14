@@ -414,9 +414,9 @@
                          <p className="text-xs text-muted-foreground">{item.category}</p>
                        </div>
                      </td>
-                     <td className="text-right py-3 px-2">${item.price.toFixed(2)}</td>
+                     <td className="text-right py-3 px-2">{formatCurrency(item.price)}</td>
                      <td className="text-right py-3 px-2">
-                       {item.recipe_cost > 0 ? `$${item.recipe_cost.toFixed(2)}` : '-'}
+                       {item.recipe_cost > 0 ? formatCurrency(item.recipe_cost) : '-'}
                      </td>
                      <td className="text-right py-3 px-2">
                        <span className={
