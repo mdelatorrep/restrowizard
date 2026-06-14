@@ -7,10 +7,12 @@ interface Props {
   greeting: string;
   currentTime: string;
   businessName: string;
+  userName?: string;
 }
 
-export const DashboardHero: React.FC<Props> = ({ greeting, currentTime, businessName }) => {
+export const DashboardHero: React.FC<Props> = ({ greeting, currentTime, businessName, userName }) => {
   const navigate = useNavigate();
+  const displayName = (userName || '').trim().split(' ')[0] || 'bienvenido';
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-start justify-between">
