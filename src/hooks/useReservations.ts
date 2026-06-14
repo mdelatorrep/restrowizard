@@ -185,7 +185,7 @@ export function useReservations() {
       if (conflict) {
         toast({
           title: "Mesa ocupada",
-          description: `Ya existe una reserva (${conflict.customer_name || conflict.id.slice(0, 6)}) en esa franja. Elige otra mesa u horario.`,
+          description: `Ya existe una reserva en esa franja. Elige otra mesa u horario.`,
           variant: "destructive",
         });
         return null;
