@@ -1,4 +1,4 @@
-// Embeddings via Lovable AI Gateway (Google text-embedding-004, 768 dims)
+// Embeddings via Lovable AI Gateway (OpenAI text-embedding-3-small, 1536 dims)
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1";
 
@@ -14,7 +14,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
       "X-Lovable-AIG-SDK": "edge-function",
     },
     body: JSON.stringify({
-      model: "google/text-embedding-004",
+      model: "openai/text-embedding-3-small",
       input: texts,
     }),
   });
