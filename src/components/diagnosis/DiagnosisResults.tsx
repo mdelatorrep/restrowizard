@@ -9,7 +9,7 @@ import MaturityInsights from '@/components/MaturityInsights';
 import AIActionPlanComponent from '@/components/AIActionPlan';
 import { maturityModel, getLevelFromScore, getLevelDescription } from '@/data/maturityModel';
 import type { AIAnalysis, AIActionPlan, AIBenchmark, DiagnosisResult } from '@/hooks/useDiagnosis';
-import { Sparkles } from 'lucide-react';
+
 
 interface ExtendedDiagnosisResult extends DiagnosisResult {
   diagnosisId?: string;
