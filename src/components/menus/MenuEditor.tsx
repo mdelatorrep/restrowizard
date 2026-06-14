@@ -210,8 +210,9 @@ export const MenuEditor: React.FC<MenuEditorProps> = ({ menuId, onBack }) => {
               {Object.entries(groupedItems).map(([categoryName, categoryItems]) => (
                 <div key={categoryName}>
                   <div className="flex items-center gap-2 mb-3">
-                    <h3 className="font-semibold text-lg capitalize">
-                      {categoryName.replace('_', ' ')}
+                    <h3 className="font-semibold text-lg">
+                      {LEGACY_CATEGORIES.find(c => c.value === categoryName)?.label
+                        || categoryName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </h3>
                     <Badge variant="secondary">{categoryItems.length}</Badge>
                   </div>
