@@ -9429,6 +9429,25 @@ export type Database = {
         | "mediterranean"
         | "fusion"
         | "other"
+        | "mexicana"
+        | "italiana"
+        | "japonesa"
+        | "china"
+        | "coreana"
+        | "tailandesa"
+        | "india"
+        | "americana"
+        | "francesa"
+        | "española"
+        | "peruana"
+        | "colombiana"
+        | "argentina"
+        | "arabe"
+        | "mediterranea"
+        | "mariscos"
+        | "vegetariana"
+        | "cafeteria"
+        | "otra"
       delivery_platform:
         | "rappi"
         | "uber_eats"
@@ -9667,6 +9686,25 @@ export const Constants = {
         "mediterranean",
         "fusion",
         "other",
+        "mexicana",
+        "italiana",
+        "japonesa",
+        "china",
+        "coreana",
+        "tailandesa",
+        "india",
+        "americana",
+        "francesa",
+        "española",
+        "peruana",
+        "colombiana",
+        "argentina",
+        "arabe",
+        "mediterranea",
+        "mariscos",
+        "vegetariana",
+        "cafeteria",
+        "otra",
       ],
       delivery_platform: [
         "rappi",
