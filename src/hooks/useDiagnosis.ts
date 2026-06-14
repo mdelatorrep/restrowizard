@@ -256,11 +256,12 @@ export const useDiagnosis = () => {
 
       console.log('✅ AI Action Plan received:', data.data);
 
-      // Save to database
-      await supabase
-        .from('maturity_diagnoses')
-        .update({ ai_action_plan: data.data })
-        .eq('id', diagnosisId);
+      if (diagnosisId && diagnosisId !== 'anonymous') {
+        await supabase
+          .from('maturity_diagnoses')
+          .update({ ai_action_plan: data.data })
+          .eq('id', diagnosisId);
+      }
 
       return data.data as AIActionPlan;
     } catch (error: any) {
@@ -299,11 +300,12 @@ export const useDiagnosis = () => {
 
       console.log('✅ Benchmark received:', data.data);
 
-      // Save to database
-      await supabase
-        .from('maturity_diagnoses')
-        .update({ ai_benchmark: data.data })
-        .eq('id', diagnosisId);
+      if (diagnosisId && diagnosisId !== 'anonymous') {
+        await supabase
+          .from('maturity_diagnoses')
+          .update({ ai_benchmark: data.data })
+          .eq('id', diagnosisId);
+      }
 
       return data.data as AIBenchmark;
     } catch (error: any) {
