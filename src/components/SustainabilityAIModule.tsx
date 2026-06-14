@@ -70,7 +70,9 @@ const SustainabilityAIModule = () => {
       preventable: wasteFormData.preventable,
       estimated_cost: wasteFormData.estimated_cost ? parseFloat(wasteFormData.estimated_cost) : null,
       waste_date: new Date().toISOString().split('T')[0],
+      inventory_item_id: wasteFormData.inventory_item_id || null,
     });
+
     setShowWasteForm(false);
     setWasteFormData(emptyWasteForm);
   };
