@@ -37,7 +37,19 @@ export interface ModulePrerequisites {
 export const useModulePrerequisites = () => {
   const { userId } = useDataUserId();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
+  // `null` means "unknown" (query failed) — UI treats it as "do not lock"
+  // so transient 503s on HEAD count queries never lock modules erratically.
+  const [data, setData] = useState<{
+    recipesCount: number | null;
+    menuItemsCount: number | null;
+    menusCount: number | null;
+    inventoryCount: number | null;
+    staffCount: number | null;
+    ordersCount: number | null;
+    feedbackCount: number | null;
+    loyaltyCount: number | null;
+    hasBrand: boolean | null;
+  }>({
     recipesCount: 0,
     menuItemsCount: 0,
     menusCount: 0,
@@ -55,80 +67,98 @@ export const useModulePrerequisites = () => {
       return;
     }
 
-    const fetchCounts = async () => {
+    // Per-table count that survives transient errors (503, network blips)
+    // by resolving to `null` instead of throwing the whole Promise.all.
+    const safeCount = async (
+      table: string,
+      filter?: { col: string; val: string }
+    ): Promise<number | null> => {
       try {
-        // Fetch all counts in parallel
-        const [
-          recipesRes,
-          menusRes,
-          menuItemsRes,
-          inventoryRes,
-          staffRes,
-          ordersRes,
-          feedbackRes,
-          loyaltyRes,
-          brandRes
-        ] = await Promise.all([
-          supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('restaurant_menus').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('menu_items').select('id, menu_id', { count: 'exact' }).limit(1),
-          supabase.from('inventory_items').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('staff_members').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('restaurant_orders').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('customer_feedback').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('loyalty_customers').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          supabase.from('restaurant_brands').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-        ]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let q: any = supabase.from(table as any).select('id', { count: 'exact', head: true });
+        if (filter) q = q.eq(filter.col, filter.val);
+        const { count, error } = await q;
+        if (error) {
+          console.warn(`[prerequisites] count failed for ${table}:`, error.message);
+          return null;
+        }
+        return count ?? 0;
+      } catch (e) {
+        console.warn(`[prerequisites] count threw for ${table}:`, e);
+        return null;
+      }
+    };
 
-        // For menu items, we need to check if the menu belongs to the user
-        let menuItemsCount = 0;
-        if (menusRes.count && menusRes.count > 0) {
+    const fetchCounts = async () => {
+      const [
+        recipesCount,
+        menusCount,
+        inventoryCount,
+        staffCount,
+        ordersCount,
+        feedbackCount,
+        loyaltyCount,
+        brandCount,
+      ] = await Promise.all([
+        safeCount('recipes', { col: 'user_id', val: userId }),
+        safeCount('restaurant_menus', { col: 'user_id', val: userId }),
+        safeCount('inventory_items', { col: 'user_id', val: userId }),
+        safeCount('staff_members', { col: 'user_id', val: userId }),
+        safeCount('restaurant_orders', { col: 'user_id', val: userId }),
+        safeCount('customer_feedback', { col: 'user_id', val: userId }),
+        safeCount('loyalty_customers', { col: 'user_id', val: userId }),
+        safeCount('restaurant_brands', { col: 'user_id', val: userId }),
+      ]);
+
+      let menuItemsCount: number | null = 0;
+      if (menusCount === null) {
+        menuItemsCount = null;
+      } else if (menusCount > 0) {
+        try {
           const { data: menus } = await supabase
-            .from('restaurant_menus')
-            .select('id')
-            .eq('user_id', userId);
-          
+            .from('restaurant_menus').select('id').eq('user_id', userId);
           if (menus && menus.length > 0) {
-            const menuIds = menus.map(m => m.id);
-            const { count } = await supabase
+            const { count, error } = await supabase
               .from('menu_items')
               .select('id', { count: 'exact', head: true })
-              .in('menu_id', menuIds);
-            menuItemsCount = count || 0;
+              .in('menu_id', menus.map(m => m.id));
+            menuItemsCount = error ? null : (count ?? 0);
           }
+        } catch {
+          menuItemsCount = null;
         }
-
-        setData({
-          recipesCount: recipesRes.count || 0,
-          menusCount: menusRes.count || 0,
-          menuItemsCount,
-          inventoryCount: inventoryRes.count || 0,
-          staffCount: staffRes.count || 0,
-          ordersCount: ordersRes.count || 0,
-          feedbackCount: feedbackRes.count || 0,
-          loyaltyCount: loyaltyRes.count || 0,
-          hasBrand: (brandRes.count || 0) > 0,
-        });
-      } catch (error) {
-        console.error('Error fetching module prerequisites:', error);
-      } finally {
-        setLoading(false);
       }
+
+      setData({
+        recipesCount,
+        menusCount,
+        menuItemsCount,
+        inventoryCount,
+        staffCount,
+        ordersCount,
+        feedbackCount,
+        loyaltyCount,
+        hasBrand: brandCount === null ? null : brandCount > 0,
+      });
+      setLoading(false);
     };
 
     fetchCounts();
   }, [userId]);
 
   const prerequisites = useMemo((): ModulePrerequisites => {
-    const hasRecipes = data.recipesCount > 0;
-    const hasMenuItems = data.menuItemsCount > 0;
-    const hasMenus = data.menusCount > 0;
-    const hasInventory = data.inventoryCount > 0;
-    const hasStaff = data.staffCount > 0;
-    const hasOrders = data.ordersCount > 0;
-    const hasFeedback = data.feedbackCount > 0;
-    const hasLoyaltyCustomers = data.loyaltyCount > 0;
-    const hasBrand = data.hasBrand;
+    // When a count is `null` (transient failure) treat the prerequisite as
+    // satisfied so the user is never locked out due to a 503/network blip.
+    const ok = (v: number | null) => v === null || v > 0;
+    const hasRecipes = ok(data.recipesCount);
+    const hasMenuItems = ok(data.menuItemsCount);
+    const hasMenus = ok(data.menusCount);
+    const hasInventory = ok(data.inventoryCount);
+    const hasStaff = ok(data.staffCount);
+    const hasOrders = ok(data.ordersCount);
+    const hasFeedback = ok(data.feedbackCount);
+    const hasLoyaltyCustomers = ok(data.loyaltyCount);
+    const hasBrand = data.hasBrand === null ? true : data.hasBrand;
 
     // Define module dependencies
     const modules: Record<string, ModuleStatus> = {
@@ -245,12 +275,12 @@ export const useModulePrerequisites = () => {
       hasFeedback,
       hasLoyaltyCustomers,
       hasBrand,
-      recipesCount: data.recipesCount,
-      menuItemsCount: data.menuItemsCount,
-      menusCount: data.menusCount,
-      inventoryCount: data.inventoryCount,
-      staffCount: data.staffCount,
-      ordersCount: data.ordersCount,
+      recipesCount: data.recipesCount ?? 0,
+      menuItemsCount: data.menuItemsCount ?? 0,
+      menusCount: data.menusCount ?? 0,
+      inventoryCount: data.inventoryCount ?? 0,
+      staffCount: data.staffCount ?? 0,
+      ordersCount: data.ordersCount ?? 0,
       modules,
       loading,
     };

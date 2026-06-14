@@ -8,13 +8,16 @@ interface Row {
   value: number;
 }
 
-const DEFAULT_ROWS: Row[] = [
-  { label: 'Ventas', display: '$298k / $320k', value: 93 },
-  { label: 'Clientes', display: '1.8k / 2k', value: 92 },
-  { label: 'Ticket Prom.', display: '$162 / $150', value: 108 },
-];
+interface Props {
+  rows?: Row[];
+}
 
-export const WeeklyPerformanceCard: React.FC<{ rows?: Row[] }> = ({ rows = DEFAULT_ROWS }) => (
+/**
+ * Renders weekly performance against goals.
+ * Shows an empty state until real data exists — never mock placeholders
+ * (mock $298k/$320k contradicted the dashboard's neutral KPIs).
+ */
+export const WeeklyPerformanceCard: React.FC<Props> = ({ rows }) => (
   <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
     <CardHeader className="pb-2 sm:pb-4">
       <CardTitle className="font-headline text-base sm:text-lg">Rendimiento Semanal</CardTitle>
@@ -23,17 +26,23 @@ export const WeeklyPerformanceCard: React.FC<{ rows?: Row[] }> = ({ rows = DEFAU
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <div className="space-y-3 sm:space-y-4">
-        {rows.map((row) => (
-          <div key={row.label} className="space-y-1.5">
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span>{row.label}</span>
-              <span className="font-medium">{row.display}</span>
+      {!rows || rows.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">
+          Define tus metas de ventas para ver el avance semanal.
+        </div>
+      ) : (
+        <div className="space-y-3 sm:space-y-4">
+          {rows.map((row) => (
+            <div key={row.label} className="space-y-1.5">
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span>{row.label}</span>
+                <span className="font-medium">{row.display}</span>
+              </div>
+              <Progress value={row.value} className="h-2" />
             </div>
-            <Progress value={row.value} className="h-2" />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </CardContent>
   </Card>
 );

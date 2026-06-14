@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files (must never be committed — rotate any secret that leaks)
+.env
+.env.*
+!.env.example

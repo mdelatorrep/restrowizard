@@ -39,23 +39,29 @@ export const DiagnosisQuestions = ({ currentQuestionIndex, userAnswers, onAnswer
             {currentQuestion?.text}
           </h2>
 
-          <div className="space-y-2">
+          <div
+            role="radiogroup"
+            aria-label={currentQuestion?.text}
+            className="space-y-2"
+          >
             {(currentQuestion?.options || []).map((option) => {
               const isSelected = userAnswers[currentQuestionIndex] === option.value;
+              const inputId = `q${currentQuestionIndex}o${option.value}`;
               return (
                 <div key={option.value}>
+                  {/* sr-only keeps the radio in the a11y tree (visible to AT and keyboard) */}
                   <input
                     type="radio"
-                    id={`q${currentQuestionIndex}o${option.value}`}
+                    id={inputId}
                     name={`q${currentQuestionIndex}`}
                     value={option.value}
                     checked={isSelected}
                     onChange={() => onAnswer(option.value)}
-                    className="hidden"
+                    className="sr-only peer"
                   />
                   <label
-                    htmlFor={`q${currentQuestionIndex}o${option.value}`}
-                    className={`block w-full p-4 border-2 rounded-lg cursor-pointer transition-all font-lato-medium ${
+                    htmlFor={inputId}
+                    className={`block w-full p-4 border-2 rounded-lg cursor-pointer transition-all font-lato-medium peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 ${
                       isSelected
                         ? 'border-primary bg-primary text-primary-foreground transform -translate-y-1 shadow-lg'
                         : 'border-border hover:border-secondary hover:bg-primary/5'

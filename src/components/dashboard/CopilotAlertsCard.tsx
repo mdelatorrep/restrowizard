@@ -30,53 +30,61 @@ export const CopilotAlertsCard: React.FC<Props> = ({ alerts, unreadCount }) => (
             Alertas y recomendaciones basadas en tus datos
           </CardDescription>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {unreadCount || 3} nuevas
-        </Badge>
+        {unreadCount > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            {unreadCount} {unreadCount === 1 ? 'nueva' : 'nuevas'}
+          </Badge>
+        )}
       </div>
     </CardHeader>
     <CardContent className="space-y-2 sm:space-y-3">
-      {(alerts || []).map((alert) => (
-        <div
-          key={alert.id}
-          className={`p-3 sm:p-4 rounded-xl border ${
-            alert.type === 'warning'
-              ? 'bg-warning/5 border-warning/20'
-              : alert.type === 'success'
-              ? 'bg-success/5 border-success/20'
-              : 'bg-info/5 border-info/20'
-          }`}
-        >
-          <div className="flex items-start gap-2 sm:gap-3">
-            <div
-              className={`p-1 sm:p-1.5 rounded-full shrink-0 ${
-                alert.type === 'warning'
-                  ? 'bg-warning/20'
-                  : alert.type === 'success'
-                  ? 'bg-success/20'
-                  : 'bg-info/20'
-              }`}
-            >
-              {alert.type === 'warning' ? (
-                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
-              ) : (
-                <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-info" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-lato-bold text-xs sm:text-sm line-clamp-1">{alert.title}</h4>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">
-                {alert.message}
-              </p>
-              {alert.action && (
-                <Button variant="link" className="p-0 h-auto mt-1 sm:mt-2 text-primary text-xs sm:text-sm">
-                  {alert.action} <ChevronRight className="h-3 w-3 ml-0.5" />
-                </Button>
-              )}
+      {(!alerts || alerts.length === 0) ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          Sin alertas activas. El Co-Piloto te avisará cuando detecte algo importante.
+        </div>
+      ) : (
+        alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`p-3 sm:p-4 rounded-xl border ${
+              alert.type === 'warning'
+                ? 'bg-warning/5 border-warning/20'
+                : alert.type === 'success'
+                ? 'bg-success/5 border-success/20'
+                : 'bg-info/5 border-info/20'
+            }`}
+          >
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div
+                className={`p-1 sm:p-1.5 rounded-full shrink-0 ${
+                  alert.type === 'warning'
+                    ? 'bg-warning/20'
+                    : alert.type === 'success'
+                    ? 'bg-success/20'
+                    : 'bg-info/20'
+                }`}
+              >
+                {alert.type === 'warning' ? (
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-warning" />
+                ) : (
+                  <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-info" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-lato-bold text-xs sm:text-sm line-clamp-1">{alert.title}</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">
+                  {alert.message}
+                </p>
+                {alert.action && (
+                  <Button variant="link" className="p-0 h-auto mt-1 sm:mt-2 text-primary text-xs sm:text-sm">
+                    {alert.action} <ChevronRight className="h-3 w-3 ml-0.5" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </CardContent>
   </Card>
 );
