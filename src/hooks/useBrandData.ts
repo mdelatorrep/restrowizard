@@ -135,8 +135,22 @@ export const useBrandData = () => {
         .single();
 
       if (error) throw error;
-      
+
       toast({ title: 'Marca creada', description: 'Tu marca ha sido configurada exitosamente' });
+      // Optimistic update so the page reflects creation immediately.
+      if (data) {
+        const parsed: RestaurantBrand = {
+          ...(data as any),
+          brand_values: Array.isArray((data as any).brand_values) ? (data as any).brand_values : [],
+          social_links: typeof (data as any).social_links === 'object' && (data as any).social_links !== null
+            ? (data as any).social_links
+            : {},
+          differentiators: Array.isArray((data as any).differentiators) ? (data as any).differentiators : [],
+          gallery_photos: Array.isArray((data as any).gallery_photos) ? (data as any).gallery_photos : [],
+        };
+        setBrand(parsed);
+        setHasData(true);
+      }
       await fetchBrand();
       return data;
     } catch (error) {
