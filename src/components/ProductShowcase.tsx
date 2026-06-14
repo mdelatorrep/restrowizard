@@ -1,33 +1,31 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDollarSign, faUsers, faBoxesStacked, faGlobe, faRobot } from '@fortawesome/free-solid-svg-icons';
-
+import { Bot, Boxes, DollarSign, Globe, Users } from 'lucide-react';
 const painPoints = [
   {
-    icon: faDollarSign,
+    icon: DollarSign,
     title: 'Control Financiero',
     stat: 'El 38% de restaurantes no es rentable',
     solution: 'Prime Cost en tiempo real, Estado de Resultados (P&L) automatizado y alertas cuando tus costos se desbordan.',
   },
   {
-    icon: faUsers,
+    icon: Users,
     title: 'Gestión de Talento',
     stat: 'El 45% no encuentra personal calificado',
     solution: 'Turnos inteligentes, control de ausencias, programas de formación y beneficios que reducen la rotación.',
   },
   {
-    icon: faBoxesStacked,
+    icon: Boxes,
     title: 'Inventario y Proveedores',
     stat: '30% de merma descontrolada',
     solution: 'Inventario con recetas vinculadas, deducción automática por venta y análisis de proveedores con IA.',
   },
   {
-    icon: faGlobe,
+    icon: Globe,
     title: 'Presencia Digital',
     stat: 'El 60% no tiene sitio web',
     solution: 'Sitio web, menú digital, reservas y delivery sin comisiones, listo en minutos.',
   },
   {
-    icon: faRobot,
+    icon: Bot,
     title: 'Copiloto IA',
     stat: 'Decisiones basadas en intuición',
     solution: 'Un copiloto que analiza tu operación y te dice qué hacer antes de que sea tarde.',
@@ -85,7 +83,7 @@ const ProductShowcase = () => {
               {/* AI alert - financial focus */}
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10 flex items-center gap-4">
                 <div className="w-10 h-10 bg-lavender-light/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <FontAwesomeIcon icon={faRobot} className="text-lavender-light" />
+                  <Bot className="text-lavender-light" />
                 </div>
                 <p className="text-white/70 text-sm font-lato-regular">
                   Tu Prime Cost subió 3.2% esta semana. El costo de proteínas aumentó un 15%. Te sugiero renegociar con tu proveedor.
@@ -100,7 +98,7 @@ const ProductShowcase = () => {
           {painPoints.map((point, i) => (
             <div key={i} className="text-center">
               <div className="w-14 h-14 bg-purple-intense/5 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <FontAwesomeIcon icon={point.icon} className="text-purple-intense text-xl" />
+                {(() => { const Icon = point.icon; return <Icon className="text-purple-intense text-xl" />; })()}
               </div>
               <h3 className="text-lg font-headline text-purple-intense mb-2">{point.title}</h3>
               <p className="text-purple-medium text-sm font-lato-regular mb-3">{point.stat}</p>

@@ -1,32 +1,28 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faUserTie, faChartLine, faBell, faFileAlt, 
-  faLink, faArrowRight, faCheck, faStar, faUsers
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Bell, Check, FileText, Link2, Star, TrendingUp, UserCircle, Users } from 'lucide-react';
 
 const ConsultantSection = () => {
   const navigate = useNavigate();
 
   const benefits = [
     {
-      icon: faUsers,
+      icon: Users,
       title: 'Gestiona 50+ clientes',
       description: 'Dashboard unificado para ver todos tus clientes de un vistazo'
     },
     {
-      icon: faBell,
+      icon: Bell,
       title: 'Alertas automáticas',
       description: 'Recibe notificaciones proactivas por cada cliente'
     },
     {
-      icon: faFileAlt,
+      icon: FileText,
       title: 'Reportes con un clic',
       description: 'Genera informes ejecutivos profesionales en segundos'
     },
     {
-      icon: faLink,
+      icon: Link2,
       title: 'Link de referidos',
       description: 'Comparte tu link y gana comisiones por cada cliente'
     }
@@ -45,7 +41,7 @@ const ConsultantSection = () => {
           {/* Left Column - Content */}
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-500/20 rounded-full px-4 py-2 mb-6 border border-blue-500/30">
-              <FontAwesomeIcon icon={faUserTie} className="text-blue-400" />
+              <UserCircle className="text-blue-400" />
               <span className="text-sm font-lato-medium text-blue-300">Para consultores gastronómicos</span>
             </div>
             
@@ -69,7 +65,7 @@ const ConsultantSection = () => {
                   className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300"
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-3">
-                    <FontAwesomeIcon icon={benefit.icon} className="text-white" />
+                    {(() => { const Icon = benefit.icon; return <Icon className="text-white" />; })()}
                   </div>
                   <h3 className="font-lato-bold text-white mb-1">{benefit.title}</h3>
                   <p className="text-sm text-white/60 font-lato-light">{benefit.description}</p>
@@ -83,7 +79,7 @@ const ConsultantSection = () => {
               className="group bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-lato-bold text-lg px-8 py-4 rounded-xl shadow-xl shadow-blue-500/20 transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
             >
               Comenzar como Consultor PRO
-              <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
           
@@ -114,7 +110,7 @@ const ConsultantSection = () => {
                 </div>
                 <div className="ml-auto flex gap-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <FontAwesomeIcon key={i} icon={faStar} className="text-yellow-400 text-sm" />
+                    <Star key={i} className="text-yellow-400 text-sm" />
                   ))}
                 </div>
               </div>
@@ -138,7 +134,7 @@ const ConsultantSection = () => {
             
             {/* Floating Elements */}
             <div className="absolute -top-4 -right-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full px-4 py-2 text-white text-sm font-lato-bold shadow-lg animate-float">
-              <FontAwesomeIcon icon={faCheck} className="mr-2" />
+              <Check className="mr-2" />
               Verificado
             </div>
           </div>

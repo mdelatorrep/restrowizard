@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faGlobe, faShoppingCart, faCalendarCheck, faQrcode,
-  faPalette, faMobile, faRocket, faArrowRight, faCheck,
-  faStore, faChartLine, faUsers, faStar
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, CalendarCheck, Check, Globe, Palette, QrCode, Rocket, ShoppingCart, Smartphone, Star, Store, TrendingUp, Users } from 'lucide-react';
 
 const WebsiteShowcase = () => {
   const navigate = useNavigate();
@@ -19,7 +14,7 @@ const WebsiteShowcase = () => {
 
   const features = [
     {
-      icon: faGlobe,
+      icon: Globe,
       title: 'Tu Dominio Propio',
       description: 'turestaurante.restrowizard.app o conecta tu dominio personalizado',
       color: 'from-blue-500 to-cyan-500',
@@ -27,7 +22,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-blue-500/30'
     },
     {
-      icon: faCalendarCheck,
+      icon: CalendarCheck,
       title: 'Reservas Online 24/7',
       description: 'Tus clientes reservan mesa desde el móvil. Sin llamadas, sin esperas.',
       color: 'from-green-500 to-emerald-500',
@@ -35,7 +30,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-green-500/30'
     },
     {
-      icon: faShoppingCart,
+      icon: ShoppingCart,
       title: 'Delivery Integrado',
       description: 'Carrito de compras, zonas de entrega, pagos y notificaciones automáticas.',
       color: 'from-orange-500 to-red-500',
@@ -43,7 +38,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-orange-500/30'
     },
     {
-      icon: faQrcode,
+      icon: QrCode,
       title: 'Menú Digital con QR',
       description: 'Actualiza precios en tiempo real. Tus clientes siempre ven lo último.',
       color: 'from-purple-500 to-pink-500',
@@ -51,7 +46,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-purple-500/30'
     },
     {
-      icon: faPalette,
+      icon: Palette,
       title: '100% Personalizable',
       description: 'Colores, fuentes, imágenes, secciones. Tu marca, tu estilo.',
       color: 'from-pink-500 to-rose-500',
@@ -59,7 +54,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-pink-500/30'
     },
     {
-      icon: faMobile,
+      icon: Smartphone,
       title: 'Mobile-First',
       description: 'Diseño responsivo que se ve perfecto en cualquier dispositivo.',
       color: 'from-indigo-500 to-violet-500',
@@ -69,10 +64,10 @@ const WebsiteShowcase = () => {
   ];
 
   const stats = [
-    { value: '+47%', label: 'Más reservas', icon: faCalendarCheck },
-    { value: '+32%', label: 'Más pedidos', icon: faShoppingCart },
-    { value: '-100%', label: 'Comisiones apps', icon: faChartLine },
-    { value: '4.9★', label: 'Satisfacción', icon: faStar },
+    { value: '+47%', label: 'Más reservas', icon: CalendarCheck },
+    { value: '+32%', label: 'Más pedidos', icon: ShoppingCart },
+    { value: '-100%', label: 'Comisiones apps', icon: TrendingUp },
+    { value: '4.9★', label: 'Satisfacción', icon: Star },
   ];
 
   return (
@@ -85,7 +80,7 @@ const WebsiteShowcase = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full px-5 py-2.5 mb-6 border border-green-500/30">
-            <FontAwesomeIcon icon={faRocket} className="text-green-500" />
+            <Rocket className="text-green-500" />
             <span className="text-sm font-lato-bold text-green-600">Nuevo: Sitio Web para tu Restaurante</span>
           </div>
           
@@ -110,7 +105,7 @@ const WebsiteShowcase = () => {
               className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center group hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className="w-12 h-12 bg-gradient-to-br from-purple-medium to-purple-intense rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <FontAwesomeIcon icon={stat.icon} className="text-white" />
+                {(() => { const Icon = stat.icon; return <Icon className="text-white" />; })()}
               </div>
               <p className="text-3xl font-headline text-purple-intense mb-1">{stat.value}</p>
               <p className="text-sm text-soft-black/60 font-lato-light">{stat.label}</p>
@@ -129,7 +124,7 @@ const WebsiteShowcase = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                    <FontAwesomeIcon icon={feature.icon} className="text-white text-lg" />
+                    {(() => { const Icon = feature.icon; return <Icon className="text-white text-lg" />; })()}
                   </div>
                   <div>
                     <h3 className="font-headline text-lg text-purple-intense mb-1">{feature.title}</h3>
@@ -218,7 +213,7 @@ const WebsiteShowcase = () => {
             <div className="absolute -top-4 -left-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 animate-float">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                  <FontAwesomeIcon icon={faCheck} className="text-white" />
+                  <Check className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-lato-bold text-soft-black">¡Reserva confirmada!</p>
@@ -230,7 +225,7 @@ const WebsiteShowcase = () => {
             <div className="absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 animate-float" style={{ animationDelay: '1s' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                  <FontAwesomeIcon icon={faShoppingCart} className="text-white" />
+                  <ShoppingCart className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-lato-bold text-soft-black">Nuevo pedido #247</p>
@@ -247,9 +242,9 @@ const WebsiteShowcase = () => {
             onClick={() => navigate('/auth')}
             className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-lato-bold text-lg px-10 py-5 rounded-2xl shadow-2xl shadow-green-500/30 transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
-            <FontAwesomeIcon icon={faGlobe} />
+            <Globe  />
             <span>Crear Mi Sitio Web Gratis</span>
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-soft-black/50 font-lato-light">
             Activo en 10 minutos • Sin conocimientos técnicos • 100% personalizable

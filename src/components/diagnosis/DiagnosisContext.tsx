@@ -1,9 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import type { RestaurantContext } from '@/hooks/useDiagnosis';
+import { ArrowRight } from 'lucide-react';
 
 interface Props {
   context: RestaurantContext;
@@ -116,7 +115,7 @@ export const DiagnosisContext = ({ context, onChange, onSkip, onContinue }: Prop
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={onSkip} className="flex-1">Omitir</Button>
             <Button onClick={onContinue} className="flex-1">
-              Continuar <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
+              Continuar <ArrowRight className="ml-2" />
             </Button>
           </div>
         </CardContent>

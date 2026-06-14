@@ -3,14 +3,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Brain, Target, Sparkles, Loader2 } from 'lucide-react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
 import MaturityChart from '@/components/MaturityChart';
 import MaturityBenchmark from '@/components/MaturityBenchmark';
 import MaturityInsights from '@/components/MaturityInsights';
 import AIActionPlanComponent from '@/components/AIActionPlan';
 import { maturityModel, getLevelFromScore, getLevelDescription } from '@/data/maturityModel';
 import type { AIAnalysis, AIActionPlan, AIBenchmark, DiagnosisResult } from '@/hooks/useDiagnosis';
+
 
 interface ExtendedDiagnosisResult extends DiagnosisResult {
   diagnosisId?: string;
@@ -150,7 +149,7 @@ export const DiagnosisResults = ({ results, aiAnalysis, aiActionPlan, aiBenchmar
               Tu diagnóstico está guardado. Accede a tu dashboard para ver tu progreso.
             </p>
             <Button size="lg" onClick={() => navigate('/r/dashboard')} className="font-lato-bold">
-              Ir a mi Dashboard <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-2" />
+              Ir a mi Dashboard <Sparkles className="ml-2" />
             </Button>
           </CardContent>
         </Card>

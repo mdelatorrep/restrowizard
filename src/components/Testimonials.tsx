@@ -1,6 +1,4 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuoteLeft } from '@fortawesome/free-solid-svg-icons';
-
+import { Quote } from 'lucide-react';
 /**
  * F-02: Testimonios.
  *
@@ -14,7 +12,7 @@ const Testimonials = () => {
     <section id="testimonios" className="py-32 bg-off-white">
       <div className="container mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto">
-          <FontAwesomeIcon icon={faQuoteLeft} className="text-3xl text-lavender-light mb-6" />
+          <Quote className="text-3xl text-lavender-light mb-6" />
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-headline text-purple-intense leading-tight">
             Pronto: voces reales de cocinas reales.
           </h2>

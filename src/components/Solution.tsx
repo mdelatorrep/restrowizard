@@ -1,9 +1,8 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWandMagicSparkles, faCogs, faRocket, faCheckCircle, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
+import { ArrowDown, CheckCircle2, Rocket, Settings, Sparkles } from 'lucide-react';
 
 const Solution = () => {
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ const Solution = () => {
   const steps = [
     {
       number: '01',
-      icon: faWandMagicSparkles,
+      icon: Sparkles,
       title: 'Diagnóstico IA Gratuito',
       subtitle: '15 minutos',
       description: 'Nuestro Modelo de Madurez RestroWizard™ evalúa las 4 áreas críticas de tu restaurante y te muestra exactamente dónde está el dinero que estás perdiendo.',
@@ -28,7 +27,7 @@ const Solution = () => {
     },
     {
       number: '02',
-      icon: faCogs,
+      icon: Settings,
       title: 'Activación de Co-Pilotos',
       subtitle: 'Personalizado',
       description: 'Basado en tu diagnóstico, activamos los módulos de IA que necesitas. Cada uno automatiza decisiones clave con recomendaciones precisas.',
@@ -36,7 +35,7 @@ const Solution = () => {
     },
     {
       number: '03',
-      icon: faRocket,
+      icon: Rocket,
       title: 'Transformación Continua',
       subtitle: '24/7 activo',
       description: 'RestroWizard trabaja sin descanso: predice, optimiza, alerta y automatiza. Tú ves los resultados, no el trabajo.',
@@ -99,7 +98,7 @@ const Solution = () => {
                   <div className={`grid grid-cols-2 gap-3 ${index % 2 === 1 ? 'lg:justify-items-end' : ''}`}>
                     {step.features.map((feature, idx) => (
                       <div key={idx} className={`flex items-center gap-2 ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
-                        <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-sm" />
+                        <CheckCircle2 className="text-green-500 text-sm" />
                         <span className="text-sm text-soft-black/80 font-lato-light">{feature}</span>
                       </div>
                     ))}
@@ -109,13 +108,13 @@ const Solution = () => {
                 {/* Icon Circle */}
                 <div className="relative">
                   <div className="w-24 h-24 bg-gradient-to-br from-purple-medium to-purple-intense rounded-full flex items-center justify-center shadow-2xl border-4 border-white z-10 relative">
-                    <FontAwesomeIcon icon={step.icon} className="text-white text-3xl" />
+                    {(() => { const Icon = step.icon; return <Icon className="text-white text-3xl" />; })()}
                   </div>
                   
                   {/* Arrow down (only on non-last items) */}
                   {index < steps.length - 1 && (
                     <div className="hidden lg:flex absolute -bottom-20 left-1/2 -translate-x-1/2 text-purple-medium/30">
-                      <FontAwesomeIcon icon={faArrowDown} className="text-2xl animate-bounce" />
+                      <ArrowDown className="text-2xl animate-bounce" />
                     </div>
                   )}
                 </div>

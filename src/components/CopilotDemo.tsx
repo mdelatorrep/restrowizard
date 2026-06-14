@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faRobot, faPaperPlane, faUser, faChartLine, 
-  faLightbulb, faArrowRight, faMagic
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Bot, Lightbulb, Send, TrendingUp, User, Wand2 } from 'lucide-react';
 
 const CopilotDemo = () => {
   const navigate = useNavigate();
@@ -17,19 +13,19 @@ const CopilotDemo = () => {
     {
       question: "¿Cuánto voy a vender mañana?",
       response: "Basándome en tus datos históricos de los últimos 3 meses, el clima esperado (soleado, 24°C) y que mañana es viernes, estimo ventas de **$28,450** con un margen de error del 8%.\n\n📈 Esto es 12% más que el viernes pasado. Te sugiero preparar inventario extra de tu plato estrella 'Tacos al Pastor'.",
-      icon: faChartLine,
+      icon: TrendingUp,
       color: 'from-green-400 to-emerald-500'
     },
     {
       question: "¿Qué platos tienen margen negativo?",
       response: "Detecté **3 platos** con margen negativo:\n\n❌ **Ensalada César** (-8% margen) - El costo del queso parmesano subió 25%\n❌ **Sopa del Día** (-3% margen) - Porciones muy grandes\n❌ **Hamburguesa Clásica** (-2% margen) - Proveedor caro\n\nTe sugiero: Ajustar precio de ensalada a $145 o cambiar proveedor de queso. ¿Quieres ver alternativas?",
-      icon: faLightbulb,
+      icon: Lightbulb,
       color: 'from-orange-400 to-red-500'
     },
     {
       question: "Genera un reporte para mi junta directiva",
       response: "Listo, generé un **Reporte Ejecutivo Q4 2025** con:\n\n📊 Resumen financiero (rentabilidad +15% vs Q3)\n👥 Métricas de personal (rotación bajó a 28%)\n🍽️ Top 5 platos más rentables\n📈 Proyección Q1 2026\n\n[📄 Descargar PDF] [📧 Enviar por email]\n\n¿Quieres que agregue análisis de competencia?",
-      icon: faMagic,
+      icon: Wand2,
       color: 'from-purple-400 to-pink-500'
     }
   ];
@@ -88,7 +84,7 @@ const CopilotDemo = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-purple-medium/20 rounded-full px-4 py-2 mb-6">
-            <FontAwesomeIcon icon={faRobot} className="text-purple-medium" />
+            <Bot className="text-purple-medium" />
             <span className="text-sm font-lato-medium text-lavender-light">Tu asistente personal</span>
           </div>
           
@@ -110,7 +106,7 @@ const CopilotDemo = () => {
             {/* Chat Header */}
             <div className="bg-gradient-to-r from-purple-intense to-purple-medium p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <FontAwesomeIcon icon={faRobot} className="text-white" />
+                <Bot className="text-white" />
               </div>
               <div>
                 <h3 className="font-headline text-white">RestroWizard AI</h3>
@@ -136,7 +132,7 @@ const CopilotDemo = () => {
               {showResponse && (
                 <div className="flex gap-3">
                   <div className={`w-8 h-8 bg-gradient-to-br ${demoConversations[currentDemo].color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                    <FontAwesomeIcon icon={demoConversations[currentDemo].icon} className="text-white text-sm" />
+                    {(() => { const Icon = demoConversations[currentDemo].icon; return <Icon className="text-white text-sm" />; })()}
                   </div>
                   <div className="bg-white/5 rounded-2xl rounded-tl-sm px-5 py-4 max-w-[85%] border border-white/10">
                     <div className="text-off-white/80 font-lato-light text-sm leading-relaxed">
@@ -162,7 +158,7 @@ const CopilotDemo = () => {
                   />
                 </div>
                 <button className="w-12 h-12 bg-gradient-to-r from-purple-medium to-purple-intense rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-                  <FontAwesomeIcon icon={faPaperPlane} className="text-white" />
+                  <Send className="text-white" />
                 </button>
               </div>
             </div>
@@ -196,9 +192,9 @@ const CopilotDemo = () => {
             onClick={() => navigate('/auth')}
             className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-lato-bold text-lg px-8 py-4 rounded-xl shadow-xl shadow-green-500/20 transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
-            <FontAwesomeIcon icon={faRobot} />
+            <Bot  />
             Habla con RestroWizard ahora
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-off-white/50 font-lato-light">
             Respuestas basadas en tus datos reales • Disponible 24/7

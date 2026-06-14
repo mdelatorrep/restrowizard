@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faChartLine, faUsers, faRobot, faUtensils, 
-  faBrain, faCheckCircle, faArrowRight, faLeaf,
-  faStore, faLink, faPlay
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Bot, Brain, CheckCircle2, Leaf, Link2, Play, Store, TrendingUp, Users, Utensils } from 'lucide-react';
 
 const Ecosystem = () => {
   const navigate = useNavigate();
@@ -13,7 +8,7 @@ const Ecosystem = () => {
 
   const modules = [
     {
-      icon: faChartLine,
+      icon: TrendingUp,
       gradient: 'from-green-400 to-emerald-600',
       bgGradient: 'from-green-500/20 to-emerald-500/10',
       borderColor: 'border-green-500/30',
@@ -31,7 +26,7 @@ const Ecosystem = () => {
       screenshot: 'Dashboard mostrando gráficas de rentabilidad, alertas de costos y proyecciones financieras'
     },
     {
-      icon: faUsers,
+      icon: Users,
       gradient: 'from-blue-400 to-indigo-600',
       bgGradient: 'from-blue-500/20 to-indigo-500/10',
       borderColor: 'border-blue-500/30',
@@ -49,7 +44,7 @@ const Ecosystem = () => {
       screenshot: 'Panel de gestión de turnos, métricas de desempeño y alertas de personal'
     },
     {
-      icon: faRobot,
+      icon: Bot,
       gradient: 'from-purple-400 to-pink-600',
       bgGradient: 'from-purple-500/20 to-pink-500/10',
       borderColor: 'border-purple-500/30',
@@ -67,7 +62,7 @@ const Ecosystem = () => {
       screenshot: 'Vista de operaciones con métricas en tiempo real y automatizaciones activas'
     },
     {
-      icon: faUtensils,
+      icon: Utensils,
       gradient: 'from-orange-400 to-red-600',
       bgGradient: 'from-orange-500/20 to-red-500/10',
       borderColor: 'border-orange-500/30',
@@ -85,7 +80,7 @@ const Ecosystem = () => {
       screenshot: 'Matriz de ingeniería de menú con análisis de rentabilidad y popularidad'
     },
     {
-      icon: faLeaf,
+      icon: Leaf,
       gradient: 'from-teal-400 to-green-600',
       bgGradient: 'from-teal-500/20 to-green-500/10',
       borderColor: 'border-teal-500/30',
@@ -103,7 +98,7 @@ const Ecosystem = () => {
       screenshot: 'Dashboard de sostenibilidad con métricas ambientales y objetivos'
     },
     {
-      icon: faStore,
+      icon: Store,
       gradient: 'from-violet-400 to-purple-600',
       bgGradient: 'from-violet-500/20 to-purple-500/10',
       borderColor: 'border-violet-500/30',
@@ -121,7 +116,7 @@ const Ecosystem = () => {
       screenshot: 'Panel de Ghost Kitchen con marcas virtuales y pedidos en tiempo real'
     },
     {
-      icon: faLink,
+      icon: Link2,
       gradient: 'from-cyan-400 to-blue-600',
       bgGradient: 'from-cyan-500/20 to-blue-500/10',
       borderColor: 'border-cyan-500/30',
@@ -146,7 +141,7 @@ const Ecosystem = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-purple-medium/20 rounded-full px-4 py-2 mb-6">
-            <FontAwesomeIcon icon={faBrain} className="text-purple-medium" />
+            <Brain className="text-purple-medium" />
             <span className="text-sm font-lato-medium text-purple-medium">Ecosistema completo de IA</span>
           </div>
           
@@ -175,7 +170,7 @@ const Ecosystem = () => {
                   : 'bg-white/5 text-off-white/70 hover:bg-white/10 hover:text-off-white'
               }`}
             >
-              <FontAwesomeIcon icon={module.icon} className="text-sm" />
+              {(() => { const Icon = module.icon; return <Icon className="text-sm" />; })()}
               <span className="font-lato-medium text-sm hidden sm:inline">{module.title}</span>
             </button>
           ))}
@@ -187,7 +182,7 @@ const Ecosystem = () => {
           <div className={`bg-gradient-to-br ${modules[activeModule].bgGradient} backdrop-blur-sm rounded-3xl p-8 border ${modules[activeModule].borderColor}`}>
             <div className="flex items-start justify-between mb-6">
               <div className={`w-16 h-16 bg-gradient-to-br ${modules[activeModule].gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-                <FontAwesomeIcon icon={modules[activeModule].icon} className="text-white text-2xl" />
+                {(() => { const Icon = modules[activeModule].icon; return <Icon className="text-white text-2xl" />; })()}
               </div>
               <div className="text-right">
                 <div className="text-4xl font-headline text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
@@ -204,7 +199,7 @@ const Ecosystem = () => {
             <div className="space-y-3 mb-8">
               {modules[activeModule].features.map((feature, idx) => (
                 <div key={idx} className="flex items-center gap-3">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-green-400 text-sm flex-shrink-0" />
+                  <CheckCircle2 className="text-green-400 text-sm flex-shrink-0" />
                   <span className="text-off-white/80 font-lato-light">{feature}</span>
                 </div>
               ))}
@@ -215,7 +210,7 @@ const Ecosystem = () => {
               className={`group bg-gradient-to-r ${modules[activeModule].gradient} hover:opacity-90 text-white font-lato-bold px-6 py-3 rounded-xl transition-all duration-300 inline-flex items-center gap-2`}
             >
               Ver en acción
-              <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
           
@@ -239,7 +234,7 @@ const Ecosystem = () => {
               
               {/* Play Button Overlay */}
               <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition-all group">
-                <FontAwesomeIcon icon={faPlay} className="text-white text-xl ml-1 group-hover:scale-110 transition-transform" />
+                <Play className="text-white text-xl ml-1 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <p className="text-center text-off-white/50 text-sm mt-4 font-lato-light">
@@ -260,7 +255,7 @@ const Ecosystem = () => {
                   : 'bg-white/5 hover:bg-white/10'
               }`}
             >
-              <FontAwesomeIcon icon={module.icon} className="text-2xl text-white mb-2" />
+              {(() => { const Icon = module.icon; return <Icon className="text-2xl text-white mb-2" />; })()}
               <p className="text-xs text-white/80 font-lato-medium">{module.title.replace(' IA', '')}</p>
             </button>
           ))}
@@ -273,7 +268,7 @@ const Ecosystem = () => {
             className="group bg-gradient-to-r from-purple-medium to-purple-intense hover:from-purple-intense hover:to-purple-medium text-white font-lato-bold text-lg px-10 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
             Activa todos los Co-Pilotos
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-off-white/50 font-lato-light">
             Comienza gratis • Sin compromiso • Resultados garantizados

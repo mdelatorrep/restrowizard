@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
-
+import { ArrowRight } from 'lucide-react';
 const Hero = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -46,10 +44,7 @@ const Hero = () => {
               className="group inline-flex items-center gap-3 bg-white text-purple-intense font-lato-bold text-lg px-10 py-5 rounded-full hover:bg-white/90 transition-all duration-300 shadow-lg shadow-white/10"
             >
               <span>{user ? 'Ir al Dashboard' : 'Comenzar gratis'}</span>
-              <FontAwesomeIcon
-                icon={faArrowRight}
-                className="text-sm group-hover:translate-x-1 transition-transform"
-              />
+              <ArrowRight className="text-sm group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
