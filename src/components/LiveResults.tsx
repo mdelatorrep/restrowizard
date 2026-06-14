@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faChartLine, faBolt, faArrowUp, faArrowDown, 
-  faUtensils, faUsers, faRobot, faLeaf, faGlobe,
-  faCalendarCheck, faShoppingCart
-} from '@fortawesome/free-solid-svg-icons';
-
+import { ArrowDown, ArrowUp, Bot, CalendarCheck, Globe, Leaf, ShoppingCart, TrendingUp, Users, Utensils, Zap } from 'lucide-react';
 const LiveResults = () => {
   const [tickerIndex, setTickerIndex] = useState(0);
   const [communityStats, setCommunityStats] = useState({
@@ -129,7 +123,7 @@ const LiveResults = () => {
         {/* Header */}
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-medium/20 to-purple-intense/20 rounded-full px-5 py-2.5 mb-6 border border-purple-medium/30">
-            <FontAwesomeIcon icon={faBolt} className="text-yellow-400" />
+            <Zap className="text-yellow-400" />
             <span className="text-sm font-lato-bold text-purple-medium">Resultados en tiempo real</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-headline text-off-white mb-6">
@@ -168,7 +162,7 @@ const LiveResults = () => {
                     <p className="text-xl font-headline text-red-400/70 line-through">{metric.before}</p>
                   </div>
                   <div className="flex items-center justify-center w-8 h-8 bg-white/10 rounded-full">
-                    <FontAwesomeIcon icon={faArrowDown} className="text-green-400 transform rotate-[-90deg] text-sm" />
+                    <ArrowDown className="text-green-400 transform rotate-[-90deg] text-sm" />
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-off-white/40 mb-1">Después</p>

@@ -1,10 +1,6 @@
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faExclamationTriangle, faMoneyBillWave, faUserSlash, 
-  faChartPie, faBoxOpen, faArrowRight, faCheck
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, ArrowRight, Banknote, Check, PackageOpen, PieChart, UserX } from 'lucide-react';
 
 const Problem = () => {
   const navigate = useNavigate();
@@ -76,7 +72,7 @@ const Problem = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-5 py-2.5 mb-6">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-500" />
+            <AlertTriangle className="text-red-500" />
             <span className="text-sm font-lato-bold text-red-600">Datos reales de la industria restaurantera</span>
           </div>
           
@@ -140,7 +136,7 @@ const Problem = () => {
                 {/* Solution */}
                 <div className="flex items-center gap-3 p-4 bg-white/80 rounded-xl border border-white shadow-sm group-hover:bg-white transition-colors">
                   <div className={`w-8 h-8 bg-gradient-to-br ${problem.gradient} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                    <FontAwesomeIcon icon={faCheck} className="text-white text-sm" />
+                    <Check className="text-white text-sm" />
                   </div>
                   <p className="text-sm font-lato-medium text-purple-intense">{problem.solution}</p>
                 </div>
@@ -160,7 +156,7 @@ const Problem = () => {
             className="group bg-gradient-to-r from-purple-medium to-purple-intense hover:from-purple-intense hover:to-purple-medium text-white font-lato-bold text-lg px-10 py-5 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
             Diagnosticar Mi Restaurante Gratis
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>

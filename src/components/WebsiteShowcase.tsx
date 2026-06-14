@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faGlobe, faShoppingCart, faCalendarCheck, faQrcode,
-  faPalette, faMobile, faRocket, faArrowRight, faCheck,
-  faStore, faChartLine, faUsers, faStar
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, CalendarCheck, Check, Globe, Palette, QrCode, Rocket, ShoppingCart, Smartphone, Star, Store, TrendingUp, Users } from 'lucide-react';
 
 const WebsiteShowcase = () => {
   const navigate = useNavigate();
@@ -85,7 +80,7 @@ const WebsiteShowcase = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full px-5 py-2.5 mb-6 border border-green-500/30">
-            <FontAwesomeIcon icon={faRocket} className="text-green-500" />
+            <Rocket className="text-green-500" />
             <span className="text-sm font-lato-bold text-green-600">Nuevo: Sitio Web para tu Restaurante</span>
           </div>
           
@@ -218,7 +213,7 @@ const WebsiteShowcase = () => {
             <div className="absolute -top-4 -left-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 animate-float">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                  <FontAwesomeIcon icon={faCheck} className="text-white" />
+                  <Check className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-lato-bold text-soft-black">¡Reserva confirmada!</p>
@@ -230,7 +225,7 @@ const WebsiteShowcase = () => {
             <div className="absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 animate-float" style={{ animationDelay: '1s' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                  <FontAwesomeIcon icon={faShoppingCart} className="text-white" />
+                  <ShoppingCart className="text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-lato-bold text-soft-black">Nuevo pedido #247</p>
@@ -247,9 +242,9 @@ const WebsiteShowcase = () => {
             onClick={() => navigate('/auth')}
             className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-lato-bold text-lg px-10 py-5 rounded-2xl shadow-2xl shadow-green-500/30 transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
-            <FontAwesomeIcon icon={faGlobe} />
+            <Globe  />
             <span>Crear Mi Sitio Web Gratis</span>
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-soft-black/50 font-lato-light">
             Activo en 10 minutos • Sin conocimientos técnicos • 100% personalizable

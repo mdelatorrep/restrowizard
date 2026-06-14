@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faChartLine, faUsers, faRobot, faUtensils, 
-  faBrain, faCheckCircle, faArrowRight, faLeaf,
-  faStore, faLink, faPlay
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Bot, Brain, CheckCircle2, Leaf, Link2, Play, Store, TrendingUp, Users, Utensils } from 'lucide-react';
 
 const Ecosystem = () => {
   const navigate = useNavigate();
@@ -146,7 +141,7 @@ const Ecosystem = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-purple-medium/20 rounded-full px-4 py-2 mb-6">
-            <FontAwesomeIcon icon={faBrain} className="text-purple-medium" />
+            <Brain className="text-purple-medium" />
             <span className="text-sm font-lato-medium text-purple-medium">Ecosistema completo de IA</span>
           </div>
           
@@ -204,7 +199,7 @@ const Ecosystem = () => {
             <div className="space-y-3 mb-8">
               {modules[activeModule].features.map((feature, idx) => (
                 <div key={idx} className="flex items-center gap-3">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-green-400 text-sm flex-shrink-0" />
+                  <CheckCircle2 className="text-green-400 text-sm flex-shrink-0" />
                   <span className="text-off-white/80 font-lato-light">{feature}</span>
                 </div>
               ))}
@@ -215,7 +210,7 @@ const Ecosystem = () => {
               className={`group bg-gradient-to-r ${modules[activeModule].gradient} hover:opacity-90 text-white font-lato-bold px-6 py-3 rounded-xl transition-all duration-300 inline-flex items-center gap-2`}
             >
               Ver en acción
-              <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
           
@@ -239,7 +234,7 @@ const Ecosystem = () => {
               
               {/* Play Button Overlay */}
               <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition-all group">
-                <FontAwesomeIcon icon={faPlay} className="text-white text-xl ml-1 group-hover:scale-110 transition-transform" />
+                <Play className="text-white text-xl ml-1 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <p className="text-center text-off-white/50 text-sm mt-4 font-lato-light">
@@ -273,7 +268,7 @@ const Ecosystem = () => {
             className="group bg-gradient-to-r from-purple-medium to-purple-intense hover:from-purple-intense hover:to-purple-medium text-white font-lato-bold text-lg px-10 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
             Activa todos los Co-Pilotos
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-off-white/50 font-lato-light">
             Comienza gratis • Sin compromiso • Resultados garantizados

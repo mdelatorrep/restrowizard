@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faRobot, faPaperPlane, faUser, faChartLine, 
-  faLightbulb, faArrowRight, faMagic
-} from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Bot, Lightbulb, Send, TrendingUp, User, Wand2 } from 'lucide-react';
 
 const CopilotDemo = () => {
   const navigate = useNavigate();
@@ -88,7 +84,7 @@ const CopilotDemo = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-purple-medium/20 rounded-full px-4 py-2 mb-6">
-            <FontAwesomeIcon icon={faRobot} className="text-purple-medium" />
+            <Bot className="text-purple-medium" />
             <span className="text-sm font-lato-medium text-lavender-light">Tu asistente personal</span>
           </div>
           
@@ -110,7 +106,7 @@ const CopilotDemo = () => {
             {/* Chat Header */}
             <div className="bg-gradient-to-r from-purple-intense to-purple-medium p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <FontAwesomeIcon icon={faRobot} className="text-white" />
+                <Bot className="text-white" />
               </div>
               <div>
                 <h3 className="font-headline text-white">RestroWizard AI</h3>
@@ -162,7 +158,7 @@ const CopilotDemo = () => {
                   />
                 </div>
                 <button className="w-12 h-12 bg-gradient-to-r from-purple-medium to-purple-intense rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
-                  <FontAwesomeIcon icon={faPaperPlane} className="text-white" />
+                  <Send className="text-white" />
                 </button>
               </div>
             </div>
@@ -196,9 +192,9 @@ const CopilotDemo = () => {
             onClick={() => navigate('/auth')}
             className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-lato-bold text-lg px-8 py-4 rounded-xl shadow-xl shadow-green-500/20 transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-3"
           >
-            <FontAwesomeIcon icon={faRobot} />
+            <Bot  />
             Habla con RestroWizard ahora
-            <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-off-white/50 font-lato-light">
             Respuestas basadas en tus datos reales • Disponible 24/7
