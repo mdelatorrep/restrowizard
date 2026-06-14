@@ -121,7 +121,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
             <DollarSign className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xl font-bold">${avgTicket.toFixed(0)}</p>
+            <p className="text-xl font-bold">{formatCurrency(avgTicket)}</p>
             <p className="text-xs text-muted-foreground">Ticket Prom.</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3 text-center">
