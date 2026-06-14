@@ -1,0 +1,1 @@
+ALTER TABLE public.knowledge_chunks ALTER COLUMN embedding TYPE vector(1536);
