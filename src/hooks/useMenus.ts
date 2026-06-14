@@ -190,6 +190,9 @@ export const useMenus = () => {
 
       if (error) throw error;
 
+      // Notify prerequisites (POS unlock waits on menu items count)
+      window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
+
       toast({
         title: 'Éxito',
         description: 'Elemento agregado al menú',
