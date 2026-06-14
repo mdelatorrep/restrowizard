@@ -34,7 +34,11 @@ export const StaffFormDialog: React.FC<Props> = ({ open, onOpenChange, formData,
     <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Agregar Empleado</DialogTitle>
+        <DialogDescription>
+          Captura los datos laborales básicos (Colombia/LATAM): cédula, contrato, fecha de ingreso, contacto y tarifa.
+        </DialogDescription>
       </DialogHeader>
+
       <div className="space-y-4">
         <div>
           <Label>Nombre *</Label>
