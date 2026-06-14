@@ -104,7 +104,7 @@ const Recipes = () => {
         kpis={[
           { label: 'Total Recetas', value: kpis?.totalRecipes || 0, icon: ChefHat, iconColor: 'text-primary' },
           { label: 'Sub-Recetas', value: kpis?.subRecipesCount || 0, icon: BookOpen, iconColor: 'text-purple-500' },
-          { label: 'Costo Promedio', value: `$${kpis?.avgCostPerPortion?.toLocaleString() || 0}`, icon: DollarSign, iconColor: 'text-green-500' },
+          { label: 'Costo Promedio', value: formatCurrency(kpis?.avgCostPerPortion || 0), icon: DollarSign, iconColor: 'text-green-500' },
           { label: 'Calorías Prom.', value: kpis?.avgNutritionCalories || 0, icon: Flame, iconColor: 'text-orange-500' },
           { label: 'Categorías', value: kpis?.categoriesCount || 0, icon: UtensilsCrossed, iconColor: 'text-blue-500' },
           { label: 'Secretas', value: kpis?.secretRecipes || 0, icon: Lock, iconColor: 'text-orange-500' },
