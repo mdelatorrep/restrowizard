@@ -17,6 +17,8 @@ import { POSHeader } from '@/components/pos/POSHeader';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useBusinessTaxConfig } from '@/hooks/useBusinessTaxConfig';
+import { useMenuAvailability } from '@/hooks/useMenuAvailability';
 
 // MenuGrid / CartPanel / POSHeader / Dialog components extracted to src/components/pos/
 
@@ -24,8 +26,11 @@ import { useAuth } from '@/hooks/useAuth';
 const POS = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { taxConfig, allowOversell } = useBusinessTaxConfig();
+  const { outOfStockIds } = useMenuAvailability();
+  const taxRatePct = Math.round((taxConfig.rate || 0) * 100);
   const { currentSession, hasOpenSession, openSession, closeSession, loading: sessionLoading } = usePOSSession();
-  const { cart, items, addItem, removeItem, updateItemQuantity, clearCart, total, subtotal, taxAmount } = usePOSCart(0);
+  const { cart, items, addItem, removeItem, updateItemQuantity, clearCart, total, subtotal, taxAmount } = usePOSCart(taxRatePct);
   const { tables, updateTableStatus, releaseTable } = usePOSTables();
   const { processPayment } = usePOSPayment();
   const { discounts, applyDiscount: validateDiscount } = usePOSDiscounts();
@@ -78,6 +83,21 @@ const POS = () => {
 
 
   const handleAddToCart = (item: any) => {
+    // BL-07: avisar/bloquear cuando algún ingrediente está en stock 0
+    if (outOfStockIds.has(item.id)) {
+      if (!allowOversell) {
+        toast({
+          title: 'Producto agotado',
+          description: `${item.name} no tiene ingredientes suficientes en inventario.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      toast({
+        title: 'Sin stock suficiente',
+        description: `${item.name} no tiene ingredientes en inventario. Se permite la venta porque "permitir vender sin stock" está activado.`,
+      });
+    }
     addItem({
       menu_item_id: item.id,
       name: item.name,
@@ -158,6 +178,10 @@ const POS = () => {
       const principal = [...payments].sort((a, b) => b.amount - a.amount)[0];
       const paymentMethod = principal ? canonical(principal.method_name) : 'otro';
 
+      // BL-18: usar capacidad de la mesa como número de comensales por defecto
+      const tableObj = selectedTable ? tables.find(t => t.id === selectedTable) : null;
+      const guestsCount = Math.max(1, Number((tableObj as any)?.capacity) || 1);
+
       // Create order
       const orderPayload: any = {
         session_id: currentSession?.id,
@@ -175,7 +199,7 @@ const POS = () => {
         status: 'completed',
         order_type: selectedTable ? 'dine_in' : 'takeout',
         is_pos_order: true,
-        guests_count: 1,
+        guests_count: guestsCount,
         payment_method: paymentMethod,
         payment_status: 'paid',
       };
@@ -283,12 +307,14 @@ const POS = () => {
           onSearchChange={setSearchQuery}
           onAddToCart={handleAddToCart}
           disabled={!hasOpenSession}
+          outOfStockIds={outOfStockIds}
         />
 
         <CartPanel
           items={items}
           subtotal={subtotal}
           taxAmount={taxAmount}
+          taxLabel={taxConfig.label || (taxConfig.type === 'impoconsumo' ? 'Impoconsumo' : taxConfig.type === 'iva' ? 'IVA' : 'Impuesto')}
           total={total}
           hasOpenSession={hasOpenSession}
           tables={tables}

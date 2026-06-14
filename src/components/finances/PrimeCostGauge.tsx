@@ -9,27 +9,45 @@ interface PrimeCostGaugeProps {
   targetPrimeCost?: number;
 }
 
+// BL-21: salud por componente. Estado final = peor de los tres.
+const FOOD_TARGET_MAX = 32;
+const FOOD_WARN_MAX = 35;
+const LABOR_TARGET_MAX = 30;
+const LABOR_WARN_MAX = 35;
+
+type Health = 'healthy' | 'warning' | 'critical';
+const worst = (...vals: Health[]): Health =>
+  vals.includes('critical') ? 'critical' : vals.includes('warning') ? 'warning' : 'healthy';
+
 export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
   foodCostPercent,
   laborCostPercent,
   targetPrimeCost = 60
 }) => {
   const primeCost = foodCostPercent + laborCostPercent;
-  const isHealthy = primeCost <= targetPrimeCost;
-  const isWarning = primeCost > targetPrimeCost && primeCost <= 65;
-  const isCritical = primeCost > 65;
-  
-  // Calculate the gauge angle (0-180 degrees)
+
+  const foodHealth: Health = foodCostPercent <= FOOD_TARGET_MAX ? 'healthy'
+    : foodCostPercent <= FOOD_WARN_MAX ? 'warning' : 'critical';
+  const laborHealth: Health = laborCostPercent <= LABOR_TARGET_MAX ? 'healthy'
+    : laborCostPercent <= LABOR_WARN_MAX ? 'warning' : 'critical';
+  const primeHealth: Health = primeCost <= targetPrimeCost ? 'healthy'
+    : primeCost <= 65 ? 'warning' : 'critical';
+
+  const overall = worst(foodHealth, laborHealth, primeHealth);
+  const isHealthy = overall === 'healthy';
+  const isWarning = overall === 'warning';
+  const isCritical = overall === 'critical';
+
   const maxAngle = 180;
   const normalizedValue = Math.min(primeCost, 80);
   const angle = (normalizedValue / 80) * maxAngle;
-  
+
   const getStatusColor = () => {
     if (isHealthy) return 'text-green-600';
     if (isWarning) return 'text-yellow-600';
     return 'text-red-600';
   };
-  
+
   const getStatusBg = () => {
     if (isHealthy) return 'bg-green-100';
     if (isWarning) return 'bg-yellow-100';
@@ -41,6 +59,11 @@ export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
     if (isWarning) return 'Atención';
     return 'Crítico';
   };
+
+  const componentLabel = (h: Health) => h === 'healthy' ? '' : h === 'warning' ? ' · alto' : ' · crítico';
+  const componentColor = (h: Health) =>
+    h === 'healthy' ? 'text-foreground' : h === 'warning' ? 'text-yellow-700' : 'text-red-700';
+
 
   return (
     <Card className="relative overflow-hidden">
@@ -127,16 +150,16 @@ export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
               <div className="w-3 h-3 rounded-full bg-orange-500" />
               <span className="text-sm font-medium">Food Cost</span>
             </div>
-            <p className="text-2xl font-bold">{foodCostPercent.toFixed(1)}%</p>
-            <p className="text-xs text-muted-foreground">Target: 28-32%</p>
+            <p className={`text-2xl font-bold ${componentColor(foodHealth)}`}>{foodCostPercent.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">Target: 28-32%{componentLabel(foodHealth)}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-3 rounded-full bg-purple-500" />
               <span className="text-sm font-medium">Labor Cost</span>
             </div>
-            <p className="text-2xl font-bold">{laborCostPercent.toFixed(1)}%</p>
-            <p className="text-xs text-muted-foreground">Target: 25-30%</p>
+            <p className={`text-2xl font-bold ${componentColor(laborHealth)}`}>{laborCostPercent.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">Target: 25-30%{componentLabel(laborHealth)}</p>
           </div>
         </div>
 
@@ -146,9 +169,14 @@ export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">Prime Cost Crítico</p>
+                <p className="text-sm font-medium text-red-800">
+                  {foodHealth === 'critical' ? 'Food Cost crítico' : laborHealth === 'critical' ? 'Labor Cost crítico' : 'Prime Cost crítico'}
+                </p>
                 <p className="text-xs text-red-600">
-                  Tu prime cost está por encima del 65%. Revisa costos de alimentos y labor para mejorar rentabilidad.
+                  {foodHealth === 'critical' && `Food Cost ${foodCostPercent.toFixed(1)}% supera el máximo recomendado (${FOOD_WARN_MAX}%). `}
+                  {laborHealth === 'critical' && `Labor Cost ${laborCostPercent.toFixed(1)}% supera el máximo (${LABOR_WARN_MAX}%). `}
+                  {primeHealth === 'critical' && `Prime ${primeCost.toFixed(1)}% > 65%. `}
+                  Revisa costos de alimentos y labor para mejorar rentabilidad.
                 </p>
               </div>
             </div>

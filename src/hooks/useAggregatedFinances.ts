@@ -91,13 +91,15 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         .lte('deducted_at', `${endStr}T23:59:59`);
 
       // 3) Staff shifts (labor cost)
+      // BL-16: incluir también shifts confirmados/en progreso, no solo completados.
+      // Si no hay actual_*, usamos horarios programados.
       const shiftsPromise = supabase
         .from('staff_shifts')
         .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, hourly_rate_override, status, staff_members(hourly_rate)')
         .eq('user_id', userId)
         .gte('shift_date', startStr)
         .lte('shift_date', endStr)
-        .eq('status', 'completed');
+        .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed']);
 
       // 4) Manual daily_sales overrides (other_costs and any manually-entered food/labor)
       const manualPromise = supabase

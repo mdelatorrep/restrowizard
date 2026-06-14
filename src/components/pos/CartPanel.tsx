@@ -20,6 +20,7 @@ interface CartPanelProps {
   items: POSCartItem[];
   subtotal: number;
   taxAmount: number;
+  taxLabel?: string;
   total: number;
   hasOpenSession: boolean;
   tables: any[];
@@ -49,6 +50,7 @@ export const CartPanel = ({
   items,
   subtotal,
   taxAmount,
+  taxLabel = 'Impuesto',
   total,
   hasOpenSession,
   tables,
@@ -210,7 +212,7 @@ export const CartPanel = ({
           </div>
           {taxAmount > 0 && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">IVA</span>
+              <span className="text-muted-foreground">{taxLabel}</span>
               <span>${taxAmount.toLocaleString()}</span>
             </div>
           )}
