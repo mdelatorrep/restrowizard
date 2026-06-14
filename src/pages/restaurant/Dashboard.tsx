@@ -19,6 +19,7 @@ const RestaurantDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [businessName, setBusinessName] = useState('');
+  const [userName, setUserName] = useState('');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
 
@@ -29,14 +30,24 @@ const RestaurantDashboard: React.FC = () => {
   useEffect(() => {
     const fetchBusiness = async () => {
       if (!user) return;
-      const { data } = await supabase
-        .from('restaurant_businesses')
-        .select('name')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data) setBusinessName(data.name);
+      const [{ data: biz }, { data: prof }] = await Promise.all([
+        supabase
+          .from('restaurant_businesses')
+          .select('name')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('full_name, restaurant_name')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
+      if (biz?.name) setBusinessName(biz.name);
+      else if (prof?.restaurant_name) setBusinessName(prof.restaurant_name);
+      const meta = (user.user_metadata ?? {}) as Record<string, any>;
+      setUserName(prof?.full_name || meta.full_name || user.email?.split('@')[0] || '');
     };
 
     const hour = new Date().getHours();
@@ -127,7 +138,7 @@ const RestaurantDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
-      <DashboardHero greeting={greeting} currentTime={currentTime} businessName={businessName} />
+      <DashboardHero greeting={greeting} currentTime={currentTime} businessName={businessName} userName={userName} />
 
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-10">

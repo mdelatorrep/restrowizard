@@ -7,16 +7,18 @@ interface Props {
   greeting: string;
   currentTime: string;
   businessName: string;
+  userName?: string;
 }
 
-export const DashboardHero: React.FC<Props> = ({ greeting, currentTime, businessName }) => {
+export const DashboardHero: React.FC<Props> = ({ greeting, currentTime, businessName, userName }) => {
   const navigate = useNavigate();
+  const displayName = (userName || '').trim().split(' ')[0] || 'bienvenido';
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-foreground truncate">
-            {greeting}, Carlos
+            {greeting}, {displayName}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground font-lato-light capitalize truncate">
             {currentTime} • {businessName}
