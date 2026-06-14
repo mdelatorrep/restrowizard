@@ -14,7 +14,7 @@ const WebsiteShowcase = () => {
 
   const features = [
     {
-      icon: faGlobe,
+      icon: Globe,
       title: 'Tu Dominio Propio',
       description: 'turestaurante.restrowizard.app o conecta tu dominio personalizado',
       color: 'from-blue-500 to-cyan-500',
@@ -22,7 +22,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-blue-500/30'
     },
     {
-      icon: faCalendarCheck,
+      icon: CalendarCheck,
       title: 'Reservas Online 24/7',
       description: 'Tus clientes reservan mesa desde el móvil. Sin llamadas, sin esperas.',
       color: 'from-green-500 to-emerald-500',
@@ -30,7 +30,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-green-500/30'
     },
     {
-      icon: faShoppingCart,
+      icon: ShoppingCart,
       title: 'Delivery Integrado',
       description: 'Carrito de compras, zonas de entrega, pagos y notificaciones automáticas.',
       color: 'from-orange-500 to-red-500',
@@ -38,7 +38,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-orange-500/30'
     },
     {
-      icon: faQrcode,
+      icon: QrCode,
       title: 'Menú Digital con QR',
       description: 'Actualiza precios en tiempo real. Tus clientes siempre ven lo último.',
       color: 'from-purple-500 to-pink-500',
@@ -46,7 +46,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-purple-500/30'
     },
     {
-      icon: faPalette,
+      icon: Palette,
       title: '100% Personalizable',
       description: 'Colores, fuentes, imágenes, secciones. Tu marca, tu estilo.',
       color: 'from-pink-500 to-rose-500',
@@ -54,7 +54,7 @@ const WebsiteShowcase = () => {
       borderColor: 'border-pink-500/30'
     },
     {
-      icon: faMobile,
+      icon: Smartphone,
       title: 'Mobile-First',
       description: 'Diseño responsivo que se ve perfecto en cualquier dispositivo.',
       color: 'from-indigo-500 to-violet-500',
@@ -64,10 +64,10 @@ const WebsiteShowcase = () => {
   ];
 
   const stats = [
-    { value: '+47%', label: 'Más reservas', icon: faCalendarCheck },
-    { value: '+32%', label: 'Más pedidos', icon: faShoppingCart },
-    { value: '-100%', label: 'Comisiones apps', icon: faChartLine },
-    { value: '4.9★', label: 'Satisfacción', icon: faStar },
+    { value: '+47%', label: 'Más reservas', icon: CalendarCheck },
+    { value: '+32%', label: 'Más pedidos', icon: ShoppingCart },
+    { value: '-100%', label: 'Comisiones apps', icon: TrendingUp },
+    { value: '4.9★', label: 'Satisfacción', icon: Star },
   ];
 
   return (
@@ -105,7 +105,7 @@ const WebsiteShowcase = () => {
               className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center group hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className="w-12 h-12 bg-gradient-to-br from-purple-medium to-purple-intense rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <FontAwesomeIcon icon={stat.icon} className="text-white" />
+                {(() => { const Icon = stat.icon; return <Icon className="text-white" />; })()}
               </div>
               <p className="text-3xl font-headline text-purple-intense mb-1">{stat.value}</p>
               <p className="text-sm text-soft-black/60 font-lato-light">{stat.label}</p>
@@ -124,7 +124,7 @@ const WebsiteShowcase = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                    <FontAwesomeIcon icon={feature.icon} className="text-white text-lg" />
+                    {(() => { const Icon = feature.icon; return <Icon className="text-white text-lg" />; })()}
                   </div>
                   <div>
                     <h3 className="font-headline text-lg text-purple-intense mb-1">{feature.title}</h3>

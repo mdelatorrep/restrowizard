@@ -1,31 +1,31 @@
 import { Bot, Boxes, DollarSign, Globe, Users } from 'lucide-react';
 const painPoints = [
   {
-    icon: faDollarSign,
+    icon: DollarSign,
     title: 'Control Financiero',
     stat: 'El 38% de restaurantes no es rentable',
     solution: 'Prime Cost en tiempo real, Estado de Resultados (P&L) automatizado y alertas cuando tus costos se desbordan.',
   },
   {
-    icon: faUsers,
+    icon: Users,
     title: 'Gestión de Talento',
     stat: 'El 45% no encuentra personal calificado',
     solution: 'Turnos inteligentes, control de ausencias, programas de formación y beneficios que reducen la rotación.',
   },
   {
-    icon: faBoxesStacked,
+    icon: Boxes,
     title: 'Inventario y Proveedores',
     stat: '30% de merma descontrolada',
     solution: 'Inventario con recetas vinculadas, deducción automática por venta y análisis de proveedores con IA.',
   },
   {
-    icon: faGlobe,
+    icon: Globe,
     title: 'Presencia Digital',
     stat: 'El 60% no tiene sitio web',
     solution: 'Sitio web, menú digital, reservas y delivery sin comisiones, listo en minutos.',
   },
   {
-    icon: faRobot,
+    icon: Bot,
     title: 'Copiloto IA',
     stat: 'Decisiones basadas en intuición',
     solution: 'Un copiloto que analiza tu operación y te dice qué hacer antes de que sea tarde.',
@@ -98,7 +98,7 @@ const ProductShowcase = () => {
           {painPoints.map((point, i) => (
             <div key={i} className="text-center">
               <div className="w-14 h-14 bg-purple-intense/5 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <FontAwesomeIcon icon={point.icon} className="text-purple-intense text-xl" />
+                {(() => { const Icon = point.icon; return <Icon className="text-purple-intense text-xl" />; })()}
               </div>
               <h3 className="text-lg font-headline text-purple-intense mb-2">{point.title}</h3>
               <p className="text-purple-medium text-sm font-lato-regular mb-3">{point.stat}</p>

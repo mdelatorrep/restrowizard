@@ -47,7 +47,7 @@ const LiveResults = () => {
       before: '35%', 
       after: '28%', 
       improvement: '-20%', 
-      icon: faUtensils, 
+      icon: Utensils, 
       gradient: 'from-orange-500 to-red-500',
       description: 'Optimización de compras con IA'
     },
@@ -56,7 +56,7 @@ const LiveResults = () => {
       before: '12%', 
       after: '67%', 
       improvement: '+458%', 
-      icon: faCalendarCheck, 
+      icon: CalendarCheck, 
       gradient: 'from-green-500 to-emerald-500',
       description: 'Sitio web con reservas 24/7'
     },
@@ -65,7 +65,7 @@ const LiveResults = () => {
       before: '8%', 
       after: '45%', 
       improvement: '+462%', 
-      icon: faShoppingCart, 
+      icon: ShoppingCart, 
       gradient: 'from-blue-500 to-cyan-500',
       description: 'Delivery propio sin comisiones'
     },
@@ -74,7 +74,7 @@ const LiveResults = () => {
       before: '8%', 
       after: '18%', 
       improvement: '+125%', 
-      icon: faChartLine, 
+      icon: TrendingUp, 
       gradient: 'from-purple-500 to-pink-500',
       description: 'Co-pilotos IA optimizando 24/7'
     },
@@ -150,7 +150,7 @@ const LiveResults = () => {
               <div className="relative">
                 {/* Icon */}
                 <div className={`w-12 h-12 bg-gradient-to-br ${metric.gradient} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                  <FontAwesomeIcon icon={metric.icon} className="text-white text-lg" />
+                  {(() => { const Icon = metric.icon; return <Icon className="text-white text-lg" />; })()}
                 </div>
                 
                 <span className="text-off-white/80 font-lato-medium text-lg">{metric.label}</span>

@@ -19,7 +19,7 @@ const Solution = () => {
   const steps = [
     {
       number: '01',
-      icon: faWandMagicSparkles,
+      icon: Sparkles,
       title: 'Diagnóstico IA Gratuito',
       subtitle: '15 minutos',
       description: 'Nuestro Modelo de Madurez RestroWizard™ evalúa las 4 áreas críticas de tu restaurante y te muestra exactamente dónde está el dinero que estás perdiendo.',
@@ -27,7 +27,7 @@ const Solution = () => {
     },
     {
       number: '02',
-      icon: faCogs,
+      icon: Settings,
       title: 'Activación de Co-Pilotos',
       subtitle: 'Personalizado',
       description: 'Basado en tu diagnóstico, activamos los módulos de IA que necesitas. Cada uno automatiza decisiones clave con recomendaciones precisas.',
@@ -35,7 +35,7 @@ const Solution = () => {
     },
     {
       number: '03',
-      icon: faRocket,
+      icon: Rocket,
       title: 'Transformación Continua',
       subtitle: '24/7 activo',
       description: 'RestroWizard trabaja sin descanso: predice, optimiza, alerta y automatiza. Tú ves los resultados, no el trabajo.',
@@ -108,7 +108,7 @@ const Solution = () => {
                 {/* Icon Circle */}
                 <div className="relative">
                   <div className="w-24 h-24 bg-gradient-to-br from-purple-medium to-purple-intense rounded-full flex items-center justify-center shadow-2xl border-4 border-white z-10 relative">
-                    <FontAwesomeIcon icon={step.icon} className="text-white text-3xl" />
+                    {(() => { const Icon = step.icon; return <Icon className="text-white text-3xl" />; })()}
                   </div>
                   
                   {/* Arrow down (only on non-last items) */}

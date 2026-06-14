@@ -222,7 +222,7 @@ const Header = () => {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`lg:hidden focus:outline-none ${isScrolled ? 'text-purple-intense' : 'text-white'}`}
         >
-          <FontAwesomeIcon icon={isMenuOpen ? faTimes : faBars} size="xl" />
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </nav>
 

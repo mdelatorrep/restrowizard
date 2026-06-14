@@ -7,22 +7,22 @@ const ConsultantSection = () => {
 
   const benefits = [
     {
-      icon: faUsers,
+      icon: Users,
       title: 'Gestiona 50+ clientes',
       description: 'Dashboard unificado para ver todos tus clientes de un vistazo'
     },
     {
-      icon: faBell,
+      icon: Bell,
       title: 'Alertas automáticas',
       description: 'Recibe notificaciones proactivas por cada cliente'
     },
     {
-      icon: faFileAlt,
+      icon: FileText,
       title: 'Reportes con un clic',
       description: 'Genera informes ejecutivos profesionales en segundos'
     },
     {
-      icon: faLink,
+      icon: Link2,
       title: 'Link de referidos',
       description: 'Comparte tu link y gana comisiones por cada cliente'
     }
@@ -65,7 +65,7 @@ const ConsultantSection = () => {
                   className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300"
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-3">
-                    <FontAwesomeIcon icon={benefit.icon} className="text-white" />
+                    {(() => { const Icon = benefit.icon; return <Icon className="text-white" />; })()}
                   </div>
                   <h3 className="font-lato-bold text-white mb-1">{benefit.title}</h3>
                   <p className="text-sm text-white/60 font-lato-light">{benefit.description}</p>

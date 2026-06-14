@@ -7,7 +7,7 @@ const Problem = () => {
 
   const problems = [
     {
-      icon: faMoneyBillWave,
+      icon: Banknote,
       gradient: 'from-red-500 to-rose-600',
       lightGradient: 'from-red-50 to-rose-50',
       borderColor: 'border-red-200',
@@ -20,7 +20,7 @@ const Problem = () => {
       solution: 'IA que predice y optimiza tus finanzas'
     },
     {
-      icon: faUserSlash,
+      icon: UserX,
       gradient: 'from-orange-500 to-amber-600',
       lightGradient: 'from-orange-50 to-amber-50',
       borderColor: 'border-orange-200',
@@ -33,7 +33,7 @@ const Problem = () => {
       solution: 'Conexión con candidatos + horarios inteligentes'
     },
     {
-      icon: faChartPie,
+      icon: PieChart,
       gradient: 'from-purple-500 to-violet-600',
       lightGradient: 'from-purple-50 to-violet-50',
       borderColor: 'border-purple-200',
@@ -46,7 +46,7 @@ const Problem = () => {
       solution: 'Sitio web + reservas + delivery en minutos'
     },
     {
-      icon: faBoxOpen,
+      icon: PackageOpen,
       gradient: 'from-blue-500 to-indigo-600',
       lightGradient: 'from-blue-50 to-indigo-50',
       borderColor: 'border-blue-200',
@@ -103,7 +103,7 @@ const Problem = () => {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
                   <div className={`w-16 h-16 bg-gradient-to-br ${problem.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <FontAwesomeIcon icon={problem.icon} className="text-white text-2xl" />
+                    {(() => { const Icon = problem.icon; return <Icon className="text-white text-2xl" />; })()}
                   </div>
                   <div className="text-right">
                     <span className={`text-4xl font-headline bg-gradient-to-r ${problem.gradient} bg-clip-text text-transparent`}>

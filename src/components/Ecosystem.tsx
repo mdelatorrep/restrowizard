@@ -8,7 +8,7 @@ const Ecosystem = () => {
 
   const modules = [
     {
-      icon: faChartLine,
+      icon: TrendingUp,
       gradient: 'from-green-400 to-emerald-600',
       bgGradient: 'from-green-500/20 to-emerald-500/10',
       borderColor: 'border-green-500/30',
@@ -26,7 +26,7 @@ const Ecosystem = () => {
       screenshot: 'Dashboard mostrando gráficas de rentabilidad, alertas de costos y proyecciones financieras'
     },
     {
-      icon: faUsers,
+      icon: Users,
       gradient: 'from-blue-400 to-indigo-600',
       bgGradient: 'from-blue-500/20 to-indigo-500/10',
       borderColor: 'border-blue-500/30',
@@ -44,7 +44,7 @@ const Ecosystem = () => {
       screenshot: 'Panel de gestión de turnos, métricas de desempeño y alertas de personal'
     },
     {
-      icon: faRobot,
+      icon: Bot,
       gradient: 'from-purple-400 to-pink-600',
       bgGradient: 'from-purple-500/20 to-pink-500/10',
       borderColor: 'border-purple-500/30',
@@ -62,7 +62,7 @@ const Ecosystem = () => {
       screenshot: 'Vista de operaciones con métricas en tiempo real y automatizaciones activas'
     },
     {
-      icon: faUtensils,
+      icon: Utensils,
       gradient: 'from-orange-400 to-red-600',
       bgGradient: 'from-orange-500/20 to-red-500/10',
       borderColor: 'border-orange-500/30',
@@ -80,7 +80,7 @@ const Ecosystem = () => {
       screenshot: 'Matriz de ingeniería de menú con análisis de rentabilidad y popularidad'
     },
     {
-      icon: faLeaf,
+      icon: Leaf,
       gradient: 'from-teal-400 to-green-600',
       bgGradient: 'from-teal-500/20 to-green-500/10',
       borderColor: 'border-teal-500/30',
@@ -98,7 +98,7 @@ const Ecosystem = () => {
       screenshot: 'Dashboard de sostenibilidad con métricas ambientales y objetivos'
     },
     {
-      icon: faStore,
+      icon: Store,
       gradient: 'from-violet-400 to-purple-600',
       bgGradient: 'from-violet-500/20 to-purple-500/10',
       borderColor: 'border-violet-500/30',
@@ -116,7 +116,7 @@ const Ecosystem = () => {
       screenshot: 'Panel de Ghost Kitchen con marcas virtuales y pedidos en tiempo real'
     },
     {
-      icon: faLink,
+      icon: Link2,
       gradient: 'from-cyan-400 to-blue-600',
       bgGradient: 'from-cyan-500/20 to-blue-500/10',
       borderColor: 'border-cyan-500/30',
@@ -170,7 +170,7 @@ const Ecosystem = () => {
                   : 'bg-white/5 text-off-white/70 hover:bg-white/10 hover:text-off-white'
               }`}
             >
-              <FontAwesomeIcon icon={module.icon} className="text-sm" />
+              {(() => { const Icon = module.icon; return <Icon className="text-sm" />; })()}
               <span className="font-lato-medium text-sm hidden sm:inline">{module.title}</span>
             </button>
           ))}
@@ -182,7 +182,7 @@ const Ecosystem = () => {
           <div className={`bg-gradient-to-br ${modules[activeModule].bgGradient} backdrop-blur-sm rounded-3xl p-8 border ${modules[activeModule].borderColor}`}>
             <div className="flex items-start justify-between mb-6">
               <div className={`w-16 h-16 bg-gradient-to-br ${modules[activeModule].gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-                <FontAwesomeIcon icon={modules[activeModule].icon} className="text-white text-2xl" />
+                {(() => { const Icon = modules[activeModule].icon; return <Icon className="text-white text-2xl" />; })()}
               </div>
               <div className="text-right">
                 <div className="text-4xl font-headline text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
@@ -255,7 +255,7 @@ const Ecosystem = () => {
                   : 'bg-white/5 hover:bg-white/10'
               }`}
             >
-              <FontAwesomeIcon icon={module.icon} className="text-2xl text-white mb-2" />
+              {(() => { const Icon = module.icon; return <Icon className="text-2xl text-white mb-2" />; })()}
               <p className="text-xs text-white/80 font-lato-medium">{module.title.replace(' IA', '')}</p>
             </button>
           ))}
