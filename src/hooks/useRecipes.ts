@@ -594,6 +594,14 @@ export const useRecipes = () => {
         cost_per_portion: Math.round(costPerPortion * 100) / 100,
       })
       .eq('id', recipeId);
+
+    // TK-01: Propagar el costo al menu_item vinculado, si existe
+    if (recipe.menu_item_id) {
+      await supabase
+        .from('menu_items')
+        .update({ cost: Math.round(costPerPortion * 100) / 100 })
+        .eq('id', recipe.menu_item_id);
+    }
   };
 
   // Scale recipe
