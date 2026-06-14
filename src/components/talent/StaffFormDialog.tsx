@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,11 @@ export const StaffFormDialog: React.FC<Props> = ({ open, onOpenChange, formData,
     <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Agregar Empleado</DialogTitle>
+        <DialogDescription>
+          Captura los datos laborales básicos (Colombia/LATAM): cédula, contrato, fecha de ingreso, contacto y tarifa.
+        </DialogDescription>
       </DialogHeader>
+
       <div className="space-y-4">
         <div>
           <Label>Nombre *</Label>

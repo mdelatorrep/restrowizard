@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Lock, Users, Clock, DollarSign, Flame, UtensilsCrossed, BookOpen, Link2, Scale } from 'lucide-react';
@@ -57,6 +57,9 @@ export const RecipeDetailDialog = ({
                 <DifficultyBadge difficulty={recipe.difficulty} />
               </DialogTitle>
             </div>
+            <DialogDescription className="sr-only">
+              Detalle de la receta: ingredientes, preparación, sub-recetas, nutrición y costeo.
+            </DialogDescription>
             <div className="flex gap-4 mt-2 text-sm">
               <span className="flex items-center gap-1"><Users className="h-4 w-4" />{recipe.portions} {recipe.yield_unit}</span>
               <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{recipe.preparation_time_minutes || 0} min</span>

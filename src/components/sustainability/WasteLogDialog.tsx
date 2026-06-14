@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,11 @@ export const WasteLogDialog: React.FC<Props> = ({ open, onOpenChange, data, onCh
       <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar Desperdicio</DialogTitle>
+          <DialogDescription>
+            Vincula con un ítem de inventario para que la merma descuente stock y calcule la pérdida en $ con el costo real.
+          </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-4">
           <div>
             <Label>Vincular con Inventario</Label>

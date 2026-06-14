@@ -162,24 +162,66 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
     }
   };
 
-  const addWasteLog = async (log: Omit<FoodWasteLog, 'id'>) => {
+  const addWasteLog = async (
+    log: Omit<FoodWasteLog, 'id'> & { inventory_item_id?: string | null }
+  ) => {
     if (!userId) return null;
+
+    const { inventory_item_id, ...rest } = log;
 
     try {
       const { data, error } = await supabase
         .from('food_waste_logs')
         .insert({
-          ...log,
-          user_id: userId
+          ...rest,
+          user_id: userId,
         })
         .select()
         .single();
 
       if (error) throw error;
 
+      // TK-I: si está vinculado a inventario, descontar stock y registrar movimiento
+      if (inventory_item_id && rest.quantity_kg > 0) {
+        const { data: item } = await supabase
+          .from('inventory_items')
+          .select('current_stock, unit_cost')
+          .eq('id', inventory_item_id)
+          .maybeSingle();
+
+        if (item) {
+          const before = Number(item.current_stock) || 0;
+          const change = rest.quantity_kg;
+          const after = Math.max(0, before - change);
+          const unitCost = Number(item.unit_cost) || 0;
+
+          await supabase
+            .from('inventory_items')
+            .update({ current_stock: after })
+            .eq('id', inventory_item_id);
+
+          await supabase.from('inventory_movements').insert({
+            user_id: userId,
+            inventory_item_id,
+            movement_type: 'waste',
+            quantity_before: before,
+            quantity_change: -change,
+            quantity_after: after,
+            unit_cost: unitCost,
+            total_cost: unitCost * change,
+            reference_type: 'food_waste_log',
+            reference_id: data.id,
+            notes: rest.reason || `Desperdicio: ${rest.category}`,
+          });
+        }
+      }
+
+
       toast({
         title: "Desperdicio registrado",
-        description: "El registro se ha guardado correctamente"
+        description: inventory_item_id
+          ? "Stock actualizado desde inventario."
+          : "El registro se ha guardado correctamente",
       });
 
       await fetchData();
@@ -194,6 +236,7 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
       return null;
     }
   };
+
 
   const addCarbonItem = async (item: Omit<CarbonItem, 'id'>) => {
     if (!userId) return null;
