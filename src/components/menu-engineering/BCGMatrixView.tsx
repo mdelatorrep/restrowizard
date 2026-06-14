@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatCurrency';
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +52,7 @@ const MenuItemCard: React.FC<{
     <div className="grid grid-cols-3 gap-2 text-sm">
       <div>
         <span className="text-muted-foreground">Precio:</span>
-        <span className="ml-1 font-medium">${item.price.toFixed(2)}</span>
+        <span className="ml-1 font-medium">{formatCurrency(item.price)}</span>
       </div>
       <div>
         <span className="text-muted-foreground">Costo:</span>

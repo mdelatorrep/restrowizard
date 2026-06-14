@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,7 @@ export function MenuModifiersTab({ modifiers }: Props) {
                           {option.name}
                           {option.price_adjustment > 0 && (
                             <span className="ml-1 text-green-600">
-                              +${Number(option.price_adjustment).toFixed(2)}
+                              +{formatCurrency(Number(option.price_adjustment))}
                             </span>
                           )}
                         </Badge>
