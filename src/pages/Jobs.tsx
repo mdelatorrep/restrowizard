@@ -93,7 +93,7 @@ const Jobs = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_80%,rgba(212,165,219,0.15),transparent_60%)]" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
-            <img src={restrojobsLogo} alt="RestroJobs" className="h-14 md:h-18 w-auto mx-auto mb-4 brightness-0 invert" />
+            <img src={restrojobsLogo} alt="RestroJobs" className="h-14 md:h-20 w-auto mx-auto mb-4 brightness-0 invert" />
             <p className="text-lg md:text-xl mb-6 text-primary-foreground/90">
               La bolsa de empleo especializada en gastronomía. Encuentra tu próximo rol o el talento ideal.
             </p>
