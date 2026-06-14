@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Bell, Shield, Building2, Users } from 'lucide-react';
 import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
+import POSTaxSettings from '@/components/pos/POSTaxSettings';
 import TeamManagementTab from '@/components/team/TeamManagementTab';
 
 const Settings: React.FC = () => {
@@ -31,6 +32,7 @@ const Settings: React.FC = () => {
             Equipo
           </TabsTrigger>
           <TabsTrigger value="payments">Pasarelas de Pago</TabsTrigger>
+          <TabsTrigger value="tax">Impuestos POS</TabsTrigger>
           <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
           <TabsTrigger value="security">Seguridad</TabsTrigger>
         </TabsList>
