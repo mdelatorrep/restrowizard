@@ -6,15 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  RecipeIngredient, 
-  MeasurementUnit, 
-  Allergen 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import {
+  RecipeIngredient,
+  MeasurementUnit,
+  Allergen
 } from '@/hooks/useRecipes';
-import { Plus, Trash2, Edit, AlertTriangle, GripVertical } from 'lucide-react';
+import { useEnterpriseInventory } from '@/hooks/useEnterpriseInventory';
+import { Plus, Trash2, Edit, AlertTriangle, GripVertical, Package } from 'lucide-react';
 import { RecipeIngredientExtendedSchema } from '@/lib/schemas/recipe';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface Props {
   ingredients: RecipeIngredient[];
@@ -25,17 +27,21 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-export const RecipeIngredientManager = ({ 
-  ingredients, 
-  units, 
+const MANUAL_ITEM = '__manual__';
+
+export const RecipeIngredientManager = ({
+  ingredients,
+  units,
   allergens,
-  onAdd, 
-  onUpdate, 
-  onRemove 
+  onAdd,
+  onUpdate,
+  onRemove
 }: Props) => {
+  const { inventory } = useEnterpriseInventory();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
+    inventory_item_id: '' as string | null | '',
     ingredient_name: '',
     quantity: 0,
     unit: 'g',
@@ -53,6 +59,7 @@ export const RecipeIngredientManager = ({
 
   const resetForm = () => {
     setForm({
+      inventory_item_id: '',
       ingredient_name: '',
       quantity: 0,
       unit: 'g',
@@ -69,6 +76,24 @@ export const RecipeIngredientManager = ({
     });
     setEditingId(null);
   };
+
+  // TK-01: al elegir un ítem de inventario, hereda nombre/unidad/costo.
+  const handleInventorySelect = (value: string) => {
+    if (value === MANUAL_ITEM) {
+      setForm(prev => ({ ...prev, inventory_item_id: null as any }));
+      return;
+    }
+    const item = (inventory || []).find(i => i.id === value);
+    if (!item) return;
+    setForm(prev => ({
+      ...prev,
+      inventory_item_id: item.id,
+      ingredient_name: item.item_name,
+      unit: item.unit || prev.unit,
+      cost_per_unit: Number(item.unit_cost) || prev.cost_per_unit,
+    }));
+  };
+
 
   const handleSubmit = () => {
     const parsed = RecipeIngredientExtendedSchema.safeParse(form);
