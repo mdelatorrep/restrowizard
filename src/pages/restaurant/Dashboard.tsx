@@ -138,7 +138,7 @@ const RestaurantDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
-      <DashboardHero greeting={greeting} currentTime={currentTime} businessName={businessName} />
+      <DashboardHero greeting={greeting} currentTime={currentTime} businessName={businessName} userName={userName} />
 
       <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="grid w-full grid-cols-2 h-10">
