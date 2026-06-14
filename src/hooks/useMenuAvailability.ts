@@ -19,9 +19,9 @@ export const useMenuAvailability = () => {
         // Recipes vinculadas a menu items
         const { data: recipes } = await supabase
           .from('recipes')
-          .select('id, linked_menu_item_id')
+          .select('id, menu_item_id')
           .eq('user_id', userId)
-          .not('linked_menu_item_id', 'is', null);
+          .not('menu_item_id', 'is', null);
 
         const recipeIds = (recipes || []).map(r => r.id);
         if (recipeIds.length === 0) {
@@ -48,7 +48,7 @@ export const useMenuAvailability = () => {
 
         const stockMap = new Map((stock || []).map((s: any) => [s.id, Number(s.stock) || 0]));
         const recipeToMenu = new Map(
-          (recipes || []).map(r => [r.id, r.linked_menu_item_id as string])
+          (recipes || []).map((r: any) => [r.id, r.menu_item_id as string])
         );
 
         const outIds = new Set<string>();

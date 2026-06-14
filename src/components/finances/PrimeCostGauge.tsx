@@ -127,16 +127,16 @@ export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
               <div className="w-3 h-3 rounded-full bg-orange-500" />
               <span className="text-sm font-medium">Food Cost</span>
             </div>
-            <p className="text-2xl font-bold">{foodCostPercent.toFixed(1)}%</p>
-            <p className="text-xs text-muted-foreground">Target: 28-32%</p>
+            <p className={`text-2xl font-bold ${componentColor(foodHealth)}`}>{foodCostPercent.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">Target: 28-32%{componentLabel(foodHealth)}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-3 rounded-full bg-purple-500" />
               <span className="text-sm font-medium">Labor Cost</span>
             </div>
-            <p className="text-2xl font-bold">{laborCostPercent.toFixed(1)}%</p>
-            <p className="text-xs text-muted-foreground">Target: 25-30%</p>
+            <p className={`text-2xl font-bold ${componentColor(laborHealth)}`}>{laborCostPercent.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">Target: 25-30%{componentLabel(laborHealth)}</p>
           </div>
         </div>
 
@@ -146,9 +146,14 @@ export const PrimeCostGauge: React.FC<PrimeCostGaugeProps> = ({
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">Prime Cost Crítico</p>
+                <p className="text-sm font-medium text-red-800">
+                  {foodHealth === 'critical' ? 'Food Cost crítico' : laborHealth === 'critical' ? 'Labor Cost crítico' : 'Prime Cost crítico'}
+                </p>
                 <p className="text-xs text-red-600">
-                  Tu prime cost está por encima del 65%. Revisa costos de alimentos y labor para mejorar rentabilidad.
+                  {foodHealth === 'critical' && `Food Cost ${foodCostPercent.toFixed(1)}% supera el máximo recomendado (${FOOD_WARN_MAX}%). `}
+                  {laborHealth === 'critical' && `Labor Cost ${laborCostPercent.toFixed(1)}% supera el máximo (${LABOR_WARN_MAX}%). `}
+                  {primeHealth === 'critical' && `Prime ${primeCost.toFixed(1)}% > 65%. `}
+                  Revisa costos de alimentos y labor para mejorar rentabilidad.
                 </p>
               </div>
             </div>
