@@ -171,7 +171,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
                     ? 'text-muted-foreground' 
                     : 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent'
                 }`}>
-                  {currencySymbol}{item.price?.toFixed(2)}
+                  {formatCurrency(Number(item.price) || 0, 'COP')}
                 </div>
                 {profitMargin !== null && (
                   <div className={`text-[10px] font-medium mt-0.5 px-2 py-0.5 rounded-full inline-block ${
