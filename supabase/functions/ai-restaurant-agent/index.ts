@@ -1,5 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
+
+const MODULE_WEB_QUERIES: Record<string, string> = {
+  finanzas: "benchmarks finanzas restaurantes food cost labor cost 2026",
+  talento: "salarios mercado restaurantes regulaciones laborales 2026",
+  operaciones: "tendencias operaciones restaurantes experiencia cliente 2026",
+  menu_inventario: "precios ingredientes tendencias gastronómicas 2026",
+  sostenibilidad: "regulaciones ESG sostenibilidad restaurantes Latinoamérica",
+  supply_chain: "proveedores alimentos restaurantes precios mayoristas",
+  inventory: "tendencias inventario restaurantes mermas costos",
+  delivery: "logística delivery restaurantes mejores prácticas",
+  retencion: "benchmarks retención churn restaurantes lealtad",
+  recetas: "tendencias gastronómicas precios ingredientes 2026",
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
