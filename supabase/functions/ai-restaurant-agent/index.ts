@@ -569,9 +569,20 @@ Proporciona:
         userPrompt = `Analiza estos datos de restaurante y proporciona insights relevantes: ${JSON.stringify(data)}. Sé específico y práctico en tus recomendaciones. Incluye datos de mercado actuales cuando sea relevante.`;
     }
 
+    const webQuery = MODULE_WEB_QUERIES[module] || "";
+    const research = webQuery
+      ? await webResearch(webQuery, { limit: 3, scrape: false, logPrefix: `[ai-agent:${module}]` })
+      : { enabled: false, provider: "none" as const, sources: [] };
+
+    const wrappedSystem = composeSystemPrompt({
+      guardrails: { domain: `${module} para restaurantes`, requireConfidence: true },
+      rolePrompt: systemPrompt,
+      webContextBlock: webQuery ? formatSourcesForPrompt(research) : undefined,
+    });
+
     const aiResult = await callAIGateway({
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: wrappedSystem },
         { role: "user", content: userPrompt },
       ],
       tier: "reasoning",
@@ -585,10 +596,18 @@ Proporciona:
       );
     }
     const analysis = aiResult.content || "No se pudo generar el análisis.";
+    const integrity = checkIntegrity(analysis, research.enabled);
 
     console.log(`AI analysis completed successfully for ${module}/${action}`);
 
-    return new Response(JSON.stringify({ analysis, success: true }), {
+    return new Response(JSON.stringify({
+      analysis,
+      success: true,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
