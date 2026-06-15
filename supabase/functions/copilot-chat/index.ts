@@ -9,6 +9,7 @@ import { z } from "npm:zod";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { pickSdkModel } from "../_shared/ai-sdk-gateway.ts";
 import { embedTexts } from "../_shared/embeddings.ts";
+import { buildGuardrailPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
