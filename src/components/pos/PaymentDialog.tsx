@@ -79,8 +79,20 @@ export const PaymentDialog = ({ open, onOpenChange, total, onComplete }: Props) 
           </div>
 
           <div className="space-y-2">
-            <Label>Propina (opcional)</Label>
-            <div className="flex gap-2">
+            <div className="flex items-center justify-between">
+              <Label>Propina (voluntaria)</Label>
+              <span className="text-xs text-muted-foreground">
+                Ley 1935/2018 · acepta o rechaza
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={tipPercent === 0 && !customTip ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setTipPercent(0); setCustomTip(''); }}
+              >
+                Sin propina
+              </Button>
               {[10, 15, 20].map((pct) => (
                 <Button
                   key={pct}
@@ -96,8 +108,8 @@ export const PaymentDialog = ({ open, onOpenChange, total, onComplete }: Props) 
               ))}
               <Input
                 type="number"
-                placeholder="Otro"
-                className="w-24"
+                placeholder="Otro $"
+                className="w-28"
                 value={customTip}
                 onChange={(e) => {
                   setCustomTip(e.target.value);
@@ -107,7 +119,7 @@ export const PaymentDialog = ({ open, onOpenChange, total, onComplete }: Props) 
             </div>
             {tipAmount > 0 && (
               <p className="text-sm text-muted-foreground">
-                Propina: ${tipAmount.toLocaleString()}
+                Propina: ${tipAmount.toLocaleString()} · se distribuye al equipo de servicio
               </p>
             )}
           </div>
