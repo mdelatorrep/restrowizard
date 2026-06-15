@@ -32,8 +32,12 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
   onClose,
   variant = 'default',
   icon,
-  className
+  className,
+  error = null,
+  hasData = true,
 }) => {
+  const disabledByData = !hasData && !loading;
+  const handleAnalyze = () => { if (!disabledByData) onAnalyze(); };
   if (variant === 'compact') {
     return (
       <Card className={cn("border-primary/20 bg-gradient-to-br from-primary/5 to-transparent", className)}>
