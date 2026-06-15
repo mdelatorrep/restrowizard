@@ -11,6 +11,7 @@ export interface AggregatedDailySales {
   covers_count: number;
   food_cost: number;
   labor_cost: number;
+  taxes: number;
   avg_ticket: number;
   gross_margin: number;
   food_cost_percentage: number;
@@ -21,6 +22,7 @@ export interface AggregatedFinancesKPIs {
   totalRevenue: number;
   totalFoodCost: number;
   totalLaborCost: number;
+  totalTaxes: number;
   totalOrders: number;
   totalCovers: number;
   avgTicket: number;
@@ -31,6 +33,7 @@ export interface AggregatedFinancesKPIs {
   revenuePerCover: number;
   ordersPerDay: number;
 }
+
 
 export interface FinancesTrend {
   date: string;
