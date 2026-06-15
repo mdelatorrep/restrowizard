@@ -232,7 +232,28 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </ScrollArea>
         )}
         
-        {!insights && !loading && (
+        {!insights && !loading && error && (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <AlertTriangle className="w-12 h-12 mb-3 text-destructive opacity-70" />
+            <p className="font-medium text-destructive">No se pudo generar el análisis</p>
+            <p className="text-sm text-center max-w-sm mt-1 mb-3">{error}</p>
+            <Button size="sm" variant="outline" onClick={onAnalyze} className="gap-2">
+              <RefreshCw className="w-4 h-4" /> Reintentar
+            </Button>
+          </div>
+        )}
+
+        {!insights && !loading && !error && disabledByData && (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <Database className="w-12 h-12 mb-3 opacity-50" />
+            <p className="font-medium">No hay datos suficientes para analizar</p>
+            <p className="text-sm text-center max-w-sm mt-1">
+              Captura algunas operaciones (ventas, inventario, turnos) y vuelve a intentarlo.
+            </p>
+          </div>
+        )}
+
+        {!insights && !loading && !error && !disabledByData && (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Brain className="w-12 h-12 mb-3 opacity-50" />
             <p className="font-medium">Sin análisis disponible</p>
