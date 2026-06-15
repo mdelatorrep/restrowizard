@@ -53,9 +53,19 @@ export const useStaffSchedule = (weekStart?: Date) => {
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
 
-  const defaultWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const currentWeekStart = weekStart || defaultWeekStart;
-  const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+  // Estabilizar el rango de fechas a primitivos (timestamps) para evitar loops
+  // de useEffect cuando weekStart se recrea en cada render del padre.
+  const weekStartTs = weekStart ? weekStart.getTime() : null;
+  const { weekStartStr, weekEndStr } = useMemo(() => {
+    const base = weekStartTs ? new Date(weekStartTs) : new Date();
+    const s = startOfWeek(base, { weekStartsOn: 1 });
+    const e = endOfWeek(s, { weekStartsOn: 1 });
+    return {
+      weekStartStr: format(s, 'yyyy-MM-dd'),
+      weekEndStr: format(e, 'yyyy-MM-dd'),
+    };
+  }, [weekStartTs]);
+
 
   const calculateHoursWorked = (shift: StaffShift): number => {
     const start = shift.actual_start_time || shift.start_time;
