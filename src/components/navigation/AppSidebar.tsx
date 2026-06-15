@@ -721,13 +721,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate(settingsPath)}
+                  asChild
                   isActive={isActive(settingsPath)}
                   tooltip="Configuración"
                   className="text-sidebar-foreground hover:bg-sidebar-accent"
                 >
-                  <SettingsIcon className="h-5 w-5" />
-                  <span className="font-lato-medium">Configuración</span>
+                  <Link to={settingsPath}>
+                    <SettingsIcon className="h-5 w-5" />
+                    <span className="font-lato-medium">Configuración</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
