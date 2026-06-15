@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Star, Trash2, Plus, Link2 } from 'lucide-react';
+import { labelFor } from '@/lib/enumLabels';
 
 interface Props { recipeId: string; }
 
@@ -57,7 +58,7 @@ export const RecipeMenuItemsManager = ({ recipeId }: Props) => {
                   </div>
                 ) : availableItems.map(mi => (
                   <SelectItem key={mi.id} value={mi.id}>
-                    {mi.name} {mi.category ? <span className="text-muted-foreground">· {mi.category}</span> : null}
+                    {mi.name} {mi.category ? <span className="text-muted-foreground">· {labelFor('menu_category', mi.category)}</span> : null}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -95,7 +96,7 @@ export const RecipeMenuItemsManager = ({ recipeId }: Props) => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{link.menu_item?.name || 'Ítem'}</p>
                   {link.menu_item?.category && (
-                    <p className="text-xs text-muted-foreground">{link.menu_item.category}</p>
+                    <p className="text-xs text-muted-foreground">{labelFor('menu_category', link.menu_item.category)}</p>
                   )}
                 </div>
                 <Input

@@ -180,8 +180,13 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const salesData: AggregatedDailySales[] = [];
       allDates.forEach(dateStr => {
         const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0, taxes: 0 };
-        const foodCost = (foodCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.food || 0);
-        const laborCost = (laborCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.labor || 0);
+        const shiftFood = foodCostByDate[dateStr] || 0;
+        const shiftLabor = laborCostByDate[dateStr] || 0;
+        // C8-01: el costo manual (daily_sales) actúa como FALLBACK,
+        // no se suma encima del costo calculado por turnos/inventario.
+        // Así Finanzas y Turnos coinciden cuando hay datos operativos.
+        const foodCost = shiftFood > 0 ? shiftFood : (manualByDate[dateStr]?.food || 0);
+        const laborCost = shiftLabor > 0 ? shiftLabor : (manualByDate[dateStr]?.labor || 0);
         const revenue = orderData.revenue;
 
         if (revenue > 0 || orderData.count > 0 || foodCost > 0 || laborCost > 0) {
