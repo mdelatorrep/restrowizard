@@ -746,29 +746,31 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </>
         )}
 
-        {/* Settings - Always visible */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-            Configuración
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(settingsPath)}
-                  tooltip="Configuración"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent"
-                >
-                  <Link to={settingsPath}>
-                    <SettingsIcon className="h-5 w-5" />
-                    <span className="font-lato-medium">Configuración</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Settings - gated by settings permission for restaurant owners */}
+        {(userType === 'consultant' || teamPermissions.isOwner || teamPermissions.isLoading || teamPermissions.canAccess('settings', 'read')) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
+              Configuración
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(settingsPath)}
+                    tooltip="Configuración"
+                    className="text-sidebar-foreground hover:bg-sidebar-accent"
+                  >
+                    <Link to={settingsPath}>
+                      <SettingsIcon className="h-5 w-5" />
+                      <span className="font-lato-medium">Configuración</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
