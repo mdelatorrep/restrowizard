@@ -110,6 +110,28 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
     await onGenerateFromPar();
   };
 
+  const suggestItemsForSupplier = () => {
+    if (!formData.supplier_id) {
+      toast.error('Selecciona un proveedor primero');
+      return;
+    }
+    const matches = inventory.filter(i => i.preferred_supplier_id === formData.supplier_id);
+    if (matches.length === 0) {
+      toast.info('Este proveedor no tiene ítems asignados como proveedor preferido');
+      return;
+    }
+    setOrderItems(matches.map(i => ({
+      inventory_item_id: i.id,
+      quantity: Math.max(1, Math.ceil((i.par_level ?? 0) - (i.current_stock ?? 0))) || 1,
+      unit_cost: i.unit_cost || 0,
+    })));
+    toast.success(`${matches.length} ítems sugeridos`);
+  };
+
+  const filteredInventory = formData.supplier_id
+    ? inventory.filter(i => !i.preferred_supplier_id || i.preferred_supplier_id === formData.supplier_id)
+    : inventory;
+
   const handleOpenReceive = (order: PurchaseOrder) => {
     setOrderToReceive(order);
     setReceiveDialogOpen(true);
