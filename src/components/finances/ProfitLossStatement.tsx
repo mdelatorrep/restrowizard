@@ -158,15 +158,36 @@ export const ProfitLossStatement: React.FC<ProfitLossStatementProps> = ({
         </div>
 
         {/* Revenue Section */}
-        <PLRow 
-          label="Ingresos por Ventas" 
-          amount={totalRevenue} 
+        <PLRow
+          label="Ingresos Brutos por Ventas"
+          amount={totalRevenue}
           percentage={100}
           previousAmount={previousPeriodData?.totalRevenue}
           isSubtotal
         />
 
+        {taxes > 0 && (
+          <>
+            <PLRow
+              label="Impuestos sobre Ventas (IVA / Impoconsumo)"
+              amount={-taxes}
+              percentage={totalRevenue > 0 ? (taxes / totalRevenue) * 100 : 0}
+              previousAmount={previousPeriodData?.taxes ? -previousPeriodData.taxes : undefined}
+              isExpense
+              indent={1}
+            />
+            <PLRow
+              label="Ingresos Netos"
+              amount={netRevenue}
+              percentage={totalRevenue > 0 ? (netRevenue / totalRevenue) * 100 : 0}
+              previousAmount={prevNetRevenue || undefined}
+              isSubtotal
+            />
+          </>
+        )}
+
         <Separator className="my-2" />
+
 
         {/* Cost of Goods Sold */}
         <p className="text-xs text-muted-foreground px-3 pt-2">COSTO DE VENTAS</p>
