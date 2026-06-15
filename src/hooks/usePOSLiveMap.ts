@@ -43,45 +43,41 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
       setLoading(true);
       try {
         // Resolve restaurant_id for zones (which are keyed by restaurant_businesses.id)
-        const { data: business } = await supabase
+        const businessRes: any = await supabase
           .from("restaurant_businesses")
           .select("id")
           .eq("user_id", restaurantUserId)
           .limit(1);
+        const businessId: string | undefined = businessRes?.data?.[0]?.id;
 
-        const businessId = business?.[0]?.id;
-
-        const tablesPromise = supabase
+        const tablesRes: any = await supabase
           .from("restaurant_tables")
           .select("*")
           .eq("user_id", restaurantUserId)
           .order("table_number");
 
-        const zonesPromise = businessId
-          ? supabase
-              .from("restaurant_zones")
-              .select("id, name")
-              .eq("restaurant_id", businessId)
-              .eq("is_active", true)
-          : null;
+        let zonesData: Zone[] = [];
+        if (businessId) {
+          const zonesRes: any = await supabase
+            .from("restaurant_zones")
+            .select("id, name")
+            .eq("restaurant_id", businessId)
+            .eq("is_active", true);
+          zonesData = (zonesRes?.data || []) as Zone[];
+        }
 
-        const ordersPromise = supabase
+        const ordersRes: any = await supabase
           .from("restaurant_orders")
           .select("id, table_id, total, waiter_name, created_at")
           .eq("user_id", restaurantUserId)
           .not("table_id", "is", null)
           .in("status", ["pending", "preparing", "ready", "served"]);
 
-        const [tablesRes, zonesRes, ordersRes] = await Promise.all([
-          tablesPromise,
-          zonesPromise,
-          ordersPromise,
-        ]);
-
         if (cancelled) return;
-        setTables((tablesRes.data || []) as RestaurantTable[]);
-        setZones(((zonesRes?.data as Zone[] | null) || []) as Zone[]);
-        setOrders((ordersRes.data || []) as ActiveOrderSummary[]);
+        setTables((tablesRes?.data || []) as RestaurantTable[]);
+        setZones(zonesData);
+        setOrders((ordersRes?.data || []) as ActiveOrderSummary[]);
+
 
       } catch (e) {
         console.error("usePOSLiveMap load error", e);
