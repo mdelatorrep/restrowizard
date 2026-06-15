@@ -214,21 +214,28 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(benchmark.top_opportunities || []).map((opp, index) => (
-            <div 
-              key={index} 
-              className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"
-            >
-              <h4 className="font-lato-bold text-foreground mb-1">{opp.title}</h4>
-              <p className="text-sm text-muted-foreground mb-2">{opp.description}</p>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-3 w-3 text-secondary" />
-                <span className="text-xs text-secondary font-lato-medium">
-                  {opp.industry_trend}
-                </span>
+          {(benchmark.top_opportunities || []).map((opp: any, index) => {
+            // Tolerar respuestas donde la IA devolvió strings sueltos en lugar de objetos
+            const isString = typeof opp === 'string';
+            const title = isString ? `Oportunidad ${index + 1}` : (opp?.title || `Oportunidad ${index + 1}`);
+            const description = isString ? opp : (opp?.description || '');
+            const trend = isString ? '' : (opp?.industry_trend || '');
+            return (
+              <div
+                key={index}
+                className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"
+              >
+                <h4 className="font-lato-bold text-foreground mb-1">{title}</h4>
+                {description && <p className="text-sm text-muted-foreground mb-2">{description}</p>}
+                {trend && (
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-3 w-3 text-secondary" />
+                    <span className="text-xs text-secondary font-lato-medium">{trend}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
