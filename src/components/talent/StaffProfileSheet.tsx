@@ -267,7 +267,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
                          <Briefcase className="h-5 w-5 text-muted-foreground" />
                          <div>
                            <p className="text-xs text-muted-foreground">Tarifa por Hora</p>
-                           <p className="font-medium">${staff.hourly_rate}/hr</p>
+                           <p className="font-medium">{formatCurrency(Number(staff.hourly_rate) || 0, 'COP', { suffix: '/hr' })}</p>
                          </div>
                        </div>
                      )}
