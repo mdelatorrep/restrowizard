@@ -61,6 +61,7 @@ import {
   ChevronDown,
   Shield,
   GraduationCap,
+  FileText,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -275,6 +276,13 @@ const financeItems: MenuItem[] = [
     path: '/r/sustainability',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'sustainability'
+  },
+  {
+    title: 'Facturación Electrónica',
+    icon: FileText,
+    path: '/r/electronic-invoicing',
+    stages: ['first_90_days', 'normal_operation'],
+    moduleKey: 'electronic_invoicing'
   },
 ];
 
