@@ -136,7 +136,7 @@ export const useOrders = () => {
     if (!userId) return null;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('restaurant_orders')
         .insert([{ 
           items: orderData.items as unknown as Json,
@@ -145,6 +145,8 @@ export const useOrders = () => {
           user_id: userId,
           source: orderData.source as string | undefined,
           order_type: orderData.order_type as string | undefined,
+          // TK-1 / TK-17: persistir canal de venta para que Reportes consolide.
+          sales_channel: (orderData.sales_channel as string | undefined) || 'delivery_own',
           customer_name: orderData.customer_name as string | undefined,
           customer_phone: orderData.customer_phone as string | undefined,
           customer_email: orderData.customer_email as string | undefined,

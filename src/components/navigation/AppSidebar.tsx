@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -434,23 +434,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </Tooltip>
         ) : (
           <SidebarMenuButton
-            onClick={() => navigate(item.path)}
+            asChild
             isActive={isActive(item.path)}
             tooltip={item.title}
             className="text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <item.icon className="h-5 w-5" />
-            <span className="font-lato-medium">{item.title}</span>
-            {status.reason && !isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AlertCircle className="h-3 w-3 ml-auto text-amber-400" />
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p className="text-xs">{status.reason}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            <Link to={item.path}>
+              <item.icon className="h-5 w-5" />
+              <span className="font-lato-medium">{item.title}</span>
+              {status.reason && !isCollapsed && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="h-3 w-3 ml-auto text-amber-400" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="text-xs">{status.reason}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </Link>
           </SidebarMenuButton>
         )}
       </SidebarMenuItem>
@@ -666,13 +668,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
                   {consultantAIToolsItems.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
-                        onClick={() => navigate(item.path)}
+                        asChild
                         isActive={isActive(item.path)}
                         tooltip={item.title}
                         className="text-sidebar-foreground hover:bg-sidebar-accent"
                       >
-                        <item.icon className="h-5 w-5" />
-                        <span className="font-lato-medium">{item.title}</span>
+                        <Link to={item.path}>
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-lato-medium">{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -690,13 +694,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
                   {consultantManagementItems.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
-                        onClick={() => navigate(item.path)}
+                        asChild
                         isActive={isActive(item.path)}
                         tooltip={item.title}
                         className="text-sidebar-foreground hover:bg-sidebar-accent"
                       >
-                        <item.icon className="h-5 w-5" />
-                        <span className="font-lato-medium">{item.title}</span>
+                        <Link to={item.path}>
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-lato-medium">{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -715,13 +721,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => navigate(settingsPath)}
+                  asChild
                   isActive={isActive(settingsPath)}
                   tooltip="Configuración"
                   className="text-sidebar-foreground hover:bg-sidebar-accent"
                 >
-                  <SettingsIcon className="h-5 w-5" />
-                  <span className="font-lato-medium">Configuración</span>
+                  <Link to={settingsPath}>
+                    <SettingsIcon className="h-5 w-5" />
+                    <span className="font-lato-medium">Configuración</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
