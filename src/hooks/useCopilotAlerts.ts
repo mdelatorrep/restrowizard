@@ -58,6 +58,19 @@ export const useCopilotAlerts = () => {
     enabled: !!userId,
   });
 
+  // IA-05: Auto-generate alerts if stale (>6h) or empty
+  useEffect(() => {
+    if (!userId || isLoading) return;
+    const newest = alerts[0]?.created_at ? new Date(alerts[0].created_at).getTime() : 0;
+    const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+    if (alerts.length === 0 || newest < sixHoursAgo) {
+      supabase.functions.invoke('ai-proactive-alerts', { body: { user_id: userId } })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['copilot-alerts', userId] }))
+        .catch((e) => console.warn('[copilot-alerts] auto-generate failed', e));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isLoading]);
+
   const unreadAlerts = alerts.filter(a => !a.is_read);
   const highPriorityAlerts = alerts.filter(a => a.priority === 'high' || a.priority === 'critical');
 
