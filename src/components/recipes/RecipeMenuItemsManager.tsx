@@ -96,7 +96,7 @@ export const RecipeMenuItemsManager = ({ recipeId }: Props) => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{link.menu_item?.name || 'Ítem'}</p>
                   {link.menu_item?.category && (
-                    <p className="text-xs text-muted-foreground">{link.menu_item.category}</p>
+                    <p className="text-xs text-muted-foreground">{labelFor('menu_category', link.menu_item.category)}</p>
                   )}
                 </div>
                 <Input
