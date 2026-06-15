@@ -153,7 +153,9 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           const [h, m, sec] = String(t).split(':').map(Number);
           return ((h || 0) * 3600 + (m || 0) * 60 + (sec || 0)) * 1000;
         };
-        const hours = Math.max(0, (toMs(end) - toMs(start)) / 3_600_000);
+        // C8-01: descontar descanso (break_minutes) para que coincida con módulo Turnos
+        const breakMs = (Number(s.break_minutes) || 0) * 60_000;
+        const hours = Math.max(0, (toMs(end) - toMs(start) - breakMs) / 3_600_000);
         const rate = Number(s.hourly_rate_override) || Number(s.staff_members?.hourly_rate) || 0;
         laborCostByDate[dateKey] = (laborCostByDate[dateKey] || 0) + hours * rate;
       });
