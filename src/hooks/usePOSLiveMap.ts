@@ -51,31 +51,38 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
 
         const businessId = business?.[0]?.id;
 
+        const tablesPromise = supabase
+          .from("restaurant_tables")
+          .select("*")
+          .eq("user_id", restaurantUserId)
+          .order("table_number");
+
+        const zonesPromise = businessId
+          ? supabase
+              .from("restaurant_zones")
+              .select("id, name")
+              .eq("restaurant_id", businessId)
+              .eq("is_active", true)
+          : null;
+
+        const ordersPromise = supabase
+          .from("restaurant_orders")
+          .select("id, table_id, total, waiter_name, created_at")
+          .eq("user_id", restaurantUserId)
+          .not("table_id", "is", null)
+          .in("status", ["pending", "preparing", "ready", "served"]);
+
         const [tablesRes, zonesRes, ordersRes] = await Promise.all([
-          supabase
-            .from("restaurant_tables")
-            .select("*")
-            .eq("user_id", restaurantUserId)
-            .order("table_number"),
-          businessId
-            ? supabase
-                .from("restaurant_zones")
-                .select("id, name")
-                .eq("restaurant_id", businessId)
-                .eq("is_active", true)
-            : Promise.resolve({ data: [] as Zone[], error: null } as any),
-          supabase
-            .from("restaurant_orders")
-            .select("id, table_id, total, waiter_name, created_at")
-            .eq("user_id", restaurantUserId)
-            .not("table_id", "is", null)
-            .in("status", ["pending", "preparing", "ready", "served"]),
+          tablesPromise,
+          zonesPromise,
+          ordersPromise,
         ]);
 
         if (cancelled) return;
         setTables((tablesRes.data || []) as RestaurantTable[]);
-        setZones((zonesRes.data || []) as Zone[]);
+        setZones(((zonesRes?.data as Zone[] | null) || []) as Zone[]);
         setOrders((ordersRes.data || []) as ActiveOrderSummary[]);
+
       } catch (e) {
         console.error("usePOSLiveMap load error", e);
       } finally {
