@@ -143,7 +143,36 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
               line={line}
               onInc={() => o.updateQuantity(line.line_id, line.quantity + 1)}
               onDec={() => o.updateQuantity(line.line_id, line.quantity - 1)}
-              onRemove={() => o.removeItem(line.line_id)}
+              onRemove={() => {
+                const sensitive = line.status !== "pending";
+                const lineTotal = (line.unit_price || 0) * (line.quantity || 1);
+                const doRemove = (sup?: SupervisorAuth) => {
+                  o.removeItem(line.line_id);
+                  audit.log({
+                    userId: restaurantUserId,
+                    entity: "order_line",
+                    entityId: order.id,
+                    action: sensitive ? "void_line" : "remove_line",
+                    amount: lineTotal,
+                    reason: sensitive ? "Anulación de item enviado a cocina" : "Quita de comanda",
+                    before: { name: line.name, qty: line.quantity, status: line.status },
+                    supervisorStaffId: sup?.supervisor_staff_id ?? null,
+                    supervisorName: sup?.supervisor_name ?? null,
+                    authorizationId: sup?.authorization_id ?? null,
+                  });
+                };
+                if (sensitive) {
+                  requestSupervisor({
+                    reasonCode: "void_sent_item",
+                    reasonText: `Anular "${line.name}" ya enviado a cocina`,
+                    amount: lineTotal,
+                    entityId: order.id,
+                    onAuthorized: (sup) => doRemove(sup),
+                  });
+                } else {
+                  doRemove();
+                }
+              }}
             />
           ))
         )}
