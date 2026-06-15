@@ -72,15 +72,19 @@ export interface HourlySales {
 }
 
 const normalizeMethod = (raw: string | null | undefined): string => {
-  const m = (raw || 'Sin especificar').toString().trim();
+  const m = (raw || '').toString().trim();
   if (!m) return 'Sin especificar';
   const lower = m.toLowerCase();
+  // TK-26: cualquier valor "desconocido/unknown/null/n/a" cae a Sin especificar
+  if (['desconocido', 'unknown', 'null', 'na', 'n/a', '-', 'otro', 'other'].includes(lower)) return 'Sin especificar';
   if (lower === 'cash' || lower.includes('efectivo')) return 'Efectivo';
-  if (lower === 'card' || lower.includes('tarjeta')) return 'Tarjeta';
+  if (lower === 'card' || lower.includes('tarjeta') || lower.includes('credit') || lower.includes('debit')) return 'Tarjeta';
   if (lower.includes('nequi')) return 'Nequi';
   if (lower.includes('daviplata')) return 'Daviplata';
-  if (lower.includes('transfer')) return 'Transferencia';
+  if (lower.includes('bancolombia')) return 'Bancolombia';
+  if (lower.includes('transfer') || lower.includes('pse')) return 'Transferencia';
   if (lower.includes('qr')) return 'QR';
+  if (lower.includes('mercadopago') || lower.includes('mercado pago')) return 'MercadoPago';
   // Devolver con primera letra mayúscula
   return m.charAt(0).toUpperCase() + m.slice(1);
 };

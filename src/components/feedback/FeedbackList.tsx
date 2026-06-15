@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerFeedback } from '@/hooks/useFeedbackData';
 import { SentimentBadge, StarRating } from './FeedbackBadges';
+import { labelFor } from '@/lib/enumLabels';
 
 interface Props {
   feedback: CustomerFeedback[];
@@ -53,7 +54,7 @@ export const FeedbackList = ({ feedback, onAddClick, onRespond }: Props) => {
                 <p className="text-muted-foreground mb-2">{item.comment}</p>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{format(new Date(item.created_at!), 'PPp', { locale: es })}</span>
-                  <Badge variant="outline">{item.source}</Badge>
+                  <Badge variant="outline">{labelFor('feedback_source', item.source)}</Badge>
                   {item.customer_email && (
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />

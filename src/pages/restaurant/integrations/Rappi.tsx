@@ -87,10 +87,10 @@ export default function RappiIntegrationPage() {
       <Tabs defaultValue="connection" className="w-full">
         <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
           <TabsTrigger value="connection">Conexión</TabsTrigger>
-          <TabsTrigger value="menu" disabled={!integration}>Menú</TabsTrigger>
-          <TabsTrigger value="store" disabled={!integration}>Tienda</TabsTrigger>
-          <TabsTrigger value="orders" disabled={!integration}>Pedidos</TabsTrigger>
-          <TabsTrigger value="settlements" disabled={!integration}>Conciliación</TabsTrigger>
+          <TabsTrigger value="menu" disabled={!integration} title={!integration ? 'Completa la conexión para habilitar' : undefined}>Menú</TabsTrigger>
+          <TabsTrigger value="store" disabled={!integration} title={!integration ? 'Completa la conexión para habilitar' : undefined}>Tienda</TabsTrigger>
+          <TabsTrigger value="orders" disabled={!integration} title={!integration ? 'Completa la conexión para habilitar' : undefined}>Pedidos</TabsTrigger>
+          <TabsTrigger value="settlements" disabled={!integration} title={!integration ? 'Completa la conexión para habilitar' : undefined}>Conciliación</TabsTrigger>
         </TabsList>
 
         {/* CONEXIÓN */}

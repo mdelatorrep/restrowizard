@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, RefreshCw, X, Loader2, Brain, TrendingUp, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Sparkles, RefreshCw, X, Loader2, Brain, TrendingUp, AlertTriangle, Lightbulb, Database } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,10 @@ interface AIInsightsPanelProps {
   variant?: 'default' | 'compact' | 'sidebar';
   icon?: React.ReactNode;
   className?: string;
+  /** TK-20: mensaje de error si la última llamada falló. */
+  error?: string | null;
+  /** TK-20: si false, muestra "No hay datos suficientes para analizar". */
+  hasData?: boolean;
 }
 
 export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
@@ -28,8 +32,11 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
   onClose,
   variant = 'default',
   icon,
-  className
+  className,
+  error = null,
+  hasData = true,
 }) => {
+  const disabledByData = !hasData && !loading;
   if (variant === 'compact') {
     return (
       <Card className={cn("border-primary/20 bg-gradient-to-br from-primary/5 to-transparent", className)}>
@@ -224,7 +231,28 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           </ScrollArea>
         )}
         
-        {!insights && !loading && (
+        {!insights && !loading && error && (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <AlertTriangle className="w-12 h-12 mb-3 text-destructive opacity-70" />
+            <p className="font-medium text-destructive">No se pudo generar el análisis</p>
+            <p className="text-sm text-center max-w-sm mt-1 mb-3">{error}</p>
+            <Button size="sm" variant="outline" onClick={onAnalyze} className="gap-2">
+              <RefreshCw className="w-4 h-4" /> Reintentar
+            </Button>
+          </div>
+        )}
+
+        {!insights && !loading && !error && disabledByData && (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <Database className="w-12 h-12 mb-3 opacity-50" />
+            <p className="font-medium">No hay datos suficientes para analizar</p>
+            <p className="text-sm text-center max-w-sm mt-1">
+              Captura algunas operaciones (ventas, inventario, turnos) y vuelve a intentarlo.
+            </p>
+          </div>
+        )}
+
+        {!insights && !loading && !error && !disabledByData && (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Brain className="w-12 h-12 mb-3 opacity-50" />
             <p className="font-medium">Sin análisis disponible</p>
