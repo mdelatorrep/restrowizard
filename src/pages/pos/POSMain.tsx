@@ -4,13 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePOSContext } from "@/hooks/usePOSContext";
 import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
+import { usePOSMenu } from "@/hooks/usePOSMenu";
+import { usePOSOrder } from "@/hooks/usePOSOrder";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
-import { TableSummaryPanel } from "@/components/pos-standalone/TableSummaryPanel";
+import { MenuCatalog } from "@/components/pos-standalone/MenuCatalog";
+import { OrderPanel } from "@/components/pos-standalone/OrderPanel";
 import { OpenSessionDialog } from "@/components/pos/OpenSessionDialog";
 import { CloseSessionDialog } from "@/components/pos/CloseSessionDialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X } from "lucide-react";
 import type { RestaurantTable } from "@/hooks/usePOSTables";
 import { useToast } from "@/hooks/use-toast";
 
