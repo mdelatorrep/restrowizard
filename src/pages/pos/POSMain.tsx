@@ -29,6 +29,8 @@ export default function POSMain() {
   const { currentSession, hasOpenSession, openSession, closeSession, loading: sessionLoading } =
     usePOSSession();
   const { tables, zones, orders, loading: mapLoading } = usePOSLiveMap(context?.restaurantUserId);
+  const teamPerms = useTeamPermissions();
+  const canManageCash = teamPerms.isOwner || teamPerms.canAccess('pos', 'admin');
 
   const [authChecking, setAuthChecking] = useState(true);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
