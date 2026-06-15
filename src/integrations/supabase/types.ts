@@ -6483,6 +6483,7 @@ export type Database = {
           order_type: string | null
           payment_method: string | null
           payment_status: string | null
+          sales_channel: string | null
           session_id: string | null
           source: string | null
           split_from_order_id: string | null
@@ -6526,6 +6527,7 @@ export type Database = {
           order_type?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          sales_channel?: string | null
           session_id?: string | null
           source?: string | null
           split_from_order_id?: string | null
@@ -6569,6 +6571,7 @@ export type Database = {
           order_type?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          sales_channel?: string | null
           session_id?: string | null
           source?: string | null
           split_from_order_id?: string | null
