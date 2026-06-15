@@ -1,6 +1,7 @@
 // Phase 3.1 — OCR de facturas (multimodal vía Lovable AI Gateway)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { safeParseJson } from "../_shared/ai-gateway.ts";
+import { buildGuardrailPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
