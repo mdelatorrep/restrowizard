@@ -7,6 +7,7 @@ import { SplitBillDialog } from "./SplitBillDialog";
 import { TransferTableDialog } from "./TransferTableDialog";
 import { MergeTablesDialog } from "./MergeTablesDialog";
 import { SupervisorPINDialog, type SupervisorAuth } from "./SupervisorPINDialog";
+import { AISuggestPanel } from "./AISuggestPanel";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
 import { usePOSPayment } from "@/hooks/usePOSPayment";
 import { usePOSAudit } from "@/hooks/usePOSAudit";
@@ -177,6 +178,19 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
           ))
         )}
       </div>
+
+      {hasItems && (
+        <AISuggestPanel
+          userId={restaurantUserId}
+          currentItems={order.items.map((it) => ({
+            menu_item_id: it.menu_item_id,
+            name: it.name,
+            quantity: it.quantity,
+            price: it.unit_price,
+          }))}
+          onAdd={(s) => o.addItem({ menu_item_id: s.menu_item_id, name: s.name, unit_price: 0, quantity: 1 })}
+        />
+      )}
 
       <div className="border-t border-zinc-800/80 p-3 space-y-2 bg-zinc-950/60">
         <Row label="Subtotal" value={order.subtotal} />

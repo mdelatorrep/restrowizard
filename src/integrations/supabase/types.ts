@@ -4925,6 +4925,75 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_session_closures: {
+        Row: {
+          actual_cash: number | null
+          ai_recommendations: Json | null
+          ai_summary: string | null
+          audit_summary: Json | null
+          cash_difference: number | null
+          cashier_name: string | null
+          closed_at: string
+          created_at: string
+          expected_cash: number | null
+          id: string
+          notes: string | null
+          opened_at: string | null
+          opening_cash: number
+          order_count: number
+          payment_breakdown: Json | null
+          pdf_url: string | null
+          session_id: string
+          top_items: Json | null
+          total_sales: number
+          user_id: string
+        }
+        Insert: {
+          actual_cash?: number | null
+          ai_recommendations?: Json | null
+          ai_summary?: string | null
+          audit_summary?: Json | null
+          cash_difference?: number | null
+          cashier_name?: string | null
+          closed_at?: string
+          created_at?: string
+          expected_cash?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          opening_cash?: number
+          order_count?: number
+          payment_breakdown?: Json | null
+          pdf_url?: string | null
+          session_id: string
+          top_items?: Json | null
+          total_sales?: number
+          user_id: string
+        }
+        Update: {
+          actual_cash?: number | null
+          ai_recommendations?: Json | null
+          ai_summary?: string | null
+          audit_summary?: Json | null
+          cash_difference?: number | null
+          cashier_name?: string | null
+          closed_at?: string
+          created_at?: string
+          expected_cash?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          opening_cash?: number
+          order_count?: number
+          payment_breakdown?: Json | null
+          pdf_url?: string | null
+          session_id?: string
+          top_items?: Json | null
+          total_sales?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       pos_sessions: {
         Row: {
           actual_cash: number | null
@@ -5123,6 +5192,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pos_user_activity: {
+        Row: {
+          activity_type: string
+          id: string
+          metadata: Json | null
+          recorded_at: string
+          session_id: string | null
+          staff_id: string | null
+          staff_name: string | null
+          terminal_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string
+          id?: string
+          metadata?: Json | null
+          recorded_at?: string
+          session_id?: string | null
+          staff_id?: string | null
+          staff_name?: string | null
+          terminal_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          id?: string
+          metadata?: Json | null
+          recorded_at?: string
+          session_id?: string | null
+          staff_id?: string | null
+          staff_name?: string | null
+          terminal_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       pre_opening_tasks: {
         Row: {
@@ -9613,6 +9718,17 @@ export type Database = {
           location_name: string | null
           stock_on_hand: number | null
           unit: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      menu_item_cooccurrence: {
+        Row: {
+          item_a: string | null
+          item_b: string | null
+          name_a: string | null
+          name_b: string | null
+          pair_count: number | null
           user_id: string | null
         }
         Relationships: []

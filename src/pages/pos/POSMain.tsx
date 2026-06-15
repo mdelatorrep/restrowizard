@@ -6,14 +6,17 @@ import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
 import { usePOSMenu } from "@/hooks/usePOSMenu";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
+import { usePOSActivityTracker } from "@/hooks/usePOSActivityTracker";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
 import { MenuCatalog } from "@/components/pos-standalone/MenuCatalog";
 import { OrderPanel } from "@/components/pos-standalone/OrderPanel";
+import { ChannelsPanel } from "@/components/pos-standalone/ChannelsPanel";
 import { OpenSessionDialog } from "@/components/pos/OpenSessionDialog";
 import { CloseSessionDialog } from "@/components/pos/CloseSessionDialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X, Layers } from "lucide-react";
 import type { RestaurantTable } from "@/hooks/usePOSTables";
 import { useToast } from "@/hooks/use-toast";
 
@@ -83,6 +86,14 @@ export default function POSMain() {
     };
   }, []);
 
+  // Cashier activity heartbeat
+  usePOSActivityTracker({
+    enabled: !!context && !!currentSession,
+    userId: context?.restaurantUserId ?? null,
+    sessionId: currentSession?.id ?? null,
+    staffName: currentSession?.cashier_name ?? null,
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(`/${slug}/pos/login`, { replace: true });
@@ -140,6 +151,17 @@ export default function POSMain() {
           {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
           {online ? "En línea" : "Sin conexión"}
         </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="sm" variant="ghost" className="text-zinc-300 hover:text-zinc-100" title="Canales (delivery + reservas)">
+              <Layers className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Canales</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[360px] p-0 bg-zinc-950 border-l border-zinc-800 text-zinc-100">
+            <ChannelsPanel userId={context.restaurantUserId} />
+          </SheetContent>
+        </Sheet>
         {hasOpenSession ? (
           <Button
             size="sm"
@@ -263,8 +285,31 @@ export default function POSMain() {
         onOpenChange={setCloseDlg}
         session={currentSession}
         onClose={async (closingCash, notes) => {
-          await closeSession(closingCash, notes);
-          setCloseDlg(false);
+          try {
+            if (currentSession?.id && context?.restaurantUserId) {
+              const { data, error } = await (supabase as any).functions.invoke("pos-close-session", {
+                body: {
+                  user_id: context.restaurantUserId,
+                  session_id: currentSession.id,
+                  actual_cash: closingCash,
+                  notes,
+                },
+              });
+              if (error) throw error;
+              if (data?.closure?.ai_summary) {
+                toast({ title: "Cierre con IA", description: data.closure.ai_summary });
+              } else {
+                toast({ title: "Caja cerrada", description: `Diferencia: $${Math.round(data?.closure?.cash_difference ?? 0).toLocaleString("es-CO")}` });
+              }
+            } else {
+              await closeSession(closingCash, notes);
+            }
+          } catch (e: any) {
+            toast({ title: "Error al cerrar", description: e?.message ?? "Reintentar", variant: "destructive" });
+            await closeSession(closingCash, notes);
+          } finally {
+            setCloseDlg(false);
+          }
         }}
       />
     </POSShell>
