@@ -178,6 +178,11 @@ export const useSalesReports = (
     const totalOrders = rawOrders.length;
     const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+    // TK-4: cubiertos
+    const totalCovers = rawOrders.reduce((sum, o) => sum + (Number(o.guests_count) || 0), 0);
+    const avgPartySize = totalOrders > 0 ? totalCovers / totalOrders : 0;
+    const revenuePerCover = totalCovers > 0 ? totalRevenue / totalCovers : 0;
+
     let bestDay = ''; let bestDayAmount = 0;
     chartData.forEach(p => { if (p.totalSales > bestDayAmount) { bestDayAmount = p.totalSales; bestDay = p.label; } });
 
@@ -189,7 +194,7 @@ export const useSalesReports = (
     const cashPercent = totalRevenue > 0 ? (cashTotal / totalRevenue) * 100 : 0;
     const cardPercent = totalRevenue > 0 ? (cardTotal / totalRevenue) * 100 : 0;
 
-    return { totalRevenue, netRevenue, taxCollected, totalOrders, avgTicket, bestDay, bestDayAmount, growthPercent, cashPercent, cardPercent };
+    return { totalRevenue, netRevenue, taxCollected, totalOrders, avgTicket, bestDay, bestDayAmount, growthPercent, cashPercent, cardPercent, totalCovers, avgPartySize, revenuePerCover };
   }, [rawOrders, previousPeriodOrders, chartData]);
 
   // TK-10: desglose granular de métodos de pago.
