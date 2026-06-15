@@ -26,10 +26,24 @@ interface Props {
 export function OrderPanel({ table, restaurantUserId, waiterName, allTables, activeOrders }: Props) {
   const o = usePOSOrder(restaurantUserId, table.id);
   const { processPayment } = usePOSPayment();
+  const audit = usePOSAudit();
   const [payOpen, setPayOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pendingAuth, setPendingAuth] = useState<null | {
+    reasonCode: string;
+    reasonText: string;
+    amount?: number;
+    entityId?: string;
+    onAuthorized: (auth: SupervisorAuth) => void | Promise<void>;
+  }>(null);
+
+  const requestSupervisor = (req: NonNullable<typeof pendingAuth>) => {
+    setPendingAuth(req);
+    setPinOpen(true);
+  };
 
   const order = o.order;
   const hasItems = !!order && order.items.length > 0;
