@@ -18,6 +18,14 @@ export interface GuardrailOptions {
   domain?: string;
   /** Si true, agrega instrucción de incluir `confidence` y `sources_used`. */
   requireConfidence?: boolean;
+  /**
+   * Si true, cuando no hay CONTEXTO WEB el modelo PUEDE entregar estimaciones
+   * internas (marcadas con "Estimación:" y `confidence` bajo) en vez de
+   * negarse. Necesario para esquemas con campos numéricos obligatorios
+   * (benchmarks, percentiles, ROI), donde devolver strings de negativa
+   * rompe el UI cliente.
+   */
+  allowInternalEstimates?: boolean;
 }
 
 /**
@@ -26,13 +34,21 @@ export interface GuardrailOptions {
 export function buildGuardrailPrompt(opts: GuardrailOptions = {}): string {
   const lines = [
     "### REGLAS DE INTEGRIDAD (obligatorias)",
-    "1. NO inventes datos. Si una cifra, precio, ley, evento, proveedor, benchmark o tendencia no está en los datos del usuario ni en el CONTEXTO WEB, declara textualmente: 'Información no disponible — requiere verificación'.",
-    "2. NO uses conocimiento general como si fuera actual. Conocimientos previos al cutoff del modelo NO valen como evidencia para precios, regulaciones, eventos o tendencias actuales.",
+    "1. NO inventes datos. Si una cifra, precio, ley, evento, proveedor, benchmark o tendencia no está en los datos del usuario ni en el CONTEXTO WEB, marca el dato como no verificado.",
+    "2. NO uses conocimiento general como si fuera actual. Conocimientos previos al cutoff NO valen como evidencia para precios, regulaciones, eventos o tendencias actuales.",
     "3. CITA siempre. Cada afirmación externa cuantitativa debe ir seguida de [Fuente N] del CONTEXTO WEB. Si no hay fuente, marca el dato como 'no verificado'.",
     "4. DISTINGUE estimación de hecho. Estimaciones propias del modelo deben prefijarse con 'Estimación:' y justificarse con los datos internos provistos.",
-    "5. NEGATIVA explícita. Si la pregunta requiere datos externos y no hay evidencia disponible, responde claramente que no puedes responder con rigor y explica qué dato falta.",
-    "6. NO fabriques contactos. Nombres de proveedores, teléfonos, emails o direcciones SOLO se incluyen si vienen del CONTEXTO WEB con URL verificable.",
+    "5. NO fabriques contactos. Nombres de proveedores, teléfonos, emails o direcciones SOLO se incluyen si vienen del CONTEXTO WEB con URL verificable.",
   ];
+  if (opts.allowInternalEstimates) {
+    lines.push(
+      "6. Modo ESTIMACIÓN PERMITIDA: cuando falte CONTEXTO WEB, NO te niegues. Entrega los campos numéricos requeridos por el esquema usando estimaciones razonables derivadas de los datos internos del usuario y de tu conocimiento general, prefijando cualquier texto cualitativo con 'Estimación:' y bajando `confidence` (≤ 40). El esquema JSON DEBE quedar completo y con tipos correctos (números donde se piden números).",
+    );
+  } else {
+    lines.push(
+      "6. NEGATIVA explícita. Si la pregunta requiere datos externos y no hay evidencia disponible, responde claramente que no puedes responder con rigor y explica qué dato falta.",
+    );
+  }
   if (opts.requireConfidence) {
     lines.push(
       "7. Incluye en la respuesta los campos `confidence` (0-100) y `sources_used` (array de URLs citadas). Si confidence < 50, agrega `caveats` con lo que falta verificar.",
@@ -40,11 +56,11 @@ export function buildGuardrailPrompt(opts: GuardrailOptions = {}): string {
   }
   if (opts.jsonOutput) {
     lines.push(
-      "8. Responde ÚNICAMENTE con JSON válido. Sin markdown, sin ```json fences, sin texto antes ni después.",
+      "8. Responde ÚNICAMENTE con JSON válido. Sin markdown, sin ```json fences, sin texto antes ni después. Respeta TIPOS: si el esquema pide número, devuelve número (no string).",
     );
   }
   if (opts.domain) {
-    lines.push(`Rol: experto en ${opts.domain}. Mantén el rigor profesional incluso al negarte.`);
+    lines.push(`Rol: experto en ${opts.domain}. Mantén el rigor profesional.`);
   }
   return lines.join("\n");
 }

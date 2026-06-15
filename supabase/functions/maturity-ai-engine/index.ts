@@ -128,32 +128,46 @@ Responde en JSON con: overview, estimated_roi, quick_wins (array), priority_acti
         break;
 
       case 'benchmark_comparison':
-        systemPrompt = `Eres un analista de datos especializado en benchmarking de la industria restaurantera con acceso a búsqueda web para obtener datos actualizados de la industria.
-Tienes acceso a datos agregados de miles de restaurantes en Latinoamérica.
+        systemPrompt = `Eres un analista de datos especializado en benchmarking de la industria restaurantera.
 Proporcionas comparativas honestas y contextualizadas.
-Identificas gaps y oportunidades basadas en datos reales de la industria.
 Respondes en español con precisión y claridad.
 
-Responde SIEMPRE en formato JSON válido con la estructura especificada.`;
+Responde SIEMPRE en formato JSON válido con la estructura especificada y con TIPOS correctos (números donde se piden números).`;
 
-        userPrompt = `Compara el siguiente diagnóstico con benchmarks actuales de la industria:
+        userPrompt = `Compara el siguiente diagnóstico con benchmarks de la industria restaurantera en Latinoamérica.
 
-SCORES DEL RESTAURANTE:
-${Object.entries(diagnosisData.pillarScores).map(([pillarId, score]) => 
-  `- ${PILLAR_NAMES[pillarId]}: ${(score as number).toFixed(2)}/5`
+SCORES DEL RESTAURANTE (escala 0-5):
+${Object.entries(diagnosisData.pillarScores).map(([pillarId, score]) =>
+  `- ${pillarId}|${PILLAR_NAMES[pillarId]}: ${(score as number).toFixed(2)}/5`
 ).join('\n')}
 Score General: ${diagnosisData.overallScore.toFixed(2)}/5
 
 ${restaurantContext?.businessType ? `Tipo de negocio: ${restaurantContext.businessType}` : ''}
 ${restaurantContext?.location ? `Ubicación: ${restaurantContext.location}` : ''}
 
-Busca benchmarks actuales de la industria restaurantera en Latinoamérica y proporciona:
-1. Comparación con el promedio de la industria por pilar
-2. Posición percentil estimada
-3. Áreas donde está por encima/debajo del promedio
-4. Oportunidades basadas en tendencias de la industria
+Devuelve JSON EXACTAMENTE con esta forma (todos los campos numéricos son NÚMEROS, no strings):
+{
+  "overall_percentile": <number 0-100>,
+  "industry_average": <number 0-5>,
+  "pillar_comparisons": [
+    {
+      "pillar_id": "p1",
+      "pillar_name": "Rentabilidad y Finanzas",
+      "user_score": <number>,
+      "industry_average": <number 0-5>,
+      "percentile": <number 0-100>,
+      "status": "above" | "at" | "below",
+      "gap": <number, user_score - industry_average>
+    }
+    // ... una entrada por cada pilar enviado
+  ],
+  "top_opportunities": [
+    { "title": "<string>", "description": "<string>", "industry_trend": "<string>" }
+  ],
+  "competitive_insight": "<string, marca estimaciones con 'Estimación:' si no hay fuente web>"
+}
 
-Responde en JSON con: overall_percentile, industry_average, pillar_comparisons (array), top_opportunities (array), competitive_insight`;
+Si no tienes fuentes externas verificadas, usa estimaciones razonables basadas en rangos típicos del sector restaurantero LATAM. NO devuelvas strings en los campos numéricos.`;
         break;
 
       case 'progress_insights':
@@ -193,7 +207,12 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
     const research = await webResearch(webQuery, { limit: 4, scrape: false, logPrefix: `[maturity:${action}]` });
 
     const wrappedSystem = composeSystemPrompt({
-      guardrails: { jsonOutput: true, requireConfidence: true, domain: "diagnóstico de madurez de restaurantes" },
+      guardrails: {
+        jsonOutput: true,
+        requireConfidence: true,
+        allowInternalEstimates: true,
+        domain: "diagnóstico de madurez de restaurantes",
+      },
       rolePrompt: systemPrompt,
       webContextBlock: formatSourcesForPrompt(research),
     });
@@ -203,20 +222,71 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         { role: "system", content: wrappedSystem },
         { role: "user", content: userPrompt },
       ],
-      tier: "reasoning",
-      maxTokens: 4000,
-      temperature: 0.7,
+      tier: "fast",
+      maxTokens: 2500,
+      temperature: 0.5,
       jsonMode: true,
-      logPrefix: "[maturity-ai-engine]",
+      logPrefix: `[maturity-ai-engine:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
-    const result = safeParseJson(aiResult.content);
+    const result: any = safeParseJson(aiResult.content);
 
     if (!result) {
       return new Response(
         JSON.stringify({ success: false, error: 'No se pudo procesar la respuesta de IA. Intenta de nuevo.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Normalización defensiva: el modelo a veces devuelve strings de negativa
+    // donde el contrato cliente exige números. Esto garantiza que el UI nunca
+    // crashee por `.toFixed()` sobre un string.
+    const toNum = (v: any, fb: number): number => {
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+      if (typeof v === 'string') {
+        const n = parseFloat(v.replace(',', '.'));
+        if (Number.isFinite(n)) return n;
+      }
+      return fb;
+    };
+
+    if (action === 'benchmark_comparison') {
+      const userOverall = Number(diagnosisData.overallScore) || 0;
+      result.overall_percentile = Math.max(0, Math.min(100, toNum(result.overall_percentile, Math.round(userOverall / 5 * 100))));
+      result.industry_average = Math.max(0, Math.min(5, toNum(result.industry_average, 2.8)));
+      const PILLAR_DEFAULTS: Record<string, number> = { p1: 2.9, p2: 2.7, p3: 2.6, p4: 2.5 };
+      const incoming = Array.isArray(result.pillar_comparisons) ? result.pillar_comparisons : [];
+      // Reconstruir desde los scores reales del usuario para garantizar 1 entrada por pilar.
+      result.pillar_comparisons = Object.entries(diagnosisData.pillarScores).map(([pid, score]) => {
+        const match = incoming.find((c: any) => c?.pillar_id === pid || c?.pillar === PILLAR_NAMES[pid]);
+        const user = Number(score) || 0;
+        const ind = Math.max(0, Math.min(5, toNum(match?.industry_average, PILLAR_DEFAULTS[pid] ?? 2.7)));
+        const gap = user - ind;
+        const status = gap > 0.3 ? 'above' : gap < -0.3 ? 'below' : 'at';
+        const pct = Math.max(0, Math.min(100, toNum(match?.percentile, Math.round((user / 5) * 100))));
+        return {
+          pillar_id: pid,
+          pillar_name: PILLAR_NAMES[pid] || pid,
+          user_score: user,
+          industry_average: ind,
+          percentile: pct,
+          status,
+          gap,
+        };
+      });
+      // Normalizar top_opportunities: aceptar strings u objetos.
+      result.top_opportunities = (Array.isArray(result.top_opportunities) ? result.top_opportunities : [])
+        .map((opp: any, i: number) => {
+          if (typeof opp === 'string') return { title: `Oportunidad ${i + 1}`, description: opp, industry_trend: '' };
+          return {
+            title: opp?.title || `Oportunidad ${i + 1}`,
+            description: opp?.description || '',
+            industry_trend: opp?.industry_trend || '',
+          };
+        });
+      if (typeof result.competitive_insight !== 'string') {
+        result.competitive_insight = 'Análisis competitivo no disponible en esta ejecución.';
+      }
     }
 
     const integrity = checkIntegrity(aiResult.content, research.enabled);

@@ -15,6 +15,16 @@ interface MaturityBenchmarkProps {
   benchmark: AIBenchmark;
 }
 
+/** Coerce cualquier valor (string IA, null, undefined) a número con fallback. */
+const toNum = (v: unknown, fallback = 0): number => {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = parseFloat(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+};
+
 const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
   const getStatusIcon = (status: 'above' | 'at' | 'below') => {
     switch (status) {
@@ -49,11 +59,15 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
     }
   };
 
+  // Normalizar valores numéricos (la IA puede devolver strings de negativa).
+  const overallPercentile = Math.max(0, Math.min(100, toNum(benchmark.overall_percentile, 50)));
+  const industryAvg = Math.max(0, Math.min(5, toNum(benchmark.industry_average, 2.5)));
+
   // Prepare data for radar chart
   const radarData = (benchmark.pillar_comparisons || []).map(p => ({
-    pillar: p.pillar_name.split(' ')[0], // Shortened name
-    'Tu Score': p.user_score,
-    'Industria': p.industry_average,
+    pillar: (p.pillar_name || '').split(' ')[0] || 'Pilar',
+    'Tu Score': toNum(p.user_score, 0),
+    'Industria': toNum(p.industry_average, 2.5),
     fullName: p.pillar_name
   }));
 
@@ -78,17 +92,17 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
               <p className="text-sm text-muted-foreground font-lato-medium mb-1">Tu posición en la industria</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-headline font-bold text-primary">
-                  Top {100 - benchmark.overall_percentile}%
+                  Top {100 - overallPercentile}%
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                Superas al {benchmark.overall_percentile}% de los restaurantes
+                Superas al {overallPercentile}% de los restaurantes
               </p>
             </div>
             <div className="text-right">
               <BarChart3 className="h-12 w-12 text-primary/40 mb-2" />
               <p className="text-sm text-muted-foreground">
-                Promedio industria: <span className="font-bold">{benchmark.industry_average.toFixed(1)}/5</span>
+                Promedio industria: <span className="font-bold">{industryAvg.toFixed(1)}/5</span>
               </p>
             </div>
           </div>
@@ -144,41 +158,47 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           <CardTitle className="font-headline">Detalle por Pilar</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(benchmark.pillar_comparisons || []).map((pillar) => (
-            <div key={pillar.pillar_id} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(pillar.status)}
-                  <span className="font-lato-medium">{pillar.pillar_name}</span>
-                </div>
-                {getStatusBadge(pillar.status)}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Tu score</span>
-                    <span className="font-bold text-primary">{pillar.user_score.toFixed(1)}</span>
+          {(benchmark.pillar_comparisons || []).map((pillar) => {
+            const userScore = toNum(pillar.user_score, 0);
+            const industryAverage = toNum(pillar.industry_average, 2.5);
+            const percentile = Math.max(0, Math.min(100, toNum(pillar.percentile, 50)));
+            const gap = toNum(pillar.gap, userScore - industryAverage);
+            return (
+              <div key={pillar.pillar_id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(pillar.status)}
+                    <span className="font-lato-medium">{pillar.pillar_name}</span>
                   </div>
-                  <Progress value={(pillar.user_score / 5) * 100} className="h-2" />
+                  {getStatusBadge(pillar.status)}
                 </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Industria</span>
-                    <span className="font-bold">{pillar.industry_average.toFixed(1)}</span>
-                  </div>
-                  <Progress value={(pillar.industry_average / 5) * 100} className="h-2 bg-muted [&>div]:bg-muted-foreground" />
-                </div>
-              </div>
 
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Percentil {pillar.percentile}</span>
-                <span className={getStatusColor(pillar.status)}>
-                  {pillar.gap > 0 ? '+' : ''}{pillar.gap.toFixed(2)} vs industria
-                </span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-muted-foreground">Tu score</span>
+                      <span className="font-bold text-primary">{userScore.toFixed(1)}</span>
+                    </div>
+                    <Progress value={(userScore / 5) * 100} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-muted-foreground">Industria</span>
+                      <span className="font-bold">{industryAverage.toFixed(1)}</span>
+                    </div>
+                    <Progress value={(industryAverage / 5) * 100} className="h-2 bg-muted [&>div]:bg-muted-foreground" />
+                  </div>
+                </div>
+
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Percentil {percentile}</span>
+                  <span className={getStatusColor(pillar.status)}>
+                    {gap > 0 ? '+' : ''}{gap.toFixed(2)} vs industria
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
@@ -194,21 +214,28 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(benchmark.top_opportunities || []).map((opp, index) => (
-            <div 
-              key={index} 
-              className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"
-            >
-              <h4 className="font-lato-bold text-foreground mb-1">{opp.title}</h4>
-              <p className="text-sm text-muted-foreground mb-2">{opp.description}</p>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-3 w-3 text-secondary" />
-                <span className="text-xs text-secondary font-lato-medium">
-                  {opp.industry_trend}
-                </span>
+          {(benchmark.top_opportunities || []).map((opp: any, index) => {
+            // Tolerar respuestas donde la IA devolvió strings sueltos en lugar de objetos
+            const isString = typeof opp === 'string';
+            const title = isString ? `Oportunidad ${index + 1}` : (opp?.title || `Oportunidad ${index + 1}`);
+            const description = isString ? opp : (opp?.description || '');
+            const trend = isString ? '' : (opp?.industry_trend || '');
+            return (
+              <div
+                key={index}
+                className="p-4 rounded-lg bg-secondary/5 border border-secondary/20"
+              >
+                <h4 className="font-lato-bold text-foreground mb-1">{title}</h4>
+                {description && <p className="text-sm text-muted-foreground mb-2">{description}</p>}
+                {trend && (
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-3 w-3 text-secondary" />
+                    <span className="text-xs text-secondary font-lato-medium">{trend}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
