@@ -99,7 +99,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // Si no hay actual_*, usamos horarios programados.
       const shiftsPromise = supabase
         .from('staff_shifts')
-        .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, hourly_rate_override, status, staff_members(hourly_rate)')
+        .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, break_minutes, hourly_rate_override, status, staff_members(hourly_rate)')
         .eq('user_id', userId)
         .gte('shift_date', startStr)
         .lte('shift_date', endStr)
