@@ -191,7 +191,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentWeekStart, currentWeekEnd, toast]);
+  }, [userId, weekStartStr, weekEndStr, toast]);
 
   const addShift = useCallback(async (shift: Omit<StaffShift, 'id' | 'hours_worked' | 'cost' | 'staff_member_name'>) => {
     if (!userId) return null;
