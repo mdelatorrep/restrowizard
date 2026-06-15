@@ -434,23 +434,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </Tooltip>
         ) : (
           <SidebarMenuButton
-            onClick={() => navigate(item.path)}
+            asChild
             isActive={isActive(item.path)}
             tooltip={item.title}
             className="text-sidebar-foreground hover:bg-sidebar-accent"
           >
-            <item.icon className="h-5 w-5" />
-            <span className="font-lato-medium">{item.title}</span>
-            {status.reason && !isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AlertCircle className="h-3 w-3 ml-auto text-amber-400" />
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p className="text-xs">{status.reason}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            <Link to={item.path}>
+              <item.icon className="h-5 w-5" />
+              <span className="font-lato-medium">{item.title}</span>
+              {status.reason && !isCollapsed && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="h-3 w-3 ml-auto text-amber-400" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="text-xs">{status.reason}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </Link>
           </SidebarMenuButton>
         )}
       </SidebarMenuItem>
