@@ -214,13 +214,19 @@ export default function POSMain() {
             <p className="text-zinc-400 mb-6">
               Abre tu turno para empezar a tomar comandas y registrar ventas.
             </p>
-            <Button
-              size="lg"
-              className="bg-[var(--pos-accent)] text-zinc-900 hover:opacity-90"
-              onClick={() => setOpenDlg(true)}
-            >
-              <Power className="h-5 w-5 mr-2" /> Abrir caja
-            </Button>
+            {canManageCash ? (
+              <Button
+                size="lg"
+                className="bg-[var(--pos-accent)] text-zinc-900 hover:opacity-90"
+                onClick={() => setOpenDlg(true)}
+              >
+                <Power className="h-5 w-5 mr-2" /> Abrir caja
+              </Button>
+            ) : (
+              <p className="text-sm text-zinc-500">
+                Tu rol no puede abrir caja. Solicita a un supervisor o administrador.
+              </p>
+            )}
           </div>
         </div>
       ) : mapLoading ? (
