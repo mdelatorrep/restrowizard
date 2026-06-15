@@ -221,7 +221,7 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                                 <SelectValue placeholder="Seleccionar" />
                               </SelectTrigger>
                               <SelectContent>
-                                {inventory.filter(i => i.id).map(i => (
+                                {filteredInventory.filter(i => i.id).map(i => (
                                   <SelectItem key={i.id} value={i.id}>
                                     {i.item_name} ({i.current_stock} {i.unit})
                                   </SelectItem>
