@@ -15,6 +15,16 @@ interface MaturityBenchmarkProps {
   benchmark: AIBenchmark;
 }
 
+/** Coerce cualquier valor (string IA, null, undefined) a número con fallback. */
+const toNum = (v: unknown, fallback = 0): number => {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = parseFloat(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+};
+
 const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
   const getStatusIcon = (status: 'above' | 'at' | 'below') => {
     switch (status) {
