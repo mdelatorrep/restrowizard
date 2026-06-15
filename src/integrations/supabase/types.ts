@@ -6683,6 +6683,62 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_custom_roles: {
+        Row: {
+          base_role: Database["public"]["Enums"]["team_member_role"]
+          business_id: string
+          color: string | null
+          created_at: string
+          default_landing: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_system: boolean
+          key: string
+          label: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          base_role?: Database["public"]["Enums"]["team_member_role"]
+          business_id: string
+          color?: string | null
+          created_at?: string
+          default_landing?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean
+          key: string
+          label: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          base_role?: Database["public"]["Enums"]["team_member_role"]
+          business_id?: string
+          color?: string | null
+          created_at?: string
+          default_landing?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean
+          key?: string
+          label?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_custom_roles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_menus: {
         Row: {
           ai_recommendations: Json | null
@@ -7012,6 +7068,7 @@ export type Database = {
           business_id: string
           claimed_at: string | null
           created_at: string
+          custom_role_id: string | null
           id: string
           invitation_sent_at: string | null
           invitation_token: string | null
@@ -7027,6 +7084,7 @@ export type Database = {
           business_id: string
           claimed_at?: string | null
           created_at?: string
+          custom_role_id?: string | null
           id?: string
           invitation_sent_at?: string | null
           invitation_token?: string | null
@@ -7042,6 +7100,7 @@ export type Database = {
           business_id?: string
           claimed_at?: string | null
           created_at?: string
+          custom_role_id?: string | null
           id?: string
           invitation_sent_at?: string | null
           invitation_token?: string | null
@@ -7059,6 +7118,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "restaurant_businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_team_members_custom_role_id_fkey"
+            columns: ["custom_role_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_custom_roles"
             referencedColumns: ["id"]
           },
           {
@@ -9979,6 +10045,10 @@ export type Database = {
         Returns: undefined
       }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
+      seed_system_roles_for_business: {
+        Args: { _business_id: string }
+        Returns: undefined
+      }
       set_staff_pin: {
         Args: { _pin: string; _staff_id: string }
         Returns: undefined
