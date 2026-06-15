@@ -165,7 +165,7 @@ export default function POSMain() {
             <ChannelsPanel userId={context.restaurantUserId} />
           </SheetContent>
         </Sheet>
-        {hasOpenSession ? (
+        {canManageCash && (hasOpenSession ? (
           <Button
             size="sm"
             variant="ghost"
@@ -182,7 +182,7 @@ export default function POSMain() {
           >
             <Power className="h-4 w-4 mr-1" /> Abrir caja
           </Button>
-        )}
+        ))}
         <Button
           size="sm"
           variant="ghost"
