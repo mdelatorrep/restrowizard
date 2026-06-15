@@ -59,11 +59,15 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
     }
   };
 
+  // Normalizar valores numéricos (la IA puede devolver strings de negativa).
+  const overallPercentile = Math.max(0, Math.min(100, toNum(benchmark.overall_percentile, 50)));
+  const industryAvg = Math.max(0, Math.min(5, toNum(benchmark.industry_average, 2.5)));
+
   // Prepare data for radar chart
   const radarData = (benchmark.pillar_comparisons || []).map(p => ({
-    pillar: p.pillar_name.split(' ')[0], // Shortened name
-    'Tu Score': p.user_score,
-    'Industria': p.industry_average,
+    pillar: (p.pillar_name || '').split(' ')[0] || 'Pilar',
+    'Tu Score': toNum(p.user_score, 0),
+    'Industria': toNum(p.industry_average, 2.5),
     fullName: p.pillar_name
   }));
 
