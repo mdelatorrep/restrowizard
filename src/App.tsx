@@ -98,6 +98,7 @@ const RestaurantDelivery = lazy(() => import("./pages/restaurant/Delivery"));
 const RestaurantMyDevelopment = lazy(() => import("./pages/restaurant/MyDevelopment"));
 const RestaurantKnowledge = lazy(() => import("./pages/restaurant/Knowledge"));
 const RestaurantInvoices = lazy(() => import("./pages/restaurant/Invoices"));
+const RestaurantElectronicInvoicing = lazy(() => import("./pages/restaurant/ElectronicInvoicing"));
 
 // Lazy: consultant area
 const ConsultantOnboarding = lazy(() => import("./pages/consultant/Onboarding"));
@@ -251,6 +252,7 @@ const App = () => (
                   <Route path="my-development" element={<RestaurantMyDevelopment />} />
                   <Route path="knowledge" element={<RestaurantKnowledge />} />
                   <Route path="invoices" element={<RestaurantInvoices />} />
+                  <Route path="electronic-invoicing" element={<RestaurantElectronicInvoicing />} />
                 </Route>
 
                 {/* Consultant onboarding */}
