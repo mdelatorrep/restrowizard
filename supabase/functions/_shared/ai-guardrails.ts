@@ -18,6 +18,14 @@ export interface GuardrailOptions {
   domain?: string;
   /** Si true, agrega instrucción de incluir `confidence` y `sources_used`. */
   requireConfidence?: boolean;
+  /**
+   * Si true, cuando no hay CONTEXTO WEB el modelo PUEDE entregar estimaciones
+   * internas (marcadas con "Estimación:" y `confidence` bajo) en vez de
+   * negarse. Necesario para esquemas con campos numéricos obligatorios
+   * (benchmarks, percentiles, ROI), donde devolver strings de negativa
+   * rompe el UI cliente.
+   */
+  allowInternalEstimates?: boolean;
 }
 
 /**
