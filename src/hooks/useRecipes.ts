@@ -555,52 +555,56 @@ export const useRecipes = () => {
     }
   };
 
-  // Recalculate cost using FRESH DB data (state may be stale right after a mutation)
+  // Recalculate cost — delegate to RPC `recalculate_recipe_cost` (BL-06).
+  // The RPC handles ingredient unit conversion (via convert_unit), yield,
+  // and recursive sub-recipe roll-up server-side.
   const recalculateCost = async (recipeId: string) => {
-    // Fetch recipe + ingredients + sub-recipes fresh
-    const [{ data: recipe }, { data: ingredients }, { data: subLinks }] = await Promise.all([
-      supabase.from('recipes').select('*').eq('id', recipeId).maybeSingle(),
-      supabase.from('recipe_ingredients').select('*').eq('recipe_id', recipeId),
-      supabase.from('recipe_sub_recipes').select('*, sub_recipe:recipes!sub_recipe_id(cost_per_portion)').eq('parent_recipe_id', recipeId),
-    ]);
-    if (!recipe) return;
+    const { error } = await supabase.rpc('recalculate_recipe_cost', {
+      p_recipe_id: recipeId,
+      p_depth: 0,
+    });
+    if (error) {
+      // Fallback to legacy client-side calc if RPC fails
+      console.error('recalculate_recipe_cost RPC failed, using fallback:', error);
+      const [{ data: recipe }, { data: ingredients }, { data: subLinks }] = await Promise.all([
+        supabase.from('recipes').select('*').eq('id', recipeId).maybeSingle(),
+        supabase.from('recipe_ingredients').select('*').eq('recipe_id', recipeId),
+        supabase.from('recipe_sub_recipes').select('*, sub_recipe:recipes!sub_recipe_id(cost_per_portion)').eq('parent_recipe_id', recipeId),
+      ]);
+      if (!recipe) return;
 
-    const ingredientsCost = (ingredients || []).reduce((sum: number, ing: any) => {
-      const effectiveQuantity = ing.gross_quantity || ing.quantity || 0;
-      const yieldFactor = (ing.yield_percentage || 100) / 100;
-      return sum + (effectiveQuantity * (ing.cost_per_unit || 0) / yieldFactor);
-    }, 0);
+      const ingredientsCost = (ingredients || []).reduce((sum: number, ing: any) => {
+        const effectiveQuantity = ing.gross_quantity || ing.quantity || 0;
+        const yieldFactor = (ing.yield_percentage || 100) / 100;
+        return sum + (effectiveQuantity * (ing.cost_per_unit || 0) / yieldFactor);
+      }, 0);
 
-    const subRecipesCost = (subLinks || []).reduce((sum: number, sr: any) => {
-      return sum + ((sr.quantity || 0) * (sr.sub_recipe?.cost_per_portion || 0));
-    }, 0);
+      const subRecipesCost = (subLinks || []).reduce((sum: number, sr: any) => {
+        return sum + ((sr.quantity || 0) * (sr.sub_recipe?.cost_per_portion || 0));
+      }, 0);
 
-    const laborCost = recipe.labor_time_minutes
-      ? (recipe.labor_time_minutes / 60) * (recipe.labor_cost_per_hour || 0)
-      : 0;
+      const totalCost = ingredientsCost + subRecipesCost;
+      const portions = recipe.portions || recipe.yield_quantity || 1;
+      const costPerPortion = portions > 0 ? totalCost / portions : 0;
 
-    const subtotal = ingredientsCost + subRecipesCost + laborCost;
-    const wasteAdjustment = subtotal * ((recipe.waste_percentage || 0) / 100);
-    const overheadCost = subtotal * ((recipe.overhead_percentage || 0) / 100);
-
-    const totalCost = subtotal + wasteAdjustment + overheadCost;
-    const portions = recipe.portions || recipe.yield_quantity || 1;
-    const costPerPortion = portions > 0 ? totalCost / portions : 0;
-
-    await supabase
-      .from('recipes')
-      .update({
+      await supabase.from('recipes').update({
         total_cost: Math.round(totalCost * 100) / 100,
         cost_per_portion: Math.round(costPerPortion * 100) / 100,
-      })
-      .eq('id', recipeId);
+      }).eq('id', recipeId);
+    }
 
-    // TK-01: Propagar el costo al menu_item vinculado, si existe
-    if (recipe.menu_item_id) {
-      await supabase
-        .from('menu_items')
-        .update({ cost: Math.round(costPerPortion * 100) / 100 })
-        .eq('id', recipe.menu_item_id);
+    // Propagate cost to linked menu items (primary first, then legacy menu_item_id).
+    const { data: refreshed } = await supabase
+      .from('recipes').select('cost_per_portion, menu_item_id').eq('id', recipeId).maybeSingle();
+    const cpp = Math.round((Number(refreshed?.cost_per_portion) || 0) * 100) / 100;
+
+    const { data: links } = await supabase
+      .from('recipe_menu_items').select('menu_item_id').eq('recipe_id', recipeId).eq('is_primary', true);
+    const targets = new Set<string>();
+    (links || []).forEach((l: any) => l.menu_item_id && targets.add(l.menu_item_id));
+    if (refreshed?.menu_item_id) targets.add(refreshed.menu_item_id);
+    for (const mid of targets) {
+      await supabase.from('menu_items').update({ cost: cpp }).eq('id', mid);
     }
   };
 
