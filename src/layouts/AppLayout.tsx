@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/navigation/AppHeader';
 import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useUserType } from '@/hooks/useUserType';
 import CopilotChat from '@/components/CopilotChat';
+import { BrandThemeProvider } from '@/components/brand/BrandThemeProvider';
 
 interface AppLayoutProps {
   requiredUserType?: 'restaurant_owner' | 'consultant';
