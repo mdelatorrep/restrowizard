@@ -668,13 +668,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
                   {consultantAIToolsItems.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
-                        onClick={() => navigate(item.path)}
+                        asChild
                         isActive={isActive(item.path)}
                         tooltip={item.title}
                         className="text-sidebar-foreground hover:bg-sidebar-accent"
                       >
-                        <item.icon className="h-5 w-5" />
-                        <span className="font-lato-medium">{item.title}</span>
+                        <Link to={item.path}>
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-lato-medium">{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
