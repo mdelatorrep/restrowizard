@@ -1,69 +1,117 @@
-# Ciclo 6 — Plan de cierre de hallazgos abiertos
+# Ciclo Dedicado — Recetas M:N + Conversión de Unidades (BL-03 / BL-06)
 
-Abarcamos **todos** los hallazgos abiertos del reporte. Lo ordeno por dependencia y riesgo, en bloques que puedo ir cerrando uno tras otro.
+## Contexto actual
 
-## Bloque A — Correctness de Finanzas (P0/P1)
+- `recipes.menu_item_id` es nullable string: relación 1:0..1 entre receta e ítem de menú.
+- `recipe_ingredients` guarda `unit` (string) y `unit_id` (referencia opcional a `measurement_units`).
+- `measurement_units` ya tiene `base_unit_id` + `conversion_factor` (árbol de unidades), pero no hay tabla de conversiones arbitrarias (ej. taza → gramos para harina).
+- Sub-recetas existen vía `recipe_sub_recipes`.
+- El costeo recalcula `total_cost`/`cost_per_portion` en `useRecipes.ts`.
 
-### BL-16 · Labor Cost desde turnos
-- `useAggregatedFinances` ya calcula labor desde `staff_shifts` pero exige `status='completed'`. Causa de "0%": turnos quedan en `scheduled`/`confirmed`.
-- **Cambio:** incluir también shifts `confirmed`/`in_progress`/`completed`. Si no hay `actual_*`, usar `start_time`/`end_time` programados.
-- **CA:** crear 1 turno de 4 h con tarifa $10.000 → Finanzas muestra Labor Cost $40.000 y % ≠ 0.
+## Hallazgos que este ciclo cierra
 
-### BL-18 · "Cubiertos" = comensales reales
-- El hook ya suma `guests_count`. Causa: muchas órdenes POS tienen `guests_count` null y caen a `0`, pero KPIs de "Ticket promedio" se calculan sobre `order_count`. Verificar en POS que al cobrar dine-in se persista `guests_count` desde la mesa/diálogo.
-- **Cambio:** en `usePOSPayment`/diálogo de cobro, garantizar `guests_count` ≥ 1 (default = capacidad de mesa o 1) y propagar a `restaurant_orders`. KPI "Ticket por cubierto" usa `covers_count` en lugar de `order_count`.
-- **CA:** orden con 4 comensales suma 4 cubiertos y ticket/cubierto = total/4.
+### BL-03 — Recetas M:N con ítems de menú
+Una misma receta (ej. salsa madre) debe poder vincularse a múltiples ítems de menú. Un ítem de menú debe poder tener múltiples recetas (ej. versión base + versión vegana).
 
-### BL-21 · Umbrales de salud por componente
-- `PrimeCostGauge` evalúa solo prime total ≤60%.
-- **Cambio:** evaluar Food Cost vs banda (target 28–32%, alerta >35%, crítico >40%) y Labor vs (target 25–30%, alerta >35%) además del prime total. Estado = peor de los tres.
-- **CA:** con Food 55.6% el indicador marca "Crítico" aunque el prime sea ≤60%.
+### BL-06 — Conversión de unidades robusta
+El costo de un ingrediente en receta debe calcularse en la unidad de compra del inventario, usando conversiones explícitas cuando las unidades no compartan base directa.
 
-## Bloque B — POS / Cumplimiento
+---
 
-### BL-11 · Impuestos (IVA / Impoconsumo)
-- Nueva columna `tax_config` (jsonb) en `restaurant_businesses`: `{ type: 'iva'|'impoconsumo'|'exento', rate, included_in_price }`.
-- POS: al cobrar, calcular `tax_amount = subtotal × rate` (o desglose si está incluido), persistir en `restaurant_orders.tax_amount` y mostrar línea en ticket y diálogo de pago.
-- Reportes y P&L: descontar impuestos del revenue neto.
-- **CA:** venta de $10.000 con Impoconsumo 8% muestra $800 de impuesto y total $10.800 (o desglose si incluido).
+## Entregables
 
-### BL-07 · "86" — bloquear/avisar al vender con insumo agotado
-- Al cargar menú en POS, calcular disponibilidad por platillo cruzando `recipes` × `inventory_items.stock`. Si algún insumo está en 0 → marcar `unavailable` (badge "Agotado") y, al intentar añadir al carrito, mostrar toast/diálogo: bloquear o permitir según setting `restaurant_businesses.allow_oversell` (default: avisar).
-- **CA:** insumo de "Waffle" en stock 0 → tarjeta "Agotado" en POS; click → toast de aviso.
+### 1. Modelo de datos
 
-## Bloque C — Talento / Admin
+#### 1.1 Tabla pivote `recipe_menu_items`
+```text
+recipe_id  → references recipes
+menu_item_id → references menu_items
+is_primary   boolean default false
+variant_name text nullable (ej. "Vegana", "XL")
+sort_order   int default 0
+```
+- GRANT a authenticated + service_role.
+- RLS: user_id = auth.uid() (recetas e ítems de menú ya tienen user_id vía sus tablas).
+- Índice único parcial: solo un `is_primary = true` por `menu_item_id`.
 
-### BL-01 · Auto-vínculo del owner en Mi Desarrollo
-- En `/r/my-development`, si `user_roles.role IN ('admin','owner')` y no existe `staff_members` con su email → mostrar CTA "Vincularme como empleado". Crea `staff_members` con `email`, `full_name` y `user_id` del owner, sin invitación.
-- **CA:** un owner sin staff entry pulsa el botón y entra a Mi Desarrollo sin "pide a tu administrador".
+#### 1.2 Tabla `unit_conversions`
+```text
+from_unit_id  → references measurement_units
+to_unit_id    → references measurement_units
+conversion_factor decimal > 0
+ingredient_id → references inventory_items nullable
+```
+- Si `ingredient_id` es null: conversión genérica (ej. 1 taza = 240 ml).
+- Si `ingredient_id` tiene valor: conversión específica por densidad/peso (ej. 1 taza harina = 120 g).
+- GRANT + RLS igual que arriba.
 
-## Bloque D — Técnicos
+### 2. Migración de datos
 
-### H-02 · Silenciar logs en prod
-- Reemplazar `console.log/info/debug` por `logger.debug` en hot paths (POS, Inventory, Finanzas, hooks). `logger` ya silencia en !DEV.
+- Crear `recipe_menu_items` y migrar todas las filas donde `recipes.menu_item_id IS NOT NULL` → pivote con `is_primary = true`.
+- Mantener `recipes.menu_item_id` temporalmente (backwards compatibility), deprecar en el siguiente ciclo.
+- Poblar `unit_conversions` con equivalencias básicas (volumen y peso) + seed por país.
 
-### H-03 · A11y warnings restantes
-- Auditar Buttons icon-only sin `aria-label`, inputs sin `<label>`, `<main>` duplicado. Foco en pantallas core (POS, Inventario, Finanzas, Mi Desarrollo).
+### 3. Backend
 
-### H-06 · KPIs de variación reales en Dashboard
-- `DashboardKPIs` recibe `change` hardcoded. Calcular vs período anterior (últimos 30d vs 30d previos) en `useDashboard` y propagar.
+#### 3.1 Función SQL `convert_unit(amount, from_unit_id, to_unit_id, ingredient_id)`
+- SECURITY DEFINER.
+- Resuelve conversión directa, por base común, o por tabla `unit_conversions` (genérica → específica).
+- Devuelve `converted_amount` o null si no hay cadena de conversión.
 
-### H-07 · Moneda residual
-- `grep` por símbolos `$` hardcoded y `toLocaleString('es-CO')` directo. Reemplazar por `formatCurrency()` que respeta país del business.
+#### 3.2 Función SQL `recalculate_recipe_cost(recipe_id)`
+- Para cada ingrediente: convierte `quantity` en `unit_id` → unidad de compra del `inventory_item`.
+- Aplica `yield_percentage`.
+- Suma sub-recetas vía `recipe_sub_recipes` (roll-up recursivo con límite de profundidad).
+- Actualiza `recipes.total_cost` y `recipes.cost_per_portion`.
+
+### 4. Frontend
+
+#### 4.1 UI de asociación receta ↔ menú
+- En `RecipeDetailDialog` (tab "Costeo" o nuevo tab "Menú"): selector multi-select de ítems de menú.
+- Badge "Principal" editable; drag-and-drop de orden.
+- En `Menus` / `MenuItemEditor`: selector de recetas asociadas con opción de marcar principal.
+
+#### 4.2 UI de conversión de unidades
+- En `RecipeIngredientManager`: al elegir unidad, si no hay conversión directa al inventario, mostrar campo emergente para definirla (guarda en `unit_conversions` con `ingredient_id`).
+- Tooltip que muestra el cálculo: "2 tazas harina = 240 g = $1.200".
+
+#### 4.3 Hook `useRecipes` refactorizado
+- Carga `recipe_menu_items` junto a recetas.
+- Elimina dependencia directa de `recipes.menu_item_id` (usa pivote).
+- `recalculateCost` delega a RPC `recalculate_recipe_cost` en lugar de calcular en cliente.
+
+### 5. Integraciones afectadas
+
+| Módulo | Impacto | Acción |
+|--------|---------|--------|
+| POS / `useMenuAvailability` | Lee recetas por `menu_item_id` | Usar `recipe_menu_items` con `is_primary` |
+| Inventario / deducción | Consume recetas para descontar stock | Usar receta principal del ítem |
+| Finanzas / Food Cost | Costo por platillo | Usar `cost_per_portion` de receta principal |
+| Público / menú | Mostrar receta/nutrición | Usar receta principal o todas con variantes |
+
+---
 
 ## Orden de ejecución
-1. **Bloque A** (3 cambios pequeños, validan la promesa central).
-2. **Bloque D · H-02 + H-07** (saneamiento rápido).
-3. **Bloque B · BL-11** (migración + POS + tickets).
-4. **Bloque C · BL-01** (UI + insert).
-5. **Bloque B · BL-07** (lógica de disponibilidad).
-6. **Bloque D · H-06 + H-03** (refinamiento).
 
-> BL-03/BL-06 (recetas M:N y conversión de unidades) los dejo fuera del ciclo: son rediseño de modelo de datos y requieren su propio entregable. Los abordamos en ciclo 7 con plan dedicado.
+1. **Migraciones**: `recipe_menu_items`, `unit_conversions`, seed data.
+2. **Backend**: funciones `convert_unit` + `recalculate_recipe_cost`.
+3. **Datos**: migrar `menu_item_id` → pivote; validar integridad.
+4. **Frontend**: refactor `useRecipes` + UI asociación + UI conversión.
+5. **Integración**: actualizar POS, inventario y finanzas para leer desde pivote.
+6. **Deprecación**: eliminar `recipes.menu_item_id` (ciclo siguiente, post-validación).
 
-## Detalle técnico clave
-- Migración: `restaurant_businesses` agregar `tax_config jsonb default '{"type":"exento","rate":0,"included_in_price":false}'`, `allow_oversell boolean default true`.
-- Migración: `restaurant_orders` ya tiene `tax_amount`, sólo poblarlo.
-- `useAggregatedFinances`: ampliar filtro de shifts y fallback a horas programadas.
-- `PrimeCostGauge`: nueva función `evaluateHealth(food%, labor%, prime%)` con bandas por componente.
-- `usePOSCart`: añadir `availability` calculada y `setting.allow_oversell` para decidir bloqueo.
+---
+
+## Criterios de aceptación
+
+- CA-03-01: Crear receta "Salsa Madre", asociarla a 3 ítems de menú diferentes; cada ítem muestra la receta en su detalle.
+- CA-03-02: Un ítem de menú tiene receta base + variante; al ver el menú público aparece selector de variante.
+- CA-06-01: Agregar 200 g de harina a receta; inventario registra harina en kg (1 kg = $5.000); costo calculado = $1.000.
+- CA-06-02: Agregar 1 taza de harina (sin conversión previa); UI pide equivalencia; definir 1 taza = 120 g; costo calculado = $600.
+- CA-06-03: Cambiar precio de compra de harina en inventario; costo de recetas que la usan se actualiza automáticamente (vía `recalculate_recipe_cost`).
+
+## Riesgos y mitigaciones
+
+- **Riesgo**: Recálculo masivo de costos al migrar. **Mitigación**: ejecutar `recalculate_recipe_cost` en batch por usuario, con progress tracking.
+- **Riesgo**: Ciclos en sub-recetas. **Mitigación**: `recalculate_recipe_cost` limita recursión a 5 niveles; detecta ciclos y lanza error.
+- **Riesgo**: Unidades sin cadena de conversión. **Mitigación**: UI muestra advertencia y solicita equivalencia; no bloquea guardado pero marca costo como estimado.
