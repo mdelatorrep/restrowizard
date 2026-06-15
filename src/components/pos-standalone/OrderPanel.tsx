@@ -228,6 +228,27 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
           />
         </>
       )}
+
+      <SupervisorPINDialog
+        open={pinOpen}
+        onOpenChange={(v) => {
+          setPinOpen(v);
+          if (!v) setPendingAuth(null);
+        }}
+        restaurantUserId={restaurantUserId}
+        reasonCode={pendingAuth?.reasonCode ?? "generic"}
+        reasonText={pendingAuth?.reasonText}
+        amount={pendingAuth?.amount}
+        entity="restaurant_order"
+        entityId={pendingAuth?.entityId}
+        requesterName={waiterName ?? undefined}
+        terminalId={audit.terminalId}
+        onAuthorized={async (sup) => {
+          const cb = pendingAuth?.onAuthorized;
+          setPendingAuth(null);
+          if (cb) await cb(sup);
+        }}
+      />
     </div>
   );
 }
