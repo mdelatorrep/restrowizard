@@ -139,6 +139,42 @@ export function useReservations() {
       setReservations(prev => 
         prev.map(r => r.id === id ? { ...r, ...updates } : r)
       );
+
+      // TK-5: sincronizar estado de la mesa con el estado de la reserva
+      const reservation = reservations.find(r => r.id === id);
+      if (reservation?.table_id) {
+        try {
+          if (status === 'confirmed' || status === 'pending') {
+            // Solo marcar como reservada si está disponible (no pisar 'occupied')
+            const { data: table } = await supabase
+              .from('restaurant_tables')
+              .select('status')
+              .eq('id', reservation.table_id)
+              .maybeSingle();
+            if (table && table.status === 'available') {
+              await supabase
+                .from('restaurant_tables')
+                .update({ status: 'reserved' })
+                .eq('id', reservation.table_id);
+            }
+          } else if (status === 'cancelled' || status === 'no_show' || status === 'completed') {
+            // Liberar solo si la mesa estaba reservada (no si tiene pedido activo)
+            const { data: table } = await supabase
+              .from('restaurant_tables')
+              .select('status, current_order_id')
+              .eq('id', reservation.table_id)
+              .maybeSingle();
+            if (table && table.status === 'reserved' && !table.current_order_id) {
+              await supabase
+                .from('restaurant_tables')
+                .update({ status: 'available' })
+                .eq('id', reservation.table_id);
+            }
+          }
+        } catch (syncErr) {
+          console.error('Error syncing table status:', syncErr);
+        }
+      }
       
       toast({
         title: "Reserva actualizada",
