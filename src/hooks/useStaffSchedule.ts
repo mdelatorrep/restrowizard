@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { calcShiftHours, calcShiftLaborCost } from '@/lib/laborCost';
+
 
 
 export interface StaffShift {
@@ -67,19 +69,8 @@ export const useStaffSchedule = (weekStart?: Date) => {
   }, [weekStartTs]);
 
 
-  const calculateHoursWorked = (shift: StaffShift): number => {
-    const start = shift.actual_start_time || shift.start_time;
-    const end = shift.actual_end_time || shift.end_time;
-    
-    const [startH, startM] = start.split(':').map(Number);
-    const [endH, endM] = end.split(':').map(Number);
-    
-    const startMinutes = startH * 60 + startM;
-    const endMinutes = endH * 60 + endM;
-    
-    const totalMinutes = endMinutes - startMinutes - (shift.break_minutes || 0);
-    return Math.max(0, totalMinutes / 60);
-  };
+  // TK-2: fórmula única compartida con Finanzas.
+  const calculateHoursWorked = (shift: StaffShift): number => calcShiftHours(shift);
 
   const fetchSchedule = useCallback(async () => {
     if (!userId) {
@@ -117,13 +108,13 @@ export const useStaffSchedule = (weekStart?: Date) => {
       const enrichedShifts: StaffShift[] = (shiftsData || []).map(shift => {
         const staffMember = staffMembers?.find(s => s.id === shift.staff_member_id);
         const hours = calculateHoursWorked(shift as StaffShift);
-        const rate = shift.hourly_rate_override ?? staffMember?.hourly_rate ?? 0;
-        
+        const cost = calcShiftLaborCost(shift as StaffShift, staffMember?.hourly_rate);
+
         return {
           ...shift,
           staff_member_name: staffMember?.name || 'Unknown',
           hours_worked: hours,
-          cost: hours * rate
+          cost,
         } as StaffShift;
       });
 
