@@ -118,7 +118,8 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
     enabled: !!restaurantUserId,
     onChange: async () => {
       if (!restaurantUserId) return;
-      const { data } = await supabase
+      const sb = supabase as any;
+      const { data } = await sb
         .from("restaurant_orders")
         .select("id, table_id, total, waiter_name, created_at")
         .eq("user_id", restaurantUserId)
@@ -126,6 +127,7 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
         .in("status", ["pending", "preparing", "ready", "served"]);
       setOrders((data || []) as ActiveOrderSummary[]);
     },
+
   });
 
   return { tables, zones, orders, loading };
