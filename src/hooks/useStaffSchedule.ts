@@ -104,8 +104,9 @@ export const useStaffSchedule = (weekStart?: Date) => {
         .from('staff_shifts')
         .select('*')
         .eq('user_id', userId)
-        .gte('shift_date', format(currentWeekStart, 'yyyy-MM-dd'))
-        .lte('shift_date', format(currentWeekEnd, 'yyyy-MM-dd'))
+        .gte('shift_date', weekStartStr)
+        .lte('shift_date', weekEndStr)
+
         .order('shift_date')
         .order('start_time');
 
