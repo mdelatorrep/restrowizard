@@ -225,6 +225,20 @@ export const useBrandData = () => {
     fetchBrand();
   }, [fetchBrand]);
 
+  // Realtime: keep admin UI synced when brand is updated from any source.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`brand-sync-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'restaurant_brands', filter: `user_id=eq.${userId}` },
+        () => { fetchBrand(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, fetchBrand]);
+
   return {
     brand,
     assets,
