@@ -92,6 +92,22 @@ export const ENUM_LABELS = {
     kids: 'Niños',
     specials: 'Especiales',
   },
+  feedback_source: {
+    in_store: 'En tienda',
+    online: 'Online',
+    delivery: 'Domicilio',
+    takeout: 'Para llevar',
+    google: 'Google',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    tripadvisor: 'TripAdvisor',
+    rappi: 'Rappi',
+    qr: 'QR mesa',
+    email: 'Email',
+    whatsapp: 'WhatsApp',
+    survey: 'Encuesta',
+    other: 'Otro',
+  },
 } as const;
 
 type EnumGroup = keyof typeof ENUM_LABELS;
