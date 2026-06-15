@@ -27,7 +27,7 @@ export const TalentKPIs: React.FC<{ kpis: KPIs | null }> = ({ kpis }) => (
       trend="up" description="Completación promedio"
       colorClass="bg-purple-100 text-purple-600" />
     <StaffMetric icon={<Target />} title="Tarifa Promedio"
-      value={`$${kpis?.avgHourlyRate.toFixed(0) || 0}/hr`}
+      value={formatCurrency(kpis?.avgHourlyRate || 0, 'COP', { suffix: '/hr' })}
       trend="neutral" description="Costo por hora"
       colorClass="bg-orange-100 text-orange-600" />
   </div>
