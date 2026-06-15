@@ -270,3 +270,34 @@ export default function POSMain() {
     </POSShell>
   );
 }
+
+function MenuCatalogWrapper({ restaurantUserId, tableId }: { restaurantUserId: string; tableId: string }) {
+  const { items, categories, loading } = usePOSMenu(restaurantUserId);
+  const order = usePOSOrder(restaurantUserId, tableId);
+
+  if (loading) {
+    return (
+      <div className="h-full grid place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin opacity-50" />
+      </div>
+    );
+  }
+
+  return (
+    <MenuCatalog
+      items={items}
+      categories={categories}
+      onPick={async (it) => {
+        const current = order.order || (await order.ensureOrder({ tableId, guests: 1 }));
+        if (!current) return;
+        await order.addItem({
+          menu_item_id: it.id,
+          name: it.name,
+          unit_price: Number(it.price),
+          quantity: 1,
+        });
+      }}
+    />
+  );
+}
+
