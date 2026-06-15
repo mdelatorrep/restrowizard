@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRecipes, RecipeWithDetails } from '@/hooks/useRecipes';
 import { useAIAgent } from '@/hooks/useAIAgent';
 import { AIInsightsPanel } from '@/components/AIInsightsPanel';
@@ -9,7 +10,8 @@ import { CreateRecipeDialog } from '@/components/recipes/CreateRecipeDialog';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { RecipesFilterBar } from '@/components/recipes/RecipesFilterBar';
 import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
-import { ChefHat, Plus, Loader2, DollarSign, Lock, Sparkles, BookOpen, UtensilsCrossed, Flame } from 'lucide-react';
+import { UnitConversionsManager } from '@/components/recipes/UnitConversionsManager';
+import { ChefHat, Plus, Loader2, DollarSign, Lock, Sparkles, BookOpen, UtensilsCrossed, Flame, Scale } from 'lucide-react';
 import { ModulePageLayout, PageHeader, KPIGrid, KPICardData } from '@/components/layout';
 import { formatCurrency } from '@/lib/formatCurrency';
 
@@ -125,44 +127,57 @@ const Recipes = () => {
         onAnalyze={handleAnalyzeRecipes}
       />
 
-      <RecipesFilterBar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filterCategory={filterCategory}
-        onCategoryChange={setFilterCategory}
-        filterType={filterType}
-        onTypeChange={setFilterType}
-        categories={categories}
-      />
+      <Tabs defaultValue="recipes" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="recipes" className="gap-1"><ChefHat className="h-4 w-4" />Recetas</TabsTrigger>
+          <TabsTrigger value="conversions" className="gap-1"><Scale className="h-4 w-4" />Conversiones</TabsTrigger>
+        </TabsList>
 
-      {!hasData ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <ChefHat className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Sin recetas aún</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Empieza a documentar tus recetas con costeo profesional
-            </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Primera Receta
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              recipeAllergens={getRecipeAllergens(recipe)}
-              onPublish={() => setPublishRecipe(recipe)}
-              onView={() => setSelectedRecipeId(recipe.id)}
-              onDelete={() => deleteRecipe(recipe.id)}
-            />
-          ))}
-        </div>
-      )}
+        <TabsContent value="recipes" className="space-y-4 m-0">
+          <RecipesFilterBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            filterCategory={filterCategory}
+            onCategoryChange={setFilterCategory}
+            filterType={filterType}
+            onTypeChange={setFilterType}
+            categories={categories}
+          />
+
+          {!hasData ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <ChefHat className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Sin recetas aún</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Empieza a documentar tus recetas con costeo profesional
+                </p>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Primera Receta
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  recipeAllergens={getRecipeAllergens(recipe)}
+                  onPublish={() => setPublishRecipe(recipe)}
+                  onView={() => setSelectedRecipeId(recipe.id)}
+                  onDelete={() => deleteRecipe(recipe.id)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="conversions" className="m-0">
+          <UnitConversionsManager />
+        </TabsContent>
+      </Tabs>
 
       {publishRecipe && (
         <PublishRecipeToMenuDialog

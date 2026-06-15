@@ -5755,6 +5755,65 @@ export type Database = {
           },
         ]
       }
+      recipe_menu_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          menu_item_id: string
+          recipe_id: string
+          sort_order: number
+          variant_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          menu_item_id: string
+          recipe_id: string
+          sort_order?: number
+          variant_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          menu_item_id?: string
+          recipe_id?: string
+          sort_order?: number
+          variant_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_menu_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items_with_costs"
+            referencedColumns: ["recipe_id"]
+          },
+          {
+            foreignKeyName: "recipe_menu_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_nutrition: {
         Row: {
           calories: number | null
@@ -8955,6 +9014,78 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_conversions: {
+        Row: {
+          conversion_factor: number
+          created_at: string
+          from_unit_id: string
+          id: string
+          ingredient_id: string | null
+          notes: string | null
+          to_unit_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conversion_factor: number
+          created_at?: string
+          from_unit_id: string
+          id?: string
+          ingredient_id?: string | null
+          notes?: string | null
+          to_unit_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conversion_factor?: number
+          created_at?: string
+          from_unit_id?: string
+          id?: string
+          ingredient_id?: string | null
+          notes?: string | null
+          to_unit_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_conversions_from_unit_id_fkey"
+            columns: ["from_unit_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_conversions_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_below_par"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_conversions_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_expiring_soon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_conversions_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_conversions_to_unit_id_fkey"
+            columns: ["to_unit_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -9303,6 +9434,15 @@ export type Database = {
         Returns: Json
       }
       claim_team_invitation: { Args: { p_token: string }; Returns: Json }
+      convert_unit: {
+        Args: {
+          p_amount: number
+          p_from_unit_id: string
+          p_ingredient_id?: string
+          p_to_unit_id: string
+        }
+        Returns: number
+      }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       generate_redemption_code: { Args: never; Returns: string }
       get_aggregated_daily_sales: {
@@ -9415,6 +9555,10 @@ export type Database = {
       process_order_inventory_deduction: {
         Args: { p_order_id: string }
         Returns: undefined
+      }
+      recalculate_recipe_cost: {
+        Args: { p_depth?: number; p_recipe_id: string }
+        Returns: number
       }
       reverse_order_inventory_deduction: {
         Args: { p_order_id: string }

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Lock, Users, Clock, DollarSign, Flame, UtensilsCrossed, BookOpen, Link2, Scale } from 'lucide-react';
+import { Lock, Users, Clock, DollarSign, Flame, UtensilsCrossed, BookOpen, Link2, Scale, Utensils } from 'lucide-react';
 import {
   RecipeWithDetails, MeasurementUnit, Allergen, RecipeIngredient, RecipeNutrition, ScaledRecipe,
 } from '@/hooks/useRecipes';
@@ -10,6 +10,7 @@ import { RecipeStepsManager } from './RecipeStepsManager';
 import { RecipeNutritionEditor } from './RecipeNutritionEditor';
 import { RecipeCostingPanel } from './RecipeCostingPanel';
 import { RecipeSubRecipesManager } from './RecipeSubRecipesManager';
+import { RecipeMenuItemsManager } from './RecipeMenuItemsManager';
 import { DifficultyBadge } from './DifficultyBadge';
 import { formatCurrency } from '@/lib/formatCurrency';
 
@@ -77,6 +78,7 @@ export const RecipeDetailDialog = ({
               <TabsTrigger value="ingredients" className="gap-1"><UtensilsCrossed className="h-4 w-4" />Ingredientes</TabsTrigger>
               <TabsTrigger value="steps" className="gap-1"><BookOpen className="h-4 w-4" />Preparación</TabsTrigger>
               <TabsTrigger value="subrecipes" className="gap-1"><Link2 className="h-4 w-4" />Sub-Recetas</TabsTrigger>
+              <TabsTrigger value="menu" className="gap-1"><Utensils className="h-4 w-4" />Menú</TabsTrigger>
               <TabsTrigger value="nutrition" className="gap-1"><Flame className="h-4 w-4" />Nutrición</TabsTrigger>
               <TabsTrigger value="costing" className="gap-1"><Scale className="h-4 w-4" />Costeo</TabsTrigger>
             </TabsList>
@@ -109,6 +111,9 @@ export const RecipeDetailDialog = ({
                   onAdd={(subId, qty, unit) => onAddSubRecipe(recipe.id, subId, qty, unit)}
                   onRemove={(linkId) => onRemoveSubRecipe(linkId, recipe.id)}
                 />
+              </TabsContent>
+              <TabsContent value="menu" className="m-0 h-full">
+                <RecipeMenuItemsManager recipeId={recipe.id} />
               </TabsContent>
               <TabsContent value="nutrition" className="m-0 h-full">
                 <RecipeNutritionEditor

@@ -18,13 +18,32 @@ export const useMenuAvailability = () => {
     const run = async () => {
       if (!userId) { setLoading(false); return; }
       try {
-        const { data: recipes } = await supabase
-          .from('recipes')
-          .select('id, menu_item_id')
-          .eq('user_id', userId)
-          .not('menu_item_id', 'is', null);
+        // BL-03: incluir vínculos vía pivote `recipe_menu_items` además del legacy `menu_item_id`.
+        const [recipesRes, linksRes] = await Promise.all([
+          supabase.from('recipes').select('id, menu_item_id').eq('user_id', userId),
+          supabase.from('recipe_menu_items').select('recipe_id, menu_item_id, is_primary'),
+        ]);
 
-        const recipeIds = (recipes || []).map(r => r.id);
+        const allRecipes = recipesRes.data || [];
+        const allLinks = (linksRes.data as any[]) || [];
+        const ownedRecipeIds = new Set(allRecipes.map((r: any) => r.id));
+
+        // recipe → set of menu_item ids it should affect (primary links + legacy)
+        const recipeToMenus = new Map<string, Set<string>>();
+        allRecipes.forEach((r: any) => {
+          if (r.menu_item_id) {
+            if (!recipeToMenus.has(r.id)) recipeToMenus.set(r.id, new Set());
+            recipeToMenus.get(r.id)!.add(r.menu_item_id);
+          }
+        });
+        allLinks.forEach((l: any) => {
+          if (!ownedRecipeIds.has(l.recipe_id)) return;
+          if (!l.is_primary) return; // solo la principal afecta disponibilidad
+          if (!recipeToMenus.has(l.recipe_id)) recipeToMenus.set(l.recipe_id, new Set());
+          recipeToMenus.get(l.recipe_id)!.add(l.menu_item_id);
+        });
+
+        const recipeIds = Array.from(recipeToMenus.keys());
         if (recipeIds.length === 0) {
           if (!cancelled) { setOutOfStockIds(new Set()); setLoading(false); }
           return;
@@ -49,29 +68,24 @@ export const useMenuAvailability = () => {
           .select('id, current_stock, track_stock')
           .in('id', inventoryIds);
 
-        // Mapa: id de ingrediente → stock disponible (si no se trackea, infinito)
         const stockMap = new Map<string, number>(
           (stock || []).map((s: any) => [
             s.id as string,
             s.track_stock === false ? Number.POSITIVE_INFINITY : (Number(s.current_stock) || 0),
           ])
         );
-        const recipeToMenu = new Map(
-          (recipes || []).map((r: any) => [r.id, r.menu_item_id as string])
-        );
 
         const outIds = new Set<string>();
         (ings || []).forEach((ing: any) => {
-          if (ing.is_optional) return; // ingredientes opcionales no bloquean
+          if (ing.is_optional) return;
           const invId = ing.inventory_item_id as string;
           const available = stockMap.get(invId) ?? 0;
           const qty = Number(ing.quantity) || 0;
           const yieldPct = Number(ing.yield_percentage) || 100;
-          // Cantidad realmente requerida considerando merma/rendimiento
           const required = yieldPct > 0 ? qty * (100 / yieldPct) : qty;
           if (required > 0 && available < required) {
-            const menuId = recipeToMenu.get(ing.recipe_id);
-            if (menuId) outIds.add(menuId);
+            const menuIds = recipeToMenus.get(ing.recipe_id);
+            menuIds?.forEach(mid => outIds.add(mid));
           }
         });
 
