@@ -6,6 +6,7 @@ import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
 import { usePOSMenu } from "@/hooks/usePOSMenu";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
+import { useTeamPermissions } from "@/hooks/useTeamPermissions";
 import { usePOSActivityTracker } from "@/hooks/usePOSActivityTracker";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
