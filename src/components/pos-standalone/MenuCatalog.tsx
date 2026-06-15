@@ -19,9 +19,8 @@ export function MenuCatalog({ items, categories, onPick, disabled }: Props) {
     return items.filter((it) => {
       if (!it.is_available) return false;
       if (cat !== "__all__") {
-        if (cat === "__none__" ? it.category_id || it.category : (it.category_id ? it.category_id !== cat : it.category !== cat)) {
-          return false;
-        }
+        const matchCat = it.category_id ? it.category_id === cat : it.category === cat;
+        if (!matchCat) return false;
       }
       if (ql && !it.name.toLowerCase().includes(ql)) return false;
       return true;
