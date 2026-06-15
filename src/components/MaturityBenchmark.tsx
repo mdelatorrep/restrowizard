@@ -92,17 +92,17 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
               <p className="text-sm text-muted-foreground font-lato-medium mb-1">Tu posición en la industria</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-headline font-bold text-primary">
-                  Top {100 - benchmark.overall_percentile}%
+                  Top {100 - overallPercentile}%
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                Superas al {benchmark.overall_percentile}% de los restaurantes
+                Superas al {overallPercentile}% de los restaurantes
               </p>
             </div>
             <div className="text-right">
               <BarChart3 className="h-12 w-12 text-primary/40 mb-2" />
               <p className="text-sm text-muted-foreground">
-                Promedio industria: <span className="font-bold">{benchmark.industry_average.toFixed(1)}/5</span>
+                Promedio industria: <span className="font-bold">{industryAvg.toFixed(1)}/5</span>
               </p>
             </div>
           </div>
