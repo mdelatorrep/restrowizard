@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { OfflineIndicator } from '@/components/pos/OfflineIndicator';
 import type { POSCartItem } from '@/hooks/usePOSCart';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface CartPanelProps {
   items: POSCartItem[];
@@ -165,7 +166,7 @@ export const CartPanel = ({
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    ${item.price.toLocaleString()} c/u
+                    {formatCurrency(item.price)} c/u
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -196,7 +197,7 @@ export const CartPanel = ({
                   </Button>
                 </div>
                 <p className="font-bold w-20 text-right">
-                  ${(item.price * item.quantity).toLocaleString()}
+                  {formatCurrency(item.price * item.quantity)}
                 </p>
               </div>
             ))}
@@ -208,18 +209,18 @@ export const CartPanel = ({
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>${subtotal.toLocaleString()}</span>
+            <span>{formatCurrency(subtotal)}</span>
           </div>
           {taxAmount > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">{taxLabel}</span>
-              <span>${taxAmount.toLocaleString()}</span>
+              <span>{formatCurrency(taxAmount)}</span>
             </div>
           )}
           <Separator />
           <div className="flex justify-between text-lg font-bold">
             <span>Total</span>
-            <span className="text-primary">${total.toLocaleString()}</span>
+            <span className="text-primary">{formatCurrency(total)}</span>
           </div>
         </div>
 
