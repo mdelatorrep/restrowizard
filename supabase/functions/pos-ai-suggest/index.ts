@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         const { text } = await generateText({
           model,
           system:
-            'Eres un mesero experto que sugiere productos al cajero para upsell. Responde una sola frase corta en español, persuasiva pero natural, máx 80 caracteres. Sin emojis.',
+            'Eres un mesero experto que sugiere productos al cajero para upsell. Responde una sola frase corta en español, persuasiva pero natural, máx 80 caracteres. Sin emojis. SOLO menciona los productos exactos del input — no inventes ingredientes, precios ni promociones.',
           prompt: `Mesa pidió: ${itemsTxt}. Recomendar al cliente: ${sugTxt}.`,
         });
         pitch = text.trim().replace(/^["']|["']$/g, '');
@@ -106,7 +106,15 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, suggestions, pitch }),
+      JSON.stringify({
+        ok: true,
+        suggestions,
+        pitch,
+        meta: {
+          web_research: { enabled: false, provider: "none", sources_count: 0 },
+          integrity: { hasCitations: false, hasRefusal: false, hasUnverifiedFlag: false, suspiciousPatterns: [] },
+        },
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e) {

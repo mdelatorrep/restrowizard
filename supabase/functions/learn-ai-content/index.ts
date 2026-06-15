@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,13 +24,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    let systemPrompt = "";
+    let rolePrompt = "";
     let userPrompt = "";
+    let webQuery = "";
     const tools: any[] = [];
     let tool_choice: any = undefined;
 
     if (mode === "course") {
-      systemPrompt = `Eres un experto en formación profesional para la industria gastronómica. Generas estructuras de cursos completas, prácticas y motivadoras en español. Tu objetivo es crear contenido que ayude a los profesionales a crecer en sus carreras y enamorarse de la industria.`;
+      webQuery = `currículo formación ${categoryLabels[category] || category} restaurantes ${levelLabels[level] || level} mejores prácticas`;
+      rolePrompt = `Experto en formación profesional gastronómica. Genera estructuras de cursos prácticas en español. No inventes certificaciones oficiales ni acreditaciones específicas.`;
       userPrompt = `Genera la estructura completa para un curso de ${categoryLabels[category] || category} nivel ${levelLabels[level] || level}${target_role ? ` para el rol de ${target_role}` : ''}.\n\nTítulo: "${course_title}"\n\nGenera una estructura con descripción, lo que aprenderán, requisitos previos, y 5-8 lecciones con títulos, descripciones, tipo de contenido y duración.`;
       tools.push({
         type: "function",
@@ -71,7 +75,8 @@ serve(async (req) => {
       });
       tool_choice = { type: "function", function: { name: "generate_course_structure" } };
     } else if (mode === "lesson") {
-      systemPrompt = `Eres un instructor experto en la industria gastronómica. Generas contenido educativo práctico, motivador y en español. Incluyes ejemplos reales, tips profesionales y mejores prácticas de la industria.`;
+      webQuery = `mejores prácticas ${lesson_title} gastronomía técnicas profesionales`;
+      rolePrompt = `Instructor experto gastronómico. Genera contenido educativo práctico en markdown. Si citas datos externos (estadísticas, regulaciones), márcalos como [Fuente N] del CONTEXTO WEB o como 'Estimación:'. No fabriques nombres de chefs, libros o premios.`;
       userPrompt = `Genera el contenido completo para la lección "${lesson_title}" de nivel ${levelLabels[level] || level}.${course_context ? `\n\nContexto del curso: ${course_context}` : ''}\n\nGenera contenido en markdown con teoría, ejemplos prácticos, tips profesionales, y un quiz de 5 preguntas de opción múltiple.`;
       tools.push({
         type: "function",
@@ -111,6 +116,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid mode" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const research = await webResearch(webQuery, { limit: 3, scrape: false, logPrefix: `[learn-ai:${mode}]` });
+
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { domain: "formación profesional gastronómica" },
+      rolePrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -138,7 +151,15 @@ serve(async (req) => {
     if (!toolCall) throw new Error("No se recibió respuesta estructurada");
 
     const result = JSON.parse(toolCall.function.arguments);
-    return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const integrity = checkIntegrity(JSON.stringify(result), research.enabled);
+
+    return new Response(JSON.stringify({
+      ...result,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("learn-ai-content error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Error desconocido" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

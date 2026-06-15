@@ -1,5 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
+
+const MODULE_WEB_QUERIES: Record<string, string> = {
+  finanzas: "benchmarks finanzas restaurantes food cost labor cost 2026",
+  talento: "salarios mercado restaurantes regulaciones laborales 2026",
+  operaciones: "tendencias operaciones restaurantes experiencia cliente 2026",
+  menu_inventario: "precios ingredientes tendencias gastronómicas 2026",
+  sostenibilidad: "regulaciones ESG sostenibilidad restaurantes Latinoamérica",
+  supply_chain: "proveedores alimentos restaurantes precios mayoristas",
+  inventory: "tendencias inventario restaurantes mermas costos",
+  delivery: "logística delivery restaurantes mejores prácticas",
+  retencion: "benchmarks retención churn restaurantes lealtad",
+  recetas: "tendencias gastronómicas precios ingredientes 2026",
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -554,9 +569,20 @@ Proporciona:
         userPrompt = `Analiza estos datos de restaurante y proporciona insights relevantes: ${JSON.stringify(data)}. Sé específico y práctico en tus recomendaciones. Incluye datos de mercado actuales cuando sea relevante.`;
     }
 
+    const webQuery = MODULE_WEB_QUERIES[module] || "";
+    const research = webQuery
+      ? await webResearch(webQuery, { limit: 3, scrape: false, logPrefix: `[ai-agent:${module}]` })
+      : { enabled: false, provider: "none" as const, sources: [] };
+
+    const wrappedSystem = composeSystemPrompt({
+      guardrails: { domain: `${module} para restaurantes`, requireConfidence: true },
+      rolePrompt: systemPrompt,
+      webContextBlock: webQuery ? formatSourcesForPrompt(research) : undefined,
+    });
+
     const aiResult = await callAIGateway({
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: wrappedSystem },
         { role: "user", content: userPrompt },
       ],
       tier: "reasoning",
@@ -570,10 +596,18 @@ Proporciona:
       );
     }
     const analysis = aiResult.content || "No se pudo generar el análisis.";
+    const integrity = checkIntegrity(analysis, research.enabled);
 
     console.log(`AI analysis completed successfully for ${module}/${action}`);
 
-    return new Response(JSON.stringify({ analysis, success: true }), {
+    return new Response(JSON.stringify({
+      analysis,
+      success: true,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

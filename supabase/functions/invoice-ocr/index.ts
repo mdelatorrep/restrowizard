@@ -1,6 +1,7 @@
 // Phase 3.1 — OCR de facturas (multimodal vía Lovable AI Gateway)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { safeParseJson } from "../_shared/ai-gateway.ts";
+import { buildGuardrailPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,26 +12,29 @@ const corsHeaders = {
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const VISION_MODEL = "google/gemini-2.5-flash";
 
-const SYSTEM_PROMPT = `Eres un asistente que extrae información estructurada de facturas de proveedores de restaurantes en Latinoamérica.
+const SYSTEM_PROMPT = `${buildGuardrailPrompt({ jsonOutput: true, domain: "OCR de facturas de proveedores" })}
+
+Eres un asistente que extrae información estructurada de facturas de proveedores de restaurantes en Latinoamérica.
 Devuelve SIEMPRE JSON válido con esta forma exacta:
 {
   "supplier_name": string | null,
   "invoice_number": string | null,
   "invoice_date": "YYYY-MM-DD" | null,
   "due_date": "YYYY-MM-DD" | null,
-  "currency": string,              // ISO ej. "COP","MXN","USD"
+  "currency": string,
   "subtotal": number | null,
   "tax_amount": number | null,
   "total_amount": number | null,
   "items": [
     { "description": string, "quantity": number | null, "unit": string | null, "unit_price": number | null, "total": number | null }
   ],
-  "confidence": number,            // 0..1
+  "confidence": number,
   "notes": string | null
 }
 Reglas:
 - Convierte fechas a YYYY-MM-DD. Si dudas, deja null.
 - Usa punto decimal. No incluyas símbolos de moneda en los números.
+- NUNCA inventes valores ilegibles: prefiere null. Cada inferencia incierta debe bajar 'confidence'.
 - Si la imagen no es una factura, responde con todos los campos en null y confidence: 0.`;
 
 Deno.serve(async (req) => {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
+import { composeSystemPrompt } from "../_shared/ai-guardrails.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -151,9 +152,11 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content:
-                `Eres un analista de restaurantes. Analiza los datos y genera UNA alerta de oportunidad de negocio en español basada en tendencias actuales.
-Responde SOLO con un JSON: {"title": "...", "message": "...", "priority": "low|medium"}`,
+              content: composeSystemPrompt({
+                guardrails: { jsonOutput: true, domain: "alertas operativas para restaurantes" },
+                rolePrompt: `Analista de restaurantes. Detecta UNA oportunidad de negocio basada en los datos provistos. Si no hay señal clara, devuelve { "title": "Sin alertas relevantes", "message": "No se detectaron patrones accionables en los últimos 7 días.", "priority": "low" }.
+Responde SOLO con JSON: { "title", "message", "priority": "low|medium" }. No inventes tendencias externas ni benchmarks.`,
+              }),
             },
             {
               role: "user",

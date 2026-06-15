@@ -9,6 +9,7 @@ import { z } from "npm:zod";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { pickSdkModel } from "../_shared/ai-sdk-gateway.ts";
 import { embedTexts } from "../_shared/embeddings.ts";
+import { buildGuardrailPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Eres el Co-Piloto agéntico de RestroWizard, un asistente IA especializado en gestión de restaurantes.
+const SYSTEM_PROMPT = `${buildGuardrailPrompt({ domain: "co-piloto agéntico de gestión de restaurantes" })}
+
+Eres el Co-Piloto agéntico de RestroWizard, un asistente IA especializado en gestión de restaurantes.
 
 Tu rol es ayudar a gerentes y dueños con:
 - Análisis de ventas, finanzas y KPIs
@@ -31,7 +34,7 @@ REGLAS:
 - USA las herramientas disponibles antes de inventar datos. Si necesitas KPIs, recetas o feedback, llama a la tool correspondiente.
 - Para preguntas conceptuales o sobre los procesos del propio restaurante, usa search_knowledge_base.
 - HERRAMIENTAS DESTRUCTIVAS (update_menu_item_price, create_inventory_purchase_order): primero llámalas con confirm=false para mostrar el preview al usuario, espera su "sí/confirma" en lenguaje natural, y solo entonces vuelve a llamarlas con confirm=true.
-- Si un dato no existe, dilo claro y sugiere acción concreta.`;
+- Si un dato no existe, dilo claro ("Información no disponible — requiere verificación") y sugiere acción concreta. NUNCA inventes cifras, precios, proveedores ni contactos.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
