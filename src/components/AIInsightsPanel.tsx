@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sparkles, RefreshCw, X, Loader2, Brain, TrendingUp, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Sparkles, RefreshCw, X, Loader2, Brain, TrendingUp, AlertTriangle, Lightbulb, Database } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,10 @@ interface AIInsightsPanelProps {
   variant?: 'default' | 'compact' | 'sidebar';
   icon?: React.ReactNode;
   className?: string;
+  /** TK-20: mensaje de error si la última llamada falló. */
+  error?: string | null;
+  /** TK-20: si false, muestra "No hay datos suficientes para analizar". */
+  hasData?: boolean;
 }
 
 export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
