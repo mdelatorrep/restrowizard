@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { labelFor } from '@/lib/enumLabels';
  import { Scatter, Bar } from 'react-chartjs-2';
  import { 
    Brain, Star, TrendingUp, TrendingDown, AlertTriangle,
@@ -412,7 +413,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
                      <td className="py-3 px-2">
                        <div>
                          <p className="font-medium">{item.name}</p>
-                         <p className="text-xs text-muted-foreground">{item.category}</p>
+                         <p className="text-xs text-muted-foreground">{labelFor('menu_category', item.category)}</p>
                        </div>
                      </td>
                      <td className="text-right py-3 px-2">{formatCurrency(item.price)}</td>
