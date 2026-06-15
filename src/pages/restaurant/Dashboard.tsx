@@ -93,36 +93,49 @@ const RestaurantDashboard: React.FC = () => {
       return <Navigate to="/r/new-business" replace />;
   }
 
+  // H-06: variación real vs período anterior (positivo = mejor, negativo = peor).
+  const pctChange = (curr: number, prev: number): number => {
+    if (!prev || prev === 0) return 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+  const revChange = pctChange(financeKpis?.totalRevenue || 0, prevFinanceKpis?.totalRevenue || 0);
+  const ticketChange = pctChange(financeKpis?.avgTicket || 0, prevFinanceKpis?.avgTicket || 0);
+  const coversChange = pctChange(financeKpis?.totalCovers || 0, prevFinanceKpis?.totalCovers || 0);
+  // Para Food Cost, la "mejora" es bajar el % (cuanto menor, mejor).
+  const foodCostDelta = (financeKpis?.foodCostPercentage || 0) - (prevFinanceKpis?.foodCostPercentage || 0);
+  const foodCostChange = Math.round(foodCostDelta * 10) / 10; // puntos porcentuales
+
   const kpis: KPIData[] =
     hasFinanceData && financeKpis
       ? [
           {
             label: 'Ventas (7 días)',
             value: formatCurrency(financeKpis.totalRevenue, 'COP'),
-            change: 0, // TK-E: ocultar badge hasta tener comparativo real con período anterior
+            change: revChange,
             icon: <DollarSign className="h-5 w-5" />,
-            trend: 'up',
+            trend: revChange >= 0 ? 'up' : 'down',
           },
           {
             label: 'Food Cost',
             value: `${financeKpis.foodCostPercentage.toFixed(1)}%`,
-            change: 0,
+            change: foodCostChange,
             icon: <Utensils className="h-5 w-5" />,
-            trend: financeKpis.foodCostPercentage <= 32 ? 'up' : 'down',
+            // Bajar food cost es positivo
+            trend: foodCostDelta <= 0 ? 'up' : 'down',
           },
           {
             label: 'Ticket Promedio',
             value: formatCurrency(financeKpis.avgTicket, 'COP'),
-            change: 0,
+            change: ticketChange,
             icon: <Users className="h-5 w-5" />,
-            trend: 'up',
+            trend: ticketChange >= 0 ? 'up' : 'down',
           },
           {
             label: 'Clientes (7 días)',
             value: financeKpis.totalCovers.toString(),
-            change: 0,
+            change: coversChange,
             icon: <TrendingUp className="h-5 w-5" />,
-            trend: 'up',
+            trend: coversChange >= 0 ? 'up' : 'down',
           },
         ]
       : [
