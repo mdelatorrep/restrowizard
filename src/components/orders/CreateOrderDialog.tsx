@@ -65,7 +65,7 @@ export const CreateOrderDialog: React.FC<Props> = ({ onCreate }) => {
     let cancelled = false;
     setLoadingMenu(true);
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('menu_items')
         .select('id, name, price, category, is_available')
         .eq('user_id', userId)
