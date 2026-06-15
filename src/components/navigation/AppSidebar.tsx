@@ -66,6 +66,7 @@ import {
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
+import { useBrandData } from '@/hooks/useBrandData';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
