@@ -6,14 +6,17 @@ import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
 import { usePOSMenu } from "@/hooks/usePOSMenu";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
+import { usePOSActivityTracker } from "@/hooks/usePOSActivityTracker";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
 import { MenuCatalog } from "@/components/pos-standalone/MenuCatalog";
 import { OrderPanel } from "@/components/pos-standalone/OrderPanel";
+import { ChannelsPanel } from "@/components/pos-standalone/ChannelsPanel";
 import { OpenSessionDialog } from "@/components/pos/OpenSessionDialog";
 import { CloseSessionDialog } from "@/components/pos/CloseSessionDialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X, Layers } from "lucide-react";
 import type { RestaurantTable } from "@/hooks/usePOSTables";
 import { useToast } from "@/hooks/use-toast";
 
