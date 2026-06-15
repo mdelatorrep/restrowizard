@@ -109,7 +109,6 @@ export default function POSMain() {
 
   const selectedTable: RestaurantTable | null =
     tables.find((t) => t.id === selectedTableId) || null;
-  const selectedOrder = orders.find((o) => o.table_id === selectedTableId);
 
   const header = (
     <div className="flex items-center justify-between w-full">
