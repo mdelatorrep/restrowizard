@@ -153,6 +153,31 @@ export const SalesReports = () => {
         </Card>
       </div>
 
+      {/* TK-4: cubiertos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Comensales atendidos</p>
+            <p className="text-2xl font-bold">{kpis.totalCovers.toLocaleString('es-CO')}</p>
+            <p className="text-xs text-muted-foreground mt-1">Suma de guests_count</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Tamaño promedio del grupo</p>
+            <p className="text-2xl font-bold">{kpis.avgPartySize.toFixed(1)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Comensales por pedido</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Ticket por comensal</p>
+            <p className="text-2xl font-bold">{formatCurrency(kpis.revenuePerCover)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Ingreso / comensales</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* TK-1: Desglose por canal */}
       {channelBreakdown.length > 0 && (
         <Card>
