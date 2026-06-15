@@ -158,41 +158,47 @@ const MaturityBenchmark: React.FC<MaturityBenchmarkProps> = ({ benchmark }) => {
           <CardTitle className="font-headline">Detalle por Pilar</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(benchmark.pillar_comparisons || []).map((pillar) => (
-            <div key={pillar.pillar_id} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(pillar.status)}
-                  <span className="font-lato-medium">{pillar.pillar_name}</span>
-                </div>
-                {getStatusBadge(pillar.status)}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Tu score</span>
-                    <span className="font-bold text-primary">{pillar.user_score.toFixed(1)}</span>
+          {(benchmark.pillar_comparisons || []).map((pillar) => {
+            const userScore = toNum(pillar.user_score, 0);
+            const industryAverage = toNum(pillar.industry_average, 2.5);
+            const percentile = Math.max(0, Math.min(100, toNum(pillar.percentile, 50)));
+            const gap = toNum(pillar.gap, userScore - industryAverage);
+            return (
+              <div key={pillar.pillar_id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(pillar.status)}
+                    <span className="font-lato-medium">{pillar.pillar_name}</span>
                   </div>
-                  <Progress value={(pillar.user_score / 5) * 100} className="h-2" />
+                  {getStatusBadge(pillar.status)}
                 </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Industria</span>
-                    <span className="font-bold">{pillar.industry_average.toFixed(1)}</span>
-                  </div>
-                  <Progress value={(pillar.industry_average / 5) * 100} className="h-2 bg-muted [&>div]:bg-muted-foreground" />
-                </div>
-              </div>
 
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Percentil {pillar.percentile}</span>
-                <span className={getStatusColor(pillar.status)}>
-                  {pillar.gap > 0 ? '+' : ''}{pillar.gap.toFixed(2)} vs industria
-                </span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-muted-foreground">Tu score</span>
+                      <span className="font-bold text-primary">{userScore.toFixed(1)}</span>
+                    </div>
+                    <Progress value={(userScore / 5) * 100} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-muted-foreground">Industria</span>
+                      <span className="font-bold">{industryAverage.toFixed(1)}</span>
+                    </div>
+                    <Progress value={(industryAverage / 5) * 100} className="h-2 bg-muted [&>div]:bg-muted-foreground" />
+                  </div>
+                </div>
+
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Percentil {percentile}</span>
+                  <span className={getStatusColor(pillar.status)}>
+                    {gap > 0 ? '+' : ''}{gap.toFixed(2)} vs industria
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 
