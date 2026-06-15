@@ -230,21 +230,24 @@ const peopleItems: MenuItem[] = [
     icon: HeadphonesIcon, 
     path: '/r/support',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'support'
+    moduleKey: 'support',
+    permissionModule: 'support'
   },
   {
     title: 'Base de Conocimiento',
     icon: BookOpen,
     path: '/r/knowledge',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'knowledge'
+    moduleKey: 'knowledge',
+    permissionModule: 'knowledge'
   },
   {
     title: 'Facturas con IA',
     icon: ScanLine,
     path: '/r/invoices',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'invoices'
+    moduleKey: 'invoices',
+    permissionModule: 'invoices'
   },
 ];
 
