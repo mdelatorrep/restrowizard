@@ -7,6 +7,7 @@ import { SplitBillDialog } from "./SplitBillDialog";
 import { TransferTableDialog } from "./TransferTableDialog";
 import { MergeTablesDialog } from "./MergeTablesDialog";
 import { SupervisorPINDialog, type SupervisorAuth } from "./SupervisorPINDialog";
+import { AISuggestPanel } from "./AISuggestPanel";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
 import { usePOSPayment } from "@/hooks/usePOSPayment";
 import { usePOSAudit } from "@/hooks/usePOSAudit";
