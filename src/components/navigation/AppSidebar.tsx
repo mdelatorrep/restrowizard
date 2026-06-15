@@ -374,6 +374,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const teamPermissions = useTeamPermissions();
   const [expansionOpen, setExpansionOpen] = useState(false);
   const [showAllModules, setShowAllModules] = useState(false);
+  const { brand } = useBrandData();
+  const brandLogo = userType === 'restaurant_owner' ? (brand?.logo_white_url || brand?.logo_url || brand?.logo_square_url) : null;
+  const brandName = userType === 'restaurant_owner' ? (brand?.brand_name || 'RestroWizard') : 'RestroWizard';
+  const brandInitials = (brandName || 'RW').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
   const isCollapsed = state === 'collapsed';
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
