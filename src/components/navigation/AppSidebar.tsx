@@ -208,6 +208,7 @@ const peopleItems: MenuItem[] = [
     icon: GraduationCap, 
     path: '/r/my-development',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    permissionModule: 'my_development'
   },
   { 
     title: 'Fidelización', 
