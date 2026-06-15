@@ -172,9 +172,11 @@ const AdvancedFinancesDashboard: React.FC = () => {
               periodStart={dateRange.start}
               periodEnd={dateRange.end}
               totalRevenue={kpis.totalRevenue}
+              taxes={kpis.totalTaxes}
               foodCost={kpis.totalFoodCost}
               laborCost={kpis.totalLaborCost}
             />
+
           )}
         </TabsContent>
 

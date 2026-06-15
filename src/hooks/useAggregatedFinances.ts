@@ -11,6 +11,7 @@ export interface AggregatedDailySales {
   covers_count: number;
   food_cost: number;
   labor_cost: number;
+  taxes: number;
   avg_ticket: number;
   gross_margin: number;
   food_cost_percentage: number;
@@ -21,6 +22,7 @@ export interface AggregatedFinancesKPIs {
   totalRevenue: number;
   totalFoodCost: number;
   totalLaborCost: number;
+  totalTaxes: number;
   totalOrders: number;
   totalCovers: number;
   avgTicket: number;
@@ -31,6 +33,7 @@ export interface AggregatedFinancesKPIs {
   revenuePerCover: number;
   ordersPerDay: number;
 }
+
 
 export interface FinancesTrend {
   date: string;
@@ -76,11 +79,12 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // 1) Orders (revenue/covers/order_count)
       const ordersPromise = supabase
         .from('restaurant_orders')
-        .select('id, total, guests_count, status, created_at')
+        .select('id, total, tax_amount, guests_count, status, created_at')
         .eq('user_id', userId)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
         .not('status', 'in', '("cancelled","pending")');
+
 
       // 2) Inventory deductions joined with item unit_cost (food cost from sales)
       const deductionsPromise = supabase
@@ -119,14 +123,16 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       if (manualRes.error) throw manualRes.error;
 
       // Group orders by date
-      const ordersByDate: Record<string, { revenue: number; count: number; covers: number }> = {};
+      const ordersByDate: Record<string, { revenue: number; count: number; covers: number; taxes: number }> = {};
       (ordersRes.data || []).forEach((order: any) => {
         const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
-        if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0 };
+        if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0, taxes: 0 };
         ordersByDate[dateKey].revenue += Number(order.total) || 0;
         ordersByDate[dateKey].count += 1;
         ordersByDate[dateKey].covers += order.guests_count || 0;
+        ordersByDate[dateKey].taxes += Number(order.tax_amount) || 0;
       });
+
 
       // Food cost by date = Σ(qty_deducted × unit_cost)
       const foodCostByDate: Record<string, number> = {};
@@ -171,7 +177,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
 
       const salesData: AggregatedDailySales[] = [];
       allDates.forEach(dateStr => {
-        const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0 };
+        const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0, taxes: 0 };
         const foodCost = (foodCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.food || 0);
         const laborCost = (laborCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.labor || 0);
         const revenue = orderData.revenue;
@@ -184,12 +190,14 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
             covers_count: orderData.covers,
             food_cost: foodCost,
             labor_cost: laborCost,
+            taxes: orderData.taxes,
             avg_ticket: orderData.count > 0 ? revenue / orderData.count : 0,
             gross_margin: revenue > 0 ? ((revenue - foodCost) / revenue) * 100 : 0,
             food_cost_percentage: revenue > 0 ? (foodCost / revenue) * 100 : 0,
             labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0,
           });
         }
+
       });
 
       // Sort by date
@@ -203,6 +211,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
         const totalFoodCost = salesData.reduce((sum, d) => sum + d.food_cost, 0);
         const totalLaborCost = salesData.reduce((sum, d) => sum + d.labor_cost, 0);
+        const totalTaxes = salesData.reduce((sum, d) => sum + (d.taxes || 0), 0);
         const totalOrders = salesData.reduce((sum, d) => sum + d.order_count, 0);
         const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
 
@@ -210,8 +219,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           totalRevenue,
           totalFoodCost,
           totalLaborCost,
+          totalTaxes,
           totalOrders,
           totalCovers,
+
           avgTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
           grossMargin: totalRevenue > 0 ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100 : 0,
           foodCostPercentage: totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 0,
