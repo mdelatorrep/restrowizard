@@ -20,6 +20,8 @@ import AppLayout from "./layouts/AppLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
 import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
+import GuardedRoute from "./components/guards/GuardedRoute";
+import RoleLanding from "./components/guards/RoleLanding";
 
 import { RouteErrorBoundary } from "./components/errors/RouteErrorBoundary";
 import { PageSkeleton } from "./components/ui/skeletons";
