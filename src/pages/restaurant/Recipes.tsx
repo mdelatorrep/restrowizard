@@ -178,6 +178,8 @@ const Recipes = () => {
           <UnitConversionsManager />
         </TabsContent>
       </Tabs>
+
+      {publishRecipe && (
         <PublishRecipeToMenuDialog
           open={!!publishRecipe}
           onOpenChange={(open) => !open && setPublishRecipe(null)}
