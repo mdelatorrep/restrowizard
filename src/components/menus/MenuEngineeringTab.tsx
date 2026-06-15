@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { labelFor } from '@/lib/enumLabels';
  import { Scatter, Bar } from 'react-chartjs-2';
  import { 
    Brain, Star, TrendingUp, TrendingDown, AlertTriangle,
