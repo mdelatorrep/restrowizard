@@ -123,14 +123,16 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       if (manualRes.error) throw manualRes.error;
 
       // Group orders by date
-      const ordersByDate: Record<string, { revenue: number; count: number; covers: number }> = {};
+      const ordersByDate: Record<string, { revenue: number; count: number; covers: number; taxes: number }> = {};
       (ordersRes.data || []).forEach((order: any) => {
         const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
-        if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0 };
+        if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0, taxes: 0 };
         ordersByDate[dateKey].revenue += Number(order.total) || 0;
         ordersByDate[dateKey].count += 1;
         ordersByDate[dateKey].covers += order.guests_count || 0;
+        ordersByDate[dateKey].taxes += Number(order.tax_amount) || 0;
       });
+
 
       // Food cost by date = Σ(qty_deducted × unit_cost)
       const foodCostByDate: Record<string, number> = {};
