@@ -6,8 +6,10 @@ import { PaymentDialogV2 } from "./PaymentDialogV2";
 import { SplitBillDialog } from "./SplitBillDialog";
 import { TransferTableDialog } from "./TransferTableDialog";
 import { MergeTablesDialog } from "./MergeTablesDialog";
+import { SupervisorPINDialog, type SupervisorAuth } from "./SupervisorPINDialog";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
 import { usePOSPayment } from "@/hooks/usePOSPayment";
+import { usePOSAudit } from "@/hooks/usePOSAudit";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { RestaurantTable } from "@/hooks/usePOSTables";
@@ -24,10 +26,24 @@ interface Props {
 export function OrderPanel({ table, restaurantUserId, waiterName, allTables, activeOrders }: Props) {
   const o = usePOSOrder(restaurantUserId, table.id);
   const { processPayment } = usePOSPayment();
+  const audit = usePOSAudit();
   const [payOpen, setPayOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pendingAuth, setPendingAuth] = useState<null | {
+    reasonCode: string;
+    reasonText: string;
+    amount?: number;
+    entityId?: string;
+    onAuthorized: (auth: SupervisorAuth) => void | Promise<void>;
+  }>(null);
+
+  const requestSupervisor = (req: NonNullable<typeof pendingAuth>) => {
+    setPendingAuth(req);
+    setPinOpen(true);
+  };
 
   const order = o.order;
   const hasItems = !!order && order.items.length > 0;
@@ -127,7 +143,36 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
               line={line}
               onInc={() => o.updateQuantity(line.line_id, line.quantity + 1)}
               onDec={() => o.updateQuantity(line.line_id, line.quantity - 1)}
-              onRemove={() => o.removeItem(line.line_id)}
+              onRemove={() => {
+                const sensitive = line.status !== "pending";
+                const lineTotal = (line.unit_price || 0) * (line.quantity || 1);
+                const doRemove = (sup?: SupervisorAuth) => {
+                  o.removeItem(line.line_id);
+                  audit.log({
+                    userId: restaurantUserId,
+                    entity: "order_line",
+                    entityId: order.id,
+                    action: sensitive ? "void_line" : "remove_line",
+                    amount: lineTotal,
+                    reason: sensitive ? "Anulación de item enviado a cocina" : "Quita de comanda",
+                    before: { name: line.name, qty: line.quantity, status: line.status },
+                    supervisorStaffId: sup?.supervisor_staff_id ?? null,
+                    supervisorName: sup?.supervisor_name ?? null,
+                    authorizationId: sup?.authorization_id ?? null,
+                  });
+                };
+                if (sensitive) {
+                  requestSupervisor({
+                    reasonCode: "void_sent_item",
+                    reasonText: `Anular "${line.name}" ya enviado a cocina`,
+                    amount: lineTotal,
+                    entityId: order.id,
+                    onAuthorized: (sup) => doRemove(sup),
+                  });
+                } else {
+                  doRemove();
+                }
+              }}
             />
           ))
         )}
@@ -183,6 +228,27 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
           />
         </>
       )}
+
+      <SupervisorPINDialog
+        open={pinOpen}
+        onOpenChange={(v) => {
+          setPinOpen(v);
+          if (!v) setPendingAuth(null);
+        }}
+        restaurantUserId={restaurantUserId}
+        reasonCode={pendingAuth?.reasonCode ?? "generic"}
+        reasonText={pendingAuth?.reasonText}
+        amount={pendingAuth?.amount}
+        entity="restaurant_order"
+        entityId={pendingAuth?.entityId}
+        requesterName={waiterName ?? undefined}
+        terminalId={audit.terminalId}
+        onAuthorized={async (sup) => {
+          const cb = pendingAuth?.onAuthorized;
+          setPendingAuth(null);
+          if (cb) await cb(sup);
+        }}
+      />
     </div>
   );
 }

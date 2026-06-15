@@ -4644,6 +4644,81 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_audit_log: {
+        Row: {
+          action: string
+          actor_name: string | null
+          actor_role: string | null
+          actor_staff_id: string | null
+          actor_user_id: string | null
+          after: Json | null
+          amount: number | null
+          authorization_id: string | null
+          before: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          reason: string | null
+          session_id: string | null
+          supervisor_name: string | null
+          supervisor_staff_id: string | null
+          terminal_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_staff_id?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          amount?: number | null
+          authorization_id?: string | null
+          before?: Json | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          session_id?: string | null
+          supervisor_name?: string | null
+          supervisor_staff_id?: string | null
+          terminal_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_name?: string | null
+          actor_role?: string | null
+          actor_staff_id?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          amount?: number | null
+          authorization_id?: string | null
+          before?: Json | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          session_id?: string | null
+          supervisor_name?: string | null
+          supervisor_staff_id?: string | null
+          terminal_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pos_cash_movements: {
         Row: {
           amount: number
@@ -4733,6 +4808,75 @@ export type Database = {
           valid_from?: string | null
           valid_until?: string | null
           value?: number
+        }
+        Relationships: []
+      }
+      pos_fraud_signals: {
+        Row: {
+          actor_name: string | null
+          actor_staff_id: string | null
+          amount: number | null
+          created_at: string
+          description: string
+          detected_at: string
+          entity: string | null
+          entity_id: string | null
+          evidence: Json | null
+          id: string
+          resolution_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score: number | null
+          session_id: string | null
+          severity: string
+          signal_type: string
+          status: string
+          terminal_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_staff_id?: string | null
+          amount?: number | null
+          created_at?: string
+          description: string
+          detected_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          evidence?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number | null
+          session_id?: string | null
+          severity?: string
+          signal_type: string
+          status?: string
+          terminal_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_name?: string | null
+          actor_staff_id?: string | null
+          amount?: number | null
+          created_at?: string
+          description?: string
+          detected_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          evidence?: Json | null
+          id?: string
+          resolution_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number | null
+          session_id?: string | null
+          severity?: string
+          signal_type?: string
+          status?: string
+          terminal_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -4840,6 +4984,63 @@ export type Database = {
           total_sales?: number | null
           total_tips?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pos_supervisor_authorizations: {
+        Row: {
+          amount: number | null
+          consumed_at: string | null
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          expires_at: string
+          id: string
+          metadata: Json | null
+          reason_code: string
+          reason_text: string | null
+          requester_name: string | null
+          requester_staff_id: string | null
+          supervisor_name: string
+          supervisor_staff_id: string
+          terminal_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          consumed_at?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          reason_code: string
+          reason_text?: string | null
+          requester_name?: string | null
+          requester_staff_id?: string | null
+          supervisor_name: string
+          supervisor_staff_id: string
+          terminal_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          consumed_at?: string | null
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          reason_code?: string
+          reason_text?: string | null
+          requester_name?: string | null
+          requester_staff_id?: string | null
+          supervisor_name?: string
+          supervisor_staff_id?: string
+          terminal_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -9607,6 +9808,43 @@ export type Database = {
           source_title: string
           source_type: string
         }[]
+      }
+      pos_log_audit: {
+        Args: {
+          p_action: string
+          p_actor_name?: string
+          p_actor_role?: string
+          p_actor_staff_id?: string
+          p_after?: Json
+          p_amount?: number
+          p_authorization_id?: string
+          p_before?: Json
+          p_entity: string
+          p_entity_id?: string
+          p_metadata?: Json
+          p_reason?: string
+          p_session_id?: string
+          p_supervisor_name?: string
+          p_supervisor_staff_id?: string
+          p_terminal_id?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      pos_verify_supervisor_pin: {
+        Args: {
+          p_amount?: number
+          p_entity?: string
+          p_entity_id?: string
+          p_pin: string
+          p_reason_code: string
+          p_reason_text?: string
+          p_requester_name?: string
+          p_requester_staff_id?: string
+          p_terminal_id?: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       process_order_inventory_deduction: {
         Args: { p_order_id: string }

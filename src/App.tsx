@@ -91,6 +91,7 @@ const RestaurantPreOpening = lazy(() => import("./pages/restaurant/PreOpening"))
 const RestaurantPOS = lazy(() => import("./pages/restaurant/POS"));
 const RestaurantKitchen = lazy(() => import("./pages/restaurant/KitchenDisplay"));
 const RestaurantPOSReports = lazy(() => import("./pages/restaurant/POSReports"));
+const RestaurantPOSAudit = lazy(() => import("./pages/restaurant/POSAudit"));
 const RestaurantWebsite = lazy(() => import("./pages/restaurant/Website"));
 const RestaurantReservations = lazy(() => import("./pages/restaurant/Reservations"));
 const RestaurantInventory = lazy(() => import("./pages/restaurant/Inventory"));
@@ -250,6 +251,7 @@ const App = () => (
                   <Route path="pre-opening" element={<RestaurantPreOpening />} />
                   <Route path="pos" element={<RestaurantPOS />} />
                   <Route path="pos-reports" element={<RestaurantPOSReports />} />
+                  <Route path="pos-audit" element={<RestaurantPOSAudit />} />
                   <Route path="kitchen" element={<RestaurantKitchen />} />
                   <Route path="website" element={<RestaurantWebsite />} />
                   <Route path="reservations" element={<RestaurantReservations />} />
