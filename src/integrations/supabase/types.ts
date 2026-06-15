@@ -9363,6 +9363,18 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_stock_by_location: {
+        Row: {
+          inventory_item_id: string | null
+          item_name: string | null
+          location_id: string | null
+          location_name: string | null
+          stock_on_hand: number | null
+          unit: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       menu_items_with_costs: {
         Row: {
           allergens: string[] | null
@@ -9562,6 +9574,10 @@ export type Database = {
       recalculate_recipe_cost: {
         Args: { p_depth?: number; p_recipe_id: string }
         Returns: number
+      }
+      recompute_loyalty_customer_for: {
+        Args: { _email: string; _phone: string; _user_id: string }
+        Returns: undefined
       }
       reverse_order_inventory_deduction: {
         Args: { p_order_id: string }
