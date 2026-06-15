@@ -42,15 +42,16 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
       }
       setLoading(true);
       try {
+        const sb = supabase as any;
         // Resolve restaurant_id for zones (which are keyed by restaurant_businesses.id)
-        const businessRes: any = await supabase
+        const businessRes = await sb
           .from("restaurant_businesses")
           .select("id")
           .eq("user_id", restaurantUserId)
           .limit(1);
         const businessId: string | undefined = businessRes?.data?.[0]?.id;
 
-        const tablesRes: any = await supabase
+        const tablesRes = await sb
           .from("restaurant_tables")
           .select("*")
           .eq("user_id", restaurantUserId)
@@ -58,7 +59,7 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
 
         let zonesData: Zone[] = [];
         if (businessId) {
-          const zonesRes: any = await supabase
+          const zonesRes = await sb
             .from("restaurant_zones")
             .select("id, name")
             .eq("restaurant_id", businessId)
@@ -66,7 +67,7 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
           zonesData = (zonesRes?.data || []) as Zone[];
         }
 
-        const ordersRes: any = await supabase
+        const ordersRes = await sb
           .from("restaurant_orders")
           .select("id, table_id, total, waiter_name, created_at")
           .eq("user_id", restaurantUserId)
@@ -77,6 +78,7 @@ export function usePOSLiveMap(restaurantUserId: string | undefined): UsePOSLiveM
         setTables((tablesRes?.data || []) as RestaurantTable[]);
         setZones(zonesData);
         setOrders((ordersRes?.data || []) as ActiveOrderSummary[]);
+
 
 
       } catch (e) {
