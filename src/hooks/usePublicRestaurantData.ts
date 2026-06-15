@@ -1,6 +1,7 @@
- import { useState, useEffect, useMemo } from 'react';
- import { supabase } from '@/integrations/supabase/client';
- import type { Tables, Json } from '@/integrations/supabase/types';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tables, Json } from '@/integrations/supabase/types';
+import { loadGoogleFonts } from '@/lib/brandFonts';
  
  export interface PublicRestaurantData {
    // Website config
