@@ -173,7 +173,7 @@ const salesItems: MenuItem[] = [
     path: '/r/integrations/rappi',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'delivery',
-    permissionModule: 'delivery'
+    permissionModule: 'rappi'
   },
   { 
     title: 'Reservaciones', 
@@ -184,12 +184,26 @@ const salesItems: MenuItem[] = [
     permissionModule: 'reservations'
   },
   { 
+    title: 'Pantalla de Cocina', 
+    icon: ChefHat, 
+    path: '/r/kitchen',
+    stages: ['first_90_days', 'normal_operation'],
+    permissionModule: 'kitchen_display'
+  },
+  { 
     title: 'Reportes y Metas', 
     icon: BarChart3, 
     path: '/r/pos-reports',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'pos-reports',
-    permissionModule: 'finances'
+    permissionModule: 'pos_reports'
+  },
+  { 
+    title: 'Auditoría POS', 
+    icon: Shield, 
+    path: '/r/pos-audit',
+    stages: ['first_90_days', 'normal_operation'],
+    permissionModule: 'pos_audit'
   },
 ];
 
