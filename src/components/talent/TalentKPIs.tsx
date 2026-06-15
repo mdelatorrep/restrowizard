@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, Award, GraduationCap, Target } from 'lucide-react';
 import { StaffMetric } from './StaffMetric';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface KPIs {
   activeStaff: number;
