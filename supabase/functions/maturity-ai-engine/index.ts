@@ -207,7 +207,12 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
     const research = await webResearch(webQuery, { limit: 4, scrape: false, logPrefix: `[maturity:${action}]` });
 
     const wrappedSystem = composeSystemPrompt({
-      guardrails: { jsonOutput: true, requireConfidence: true, domain: "diagnóstico de madurez de restaurantes" },
+      guardrails: {
+        jsonOutput: true,
+        requireConfidence: true,
+        allowInternalEstimates: true,
+        domain: "diagnóstico de madurez de restaurantes",
+      },
       rolePrompt: systemPrompt,
       webContextBlock: formatSourcesForPrompt(research),
     });
@@ -217,11 +222,11 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         { role: "system", content: wrappedSystem },
         { role: "user", content: userPrompt },
       ],
-      tier: "reasoning",
-      maxTokens: 4000,
-      temperature: 0.7,
+      tier: "fast",
+      maxTokens: 2500,
+      temperature: 0.5,
       jsonMode: true,
-      logPrefix: "[maturity-ai-engine]",
+      logPrefix: `[maturity-ai-engine:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
     const result = safeParseJson(aiResult.content);
