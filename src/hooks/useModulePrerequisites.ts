@@ -67,24 +67,26 @@ export const useModulePrerequisites = () => {
       return;
     }
 
-    // Per-table count that survives transient errors (503, network blips)
-    // by resolving to `null` instead of throwing the whole Promise.all.
+    // TK-18: HEAD (count: 'exact', head: true) devolvía 503 intermitente para
+    // varias tablas grandes. Como sólo necesitamos saber si existe ≥1 fila
+    // para habilitar módulos, usamos un GET ligero `select('id').limit(1)`
+    // y devolvemos 1 o 0 (no el conteo real). Más barato y sin 503.
     const safeCount = async (
       table: string,
       filter?: { col: string; val: string }
     ): Promise<number | null> => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let q: any = supabase.from(table as any).select('id', { count: 'exact', head: true });
+        let q: any = supabase.from(table as any).select('id').limit(1);
         if (filter) q = q.eq(filter.col, filter.val);
-        const { count, error } = await q;
+        const { data, error } = await q;
         if (error) {
-          console.warn(`[prerequisites] count failed for ${table}:`, error.message);
+          console.warn(`[prerequisites] probe failed for ${table}:`, error.message);
           return null;
         }
-        return count ?? 0;
+        return (data?.length ?? 0) > 0 ? 1 : 0;
       } catch (e) {
-        console.warn(`[prerequisites] count threw for ${table}:`, e);
+        console.warn(`[prerequisites] probe threw for ${table}:`, e);
         return null;
       }
     };
