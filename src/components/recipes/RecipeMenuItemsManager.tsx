@@ -58,7 +58,7 @@ export const RecipeMenuItemsManager = ({ recipeId }: Props) => {
                   </div>
                 ) : availableItems.map(mi => (
                   <SelectItem key={mi.id} value={mi.id}>
-                    {mi.name} {mi.category ? <span className="text-muted-foreground">· {mi.category}</span> : null}
+                    {mi.name} {mi.category ? <span className="text-muted-foreground">· {labelFor('menu_category', mi.category)}</span> : null}
                   </SelectItem>
                 ))}
               </SelectContent>
