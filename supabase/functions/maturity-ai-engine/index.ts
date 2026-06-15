@@ -229,13 +229,64 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
       logPrefix: `[maturity-ai-engine:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
-    const result = safeParseJson(aiResult.content);
+    const result: any = safeParseJson(aiResult.content);
 
     if (!result) {
       return new Response(
         JSON.stringify({ success: false, error: 'No se pudo procesar la respuesta de IA. Intenta de nuevo.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Normalización defensiva: el modelo a veces devuelve strings de negativa
+    // donde el contrato cliente exige números. Esto garantiza que el UI nunca
+    // crashee por `.toFixed()` sobre un string.
+    const toNum = (v: any, fb: number): number => {
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+      if (typeof v === 'string') {
+        const n = parseFloat(v.replace(',', '.'));
+        if (Number.isFinite(n)) return n;
+      }
+      return fb;
+    };
+
+    if (action === 'benchmark_comparison') {
+      const userOverall = Number(diagnosisData.overallScore) || 0;
+      result.overall_percentile = Math.max(0, Math.min(100, toNum(result.overall_percentile, Math.round(userOverall / 5 * 100))));
+      result.industry_average = Math.max(0, Math.min(5, toNum(result.industry_average, 2.8)));
+      const PILLAR_DEFAULTS: Record<string, number> = { p1: 2.9, p2: 2.7, p3: 2.6, p4: 2.5 };
+      const incoming = Array.isArray(result.pillar_comparisons) ? result.pillar_comparisons : [];
+      // Reconstruir desde los scores reales del usuario para garantizar 1 entrada por pilar.
+      result.pillar_comparisons = Object.entries(diagnosisData.pillarScores).map(([pid, score]) => {
+        const match = incoming.find((c: any) => c?.pillar_id === pid || c?.pillar === PILLAR_NAMES[pid]);
+        const user = Number(score) || 0;
+        const ind = Math.max(0, Math.min(5, toNum(match?.industry_average, PILLAR_DEFAULTS[pid] ?? 2.7)));
+        const gap = user - ind;
+        const status = gap > 0.3 ? 'above' : gap < -0.3 ? 'below' : 'at';
+        const pct = Math.max(0, Math.min(100, toNum(match?.percentile, Math.round((user / 5) * 100))));
+        return {
+          pillar_id: pid,
+          pillar_name: PILLAR_NAMES[pid] || pid,
+          user_score: user,
+          industry_average: ind,
+          percentile: pct,
+          status,
+          gap,
+        };
+      });
+      // Normalizar top_opportunities: aceptar strings u objetos.
+      result.top_opportunities = (Array.isArray(result.top_opportunities) ? result.top_opportunities : [])
+        .map((opp: any, i: number) => {
+          if (typeof opp === 'string') return { title: `Oportunidad ${i + 1}`, description: opp, industry_trend: '' };
+          return {
+            title: opp?.title || `Oportunidad ${i + 1}`,
+            description: opp?.description || '',
+            industry_trend: opp?.industry_trend || '',
+          };
+        });
+      if (typeof result.competitive_insight !== 'string') {
+        result.competitive_insight = 'Análisis competitivo no disponible en esta ejecución.';
+      }
     }
 
     const integrity = checkIntegrity(aiResult.content, research.enabled);
