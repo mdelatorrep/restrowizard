@@ -53,7 +53,9 @@ export type AIGatewayResult = AIGatewaySuccess | AIGatewayFailure;
 export function pickModel(tier: ModelTier = "fast"): string {
   switch (tier) {
     case "reasoning":
-      return "openai/gpt-5.2";
+      // Gemini 3.1 Pro: razonamiento de gama alta, multimodal, contexto largo,
+      // acepta `max_tokens`/`temperature` estándar (sin el mapeo especial de GPT-5.x).
+      return "google/gemini-3.1-pro-preview";
     case "cheap":
       return "google/gemini-2.5-flash-lite";
     case "fast":
@@ -86,13 +88,13 @@ export async function callAIGateway(
     model,
     messages: opts.messages,
   };
-  // GPT-5.x family requires `max_completion_tokens` instead of `max_tokens`.
+  // GPT-5.x family requires `max_completion_tokens` y rechaza `temperature`.
+  // Mantenemos el mapeo por si una función puntual sobreescribe `model` con gpt-5.x.
   const usesCompletionTokens = /^openai\/gpt-5/i.test(model);
   if (opts.maxTokens) {
     if (usesCompletionTokens) body.max_completion_tokens = opts.maxTokens;
     else body.max_tokens = opts.maxTokens;
   }
-  // GPT-5.x also rejects custom `temperature` (only default supported).
   if (typeof opts.temperature === "number" && !usesCompletionTokens) {
     body.temperature = opts.temperature;
   }

@@ -14,7 +14,7 @@ export type ModelTier = "fast" | "reasoning" | "cheap";
 
 const MODELS: Record<ModelTier, string> = {
   fast: "google/gemini-3-flash-preview",
-  reasoning: "openai/gpt-5.2",
+  reasoning: "google/gemini-3.1-pro-preview",
   cheap: "google/gemini-2.5-flash-lite",
 };
 
