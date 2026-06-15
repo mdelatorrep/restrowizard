@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Package, Plus, Search } from 'lucide-react';
+import { Package, Plus, Search, ShoppingCart } from 'lucide-react';
 import {
   InventoryStockTable,
 } from '@/components/inventory/InventoryStockTable';
@@ -17,6 +17,7 @@ interface InventoryItemsTabProps {
   onView: (item: InventoryItemExtended) => void;
   onEdit: (item: InventoryItemExtended) => void;
   onDelete: (id: string) => void;
+  onGenerateOrder?: () => void; // TK-16
 }
 
 export const InventoryItemsTab = ({
@@ -28,6 +29,7 @@ export const InventoryItemsTab = ({
   onView,
   onEdit,
   onDelete,
+  onGenerateOrder,
 }: InventoryItemsTabProps) => {
   if (!hasData) {
     return (
@@ -47,9 +49,14 @@ export const InventoryItemsTab = ({
     );
   }
 
+  // TK-16: ítems con proveedor asignado y bajo par level
+  const orderableCount = items.filter(
+    (i) => i.par_level > 0 && i.current_stock < i.par_level && i.preferred_supplier_id
+  ).length;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -60,6 +67,12 @@ export const InventoryItemsTab = ({
           />
         </div>
         <Badge variant="outline">{items.length} items</Badge>
+        {onGenerateOrder && orderableCount > 0 && (
+          <Button size="sm" variant="default" onClick={onGenerateOrder} className="ml-auto">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Ordenar ({orderableCount})
+          </Button>
+        )}
       </div>
 
       <InventoryStockTable
