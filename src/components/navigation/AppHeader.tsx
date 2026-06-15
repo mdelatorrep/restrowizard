@@ -16,14 +16,17 @@ import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { useBrandData } from '@/hooks/useBrandData';
 import { cn } from '@/lib/utils';
 
 export const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { userType } = useUserType();
+  const { brand } = useBrandData();
   const [businessName, setBusinessName] = useState<string>('');
   const { alerts, unreadAlerts, markAsRead } = useCopilotAlerts();
+  const brandLogo = userType === 'restaurant_owner' ? (brand?.logo_url || brand?.logo_square_url) : null;
 
   useEffect(() => {
     const fetchBusinessInfo = async () => {
@@ -70,9 +73,16 @@ export const AppHeader: React.FC = () => {
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
+        {brandLogo && (
+          <img
+            src={brandLogo}
+            alt={brand?.brand_name || businessName}
+            className="h-9 w-9 rounded-md object-contain bg-muted/30 border border-border"
+          />
+        )}
         <div className="flex flex-col">
           <h2 className="font-headline font-bold text-foreground text-lg">
-            {businessName}
+            {brand?.brand_name || businessName}
           </h2>
           <span className="text-xs text-muted-foreground font-lato-light">
             {userType === 'restaurant_owner' ? 'Panel de Restaurante' : 'Portal de Consultor'}

@@ -66,6 +66,7 @@ import {
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
+import { useBrandData } from '@/hooks/useBrandData';
 
 interface AppSidebarProps {
   userType: 'restaurant_owner' | 'consultant';
@@ -373,6 +374,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
   const teamPermissions = useTeamPermissions();
   const [expansionOpen, setExpansionOpen] = useState(false);
   const [showAllModules, setShowAllModules] = useState(false);
+  const { brand } = useBrandData();
+  const brandLogo = userType === 'restaurant_owner' ? (brand?.logo_white_url || brand?.logo_url || brand?.logo_square_url) : null;
+  const brandName = userType === 'restaurant_owner' ? (brand?.brand_name || 'RestroWizard') : 'RestroWizard';
+  const brandInitials = (brandName || 'RW').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
   const isCollapsed = state === 'collapsed';
   const settingsPath = userType === 'restaurant_owner' ? '/r/settings' : '/c/settings';
@@ -505,12 +510,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <span className="text-sidebar-primary-foreground font-bold text-sm">RW</span>
-              </div>
-              <span className="font-headline font-bold text-sidebar-foreground">
-                RestroWizard
+            <div className="flex items-center gap-2 min-w-0">
+              {brandLogo ? (
+                <img
+                  src={brandLogo}
+                  alt={brandName}
+                  className="w-8 h-8 rounded-lg object-contain bg-white/10"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+                  <span className="text-sidebar-primary-foreground font-bold text-sm">{brandInitials}</span>
+                </div>
+              )}
+              <span className="font-headline font-bold text-sidebar-foreground truncate">
+                {brandName}
               </span>
             </div>
           )}

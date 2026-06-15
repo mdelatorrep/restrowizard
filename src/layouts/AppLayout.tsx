@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/navigation/AppHeader';
 import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useUserType } from '@/hooks/useUserType';
 import CopilotChat from '@/components/CopilotChat';
+import { BrandThemeProvider } from '@/components/brand/BrandThemeProvider';
 
 interface AppLayoutProps {
   requiredUserType?: 'restaurant_owner' | 'consultant';
@@ -22,19 +23,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
   const effectiveUserType = userType || requiredUserType || 'restaurant_owner';
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar userType={effectiveUserType} />
-        <main className="flex-1 flex flex-col min-h-screen">
-          <AppHeader />
-          {effectiveUserType === 'consultant' && <WorkingAsBar />}
-           <div className="flex-1 p-4 md:p-6 overflow-auto">
-            <Outlet />
-          </div>
-        </main>
-        <CopilotChat />
-      </div>
-    </SidebarProvider>
+    <BrandThemeProvider>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar userType={effectiveUserType} />
+          <main className="flex-1 flex flex-col min-h-screen">
+            <AppHeader />
+            {effectiveUserType === 'consultant' && <WorkingAsBar />}
+             <div className="flex-1 p-4 md:p-6 overflow-auto">
+              <Outlet />
+            </div>
+          </main>
+          <CopilotChat />
+        </div>
+      </SidebarProvider>
+    </BrandThemeProvider>
   );
 };
 
