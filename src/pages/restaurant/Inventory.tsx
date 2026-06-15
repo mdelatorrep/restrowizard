@@ -177,6 +177,10 @@ const Inventory: React.FC = () => {
             onView={handleViewDetail}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onGenerateOrder={async () => {
+              const po = await generatePOFromParLevels();
+              if (po) setActiveTab('orders');
+            }}
           />
         </TabsContent>
 
