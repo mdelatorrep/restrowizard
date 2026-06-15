@@ -110,6 +110,28 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
     await onGenerateFromPar();
   };
 
+  const suggestItemsForSupplier = () => {
+    if (!formData.supplier_id) {
+      toast.error('Selecciona un proveedor primero');
+      return;
+    }
+    const matches = inventory.filter(i => i.preferred_supplier_id === formData.supplier_id);
+    if (matches.length === 0) {
+      toast.info('Este proveedor no tiene ítems asignados como proveedor preferido');
+      return;
+    }
+    setOrderItems(matches.map(i => ({
+      inventory_item_id: i.id,
+      quantity: Math.max(1, Math.ceil((i.par_level ?? 0) - (i.current_stock ?? 0))) || 1,
+      unit_cost: i.unit_cost || 0,
+    })));
+    toast.success(`${matches.length} ítems sugeridos`);
+  };
+
+  const filteredInventory = formData.supplier_id
+    ? inventory.filter(i => !i.preferred_supplier_id || i.preferred_supplier_id === formData.supplier_id)
+    : inventory;
+
   const handleOpenReceive = (order: PurchaseOrder) => {
     setOrderToReceive(order);
     setReceiveDialogOpen(true);
@@ -171,9 +193,14 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label>Ítems de la Orden</Label>
-                    <Button variant="outline" size="sm" onClick={addOrderItem}>
-                      <Plus className="h-4 w-4 mr-1" /> Agregar Ítem
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={suggestItemsForSupplier} disabled={!formData.supplier_id}>
+                        <Wand2 className="h-4 w-4 mr-1" /> Sugerir desde proveedor
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={addOrderItem}>
+                        <Plus className="h-4 w-4 mr-1" /> Agregar Ítem
+                      </Button>
+                    </div>
                   </div>
                   
                   {orderItems.length === 0 ? (
@@ -194,7 +221,7 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                                 <SelectValue placeholder="Seleccionar" />
                               </SelectTrigger>
                               <SelectContent>
-                                {inventory.filter(i => i.id).map(i => (
+                                {filteredInventory.filter(i => i.id).map(i => (
                                   <SelectItem key={i.id} value={i.id}>
                                     {i.item_name} ({i.current_stock} {i.unit})
                                   </SelectItem>

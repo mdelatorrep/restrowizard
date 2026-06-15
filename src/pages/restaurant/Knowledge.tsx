@@ -82,17 +82,25 @@ const Knowledge = () => {
     load();
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este documento de la base de conocimiento?')) return;
+    if (!confirm('¿Eliminar este documento de la base de conocimiento? Esta acción no se puede deshacer.')) return;
+    setDeletingId(id);
+    const previous = sources;
+    setSources((prev) => prev.filter((s) => s.id !== id));
     const { data, error } = await supabase.functions.invoke('knowledge-index', {
       body: { action: 'delete', source_id: id, target_user_id: targetUserId },
     });
     if (error || (data as any)?.error) {
+      setSources(previous);
       toast.error((data as any)?.error || error?.message || 'Error al eliminar');
+      setDeletingId(null);
       return;
     }
     toast.success('Documento eliminado');
     if (editingId === id) reset();
+    setDeletingId(null);
     load();
   };
 
@@ -188,8 +196,8 @@ const Knowledge = () => {
                   <Button variant="outline" size="sm" onClick={() => startEdit(s)}>
                     Editar
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}>
+                    {deletingId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                   </Button>
                 </div>
               </CardContent>
