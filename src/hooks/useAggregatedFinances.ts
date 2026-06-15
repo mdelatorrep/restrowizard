@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { format, subDays } from 'date-fns';
+import { calcShiftLaborCost } from '@/lib/laborCost';
 
 export interface AggregatedDailySales {
   date: string;
@@ -142,22 +143,14 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         foodCostByDate[dateKey] = (foodCostByDate[dateKey] || 0) + (Number(d.quantity_deducted) || 0) * unitCost;
       });
 
-      // Labor cost by date = hours × hourly_rate (override > staff base)
+      // Labor cost by date — TK-2: fórmula única (lib/laborCost) compartida con módulo Turnos.
       const laborCostByDate: Record<string, number> = {};
       (shiftsRes.data || []).forEach((s: any) => {
         const dateKey = s.shift_date as string;
-        const start = s.actual_start_time || s.start_time;
-        const end = s.actual_end_time || s.end_time;
-        if (!start || !end) return;
-        const toMs = (t: string) => {
-          const [h, m, sec] = String(t).split(':').map(Number);
-          return ((h || 0) * 3600 + (m || 0) * 60 + (sec || 0)) * 1000;
-        };
-        // C8-01: descontar descanso (break_minutes) para que coincida con módulo Turnos
-        const breakMs = (Number(s.break_minutes) || 0) * 60_000;
-        const hours = Math.max(0, (toMs(end) - toMs(start) - breakMs) / 3_600_000);
-        const rate = Number(s.hourly_rate_override) || Number(s.staff_members?.hourly_rate) || 0;
-        laborCostByDate[dateKey] = (laborCostByDate[dateKey] || 0) + hours * rate;
+        const cost = calcShiftLaborCost(s, s.staff_members?.hourly_rate);
+        if (cost > 0) {
+          laborCostByDate[dateKey] = (laborCostByDate[dateKey] || 0) + cost;
+        }
       });
 
       // Manual overrides: if user typed a value in daily_sales, ADD to computed

@@ -5,6 +5,16 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
 import { es } from 'date-fns/locale';
 
 export type ReportPeriod = 'daily' | 'weekly' | 'monthly';
+export type SalesChannel = 'all' | 'dine_in' | 'pos' | 'delivery_own' | 'rappi' | 'takeout' | 'other';
+
+export const CHANNEL_LABELS: Record<Exclude<SalesChannel, 'all'>, string> = {
+  dine_in: 'Salón',
+  pos: 'POS / Mostrador',
+  delivery_own: 'Domicilio propio',
+  rappi: 'Rappi',
+  takeout: 'Para llevar',
+  other: 'Otros',
+};
 
 export interface SalesDataPoint {
   date: string;
@@ -19,6 +29,8 @@ export interface SalesDataPoint {
 
 export interface SalesReportKPIs {
   totalRevenue: number;
+  netRevenue: number;      // TK-9: ventas netas (sin impuesto)
+  taxCollected: number;    // TK-9: impuesto recaudado
   totalOrders: number;
   avgTicket: number;
   bestDay: string;
@@ -26,6 +38,20 @@ export interface SalesReportKPIs {
   growthPercent: number;
   cashPercent: number;
   cardPercent: number;
+}
+
+export interface PaymentMethodBreakdown {
+  method: string;          // TK-10: granular (Nequi, Daviplata, Transferencia, etc.)
+  amount: number;
+  percent: number;
+}
+
+export interface ChannelBreakdown {
+  channel: Exclude<SalesChannel, 'all'>;
+  label: string;
+  amount: number;
+  orders: number;
+  percent: number;
 }
 
 export interface TopProduct {
@@ -41,69 +67,65 @@ export interface HourlySales {
   orders: number;
 }
 
-export const useSalesReports = (period: ReportPeriod = 'daily') => {
+const normalizeMethod = (raw: string | null | undefined): string => {
+  const m = (raw || 'Sin especificar').toString().trim();
+  if (!m) return 'Sin especificar';
+  const lower = m.toLowerCase();
+  if (lower === 'cash' || lower.includes('efectivo')) return 'Efectivo';
+  if (lower === 'card' || lower.includes('tarjeta')) return 'Tarjeta';
+  if (lower.includes('nequi')) return 'Nequi';
+  if (lower.includes('daviplata')) return 'Daviplata';
+  if (lower.includes('transfer')) return 'Transferencia';
+  if (lower.includes('qr')) return 'QR';
+  // Devolver con primera letra mayúscula
+  return m.charAt(0).toUpperCase() + m.slice(1);
+};
+
+export const useSalesReports = (
+  period: ReportPeriod = 'daily',
+  channel: SalesChannel = 'all'
+) => {
   const { userId } = useDataUserId();
   const [loading, setLoading] = useState(true);
   const [rawOrders, setRawOrders] = useState<any[]>([]);
   const [previousPeriodOrders, setPreviousPeriodOrders] = useState<any[]>([]);
 
-  // Calculate date range based on period
   const dateRange = useMemo(() => {
     const now = new Date();
     switch (period) {
       case 'daily':
-        return {
-          start: subDays(now, 7),
-          end: now,
-          prevStart: subDays(now, 14),
-          prevEnd: subDays(now, 7)
-        };
+        return { start: subDays(now, 7), end: now, prevStart: subDays(now, 14), prevEnd: subDays(now, 7) };
       case 'weekly':
-        return {
-          start: subDays(now, 28),
-          end: now,
-          prevStart: subDays(now, 56),
-          prevEnd: subDays(now, 28)
-        };
+        return { start: subDays(now, 28), end: now, prevStart: subDays(now, 56), prevEnd: subDays(now, 28) };
       case 'monthly':
-        return {
-          start: subDays(now, 90),
-          end: now,
-          prevStart: subDays(now, 180),
-          prevEnd: subDays(now, 90)
-        };
+        return { start: subDays(now, 90), end: now, prevStart: subDays(now, 180), prevEnd: subDays(now, 90) };
     }
   }, [period]);
 
-  // Fetch orders data
   useEffect(() => {
     const fetchData = async () => {
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-
+      if (!userId) { setLoading(false); return; }
       setLoading(true);
       try {
-        // Fetch current period orders
-        const { data: currentData } = await supabase
+        let curQ = supabase
           .from('restaurant_orders')
           .select('*')
           .eq('user_id', userId)
           .gte('created_at', dateRange.start.toISOString())
           .lte('created_at', dateRange.end.toISOString())
           .order('created_at', { ascending: true });
-
+        if (channel !== 'all') curQ = curQ.eq('sales_channel', channel);
+        const { data: currentData } = await curQ;
         setRawOrders(currentData || []);
 
-        // Fetch previous period for comparison
-        const { data: prevData } = await supabase
+        let prevQ = supabase
           .from('restaurant_orders')
-          .select('*')
+          .select('total, tax_amount')
           .eq('user_id', userId)
           .gte('created_at', dateRange.prevStart.toISOString())
           .lte('created_at', dateRange.prevEnd.toISOString());
-
+        if (channel !== 'all') prevQ = prevQ.eq('sales_channel', channel);
+        const { data: prevData } = await prevQ;
         setPreviousPeriodOrders(prevData || []);
       } catch (error) {
         console.error('Error fetching sales reports:', error);
@@ -111,162 +133,130 @@ export const useSalesReports = (period: ReportPeriod = 'daily') => {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [userId, dateRange]);
+  }, [userId, dateRange, channel]);
 
-  // Process chart data
   const chartData = useMemo((): SalesDataPoint[] => {
-    if (!rawOrders.length) return [];
-
     const groupedData: Record<string, SalesDataPoint> = {};
-
-    // Generate date labels
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-    
     days.forEach(day => {
       const key = format(day, 'yyyy-MM-dd');
-      let label: string;
-      
-      if (period === 'daily') {
-        label = format(day, 'EEE dd', { locale: es });
-      } else if (period === 'weekly') {
-        label = format(day, 'dd MMM', { locale: es });
-      } else {
-        label = format(day, 'MMM dd', { locale: es });
-      }
-
-      groupedData[key] = {
-        date: key,
-        label,
-        totalSales: 0,
-        orderCount: 0,
-        avgTicket: 0,
-        cashSales: 0,
-        cardSales: 0,
-        otherSales: 0
-      };
+      const label = period === 'daily'
+        ? format(day, 'EEE dd', { locale: es })
+        : period === 'weekly'
+          ? format(day, 'dd MMM', { locale: es })
+          : format(day, 'MMM dd', { locale: es });
+      groupedData[key] = { date: key, label, totalSales: 0, orderCount: 0, avgTicket: 0, cashSales: 0, cardSales: 0, otherSales: 0 };
     });
 
-    // Aggregate orders
     rawOrders.forEach(order => {
       const orderDate = format(parseISO(order.created_at), 'yyyy-MM-dd');
-      if (groupedData[orderDate]) {
-        groupedData[orderDate].totalSales += Number(order.total) || 0;
-        groupedData[orderDate].orderCount += 1;
-        
-        const paymentMethod = order.payment_method?.toLowerCase() || '';
-        if (paymentMethod.includes('efectivo') || paymentMethod === 'cash') {
-          groupedData[orderDate].cashSales += Number(order.total) || 0;
-        } else if (paymentMethod.includes('tarjeta') || paymentMethod === 'card') {
-          groupedData[orderDate].cardSales += Number(order.total) || 0;
-        } else {
-          groupedData[orderDate].otherSales += Number(order.total) || 0;
-        }
-      }
+      if (!groupedData[orderDate]) return;
+      const total = Number(order.total) || 0;
+      groupedData[orderDate].totalSales += total;
+      groupedData[orderDate].orderCount += 1;
+      const m = normalizeMethod(order.payment_method);
+      if (m === 'Efectivo') groupedData[orderDate].cashSales += total;
+      else if (m === 'Tarjeta') groupedData[orderDate].cardSales += total;
+      else groupedData[orderDate].otherSales += total;
     });
 
-    // Calculate averages
     Object.values(groupedData).forEach(point => {
       point.avgTicket = point.orderCount > 0 ? point.totalSales / point.orderCount : 0;
     });
-
     return Object.values(groupedData);
   }, [rawOrders, dateRange, period]);
 
-  // Calculate KPIs
   const kpis = useMemo((): SalesReportKPIs => {
     const totalRevenue = rawOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const taxCollected = rawOrders.reduce((sum, o) => sum + (Number(o.tax_amount) || 0), 0);
+    const netRevenue = Math.max(0, totalRevenue - taxCollected);
     const totalOrders = rawOrders.length;
     const avgTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Find best day
-    let bestDay = '';
-    let bestDayAmount = 0;
-    chartData.forEach(point => {
-      if (point.totalSales > bestDayAmount) {
-        bestDayAmount = point.totalSales;
-        bestDay = point.label;
-      }
-    });
+    let bestDay = ''; let bestDayAmount = 0;
+    chartData.forEach(p => { if (p.totalSales > bestDayAmount) { bestDayAmount = p.totalSales; bestDay = p.label; } });
 
-    // Calculate growth
     const prevRevenue = previousPeriodOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const growthPercent = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
-    // Payment method breakdown
-    const cashTotal = rawOrders
-      .filter(o => {
-        const pm = o.payment_method?.toLowerCase() || '';
-        return pm.includes('efectivo') || pm === 'cash';
-      })
-      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    
-    const cardTotal = rawOrders
-      .filter(o => {
-        const pm = o.payment_method?.toLowerCase() || '';
-        return pm.includes('tarjeta') || pm === 'card';
-      })
-      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-
+    const cashTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Efectivo').reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const cardTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Tarjeta').reduce((s, o) => s + (Number(o.total) || 0), 0);
     const cashPercent = totalRevenue > 0 ? (cashTotal / totalRevenue) * 100 : 0;
     const cardPercent = totalRevenue > 0 ? (cardTotal / totalRevenue) * 100 : 0;
 
-    return {
-      totalRevenue,
-      totalOrders,
-      avgTicket,
-      bestDay,
-      bestDayAmount,
-      growthPercent,
-      cashPercent,
-      cardPercent
-    };
+    return { totalRevenue, netRevenue, taxCollected, totalOrders, avgTicket, bestDay, bestDayAmount, growthPercent, cashPercent, cardPercent };
   }, [rawOrders, previousPeriodOrders, chartData]);
 
-  // Top products
+  // TK-10: desglose granular de métodos de pago.
+  const paymentMethodBreakdown = useMemo((): PaymentMethodBreakdown[] => {
+    const map: Record<string, number> = {};
+    let total = 0;
+    rawOrders.forEach(o => {
+      const m = normalizeMethod(o.payment_method);
+      const amt = Number(o.total) || 0;
+      map[m] = (map[m] || 0) + amt;
+      total += amt;
+    });
+    return Object.entries(map)
+      .map(([method, amount]) => ({ method, amount, percent: total > 0 ? (amount / total) * 100 : 0 }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [rawOrders]);
+
+  // TK-1: desglose por canal de venta.
+  const channelBreakdown = useMemo((): ChannelBreakdown[] => {
+    const map: Record<string, { amount: number; orders: number }> = {};
+    let total = 0;
+    rawOrders.forEach(o => {
+      const ch = (o.sales_channel || 'other') as Exclude<SalesChannel, 'all'>;
+      if (!map[ch]) map[ch] = { amount: 0, orders: 0 };
+      const amt = Number(o.total) || 0;
+      map[ch].amount += amt;
+      map[ch].orders += 1;
+      total += amt;
+    });
+    return Object.entries(map)
+      .map(([ch, v]) => ({
+        channel: ch as Exclude<SalesChannel, 'all'>,
+        label: CHANNEL_LABELS[ch as Exclude<SalesChannel, 'all'>] || ch,
+        amount: v.amount,
+        orders: v.orders,
+        percent: total > 0 ? (v.amount / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [rawOrders]);
+
   const topProducts = useMemo((): TopProduct[] => {
     const productMap: Record<string, { quantity: number; revenue: number }> = {};
-
     rawOrders.forEach(order => {
       const items = order.items || [];
       if (Array.isArray(items)) {
         items.forEach((item: any) => {
           const name = item.name || 'Sin nombre';
-          if (!productMap[name]) {
-            productMap[name] = { quantity: 0, revenue: 0 };
-          }
+          if (!productMap[name]) productMap[name] = { quantity: 0, revenue: 0 };
           productMap[name].quantity += item.quantity || 1;
           productMap[name].revenue += (item.price || 0) * (item.quantity || 1);
         });
       }
     });
-
     return Object.entries(productMap)
-      .map(([name, data]) => ({ name, ...data }))
+      .map(([name, d]) => ({ name, ...d }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
   }, [rawOrders]);
 
-  // Hourly distribution
   const hourlyData = useMemo((): HourlySales[] => {
     const hourMap: Record<number, { sales: number; orders: number }> = {};
-    
-    // Initialize all hours
-    for (let h = 0; h < 24; h++) {
-      hourMap[h] = { sales: 0, orders: 0 };
-    }
-
+    for (let h = 0; h < 24; h++) hourMap[h] = { sales: 0, orders: 0 };
     rawOrders.forEach(order => {
       const hour = parseISO(order.created_at).getHours();
       hourMap[hour].sales += Number(order.total) || 0;
       hourMap[hour].orders += 1;
     });
-
-    return Object.entries(hourMap).map(([hour, data]) => ({
+    return Object.entries(hourMap).map(([hour, d]) => ({
       hour: parseInt(hour),
       label: `${hour.padStart(2, '0')}:00`,
-      ...data
+      ...d,
     }));
   }, [rawOrders]);
 
@@ -275,7 +265,9 @@ export const useSalesReports = (period: ReportPeriod = 'daily') => {
     kpis,
     topProducts,
     hourlyData,
+    paymentMethodBreakdown,
+    channelBreakdown,
     loading,
-    hasData: rawOrders.length > 0
+    hasData: rawOrders.length > 0,
   };
 };

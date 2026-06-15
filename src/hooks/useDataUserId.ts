@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthContext } from '@/components/auth/AuthProvider';
@@ -41,7 +42,7 @@ export const useDataUserId = () => {
         .maybeSingle();
       
       if (ownerError) {
-        console.warn('⚠️ [useDataUserId] Error checking ownership:', ownerError.message);
+        logger.warn('⚠️ [useDataUserId] Error checking ownership:', ownerError.message);
       }
       
       if (ownedBusiness) {
