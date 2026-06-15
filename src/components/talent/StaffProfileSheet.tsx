@@ -18,6 +18,8 @@
  import { format, differenceInDays, differenceInYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { StaffPINManager } from './StaffPINManager';
+
  
  interface Props {
    staff: StaffMemberExtended | null;
