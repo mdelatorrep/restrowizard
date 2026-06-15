@@ -24,6 +24,7 @@ interface ProfitLossStatementProps {
   periodStart: Date;
   periodEnd: Date;
   totalRevenue: number;
+  taxes?: number;
   foodCost: number;
   laborCost: number;
   otherCosts?: number;
@@ -35,6 +36,7 @@ interface ProfitLossStatementProps {
     foodCost: number;
     laborCost: number;
     otherCosts?: number;
+    taxes?: number;
   };
 }
 
@@ -42,6 +44,7 @@ export const ProfitLossStatement: React.FC<ProfitLossStatementProps> = ({
   periodStart,
   periodEnd,
   totalRevenue,
+  taxes = 0,
   foodCost,
   laborCost,
   otherCosts = 0,
@@ -51,23 +54,31 @@ export const ProfitLossStatement: React.FC<ProfitLossStatementProps> = ({
   previousPeriodData
 }) => {
   // Calculate derived values
-  const grossProfit = totalRevenue - foodCost;
-  const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-  
+  // BL-11: Ingresos Netos = Ingresos Brutos − Impuestos sobre Ventas (IVA/Impoconsumo).
+  // El Food/Labor cost % se calcula sobre Ingresos Netos cuando hay impuesto configurado.
+  const netRevenue = totalRevenue - taxes;
+  const revenueBase = netRevenue > 0 ? netRevenue : totalRevenue;
+  const grossProfit = netRevenue - foodCost;
+  const grossMargin = revenueBase > 0 ? (grossProfit / revenueBase) * 100 : 0;
+
   const totalOperatingExpenses = laborCost + rent + utilities + marketing + otherCosts;
   const operatingProfit = grossProfit - totalOperatingExpenses;
-  const operatingMargin = totalRevenue > 0 ? (operatingProfit / totalRevenue) * 100 : 0;
-  
+  const operatingMargin = revenueBase > 0 ? (operatingProfit / revenueBase) * 100 : 0;
+
   const netProfit = operatingProfit;
-  const netMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const netMargin = revenueBase > 0 ? (netProfit / revenueBase) * 100 : 0;
 
   // Calculate previous period metrics for comparison
-  const prevGrossProfit = previousPeriodData 
-    ? previousPeriodData.totalRevenue - previousPeriodData.foodCost 
+  const prevNetRevenue = previousPeriodData
+    ? previousPeriodData.totalRevenue - (previousPeriodData.taxes || 0)
     : 0;
-  const prevOperatingProfit = previousPeriodData 
+  const prevGrossProfit = previousPeriodData
+    ? prevNetRevenue - previousPeriodData.foodCost
+    : 0;
+  const prevOperatingProfit = previousPeriodData
     ? prevGrossProfit - (previousPeriodData.laborCost + (previousPeriodData.otherCosts || 0))
     : 0;
+
 
   const VarianceIndicator = ({ current, previous }: { current: number; previous?: number }) => {
     if (!previous || previous === 0) return null;
