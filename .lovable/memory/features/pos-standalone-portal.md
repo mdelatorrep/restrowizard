@@ -22,8 +22,18 @@ URL pública: `/:slug/pos` (resuelve `restaurant_websites.slug` → `user_id`).
 **TypeScript**: el chain `supabase.from(...).eq(...)` con tipos pesados puede romper con TS2589 "Type instantiation excessively deep". Solución: castear el cliente como `const sb = supabase as any` para hooks complejos.
 
 **Componentes clave**:
-- `src/pages/pos/POSLogin.tsx` y `POSMain.tsx`
-- `src/components/pos-standalone/{POSShell,TableMap,TableCard,TableSummaryPanel}.tsx`
+- `src/pages/pos/POSLogin.tsx` y `POSMain.tsx` (layout 3 columnas cuando hay mesa seleccionada: mapa compacto · catálogo · comanda).
+- `src/components/pos-standalone/{POSShell,TableMap,TableCard,TableSummaryPanel,MenuCatalog,OrderPanel,OrderItemRow,PaymentDialogV2,SplitBillDialog,MergeTablesDialog,TransferTableDialog}.tsx`.
 - `src/components/talent/StaffPINManager.tsx` — embebido en el sheet de staff para asignar PIN y rol POS.
+
+**Hooks POS** (Fase 2):
+- `usePOSMenu(restaurantUserId)` — items + categorías de menús publicados con Realtime sobre `menu_items` para precio/disponibilidad en vivo.
+- `usePOSOrder(restaurantUserId, tableId)` — comanda activa por mesa. `ensureOrder`, `addItem`, `updateQuantity`, `removeItem`, `sendToKitchen`, `markLineStatus`. Items en `restaurant_orders.items jsonb` con shape `{line_id, menu_item_id, name, unit_price, quantity, modifiers, notes, status, added_at}`. Realtime sobre `restaurant_orders` filtrado por `user_id`.
+- División de cuenta (por personas o por ítems) crea nuevos `restaurant_orders` con `split_from_order_id`.
+- Fusión usa `merged_into_order_id` y marca la mesa origen como `available`.
+- Transferencia setea `transferred_from_table_id` + `transferred_by` (auth.uid).
+- Pago vía `PaymentDialogV2` (split por medios + propina por medio en `tip_breakdown`) → `processPayment` de `usePOSPayment` + update a `restaurant_orders.payment_status='paid'` + libera mesa.
+
+
 
 **Próximas fases** (ver `.lovable/plan.md`): F2 comanda+pagos, F3 autorizaciones+auditoría, F4 IA+canales+reservas, F5 cierre IA+talento+offline.

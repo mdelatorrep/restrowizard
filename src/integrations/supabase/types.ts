@@ -6479,6 +6479,7 @@ export type Database = {
           kitchen_ready_at: string | null
           kitchen_started_at: string | null
           kitchen_status: string | null
+          merged_into_order_id: string | null
           order_number: number
           order_type: string | null
           payment_method: string | null
@@ -6493,8 +6494,11 @@ export type Database = {
           tax: number | null
           tax_amount: number | null
           tip_amount: number | null
+          tip_breakdown: Json | null
           tip_percent: number | null
           total: number
+          transferred_by: string | null
+          transferred_from_table_id: string | null
           updated_at: string | null
           user_id: string
           waiter_id: string | null
@@ -6523,6 +6527,7 @@ export type Database = {
           kitchen_ready_at?: string | null
           kitchen_started_at?: string | null
           kitchen_status?: string | null
+          merged_into_order_id?: string | null
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
@@ -6537,8 +6542,11 @@ export type Database = {
           tax?: number | null
           tax_amount?: number | null
           tip_amount?: number | null
+          tip_breakdown?: Json | null
           tip_percent?: number | null
           total?: number
+          transferred_by?: string | null
+          transferred_from_table_id?: string | null
           updated_at?: string | null
           user_id: string
           waiter_id?: string | null
@@ -6567,6 +6575,7 @@ export type Database = {
           kitchen_ready_at?: string | null
           kitchen_started_at?: string | null
           kitchen_status?: string | null
+          merged_into_order_id?: string | null
           order_number?: number
           order_type?: string | null
           payment_method?: string | null
@@ -6581,8 +6590,11 @@ export type Database = {
           tax?: number | null
           tax_amount?: number | null
           tip_amount?: number | null
+          tip_breakdown?: Json | null
           tip_percent?: number | null
           total?: number
+          transferred_by?: string | null
+          transferred_from_table_id?: string | null
           updated_at?: string | null
           user_id?: string
           waiter_id?: string | null
@@ -6594,6 +6606,13 @@ export type Database = {
             columns: ["discount_id"]
             isOneToOne: false
             referencedRelation: "pos_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_merged_into_order_id_fkey"
+            columns: ["merged_into_order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
             referencedColumns: ["id"]
           },
           {
@@ -6613,6 +6632,13 @@ export type Database = {
           {
             foreignKeyName: "restaurant_orders_table_id_fkey"
             columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_transferred_from_table_id_fkey"
+            columns: ["transferred_from_table_id"]
             isOneToOne: false
             referencedRelation: "restaurant_tables"
             referencedColumns: ["id"]

@@ -4,13 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePOSContext } from "@/hooks/usePOSContext";
 import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
+import { usePOSMenu } from "@/hooks/usePOSMenu";
+import { usePOSOrder } from "@/hooks/usePOSOrder";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
-import { TableSummaryPanel } from "@/components/pos-standalone/TableSummaryPanel";
+import { MenuCatalog } from "@/components/pos-standalone/MenuCatalog";
+import { OrderPanel } from "@/components/pos-standalone/OrderPanel";
 import { OpenSessionDialog } from "@/components/pos/OpenSessionDialog";
 import { CloseSessionDialog } from "@/components/pos/CloseSessionDialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, LogOut, Power, Loader2, Wifi, WifiOff, X } from "lucide-react";
 import type { RestaurantTable } from "@/hooks/usePOSTables";
 import { useToast } from "@/hooks/use-toast";
 
@@ -106,7 +109,6 @@ export default function POSMain() {
 
   const selectedTable: RestaurantTable | null =
     tables.find((t) => t.id === selectedTableId) || null;
-  const selectedOrder = orders.find((o) => o.table_id === selectedTableId);
 
   const header = (
     <div className="flex items-center justify-between w-full">
@@ -202,7 +204,7 @@ export default function POSMain() {
         </div>
       ) : (
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 min-w-0 border-r border-zinc-800/80">
+          <div className={`${selectedTableId ? "hidden xl:block xl:w-[280px] shrink-0" : "flex-1 min-w-0"} border-r border-zinc-800/80 overflow-hidden`}>
             <TableMap
               tables={tables}
               zones={zones}
@@ -211,9 +213,40 @@ export default function POSMain() {
               onSelectTable={(t) => setSelectedTableId(t.id)}
             />
           </div>
-          <aside className="w-full max-w-sm hidden lg:block bg-zinc-900/40">
-            <TableSummaryPanel table={selectedTable} order={selectedOrder} />
-          </aside>
+
+          {selectedTableId && selectedTable && (
+            <>
+              <div className="flex-1 min-w-0 border-r border-zinc-800/80 flex flex-col">
+                <div className="px-3 py-2 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950">
+                  <div className="text-xs text-zinc-400">
+                    Mesa <span className="text-zinc-100 font-semibold">{selectedTable.table_number}</span> · catálogo
+                  </div>
+                  <button
+                    onClick={() => setSelectedTableId(null)}
+                    className="text-zinc-500 hover:text-zinc-100 p-1 xl:hidden"
+                    aria-label="Volver al mapa"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <MenuCatalogWrapper
+                    restaurantUserId={context.restaurantUserId}
+                    tableId={selectedTable.id}
+                  />
+                </div>
+              </div>
+              <aside className="w-full sm:max-w-sm shrink-0 bg-zinc-900/40 hidden md:block">
+                <OrderPanel
+                  table={selectedTable}
+                  restaurantUserId={context.restaurantUserId}
+                  waiterName={null}
+                  allTables={tables}
+                  activeOrders={orders}
+                />
+              </aside>
+            </>
+          )}
         </div>
       )}
 
@@ -237,3 +270,34 @@ export default function POSMain() {
     </POSShell>
   );
 }
+
+function MenuCatalogWrapper({ restaurantUserId, tableId }: { restaurantUserId: string; tableId: string }) {
+  const { items, categories, loading } = usePOSMenu(restaurantUserId);
+  const order = usePOSOrder(restaurantUserId, tableId);
+
+  if (loading) {
+    return (
+      <div className="h-full grid place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin opacity-50" />
+      </div>
+    );
+  }
+
+  return (
+    <MenuCatalog
+      items={items}
+      categories={categories}
+      onPick={async (it) => {
+        const current = order.order || (await order.ensureOrder({ tableId, guests: 1 }));
+        if (!current) return;
+        await order.addItem({
+          menu_item_id: it.id,
+          name: it.name,
+          unit_price: Number(it.price),
+          quantity: 1,
+        });
+      }}
+    />
+  );
+}
+
