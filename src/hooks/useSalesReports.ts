@@ -38,6 +38,10 @@ export interface SalesReportKPIs {
   growthPercent: number;
   cashPercent: number;
   cardPercent: number;
+  // TK-4: comensales (guests_count)
+  totalCovers: number;
+  avgPartySize: number;
+  revenuePerCover: number;
 }
 
 export interface PaymentMethodBreakdown {
