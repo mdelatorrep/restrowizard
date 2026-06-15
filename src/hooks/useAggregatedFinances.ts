@@ -211,6 +211,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
         const totalFoodCost = salesData.reduce((sum, d) => sum + d.food_cost, 0);
         const totalLaborCost = salesData.reduce((sum, d) => sum + d.labor_cost, 0);
+        const totalTaxes = salesData.reduce((sum, d) => sum + (d.taxes || 0), 0);
         const totalOrders = salesData.reduce((sum, d) => sum + d.order_count, 0);
         const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
 
@@ -218,8 +219,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           totalRevenue,
           totalFoodCost,
           totalLaborCost,
+          totalTaxes,
           totalOrders,
           totalCovers,
+
           avgTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
           grossMargin: totalRevenue > 0 ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100 : 0,
           foodCostPercentage: totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 0,
