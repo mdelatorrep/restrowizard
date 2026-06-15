@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse, safeParseJson } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,89 +16,63 @@ serve(async (req) => {
   try {
     const { action, data } = await req.json();
 
-    let systemPrompt = "";
+    let rolePrompt = "";
     let userPrompt = "";
+    let webQuery = "";
 
     switch (action) {
       case "categorize_ticket":
-        systemPrompt = `Eres un experto en servicio al cliente para restaurantes. Categoriza el ticket PQRS y sugiere prioridad.
-Responde en JSON con:
-- ai_category: "peticion", "queja", "reclamo", "sugerencia", "felicitacion"
-- ai_priority_suggestion: "low", "medium", "high", "urgent"
-- summary: resumen de 1 línea
-- sentiment: "positive", "neutral", "negative"
-- requires_compensation: boolean`;
-        
-        userPrompt = `Categoriza este ticket:
-Tipo reportado: ${data.type}
+        webQuery = "";
+        rolePrompt = `Experto en servicio al cliente para restaurantes. Categoriza usando solo el contenido del ticket.
+JSON: { ai_category, ai_priority_suggestion, summary, sentiment, requires_compensation }`;
+        userPrompt = `Tipo: ${data.type}
 Asunto: ${data.subject}
 Descripción: ${data.description}
-Cliente: ${data.customer_name || 'No especificado'}`;
+Cliente: ${data.customer_name || 'N/E'}`;
         break;
 
       case "generate_response":
-        systemPrompt = `Eres un gerente de servicio al cliente profesional y empático con acceso a búsqueda web para mejores prácticas de resolución de conflictos en restaurantes. Genera una respuesta para el ticket que:
-- Sea profesional y empática
-- Aborde el problema específico
-- Ofrezca una solución cuando sea posible
-- Si es queja/reclamo, incluya disculpa sincera
-- Máximo 200 palabras
-
-Responde en JSON con: response_draft, suggested_actions (array), follow_up_needed (boolean)`;
-        
-        userPrompt = `Genera respuesta para:
-Tipo: ${data.type}
-Prioridad: ${data.priority}
+        webQuery = `mejores prácticas respuesta queja cliente restaurante ${data.type || ''}`;
+        rolePrompt = `Gerente de servicio al cliente. Genera respuesta empática (máx 200 palabras) basada en el caso. Mejores prácticas externas SOLO del CONTEXTO WEB.
+JSON: { response_draft, suggested_actions, follow_up_needed, sources_used }`;
+        userPrompt = `Tipo: ${data.type} | Prioridad: ${data.priority}
 Asunto: ${data.subject}
 Descripción: ${data.description}
-Historial de mensajes: ${data.messages?.map((m: any) => `[${m.sender_type}]: ${m.message}`).join('\n') || 'Sin historial'}
-
-Busca mejores prácticas de respuesta para este tipo de caso en restaurantes.`;
+Historial: ${data.messages?.map((m:any)=>`[${m.sender_type}]: ${m.message}`).join('\n') || 'Sin historial'}`;
         break;
 
       case "suggest_resolution":
-        systemPrompt = `Eres un experto en resolución de conflictos en restaurantes con acceso a búsqueda web para casos de estudio y mejores prácticas de la industria. Sugiere la mejor forma de resolver el caso.
-Responde en JSON con:
-- recommended_resolution: descripción de la resolución basada en mejores prácticas
-- compensation_suggestion: si aplica compensación, qué tipo (basado en estándares de la industria)
-- escalation_needed: boolean
-- prevention_tips: cómo evitar casos similares
-- estimated_resolution_time: tiempo estimado
-- similar_cases: cómo se resolvieron casos similares`;
-        
-        userPrompt = `Sugiere resolución para:
-Tipo: ${data.type}
-Prioridad: ${data.priority}
+        webQuery = `resolución conflicto cliente restaurante ${data.type || ''} compensación estándar industria`;
+        rolePrompt = `Experto en resolución de conflictos. Sugiere resolución basada en el caso. Estándares de industria y casos similares SOLO con [Fuente N].
+JSON: { recommended_resolution, compensation_suggestion, escalation_needed, prevention_tips, estimated_resolution_time, similar_cases (con [Fuente N] o "Información no disponible"), sources_used }`;
+        userPrompt = `Tipo: ${data.type} | Prioridad: ${data.priority}
 Descripción: ${data.description}
-Estado actual: ${data.status}
-Tiempo abierto: ${data.time_open || 'Reciente'}
-
-Busca mejores prácticas y casos de estudio para resolver este tipo de situación.`;
+Estado: ${data.status} | Tiempo abierto: ${data.time_open || 'Reciente'}`;
         break;
 
       case "analyze_trends":
-        systemPrompt = `Eres un analista de servicio al cliente con acceso a búsqueda web para benchmarks de la industria. Analiza los tickets y detecta patrones.
-Responde en JSON con:
-- common_issues: array de problemas frecuentes
-- peak_times: cuándo ocurren más tickets
-- improvement_areas: áreas a mejorar
-- positive_trends: aspectos positivos
-- recommendations: acciones recomendadas basadas en mejores prácticas de la industria
-- industry_comparison: comparación con benchmarks de la industria`;
-        
-        userPrompt = `Analiza estos tickets:
-Total tickets: ${data.total_tickets}
+        webQuery = `benchmark servicio cliente restaurantes tiempo respuesta tasa resolución`;
+        rolePrompt = `Analista de servicio al cliente. Detecta patrones en los datos provistos. Benchmarks de industria SOLO con [Fuente N].
+JSON: { common_issues, peak_times, improvement_areas, positive_trends, recommendations, industry_comparison (con [Fuente N] o null), sources_used }`;
+        userPrompt = `Total tickets: ${data.total_tickets}
 Por tipo: ${JSON.stringify(data.by_type || {})}
 Por prioridad: ${JSON.stringify(data.by_priority || {})}
-Tasa de resolución: ${data.resolution_rate}%
-Tiempo promedio de respuesta: ${data.avg_response_time} horas
-
-Busca benchmarks de servicio al cliente para restaurantes y compara.`;
+Resolución: ${data.resolution_rate}% | Tiempo resp: ${data.avg_response_time}h`;
         break;
 
       default:
         throw new Error("Acción no válida");
     }
+
+    const research = webQuery
+      ? await webResearch(webQuery, { limit: 3, scrape: false, logPrefix: `[support-ai:${action}]` })
+      : { enabled: false, provider: "none" as const, sources: [] };
+
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { jsonOutput: true, requireConfidence: action !== "categorize_ticket", domain: "servicio al cliente en restaurantes" },
+      rolePrompt,
+      webContextBlock: webQuery ? formatSourcesForPrompt(research) : undefined,
+    });
 
     const aiResult = await callAIGateway({
       messages: [
@@ -105,16 +81,20 @@ Busca benchmarks de servicio al cliente para restaurantes y compara.`;
       ],
       tier: "fast",
       maxTokens: 1500,
+      jsonMode: true,
       logPrefix: `[support-ai-assistant:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
     const result = safeParseJson(aiResult.content) ?? { response: aiResult.content };
+    const integrity = checkIntegrity(aiResult.content, research.enabled);
 
-    console.log(`Support AI assistant completed: ${action}`);
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({
+      ...result,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error in support-ai-assistant:", error);
     return new Response(JSON.stringify({ error: error.message }), {

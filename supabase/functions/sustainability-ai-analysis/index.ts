@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,33 +16,41 @@ serve(async (req) => {
   try {
     const { type, data } = await req.json();
 
-    const systemPrompt = `Eres un experto en sostenibilidad y ESG para restaurantes en Latinoamérica. 
-Tienes acceso a búsqueda web para obtener información actualizada sobre:
-- Regulaciones ambientales locales
-- Precios de energías renovables
+    const country = data?.country || data?.location?.country || 'Latinoamérica';
+    const city = data?.city || data?.location?.city || '';
+
+    const research = await webResearch(
+      `regulaciones ESG sostenibilidad restaurantes ${city} ${country} certificaciones energía renovable`,
+      { limit: 5, scrape: true, country: typeof country === "string" ? country.slice(0,2).toLowerCase() : undefined, logPrefix: "[sustainability]" },
+    );
+
+    const rolePrompt = `Eres un experto en sostenibilidad y ESG para restaurantes en ${country}.
+Analiza los datos del restaurante y genera un informe accionable cubriendo:
+- Huella de carbono y energía
+- Gestión de desperdicio alimenticio
+- Uso de agua y energía
+- Cumplimiento ESG y certificaciones aplicables
 - Proveedores sostenibles
-- Certificaciones ESG
-- Mejores prácticas de la industria
 
-Analiza los datos proporcionados y genera recomendaciones específicas para:
-- Reducir huella de carbono
-- Minimizar desperdicio alimenticio
-- Optimizar uso de agua y energía
-- Cumplir con estándares ESG
-- Identificar proveedores más sostenibles
+Regulaciones, certificaciones específicas, precios actuales y nombres de proveedores SOLO si vienen del CONTEXTO WEB. Cita [Fuente N].`;
 
-Responde en español con recomendaciones prácticas y accionables.`;
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { domain: "sostenibilidad ESG en restaurantes", requireConfidence: true },
+      rolePrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
 
-    const userPrompt = `Analiza estos datos de sostenibilidad del restaurante y proporciona un informe detallado con recomendaciones:
+    const userPrompt = `Datos del restaurante (${type || 'análisis general'}):
 
 ${JSON.stringify(data, null, 2)}
 
-Incluye:
+Entrega un informe en español con:
 1. Resumen ejecutivo
 2. Áreas de mejora prioritarias
-3. Acciones concretas recomendadas con costos estimados actuales de mercado
-4. Estimación de ahorro potencial
-5. Normativas o certificaciones aplicables en la región`;
+3. Acciones concretas (con costos solo si hay fuente)
+4. Ahorro estimado (marca como 'Estimación:' y justifica)
+5. Normativas / certificaciones aplicables (solo con [Fuente N])
+6. Al final: bloque "Confianza: X/100" y "Fuentes usadas: [urls]"`;
 
     const aiResult = await callAIGateway({
       messages: [
@@ -58,12 +68,19 @@ Incluye:
       );
     }
     const analysis = aiResult.content || "No se pudo generar el análisis.";
+    const integrity = checkIntegrity(analysis, research.enabled);
 
-    console.log('Sustainability analysis completed successfully');
-
-    return new Response(JSON.stringify({ analysis, success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        analysis,
+        success: true,
+        meta: {
+          web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+          integrity,
+        },
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   } catch (error) {
     console.error('Sustainability analysis error:', error);
     return new Response(JSON.stringify({ error: error.message, success: false }), {
