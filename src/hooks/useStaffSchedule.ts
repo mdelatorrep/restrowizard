@@ -100,13 +100,14 @@ export const useStaffSchedule = (weekStart?: Date) => {
       if (staffError) throw staffError;
 
       // Fetch shifts for the week
+      // C8-01: alinear con Finanzas → excluir cancelled / no_show del costo laboral.
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('staff_shifts')
         .select('*')
         .eq('user_id', userId)
         .gte('shift_date', weekStartStr)
         .lte('shift_date', weekEndStr)
-
+        .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
         .order('shift_date')
         .order('start_time');
 
