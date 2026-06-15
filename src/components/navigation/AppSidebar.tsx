@@ -559,19 +559,30 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </div>
         )}
 
-         {/* Toggle para ver todos los módulos */}
-         {userType === 'restaurant_owner' && !isCollapsed && (
-           <div className="px-3 pt-2">
-             <div className="flex items-center justify-between text-xs">
-               <span className="text-sidebar-foreground/70">Ver todos los módulos</span>
-               <Switch 
-                 checked={showAllModules} 
-                 onCheckedChange={setShowAllModules}
-                 className="scale-75"
-               />
-             </div>
+         {/* Role badge + show-all toggle (owners only see toggle) */}
+         {userType === 'restaurant_owner' && !isCollapsed && !teamPermissions.isLoading && (
+           <div className="px-3 pt-2 space-y-2">
+             {(teamPermissions.customRoleLabel || teamPermissions.role) && (
+               <div className="flex items-center gap-2">
+                 <Shield className="h-3 w-3 text-sidebar-foreground/60" />
+                 <Badge variant="secondary" className="text-[10px] font-medium">
+                   {teamPermissions.customRoleLabel || teamPermissions.role}
+                 </Badge>
+               </div>
+             )}
+             {(teamPermissions.isOwner || teamPermissions.role === 'admin') && (
+               <div className="flex items-center justify-between text-xs">
+                 <span className="text-sidebar-foreground/70">Ver todos los módulos</span>
+                 <Switch 
+                   checked={showAllModules} 
+                   onCheckedChange={setShowAllModules}
+                   className="scale-75"
+                 />
+               </div>
+             )}
            </div>
          )}
+ 
  
         {/* ====== RESTAURANT OWNER NAVIGATION ====== */}
         {userType === 'restaurant_owner' && (
