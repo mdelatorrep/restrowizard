@@ -179,6 +179,19 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
         )}
       </div>
 
+      {hasItems && (
+        <AISuggestPanel
+          userId={restaurantUserId}
+          currentItems={order.items.map((it) => ({
+            menu_item_id: it.menu_item_id,
+            name: it.name,
+            quantity: it.quantity,
+            price: it.unit_price,
+          }))}
+          onAdd={(s) => o.addItem({ menu_item_id: s.menu_item_id, name: s.name, unit_price: 0, quantity: 1 })}
+        />
+      )}
+
       <div className="border-t border-zinc-800/80 p-3 space-y-2 bg-zinc-950/60">
         <Row label="Subtotal" value={order.subtotal} />
         {order.discount_amount > 0 && <Row label="Descuento" value={-order.discount_amount} />}
