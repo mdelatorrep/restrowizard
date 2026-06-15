@@ -6,6 +6,7 @@ import { usePOSLiveMap } from "@/hooks/usePOSLiveMap";
 import { usePOSSession } from "@/hooks/usePOSSession";
 import { usePOSMenu } from "@/hooks/usePOSMenu";
 import { usePOSOrder } from "@/hooks/usePOSOrder";
+import { useTeamPermissions } from "@/hooks/useTeamPermissions";
 import { usePOSActivityTracker } from "@/hooks/usePOSActivityTracker";
 import { POSShell } from "@/components/pos-standalone/POSShell";
 import { TableMap } from "@/components/pos-standalone/TableMap";
@@ -28,6 +29,8 @@ export default function POSMain() {
   const { currentSession, hasOpenSession, openSession, closeSession, loading: sessionLoading } =
     usePOSSession();
   const { tables, zones, orders, loading: mapLoading } = usePOSLiveMap(context?.restaurantUserId);
+  const teamPerms = useTeamPermissions();
+  const canManageCash = teamPerms.isOwner || teamPerms.canAccess('pos', 'admin');
 
   const [authChecking, setAuthChecking] = useState(true);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -162,7 +165,7 @@ export default function POSMain() {
             <ChannelsPanel userId={context.restaurantUserId} />
           </SheetContent>
         </Sheet>
-        {hasOpenSession ? (
+        {canManageCash && (hasOpenSession ? (
           <Button
             size="sm"
             variant="ghost"
@@ -179,7 +182,7 @@ export default function POSMain() {
           >
             <Power className="h-4 w-4 mr-1" /> Abrir caja
           </Button>
-        )}
+        ))}
         <Button
           size="sm"
           variant="ghost"
@@ -211,13 +214,19 @@ export default function POSMain() {
             <p className="text-zinc-400 mb-6">
               Abre tu turno para empezar a tomar comandas y registrar ventas.
             </p>
-            <Button
-              size="lg"
-              className="bg-[var(--pos-accent)] text-zinc-900 hover:opacity-90"
-              onClick={() => setOpenDlg(true)}
-            >
-              <Power className="h-5 w-5 mr-2" /> Abrir caja
-            </Button>
+            {canManageCash ? (
+              <Button
+                size="lg"
+                className="bg-[var(--pos-accent)] text-zinc-900 hover:opacity-90"
+                onClick={() => setOpenDlg(true)}
+              >
+                <Power className="h-5 w-5 mr-2" /> Abrir caja
+              </Button>
+            ) : (
+              <p className="text-sm text-zinc-500">
+                Tu rol no puede abrir caja. Solicita a un supervisor o administrador.
+              </p>
+            )}
           </div>
         </div>
       ) : mapLoading ? (

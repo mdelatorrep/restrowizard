@@ -173,7 +173,7 @@ const salesItems: MenuItem[] = [
     path: '/r/integrations/rappi',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'delivery',
-    permissionModule: 'delivery'
+    permissionModule: 'rappi'
   },
   { 
     title: 'Reservaciones', 
@@ -184,12 +184,26 @@ const salesItems: MenuItem[] = [
     permissionModule: 'reservations'
   },
   { 
+    title: 'Pantalla de Cocina', 
+    icon: ChefHat, 
+    path: '/r/kitchen',
+    stages: ['first_90_days', 'normal_operation'],
+    permissionModule: 'kitchen_display'
+  },
+  { 
     title: 'Reportes y Metas', 
     icon: BarChart3, 
     path: '/r/pos-reports',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'pos-reports',
-    permissionModule: 'finances'
+    permissionModule: 'pos_reports'
+  },
+  { 
+    title: 'Auditoría POS', 
+    icon: Shield, 
+    path: '/r/pos-audit',
+    stages: ['first_90_days', 'normal_operation'],
+    permissionModule: 'pos_audit'
   },
 ];
 
@@ -208,6 +222,7 @@ const peopleItems: MenuItem[] = [
     icon: GraduationCap, 
     path: '/r/my-development',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    permissionModule: 'my_development'
   },
   { 
     title: 'Fidelización', 
@@ -230,21 +245,24 @@ const peopleItems: MenuItem[] = [
     icon: HeadphonesIcon, 
     path: '/r/support',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'support'
+    moduleKey: 'support',
+    permissionModule: 'support'
   },
   {
     title: 'Base de Conocimiento',
     icon: BookOpen,
     path: '/r/knowledge',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
-    moduleKey: 'knowledge'
+    moduleKey: 'knowledge',
+    permissionModule: 'knowledge'
   },
   {
     title: 'Facturas con IA',
     icon: ScanLine,
     path: '/r/invoices',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'invoices'
+    moduleKey: 'invoices',
+    permissionModule: 'invoices'
   },
 ];
 
@@ -275,14 +293,16 @@ const financeItems: MenuItem[] = [
     icon: Leaf, 
     path: '/r/sustainability',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'sustainability'
+    moduleKey: 'sustainability',
+    permissionModule: 'sustainability'
   },
   {
     title: 'Facturación Electrónica',
     icon: FileText,
     path: '/r/electronic-invoicing',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'electronic_invoicing'
+    moduleKey: 'electronic_invoicing',
+    permissionModule: 'electronic_invoicing'
   },
 ];
 
@@ -293,20 +313,23 @@ const expansionItems: MenuItem[] = [
     icon: Store, 
     path: '/r/ghost-kitchen',
     stages: ['normal_operation'],
-    moduleKey: 'ghost-kitchen'
+    moduleKey: 'ghost-kitchen',
+    permissionModule: 'ghost_kitchen'
   },
   { 
     title: 'Gestión de Cadenas', 
     icon: Building2, 
     path: '/r/chain-management',
     stages: ['normal_operation'],
-    moduleKey: 'chain-management'
+    moduleKey: 'chain-management',
+    permissionModule: 'chain_management'
   },
   { 
     title: 'Admin Ecosistema', 
     icon: Wrench, 
     path: '/r/ecosystem-admin',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    permissionModule: 'ecosystem_admin'
   },
 ];
 
@@ -536,19 +559,30 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </div>
         )}
 
-         {/* Toggle para ver todos los módulos */}
-         {userType === 'restaurant_owner' && !isCollapsed && (
-           <div className="px-3 pt-2">
-             <div className="flex items-center justify-between text-xs">
-               <span className="text-sidebar-foreground/70">Ver todos los módulos</span>
-               <Switch 
-                 checked={showAllModules} 
-                 onCheckedChange={setShowAllModules}
-                 className="scale-75"
-               />
-             </div>
+         {/* Role badge + show-all toggle (owners only see toggle) */}
+         {userType === 'restaurant_owner' && !isCollapsed && !teamPermissions.isLoading && (
+           <div className="px-3 pt-2 space-y-2">
+             {(teamPermissions.customRoleLabel || teamPermissions.role) && (
+               <div className="flex items-center gap-2">
+                 <Shield className="h-3 w-3 text-sidebar-foreground/60" />
+                 <Badge variant="secondary" className="text-[10px] font-medium">
+                   {teamPermissions.customRoleLabel || teamPermissions.role}
+                 </Badge>
+               </div>
+             )}
+             {(teamPermissions.isOwner || teamPermissions.role === 'admin') && (
+               <div className="flex items-center justify-between text-xs">
+                 <span className="text-sidebar-foreground/70">Ver todos los módulos</span>
+                 <Switch 
+                   checked={showAllModules} 
+                   onCheckedChange={setShowAllModules}
+                   className="scale-75"
+                 />
+               </div>
+             )}
            </div>
          )}
+ 
  
         {/* ====== RESTAURANT OWNER NAVIGATION ====== */}
         {userType === 'restaurant_owner' && (
@@ -712,29 +746,31 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
           </>
         )}
 
-        {/* Settings - Always visible */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
-            Configuración
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(settingsPath)}
-                  tooltip="Configuración"
-                  className="text-sidebar-foreground hover:bg-sidebar-accent"
-                >
-                  <Link to={settingsPath}>
-                    <SettingsIcon className="h-5 w-5" />
-                    <span className="font-lato-medium">Configuración</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Settings - gated by settings permission for restaurant owners */}
+        {(userType === 'consultant' || teamPermissions.isOwner || teamPermissions.isLoading || teamPermissions.canAccess('settings', 'read')) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/70 font-lato-medium">
+              Configuración
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(settingsPath)}
+                    tooltip="Configuración"
+                    className="text-sidebar-foreground hover:bg-sidebar-accent"
+                  >
+                    <Link to={settingsPath}>
+                      <SettingsIcon className="h-5 w-5" />
+                      <span className="font-lato-medium">Configuración</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">

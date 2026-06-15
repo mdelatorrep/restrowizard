@@ -20,6 +20,8 @@ import AppLayout from "./layouts/AppLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
 import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
+import GuardedRoute from "./components/guards/GuardedRoute";
+import RoleLanding from "./components/guards/RoleLanding";
 
 import { RouteErrorBoundary } from "./components/errors/RouteErrorBoundary";
 import { PageSkeleton } from "./components/ui/skeletons";
@@ -228,44 +230,44 @@ const App = () => (
                     <AppLayout requiredUserType="restaurant_owner" />
                   </OnboardingGuard>
                 }>
-                  <Route index element={<RestaurantDashboard />} />
-                  <Route path="dashboard" element={<RestaurantDashboard />} />
-                  <Route path="finances" element={<RestaurantFinances />} />
+                  <Route index element={<RoleLanding />} />
+                  <Route path="dashboard" element={<GuardedRoute pathKey="dashboard"><RestaurantDashboard /></GuardedRoute>} />
+                  <Route path="finances" element={<GuardedRoute pathKey="finances"><RestaurantFinances /></GuardedRoute>} />
                   <Route path="operations" element={<Navigate to="/r/finances" replace />} />
-                  <Route path="talent" element={<RestaurantTalent />} />
+                  <Route path="talent" element={<GuardedRoute pathKey="talent"><RestaurantTalent /></GuardedRoute>} />
                   <Route path="menu-engineering" element={<Navigate to="/r/menus" replace />} />
-                  <Route path="sustainability" element={<RestaurantSustainability />} />
-                  <Route path="ghost-kitchen" element={<RestaurantGhostKitchen />} />
-                  <Route path="chain-management" element={<RestaurantChainManagement />} />
-                  <Route path="brand" element={<RestaurantBrand />} />
-                  <Route path="feedback" element={<RestaurantFeedback />} />
-                  <Route path="recipes" element={<RestaurantRecipes />} />
-                  <Route path="orders" element={<RestaurantOrders />} />
+                  <Route path="sustainability" element={<GuardedRoute pathKey="sustainability"><RestaurantSustainability /></GuardedRoute>} />
+                  <Route path="ghost-kitchen" element={<GuardedRoute pathKey="ghost-kitchen"><RestaurantGhostKitchen /></GuardedRoute>} />
+                  <Route path="chain-management" element={<GuardedRoute pathKey="chain-management"><RestaurantChainManagement /></GuardedRoute>} />
+                  <Route path="brand" element={<GuardedRoute pathKey="brand"><RestaurantBrand /></GuardedRoute>} />
+                  <Route path="feedback" element={<GuardedRoute pathKey="feedback"><RestaurantFeedback /></GuardedRoute>} />
+                  <Route path="recipes" element={<GuardedRoute pathKey="recipes"><RestaurantRecipes /></GuardedRoute>} />
+                  <Route path="orders" element={<GuardedRoute pathKey="orders"><RestaurantOrders /></GuardedRoute>} />
                   <Route path="sales-goals" element={<Navigate to="/r/pos-reports?tab=goals" replace />} />
-                  <Route path="support" element={<RestaurantSupport />} />
+                  <Route path="support" element={<GuardedRoute pathKey="support"><RestaurantSupport /></GuardedRoute>} />
                   <Route path="social-listening" element={<Navigate to="/r/feedback?mainTab=reputation" replace />} />
-                  <Route path="new-business" element={<RestaurantNewBusiness />} />
-                  <Route path="menus" element={<RestaurantMenus />} />
-                  <Route path="loyalty" element={<RestaurantLoyalty />} />
-                  <Route path="first-90-days" element={<RestaurantFirst90Days />} />
-                  <Route path="pre-opening" element={<RestaurantPreOpening />} />
-                  <Route path="pos" element={<RestaurantPOS />} />
-                  <Route path="pos-reports" element={<RestaurantPOSReports />} />
-                  <Route path="pos-audit" element={<RestaurantPOSAudit />} />
-                  <Route path="kitchen" element={<RestaurantKitchen />} />
-                  <Route path="website" element={<RestaurantWebsite />} />
-                  <Route path="reservations" element={<RestaurantReservations />} />
+                  <Route path="new-business" element={<GuardedRoute pathKey="new-business"><RestaurantNewBusiness /></GuardedRoute>} />
+                  <Route path="menus" element={<GuardedRoute pathKey="menus"><RestaurantMenus /></GuardedRoute>} />
+                  <Route path="loyalty" element={<GuardedRoute pathKey="loyalty"><RestaurantLoyalty /></GuardedRoute>} />
+                  <Route path="first-90-days" element={<GuardedRoute pathKey="first-90-days"><RestaurantFirst90Days /></GuardedRoute>} />
+                  <Route path="pre-opening" element={<GuardedRoute pathKey="pre-opening"><RestaurantPreOpening /></GuardedRoute>} />
+                  <Route path="pos" element={<GuardedRoute pathKey="pos"><RestaurantPOS /></GuardedRoute>} />
+                  <Route path="pos-reports" element={<GuardedRoute pathKey="pos-reports"><RestaurantPOSReports /></GuardedRoute>} />
+                  <Route path="pos-audit" element={<GuardedRoute pathKey="pos-audit"><RestaurantPOSAudit /></GuardedRoute>} />
+                  <Route path="kitchen" element={<GuardedRoute pathKey="kitchen"><RestaurantKitchen /></GuardedRoute>} />
+                  <Route path="website" element={<GuardedRoute pathKey="website"><RestaurantWebsite /></GuardedRoute>} />
+                  <Route path="reservations" element={<GuardedRoute pathKey="reservations"><RestaurantReservations /></GuardedRoute>} />
                   <Route path="staff-schedule" element={<Navigate to="/r/talent?tab=schedule" replace />} />
-                  <Route path="inventory" element={<RestaurantInventory />} />
-                  <Route path="delivery" element={<RestaurantDelivery />} />
-                  <Route path="integrations/rappi" element={<RestaurantRappiIntegration />} />
+                  <Route path="inventory" element={<GuardedRoute pathKey="inventory"><RestaurantInventory /></GuardedRoute>} />
+                  <Route path="delivery" element={<GuardedRoute pathKey="delivery"><RestaurantDelivery /></GuardedRoute>} />
+                  <Route path="integrations/rappi" element={<GuardedRoute pathKey="integrations/rappi"><RestaurantRappiIntegration /></GuardedRoute>} />
                   <Route path="suppliers" element={<Navigate to="/r/inventory?tab=suppliers" replace />} />
-                  <Route path="settings" element={<RestaurantSettings />} />
-                  <Route path="ecosystem-admin" element={<RestaurantEcosystemAdmin />} />
-                  <Route path="my-development" element={<RestaurantMyDevelopment />} />
-                  <Route path="knowledge" element={<RestaurantKnowledge />} />
-                  <Route path="invoices" element={<RestaurantInvoices />} />
-                  <Route path="electronic-invoicing" element={<RestaurantElectronicInvoicing />} />
+                  <Route path="settings" element={<GuardedRoute pathKey="settings"><RestaurantSettings /></GuardedRoute>} />
+                  <Route path="ecosystem-admin" element={<GuardedRoute pathKey="ecosystem-admin"><RestaurantEcosystemAdmin /></GuardedRoute>} />
+                  <Route path="my-development" element={<GuardedRoute pathKey="my-development"><RestaurantMyDevelopment /></GuardedRoute>} />
+                  <Route path="knowledge" element={<GuardedRoute pathKey="knowledge"><RestaurantKnowledge /></GuardedRoute>} />
+                  <Route path="invoices" element={<GuardedRoute pathKey="invoices"><RestaurantInvoices /></GuardedRoute>} />
+                  <Route path="electronic-invoicing" element={<GuardedRoute pathKey="electronic-invoicing"><RestaurantElectronicInvoicing /></GuardedRoute>} />
                 </Route>
 
                 {/* Consultant onboarding */}
