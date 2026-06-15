@@ -20,7 +20,8 @@ import {
   Download,
   RefreshCw
 } from 'lucide-react';
-import { useSalesReports, ReportPeriod } from '@/hooks/useSalesReports';
+import { useSalesReports, ReportPeriod, SalesChannel, CHANNEL_LABELS } from '@/hooks/useSalesReports';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -70,7 +71,8 @@ const chartConfig: ChartConfig = {
 
 export const SalesReports = () => {
   const [period, setPeriod] = useState<ReportPeriod>('daily');
-  const { chartData, kpis, topProducts, hourlyData, loading, hasData } = useSalesReports(period);
+  const [channel, setChannel] = useState<SalesChannel>('all');
+  const { chartData, kpis, topProducts, hourlyData, paymentMethodBreakdown, channelBreakdown, loading, hasData } = useSalesReports(period, channel);
 
   const periodLabels: Record<ReportPeriod, string> = {
     daily: 'Últimos 7 días',
@@ -94,7 +96,19 @@ export const SalesReports = () => {
           <h2 className="text-2xl font-bold">Reportes de Ventas</h2>
           <p className="text-muted-foreground">{periodLabels[period]}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* TK-1: filtro por canal de venta */}
+          <Select value={channel} onValueChange={(v) => setChannel(v as SalesChannel)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Canal" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los canales</SelectItem>
+              {Object.entries(CHANNEL_LABELS).map(([k, label]) => (
+                <SelectItem key={k} value={k}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Tabs value={period} onValueChange={(v) => setPeriod(v as ReportPeriod)}>
             <TabsList>
               <TabsTrigger value="daily" className="gap-2">
@@ -113,6 +127,57 @@ export const SalesReports = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* TK-9: Ingreso neto vs impuesto recaudado */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Ventas netas (sin impuesto)</p>
+            <p className="text-2xl font-bold">{formatCurrency(kpis.netRevenue)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Base imponible del período</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Impuestos recaudados</p>
+            <p className="text-2xl font-bold">{formatCurrency(kpis.taxCollected)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por declarar</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Total cobrado</p>
+            <p className="text-2xl font-bold">{formatCurrency(kpis.totalRevenue)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Neto + impuestos</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* TK-1: Desglose por canal */}
+      {channelBreakdown.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Ventas por Canal
+            </CardTitle>
+            <CardDescription>Distribución entre salón, POS, domicilio propio y agregadores</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {channelBreakdown.map((c) => (
+                <div key={c.channel} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="font-medium">{c.label}</p>
+                    <p className="text-xs text-muted-foreground">{c.orders} pedidos · {c.percent.toFixed(1)}%</p>
+                  </div>
+                  <p className="font-semibold">{formatCurrency(c.amount)}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -298,27 +363,26 @@ export const SalesReports = () => {
               </ResponsiveContainer>
             </div>
             <div className="flex flex-col gap-2 mt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Banknote className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Efectivo</span>
-                </div>
-                <Badge variant="secondary">{kpis.cashPercent.toFixed(1)}%</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm">Tarjeta</span>
-                </div>
-                <Badge variant="secondary">{kpis.cardPercent.toFixed(1)}%</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm">Otros</span>
-                </div>
-                <Badge variant="secondary">{(100 - kpis.cashPercent - kpis.cardPercent).toFixed(1)}%</Badge>
-              </div>
+              {/* TK-10: desglose granular real (Nequi/Daviplata/Transferencia/etc.) */}
+              {paymentMethodBreakdown.length > 0 ? (
+                paymentMethodBreakdown.map((m) => (
+                  <div key={m.method} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {m.method === 'Efectivo' ? (
+                        <Banknote className="h-4 w-4 text-green-600" />
+                      ) : m.method === 'Tarjeta' ? (
+                        <CreditCard className="h-4 w-4 text-blue-600" />
+                      ) : (
+                        <DollarSign className="h-4 w-4 text-purple-600" />
+                      )}
+                      <span className="text-sm">{m.method}</span>
+                    </div>
+                    <Badge variant="secondary">{m.percent.toFixed(1)}%</Badge>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">Sin datos de métodos de pago</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -340,8 +404,8 @@ export const SalesReports = () => {
               {topProducts.length > 0 ? (
                 <div className="space-y-3">
                   {topProducts.map((product, index) => (
-                    <div 
-                      key={product.name} 
+                    <div
+                      key={product.name}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                     >
                       <div className="flex items-center gap-3">
