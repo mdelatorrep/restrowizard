@@ -193,9 +193,14 @@ export const PurchaseOrdersManager = ({ orders, suppliers, inventory, onCreate, 
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label>Ítems de la Orden</Label>
-                    <Button variant="outline" size="sm" onClick={addOrderItem}>
-                      <Plus className="h-4 w-4 mr-1" /> Agregar Ítem
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={suggestItemsForSupplier} disabled={!formData.supplier_id}>
+                        <Wand2 className="h-4 w-4 mr-1" /> Sugerir desde proveedor
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={addOrderItem}>
+                        <Plus className="h-4 w-4 mr-1" /> Agregar Ítem
+                      </Button>
+                    </div>
                   </div>
                   
                   {orderItems.length === 0 ? (
