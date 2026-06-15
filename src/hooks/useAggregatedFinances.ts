@@ -177,7 +177,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
 
       const salesData: AggregatedDailySales[] = [];
       allDates.forEach(dateStr => {
-        const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0 };
+        const orderData = ordersByDate[dateStr] || { revenue: 0, count: 0, covers: 0, taxes: 0 };
         const foodCost = (foodCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.food || 0);
         const laborCost = (laborCostByDate[dateStr] || 0) + (manualByDate[dateStr]?.labor || 0);
         const revenue = orderData.revenue;
@@ -190,12 +190,14 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
             covers_count: orderData.covers,
             food_cost: foodCost,
             labor_cost: laborCost,
+            taxes: orderData.taxes,
             avg_ticket: orderData.count > 0 ? revenue / orderData.count : 0,
             gross_margin: revenue > 0 ? ((revenue - foodCost) / revenue) * 100 : 0,
             food_cost_percentage: revenue > 0 ? (foodCost / revenue) * 100 : 0,
             labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0,
           });
         }
+
       });
 
       // Sort by date
