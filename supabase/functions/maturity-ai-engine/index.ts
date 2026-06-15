@@ -128,32 +128,46 @@ Responde en JSON con: overview, estimated_roi, quick_wins (array), priority_acti
         break;
 
       case 'benchmark_comparison':
-        systemPrompt = `Eres un analista de datos especializado en benchmarking de la industria restaurantera con acceso a búsqueda web para obtener datos actualizados de la industria.
-Tienes acceso a datos agregados de miles de restaurantes en Latinoamérica.
+        systemPrompt = `Eres un analista de datos especializado en benchmarking de la industria restaurantera.
 Proporcionas comparativas honestas y contextualizadas.
-Identificas gaps y oportunidades basadas en datos reales de la industria.
 Respondes en español con precisión y claridad.
 
-Responde SIEMPRE en formato JSON válido con la estructura especificada.`;
+Responde SIEMPRE en formato JSON válido con la estructura especificada y con TIPOS correctos (números donde se piden números).`;
 
-        userPrompt = `Compara el siguiente diagnóstico con benchmarks actuales de la industria:
+        userPrompt = `Compara el siguiente diagnóstico con benchmarks de la industria restaurantera en Latinoamérica.
 
-SCORES DEL RESTAURANTE:
-${Object.entries(diagnosisData.pillarScores).map(([pillarId, score]) => 
-  `- ${PILLAR_NAMES[pillarId]}: ${(score as number).toFixed(2)}/5`
+SCORES DEL RESTAURANTE (escala 0-5):
+${Object.entries(diagnosisData.pillarScores).map(([pillarId, score]) =>
+  `- ${pillarId}|${PILLAR_NAMES[pillarId]}: ${(score as number).toFixed(2)}/5`
 ).join('\n')}
 Score General: ${diagnosisData.overallScore.toFixed(2)}/5
 
 ${restaurantContext?.businessType ? `Tipo de negocio: ${restaurantContext.businessType}` : ''}
 ${restaurantContext?.location ? `Ubicación: ${restaurantContext.location}` : ''}
 
-Busca benchmarks actuales de la industria restaurantera en Latinoamérica y proporciona:
-1. Comparación con el promedio de la industria por pilar
-2. Posición percentil estimada
-3. Áreas donde está por encima/debajo del promedio
-4. Oportunidades basadas en tendencias de la industria
+Devuelve JSON EXACTAMENTE con esta forma (todos los campos numéricos son NÚMEROS, no strings):
+{
+  "overall_percentile": <number 0-100>,
+  "industry_average": <number 0-5>,
+  "pillar_comparisons": [
+    {
+      "pillar_id": "p1",
+      "pillar_name": "Rentabilidad y Finanzas",
+      "user_score": <number>,
+      "industry_average": <number 0-5>,
+      "percentile": <number 0-100>,
+      "status": "above" | "at" | "below",
+      "gap": <number, user_score - industry_average>
+    }
+    // ... una entrada por cada pilar enviado
+  ],
+  "top_opportunities": [
+    { "title": "<string>", "description": "<string>", "industry_trend": "<string>" }
+  ],
+  "competitive_insight": "<string, marca estimaciones con 'Estimación:' si no hay fuente web>"
+}
 
-Responde en JSON con: overall_percentile, industry_average, pillar_comparisons (array), top_opportunities (array), competitive_insight`;
+Si no tienes fuentes externas verificadas, usa estimaciones razonables basadas en rangos típicos del sector restaurantero LATAM. NO devuelvas strings en los campos numéricos.`;
         break;
 
       case 'progress_insights':
