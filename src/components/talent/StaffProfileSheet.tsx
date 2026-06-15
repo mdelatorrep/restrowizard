@@ -18,6 +18,8 @@
  import { format, differenceInDays, differenceInYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { StaffPINManager } from './StaffPINManager';
+
  
  interface Props {
    staff: StaffMemberExtended | null;
@@ -281,9 +283,20 @@ import { formatCurrency } from '@/lib/formatCurrency';
                          </div>
                        </div>
                      )}
-                   </div>
-                 )}
-               </TabsContent>
+                    </div>
+                  )}
+
+                  {/* POS access — PIN + role for the standalone POS portal */}
+                  <div className="mt-4">
+                    <StaffPINManager
+                      staffId={staff.id}
+                      staffName={staff.name}
+                      hasPin={Boolean((staff as any).pin_hash)}
+                      posRole={(staff as any).pos_role}
+                    />
+                  </div>
+                </TabsContent>
+
  
                <TabsContent value="availability">
                  {!staff.availability || staff.availability.length === 0 ? (

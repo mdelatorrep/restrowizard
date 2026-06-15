@@ -100,6 +100,11 @@ const RestaurantKnowledge = lazy(() => import("./pages/restaurant/Knowledge"));
 const RestaurantInvoices = lazy(() => import("./pages/restaurant/Invoices"));
 const RestaurantElectronicInvoicing = lazy(() => import("./pages/restaurant/ElectronicInvoicing"));
 
+// Lazy: standalone POS portal
+const POSLogin = lazy(() => import("./pages/pos/POSLogin"));
+const POSMain = lazy(() => import("./pages/pos/POSMain"));
+
+
 // Lazy: consultant area
 const ConsultantOnboarding = lazy(() => import("./pages/consultant/Onboarding"));
 const ConsultantDashboard = lazy(() => import("./pages/consultant/Dashboard"));
@@ -197,6 +202,12 @@ const App = () => (
                 {/* Legacy alias → canonical public hub */}
                 <Route path="/restaurante/:slug" element={<LegacyRestauranteRedirect />} />
                 <Route path="/restaurante/:slug/*" element={<LegacyRestauranteRedirect />} />
+
+                {/* Standalone POS portal — public URL, dual auth (PIN or email) */}
+                <Route path="/:slug/pos/login" element={<POSLogin />} />
+                <Route path="/:slug/pos" element={<POSMain />} />
+
+
 
                 <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
                 <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
