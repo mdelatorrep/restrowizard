@@ -16,14 +16,17 @@ import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { useBrandData } from '@/hooks/useBrandData';
 import { cn } from '@/lib/utils';
 
 export const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { userType } = useUserType();
+  const { brand } = useBrandData();
   const [businessName, setBusinessName] = useState<string>('');
   const { alerts, unreadAlerts, markAsRead } = useCopilotAlerts();
+  const brandLogo = userType === 'restaurant_owner' ? (brand?.logo_url || brand?.logo_square_url) : null;
 
   useEffect(() => {
     const fetchBusinessInfo = async () => {
