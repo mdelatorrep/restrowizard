@@ -91,6 +91,7 @@ const RestaurantPreOpening = lazy(() => import("./pages/restaurant/PreOpening"))
 const RestaurantPOS = lazy(() => import("./pages/restaurant/POS"));
 const RestaurantKitchen = lazy(() => import("./pages/restaurant/KitchenDisplay"));
 const RestaurantPOSReports = lazy(() => import("./pages/restaurant/POSReports"));
+const RestaurantPOSAudit = lazy(() => import("./pages/restaurant/POSAudit"));
 const RestaurantWebsite = lazy(() => import("./pages/restaurant/Website"));
 const RestaurantReservations = lazy(() => import("./pages/restaurant/Reservations"));
 const RestaurantInventory = lazy(() => import("./pages/restaurant/Inventory"));
