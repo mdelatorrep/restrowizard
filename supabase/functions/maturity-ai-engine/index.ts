@@ -181,14 +181,32 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
         throw new Error(`Unknown action: ${action}`);
     }
 
+    // Web research pluggable: benchmarks/best-practices según la acción
+    const webQuery = (() => {
+      const ctx = `${restaurantContext?.businessType || 'restaurante'} ${restaurantContext?.location || 'Latinoamérica'}`;
+      if (action === 'analyze_diagnosis') return `benchmark madurez operativa restaurantes ${ctx}`;
+      if (action === 'generate_action_plan') return `mejores prácticas plan de acción restaurantes ${ctx} ROI`;
+      if (action === 'benchmark_comparison') return `benchmark industria restaurantera Latinoamérica KPIs 2026`;
+      if (action === 'progress_insights') return `historias éxito restaurantes ${ctx}`;
+      return '';
+    })();
+    const research = await webResearch(webQuery, { limit: 4, scrape: false, logPrefix: `[maturity:${action}]` });
+
+    const wrappedSystem = composeSystemPrompt({
+      guardrails: { jsonOutput: true, requireConfidence: true, domain: "diagnóstico de madurez de restaurantes" },
+      rolePrompt: systemPrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
+
     const aiResult = await callAIGateway({
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: wrappedSystem },
         { role: "user", content: userPrompt },
       ],
       tier: "reasoning",
       maxTokens: 4000,
       temperature: 0.7,
+      jsonMode: true,
       logPrefix: "[maturity-ai-engine]",
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
@@ -201,8 +219,17 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
       );
     }
 
+    const integrity = checkIntegrity(aiResult.content, research.enabled);
+
     return new Response(
-      JSON.stringify({ success: true, data: result }),
+      JSON.stringify({
+        success: true,
+        data: result,
+        meta: {
+          web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+          integrity,
+        },
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
