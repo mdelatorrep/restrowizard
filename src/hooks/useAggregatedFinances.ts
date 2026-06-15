@@ -79,11 +79,12 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // 1) Orders (revenue/covers/order_count)
       const ordersPromise = supabase
         .from('restaurant_orders')
-        .select('id, total, guests_count, status, created_at')
+        .select('id, total, tax_amount, guests_count, status, created_at')
         .eq('user_id', userId)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
         .not('status', 'in', '("cancelled","pending")');
+
 
       // 2) Inventory deductions joined with item unit_cost (food cost from sales)
       const deductionsPromise = supabase
