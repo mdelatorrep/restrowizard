@@ -20,8 +20,8 @@ export const RecipeMenuItemsManager = ({ recipeId }: Props) => {
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('menu_items').select('id, name, category').eq('user_id', userId).order('name')
-      .then(({ data }) => setMenuItems((data as any) || []));
+    (supabase.from('menu_items') as any).select('id, name, category').eq('user_id', userId).order('name')
+      .then(({ data }: any) => setMenuItems((data as any) || []));
   }, [userId]);
 
   const handleAdd = async () => {
