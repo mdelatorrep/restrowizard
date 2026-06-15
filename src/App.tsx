@@ -203,6 +203,12 @@ const App = () => (
                 <Route path="/restaurante/:slug" element={<LegacyRestauranteRedirect />} />
                 <Route path="/restaurante/:slug/*" element={<LegacyRestauranteRedirect />} />
 
+                {/* Standalone POS portal — public URL, dual auth (PIN or email) */}
+                <Route path="/:slug/pos/login" element={<POSLogin />} />
+                <Route path="/:slug/pos" element={<POSMain />} />
+
+
+
                 <Route path="/feedback/:campaignId" element={<PublicFeedback />} />
                 <Route path="/mi-fidelidad" element={<LoyaltyPortal />} />
                 <Route path="/mi-fidelidad/:codigo" element={<PublicLoyalty />} />
