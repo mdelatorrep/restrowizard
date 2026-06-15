@@ -151,6 +151,17 @@ export default function POSMain() {
           {online ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
           {online ? "En línea" : "Sin conexión"}
         </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="sm" variant="ghost" className="text-zinc-300 hover:text-zinc-100" title="Canales (delivery + reservas)">
+              <Layers className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Canales</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[360px] p-0 bg-zinc-950 border-l border-zinc-800 text-zinc-100">
+            <ChannelsPanel userId={context.restaurantUserId} />
+          </SheetContent>
+        </Sheet>
         {hasOpenSession ? (
           <Button
             size="sm"
