@@ -86,6 +86,14 @@ export default function POSMain() {
     };
   }, []);
 
+  // Cashier activity heartbeat
+  usePOSActivityTracker({
+    enabled: !!context && !!currentSession,
+    userId: context?.restaurantUserId ?? null,
+    sessionId: currentSession?.id ?? null,
+    staffName: currentSession?.cashier_name ?? null,
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate(`/${slug}/pos/login`, { replace: true });
