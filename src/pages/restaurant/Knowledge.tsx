@@ -196,8 +196,8 @@ const Knowledge = () => {
                   <Button variant="outline" size="sm" onClick={() => startEdit(s)}>
                     Editar
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} disabled={deletingId === s.id}>
+                    {deletingId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                   </Button>
                 </div>
               </CardContent>
