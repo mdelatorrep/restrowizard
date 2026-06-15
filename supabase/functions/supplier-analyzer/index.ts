@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,7 +23,6 @@ serve(async (req) => {
   }
 
   try {
-    // LOVABLE_API_KEY validated centrally by callAIGateway
     const { itemName, currentCost, currentSupplier, unit, city, country = 'México' }: SupplierRequest = await req.json();
 
     if (!itemName || !city) {
@@ -33,58 +34,55 @@ serve(async (req) => {
 
     console.log(`Analyzing suppliers for: ${itemName} in ${city}, ${country}`);
 
-    // Build the search prompt for OpenAI Responses API with web search
-    const systemPrompt = `Eres un experto en la industria de restaurantes y cadena de suministro de alimentos en ${country}. 
-Tu objetivo es encontrar proveedores alternativos reales para ingredientes de restaurantes.
+    // Pluggable web research (Firecrawl / Gemini grounding cuando esté activo).
+    const research = await webResearch(
+      `proveedores mayoristas "${itemName}" central de abastos ${city} ${country} precios`,
+      { limit: 5, scrape: true, country: country?.slice(0, 2).toLowerCase(), logPrefix: "[supplier-analyzer]" },
+    );
 
-IMPORTANTE:
-- Busca proveedores REALES con información de contacto verificable
-- Enfócate en: centrales de abastos, mercados mayoristas, distribuidores locales, productores directos
-- Incluye precios estimados cuando sea posible
-- Proporciona información de contacto real (teléfono, dirección, horarios)
-- Si no encuentras información específica, indica claramente que es estimado
+    const rolePrompt = `Eres un experto en cadena de suministro de alimentos para restaurantes en ${country}.
+Tu trabajo es identificar proveedores alternativos REALES y verificables para "${itemName}" en ${city}.
 
-Responde SIEMPRE en formato JSON válido.`;
+Si el CONTEXTO WEB tiene fuentes: extrae proveedores reales con sus datos de contacto y precios.
+Si NO hay fuentes: NO inventes proveedores. Devuelve la lista vacía y explica en market_insights qué tipo de búsqueda local hacer.
 
-    const userPrompt = `Busca proveedores alternativos para "${itemName}" en ${city}, ${country}.
-
-Información actual:
-- Costo actual: $${currentCost} por ${unit}
-${currentSupplier ? `- Proveedor actual: ${currentSupplier}` : ''}
-
-Busca en:
-1. Central de Abastos de ${city} o cercana
-2. Mercados mayoristas locales
-3. Distribuidores de alimentos para restaurantes
-4. Productores o agricultores locales (si aplica)
-
-Responde con este formato JSON exacto:
+Responde SIEMPRE en JSON válido con este esquema exacto:
 {
   "suppliers": [
     {
-      "name": "Nombre del proveedor o puesto",
+      "name": "string",
       "type": "central_abastos|mayorista|distribuidor|productor",
-      "estimated_price": 0.00,
+      "estimated_price": number|null,
       "unit": "${unit}",
-      "savings_percent": 0,
-      "contact": {
-        "phone": "número si está disponible",
-        "address": "dirección completa",
-        "hours": "horario de atención",
-        "email": "email si está disponible"
-      },
-      "source": "fuente de la información",
+      "savings_percent": number,
+      "contact": { "phone": "string|null", "address": "string|null", "hours": "string|null", "email": "string|null" },
+      "source_url": "URL del CONTEXTO WEB que respalda este proveedor",
       "confidence": "high|medium|low",
-      "notes": "notas adicionales"
+      "notes": "string"
     }
   ],
-  "market_insights": "Análisis del mercado local para este producto",
-  "recommendations": ["recomendación 1", "recomendación 2"],
-  "average_market_price": 0.00,
-  "best_season": "mejor temporada para comprar si aplica"
+  "market_insights": "string (cita [Fuente N])",
+  "recommendations": ["string"],
+  "average_market_price": number|null,
+  "best_season": "string|null",
+  "confidence": 0-100,
+  "sources_used": ["urls"]
 }`;
 
-    // Migrado a Lovable AI Gateway (Fase 1.1). Búsqueda web nativa deshabilitada.
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { jsonOutput: true, requireConfidence: true, domain: "proveedores B2B de alimentos" },
+      rolePrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
+
+    const userPrompt = `Necesito proveedores alternativos para:
+- Producto: ${itemName}
+- Costo actual: $${currentCost} por ${unit}
+${currentSupplier ? `- Proveedor actual: ${currentSupplier}` : ''}
+- Ciudad: ${city}, ${country}
+
+Cada proveedor que listes DEBE tener un source_url del CONTEXTO WEB. Si no hay fuentes verificables, devuelve suppliers: [] y explícalo.`;
+
     const aiResult = await callAIGateway({
       messages: [
         { role: "system", content: systemPrompt },
@@ -105,20 +103,19 @@ Responde con este formato JSON exacto:
 
     const analysisResult = safeParseJson<any>(aiResult.content) ?? {
       suppliers: [],
-      market_insights: aiResult.content || "No se encontró información específica para este producto en esta ubicación.",
-      recommendations: [
-        "Consultar directamente en la central de abastos local",
-        "Contactar a distribuidores de alimentos de la zona",
-      ],
+      market_insights: "Información no disponible — requiere verificación. Consulta directamente la central de abastos local.",
+      recommendations: ["Visitar la central de abastos local", "Contactar distribuidores de la zona"],
       average_market_price: null,
       best_season: null,
+      confidence: 0,
+      sources_used: [],
     };
 
-    // Calculate potential savings
-    const potentialSavings = analysisResult.suppliers?.reduce((maxSaving: number, supplier: any) => {
-      const saving = supplier.savings_percent || 0;
-      return Math.max(maxSaving, saving);
-    }, 0) || 0;
+    const integrity = checkIntegrity(aiResult.content, research.enabled);
+    const potentialSavings = analysisResult.suppliers?.reduce(
+      (m: number, s: any) => Math.max(m, s.savings_percent || 0),
+      0,
+    ) || 0;
 
     return new Response(
       JSON.stringify({
@@ -126,8 +123,12 @@ Responde con este formato JSON exacto:
         analysis: {
           ...analysisResult,
           potential_savings: potentialSavings,
-          analyzed_at: new Date().toISOString()
-        }
+          analyzed_at: new Date().toISOString(),
+        },
+        meta: {
+          web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+          integrity,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -135,10 +136,7 @@ Responde con este formato JSON exacto:
   } catch (error) {
     console.error('Supplier analyzer error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
-      }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

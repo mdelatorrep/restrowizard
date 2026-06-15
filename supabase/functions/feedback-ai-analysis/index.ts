@@ -4,6 +4,7 @@ import {
   gatewayErrorResponse,
   safeParseJson,
 } from "../_shared/ai-gateway.ts";
+import { composeSystemPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,42 +20,41 @@ serve(async (req) => {
   try {
     const { feedback, action } = await req.json();
 
-    let systemPrompt = "";
+    let rolePrompt = "";
     let userPrompt = "";
     let jsonMode = false;
 
     if (action === "analyze_sentiment") {
       jsonMode = true;
-      systemPrompt =
-        `Eres un experto en análisis de sentimiento para restaurantes. Analiza el feedback del cliente y devuelve un JSON con:
-- sentiment_score: número entre -1 (muy negativo) y 1 (muy positivo)
-- sentiment_label: "positive", "neutral", o "negative"
-- key_topics: array de temas principales mencionados (máximo 5)
-- ai_response_suggestion: una respuesta profesional sugerida para el cliente
+      rolePrompt =
+        `Analiza el feedback del cliente y devuelve JSON con:
+- sentiment_score: número entre -1 y 1
+- sentiment_label: "positive" | "neutral" | "negative"
+- key_topics: array (máx 5) extraídos LITERALMENTE del comentario
+- ai_response_suggestion: respuesta profesional basada solo en lo dicho por el cliente
 
-Responde SOLO con el JSON, sin texto adicional.`;
-      userPrompt = `Analiza este feedback de cliente:
-Rating: ${feedback.rating || "No especificado"}
+No inventes detalles que el cliente no mencionó (platos, nombres, fechas).`;
+      userPrompt = `Rating: ${feedback.rating || "No especificado"}
 Comentario: ${feedback.comment || "Sin comentario"}
-Calificación comida: ${feedback.food_rating || "N/A"}
-Calificación servicio: ${feedback.service_rating || "N/A"}
-Calificación ambiente: ${feedback.ambiance_rating || "N/A"}`;
+Comida: ${feedback.food_rating || "N/A"} | Servicio: ${feedback.service_rating || "N/A"} | Ambiente: ${feedback.ambiance_rating || "N/A"}`;
     } else if (action === "generate_response") {
-      systemPrompt =
-        `Eres un gerente de restaurante profesional y empático. Genera una respuesta personalizada para el feedback del cliente.
-La respuesta debe ser:
-- Profesional y cálida
-- Agradecer el feedback
-- Abordar puntos específicos mencionados
-- Si es negativo, ofrecer disculpas y solución
-- Máximo 150 palabras`;
-      userPrompt = `Genera una respuesta para este feedback:
-Nombre del cliente: ${feedback.customer_name || "Cliente"}
+      rolePrompt =
+        `Gerente de restaurante profesional y empático. Responde al feedback en máx 150 palabras:
+- Agradece y aborda SOLO los puntos que el cliente mencionó
+- Si es negativo: disculpa sincera + solución concreta
+- No prometas compensaciones específicas ni inventes nombres/cargos
+- Tono cálido pero profesional`;
+      userPrompt = `Cliente: ${feedback.customer_name || "Cliente"}
 Rating: ${feedback.rating}/5
 Comentario: ${feedback.comment}`;
     } else {
       throw new Error("Acción no válida");
     }
+
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { jsonOutput: jsonMode, domain: "análisis de feedback de restaurantes" },
+      rolePrompt,
+    });
 
     const result = await callAIGateway({
       messages: [

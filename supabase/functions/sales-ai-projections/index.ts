@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse, safeParseJson } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,75 +16,51 @@ serve(async (req) => {
   try {
     const { action, data } = await req.json();
 
-    let systemPrompt = "";
+    let rolePrompt = "";
     let userPrompt = "";
+    let webQuery = "";
 
     switch (action) {
       case "generate_projection":
-        systemPrompt = `Eres un analista financiero experto en restaurantes con acceso a búsqueda web para obtener información sobre eventos locales, clima, tendencias económicas y factores que afectan las ventas de restaurantes. Genera proyecciones de ventas basadas en datos históricos y factores externos actuales.
-Responde en JSON con:
-- projected_revenue: número estimado
-- confidence_level: porcentaje de confianza (0-100)
-- factors: objeto con factores considerados (incluye factores externos actuales)
-- ai_reasoning: explicación del análisis incluyendo datos de búsqueda web
-- recommendations: array de recomendaciones`;
-        
-        userPrompt = `Genera proyección de ventas para:
-Fecha objetivo: ${data.projection_date}
-Ventas históricas (últimos 30 días): $${data.historical_revenue || 0}
-Promedio diario: $${data.avg_daily_revenue || 0}
-Día de la semana: ${data.day_of_week || 'No especificado'}
-Eventos especiales: ${data.special_events || 'Ninguno'}
-Meta actual: $${data.current_goal || 0}
-Ubicación: ${data.location || 'No especificada'}
-
-Busca eventos locales, pronóstico del clima y otros factores que puedan afectar las ventas para esta fecha.`;
+        webQuery = `eventos clima ${data.location || ''} ${data.projection_date || ''} feriados`;
+        rolePrompt = `Analista financiero de restaurantes. Genera proyección de ventas usando los datos históricos provistos como base matemática.
+Factores externos (eventos, clima, feriados) SOLO si vienen del CONTEXTO WEB con [Fuente N]. Si web no aportó, basa la proyección únicamente en histórico y dilo.
+JSON: { projected_revenue, confidence_level, factors (objeto), ai_reasoning, recommendations, sources_used }`;
+        userPrompt = `Fecha objetivo: ${data.projection_date}
+Histórico 30d: $${data.historical_revenue || 0} | Promedio diario: $${data.avg_daily_revenue || 0}
+Día semana: ${data.day_of_week || 'N/E'} | Eventos especiales: ${data.special_events || 'Ninguno'}
+Meta actual: $${data.current_goal || 0} | Ubicación: ${data.location || 'N/E'}`;
         break;
 
       case "analyze_goal_progress":
-        systemPrompt = `Eres un coach de negocios para restaurantes con acceso a búsqueda web para mejores prácticas de la industria. Analiza el progreso hacia la meta y proporciona insights accionables.
-Responde en JSON con:
-- status: "on_track", "at_risk", "behind"
-- daily_target_needed: número
-- probability_of_success: porcentaje
-- action_items: array de acciones específicas basadas en mejores prácticas actuales
-- motivation_message: mensaje motivacional`;
-        
-        userPrompt = `Analiza el progreso de esta meta:
-Meta de ingresos: $${data.revenue_goal}
-Ingresos actuales: $${data.current_revenue}
-Días restantes: ${data.days_remaining}
-Periodo: ${data.period_start} a ${data.period_end}
-Progreso actual: ${data.progress_percent}%
-
-Busca estrategias probadas para restaurantes que necesitan acelerar ventas.`;
+        webQuery = `estrategias aumentar ventas restaurantes 2026 mejores prácticas`;
+        rolePrompt = `Coach de negocios para restaurantes. Calcula matemáticamente el progreso; recomendaciones genéricas valen, pero benchmarks o cifras de industria solo con [Fuente N].
+JSON: { status, daily_target_needed, probability_of_success, action_items, motivation_message, sources_used }`;
+        userPrompt = `Meta: $${data.revenue_goal} | Actual: $${data.current_revenue}
+Días restantes: ${data.days_remaining} | Periodo: ${data.period_start} a ${data.period_end}
+Progreso: ${data.progress_percent}%`;
         break;
 
       case "suggest_goals":
-        systemPrompt = `Eres un estratega de restaurantes con acceso a búsqueda web para benchmarks de la industria y tendencias de mercado. Sugiere metas realistas y alcanzables basadas en el historial y datos de mercado actuales.
-Responde en JSON con:
-- suggested_revenue_goal: número
-- suggested_covers_goal: número
-- suggested_avg_ticket: número
-- rationale: explicación con datos de mercado
-- stretch_goal: meta ambiciosa
-- conservative_goal: meta conservadora
-- industry_benchmark: benchmark de la industria para comparación`;
-        
-        userPrompt = `Sugiere metas para el próximo periodo:
-Periodo: ${data.period_type} (${data.period_start} a ${data.period_end})
-Ingresos del periodo anterior: $${data.previous_revenue || 0}
-Cubiertos del periodo anterior: ${data.previous_covers || 0}
-Ticket promedio anterior: $${data.previous_avg_ticket || 0}
-Tendencia: ${data.trend || 'estable'}
-Tipo de restaurante: ${data.restaurant_type || 'No especificado'}
-
-Busca benchmarks actuales de la industria para restaurantes similares.`;
+        webQuery = `benchmark ventas restaurantes ${data.restaurant_type || ''} ticket promedio 2026`;
+        rolePrompt = `Estratega de restaurantes. Calcula metas usando el histórico provisto. Benchmarks de industria SOLO del CONTEXTO WEB con cita.
+JSON: { suggested_revenue_goal, suggested_covers_goal, suggested_avg_ticket, rationale, stretch_goal, conservative_goal, industry_benchmark (con [Fuente N] o null), confidence, sources_used }`;
+        userPrompt = `Periodo: ${data.period_type} (${data.period_start} a ${data.period_end})
+Anterior — Ingresos: $${data.previous_revenue || 0} | Cubiertos: ${data.previous_covers || 0} | Ticket: $${data.previous_avg_ticket || 0}
+Tendencia: ${data.trend || 'estable'} | Tipo: ${data.restaurant_type || 'N/E'}`;
         break;
 
       default:
         throw new Error("Acción no válida");
     }
+
+    const research = await webResearch(webQuery, { limit: 4, scrape: false, logPrefix: `[sales-ai:${action}]` });
+
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { jsonOutput: true, requireConfidence: true, domain: "proyecciones de venta para restaurantes" },
+      rolePrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
 
     const aiResult = await callAIGateway({
       messages: [
@@ -91,16 +69,20 @@ Busca benchmarks actuales de la industria para restaurantes similares.`;
       ],
       tier: "fast",
       maxTokens: 1500,
+      jsonMode: true,
       logPrefix: `[sales-ai-projections:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
     const result = safeParseJson(aiResult.content) ?? { response: aiResult.content };
+    const integrity = checkIntegrity(aiResult.content, research.enabled);
 
-    console.log(`Sales AI projections completed: ${action}`);
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({
+      ...result,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error in sales-ai-projections:", error);
     return new Response(JSON.stringify({ error: error.message }), {

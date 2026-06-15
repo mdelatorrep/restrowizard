@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callAIGateway, gatewayErrorResponse, safeParseJson } from "../_shared/ai-gateway.ts";
+import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
+import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,96 +16,61 @@ serve(async (req) => {
   try {
     const { action, data } = await req.json();
 
-    let systemPrompt = "";
+    let rolePrompt = "";
     let userPrompt = "";
+    let webQuery = "";
 
     switch (action) {
       case "analyze_mention":
-        systemPrompt = `Eres un experto en social listening para restaurantes con acceso a búsqueda web para contexto adicional sobre tendencias y temas virales actuales. Analiza la mención y determina:
-Responde en JSON con:
-- sentiment_score: número entre -1 y 1
-- sentiment_label: "positive", "neutral", "negative"
-- key_topics: array de temas principales
-- urgency: "low", "medium", "high"
-- requires_response: boolean
-- suggested_response: respuesta sugerida si aplica
-- trending_context: contexto de tendencias actuales si es relevante`;
-        
-        userPrompt = `Analiza esta mención:
-Plataforma: ${data.platform}
+        webQuery = `tendencias virales ${data.platform || ''} restaurantes ${(data.content || '').slice(0,80)}`;
+        rolePrompt = `Experto en social listening. Analiza la mención provista. Contexto de tendencias virales SOLO si está en el CONTEXTO WEB con [Fuente N].
+JSON: { sentiment_score, sentiment_label, key_topics, urgency, requires_response, suggested_response, trending_context (con [Fuente N] o null), sources_used }`;
+        userPrompt = `Plataforma: ${data.platform}
 Autor: ${data.author_name || 'Anónimo'}
 Contenido: ${data.content}
-Rating: ${data.rating || 'N/A'}
-Engagement: ${data.engagement_likes || 0} likes, ${data.engagement_comments || 0} comentarios
-
-Busca si hay contexto adicional sobre tendencias virales o temas actuales relacionados.`;
+Rating: ${data.rating || 'N/A'} | Engagement: ${data.engagement_likes || 0} likes, ${data.engagement_comments || 0} comentarios`;
         break;
 
       case "generate_response":
-        systemPrompt = `Eres un community manager profesional para restaurantes con acceso a búsqueda web para mejores prácticas de respuesta en redes sociales. Genera una respuesta apropiada para la plataforma que:
-- Sea adecuada al tono de la plataforma
-- Siga mejores prácticas actuales de community management
-- Sea breve y profesional
-- Invite a continuar la conversación si es apropiado
-- Agradezca el feedback
-
-Adapta el tono: más informal para Instagram/TikTok, más profesional para Google/TripAdvisor.`;
-        
-        userPrompt = `Genera respuesta para:
-Plataforma: ${data.platform}
+        webQuery = `mejores prácticas community management ${data.platform || ''} restaurantes`;
+        rolePrompt = `Community manager profesional. Adapta el tono a ${data.platform}. Mejores prácticas SOLO con [Fuente N].`;
+        userPrompt = `Plataforma: ${data.platform}
 Mención: ${data.content}
 Sentimiento: ${data.sentiment_label}
-Autor: ${data.author_name || 'Usuario'}
-
-Busca mejores prácticas actuales de respuesta en ${data.platform} para restaurantes.`;
+Autor: ${data.author_name || 'Usuario'}`;
         break;
 
       case "generate_report":
-        systemPrompt = `Eres un analista de reputación online con acceso a búsqueda web para benchmarks de la industria. Genera un reporte ejecutivo de sentimiento.
-Responde en JSON con:
-- summary: resumen ejecutivo (2-3 oraciones)
-- avg_sentiment: sentimiento promedio
-- trending_topics: temas más mencionados
-- strengths: aspectos positivos destacados
-- areas_to_improve: áreas de mejora
-- competitor_comparison: comparación con benchmarks de la industria
-- recommendations: acciones recomendadas basadas en mejores prácticas`;
-        
-        userPrompt = `Genera reporte para el periodo:
-Total menciones: ${data.total_mentions}
-Positivas: ${data.positive_count}
-Negativas: ${data.negative_count}
-Neutrales: ${data.neutral_count}
+        webQuery = `benchmark reputación online restaurantes ${data.restaurant_type || ''} sentiment industria`;
+        rolePrompt = `Analista de reputación online. Reporte ejecutivo basado en los datos. Comparación con benchmarks SOLO con [Fuente N].
+JSON: { summary, avg_sentiment, trending_topics, strengths, areas_to_improve, competitor_comparison (con [Fuente N] o null), recommendations, sources_used }`;
+        userPrompt = `Total: ${data.total_mentions} | Pos: ${data.positive_count} | Neg: ${data.negative_count} | Neu: ${data.neutral_count}
 Plataformas: ${data.platforms?.join(', ') || 'Varias'}
-Temas frecuentes: ${data.topics?.join(', ') || 'No especificados'}
-Tipo de restaurante: ${data.restaurant_type || 'No especificado'}
-
-Busca benchmarks de reputación online para restaurantes similares.`;
+Temas: ${data.topics?.join(', ') || 'N/E'}
+Tipo: ${data.restaurant_type || 'N/E'}`;
         break;
 
       case "detect_crisis":
-        systemPrompt = `Eres un experto en gestión de crisis de reputación con acceso a búsqueda web para detectar si hay crisis similares o tendencias negativas en la industria. Evalúa si hay una crisis potencial.
-Responde en JSON con:
-- crisis_level: "none", "low", "medium", "high", "critical"
-- indicators: señales de alerta detectadas
-- affected_areas: áreas afectadas
-- immediate_actions: acciones inmediatas recomendadas basadas en casos de éxito
-- communication_strategy: estrategia de comunicación
-- monitoring_priority: qué monitorear de cerca
-- similar_cases: casos similares en la industria y cómo se manejaron`;
-        
-        userPrompt = `Evalúa posible crisis:
-Menciones negativas recientes: ${data.recent_negative_count}
+        webQuery = `crisis reputación restaurantes ${new Date().getFullYear()} manejo casos`;
+        rolePrompt = `Experto en gestión de crisis. Evalúa con las señales provistas. Casos similares SOLO con [Fuente N].
+JSON: { crisis_level, indicators, affected_areas, immediate_actions, communication_strategy, monitoring_priority, similar_cases (con [Fuente N] o "Información no disponible"), sources_used }`;
+        userPrompt = `Menciones neg recientes: ${data.recent_negative_count}
 Temas problemáticos: ${data.problem_topics?.join(', ') || 'Ninguno'}
-Velocidad de menciones: ${data.mention_velocity || 'normal'}
-Menciones de alto impacto: ${data.high_impact_mentions || 0}
-
-Busca si hay crisis similares o tendencias negativas en restaurantes actualmente.`;
+Velocidad: ${data.mention_velocity || 'normal'} | Alto impacto: ${data.high_impact_mentions || 0}`;
         break;
 
       default:
         throw new Error("Acción no válida");
     }
+
+    const research = await webResearch(webQuery, { limit: 3, scrape: false, logPrefix: `[social-ai:${action}]` });
+    const jsonMode = action !== "generate_response";
+
+    const systemPrompt = composeSystemPrompt({
+      guardrails: { jsonOutput: jsonMode, requireConfidence: jsonMode, domain: "social listening de restaurantes" },
+      rolePrompt,
+      webContextBlock: formatSourcesForPrompt(research),
+    });
 
     const aiResult = await callAIGateway({
       messages: [
@@ -112,16 +79,22 @@ Busca si hay crisis similares o tendencias negativas en restaurantes actualmente
       ],
       tier: "fast",
       maxTokens: 1500,
+      jsonMode,
       logPrefix: `[social-ai-analysis:${action}]`,
     });
     if (!aiResult.ok) return gatewayErrorResponse(aiResult, corsHeaders);
-    const result = safeParseJson(aiResult.content) ?? { response: aiResult.content };
+    const result = jsonMode
+      ? (safeParseJson(aiResult.content) ?? { response: aiResult.content })
+      : { response: aiResult.content };
+    const integrity = checkIntegrity(aiResult.content, research.enabled);
 
-    console.log(`Social AI analysis completed: ${action}`);
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({
+      ...result,
+      meta: {
+        web_research: { enabled: research.enabled, provider: research.provider, sources_count: research.sources.length },
+        integrity,
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error in social-ai-analysis:", error);
     return new Response(JSON.stringify({ error: error.message }), {
