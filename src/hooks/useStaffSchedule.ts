@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
+
 
 export interface StaffShift {
   id: string;
@@ -52,9 +53,19 @@ export const useStaffSchedule = (weekStart?: Date) => {
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(false);
 
-  const defaultWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const currentWeekStart = weekStart || defaultWeekStart;
-  const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+  // Estabilizar el rango de fechas a primitivos (timestamps) para evitar loops
+  // de useEffect cuando weekStart se recrea en cada render del padre.
+  const weekStartTs = weekStart ? weekStart.getTime() : null;
+  const { weekStartStr, weekEndStr } = useMemo(() => {
+    const base = weekStartTs ? new Date(weekStartTs) : new Date();
+    const s = startOfWeek(base, { weekStartsOn: 1 });
+    const e = endOfWeek(s, { weekStartsOn: 1 });
+    return {
+      weekStartStr: format(s, 'yyyy-MM-dd'),
+      weekEndStr: format(e, 'yyyy-MM-dd'),
+    };
+  }, [weekStartTs]);
+
 
   const calculateHoursWorked = (shift: StaffShift): number => {
     const start = shift.actual_start_time || shift.start_time;
@@ -93,8 +104,9 @@ export const useStaffSchedule = (weekStart?: Date) => {
         .from('staff_shifts')
         .select('*')
         .eq('user_id', userId)
-        .gte('shift_date', format(currentWeekStart, 'yyyy-MM-dd'))
-        .lte('shift_date', format(currentWeekEnd, 'yyyy-MM-dd'))
+        .gte('shift_date', weekStartStr)
+        .lte('shift_date', weekEndStr)
+
         .order('shift_date')
         .order('start_time');
 
@@ -179,7 +191,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentWeekStart, currentWeekEnd, toast]);
+  }, [userId, weekStartStr, weekEndStr, toast]);
 
   const addShift = useCallback(async (shift: Omit<StaffShift, 'id' | 'hours_worked' | 'cost' | 'staff_member_name'>) => {
     if (!userId) return null;
