@@ -293,14 +293,16 @@ const financeItems: MenuItem[] = [
     icon: Leaf, 
     path: '/r/sustainability',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'sustainability'
+    moduleKey: 'sustainability',
+    permissionModule: 'sustainability'
   },
   {
     title: 'Facturación Electrónica',
     icon: FileText,
     path: '/r/electronic-invoicing',
     stages: ['first_90_days', 'normal_operation'],
-    moduleKey: 'electronic_invoicing'
+    moduleKey: 'electronic_invoicing',
+    permissionModule: 'electronic_invoicing'
   },
 ];
 
@@ -311,20 +313,23 @@ const expansionItems: MenuItem[] = [
     icon: Store, 
     path: '/r/ghost-kitchen',
     stages: ['normal_operation'],
-    moduleKey: 'ghost-kitchen'
+    moduleKey: 'ghost-kitchen',
+    permissionModule: 'ghost_kitchen'
   },
   { 
     title: 'Gestión de Cadenas', 
     icon: Building2, 
     path: '/r/chain-management',
     stages: ['normal_operation'],
-    moduleKey: 'chain-management'
+    moduleKey: 'chain-management',
+    permissionModule: 'chain_management'
   },
   { 
     title: 'Admin Ecosistema', 
     icon: Wrench, 
     path: '/r/ecosystem-admin',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    permissionModule: 'ecosystem_admin'
   },
 ];
 
