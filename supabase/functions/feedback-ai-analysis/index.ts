@@ -4,6 +4,7 @@ import {
   gatewayErrorResponse,
   safeParseJson,
 } from "../_shared/ai-gateway.ts";
+import { composeSystemPrompt } from "../_shared/ai-guardrails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
