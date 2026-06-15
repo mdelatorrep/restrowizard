@@ -510,12 +510,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <span className="text-sidebar-primary-foreground font-bold text-sm">RW</span>
-              </div>
-              <span className="font-headline font-bold text-sidebar-foreground">
-                RestroWizard
+            <div className="flex items-center gap-2 min-w-0">
+              {brandLogo ? (
+                <img
+                  src={brandLogo}
+                  alt={brandName}
+                  className="w-8 h-8 rounded-lg object-contain bg-white/10"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+                  <span className="text-sidebar-primary-foreground font-bold text-sm">{brandInitials}</span>
+                </div>
+              )}
+              <span className="font-headline font-bold text-sidebar-foreground truncate">
+                {brandName}
               </span>
             </div>
           )}
