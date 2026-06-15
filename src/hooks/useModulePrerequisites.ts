@@ -120,11 +120,12 @@ export const useModulePrerequisites = () => {
           const { data: menus } = await supabase
             .from('restaurant_menus').select('id').eq('user_id', userId);
           if (menus && menus.length > 0) {
-            const { count, error } = await supabase
+            const { data: items, error } = await supabase
               .from('menu_items')
-              .select('id', { count: 'exact', head: true })
-              .in('menu_id', menus.map(m => m.id));
-            menuItemsCount = error ? null : (count ?? 0);
+              .select('id')
+              .in('menu_id', menus.map(m => m.id))
+              .limit(1);
+            menuItemsCount = error ? null : ((items?.length ?? 0) > 0 ? 1 : 0);
           }
         } catch {
           menuItemsCount = null;
