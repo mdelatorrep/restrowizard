@@ -205,7 +205,7 @@ export default function POSMain() {
         </div>
       ) : (
         <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 min-w-0 border-r border-zinc-800/80">
+          <div className={`${selectedTableId ? "hidden xl:block xl:w-[280px] shrink-0" : "flex-1 min-w-0"} border-r border-zinc-800/80 overflow-hidden`}>
             <TableMap
               tables={tables}
               zones={zones}
@@ -214,9 +214,40 @@ export default function POSMain() {
               onSelectTable={(t) => setSelectedTableId(t.id)}
             />
           </div>
-          <aside className="w-full max-w-sm hidden lg:block bg-zinc-900/40">
-            <TableSummaryPanel table={selectedTable} order={selectedOrder} />
-          </aside>
+
+          {selectedTableId && selectedTable && (
+            <>
+              <div className="flex-1 min-w-0 border-r border-zinc-800/80 flex flex-col">
+                <div className="px-3 py-2 flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950">
+                  <div className="text-xs text-zinc-400">
+                    Mesa <span className="text-zinc-100 font-semibold">{selectedTable.table_number}</span> · catálogo
+                  </div>
+                  <button
+                    onClick={() => setSelectedTableId(null)}
+                    className="text-zinc-500 hover:text-zinc-100 p-1 xl:hidden"
+                    aria-label="Volver al mapa"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <MenuCatalogWrapper
+                    restaurantUserId={context.restaurantUserId}
+                    tableId={selectedTable.id}
+                  />
+                </div>
+              </div>
+              <aside className="w-full sm:max-w-sm shrink-0 bg-zinc-900/40 hidden md:block">
+                <OrderPanel
+                  table={selectedTable}
+                  restaurantUserId={context.restaurantUserId}
+                  waiterName={null}
+                  allTables={tables}
+                  activeOrders={orders}
+                />
+              </aside>
+            </>
+          )}
         </div>
       )}
 
