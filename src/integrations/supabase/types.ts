@@ -7984,6 +7984,11 @@ export type Database = {
           name: string
           performance_score: number | null
           phone: string | null
+          pin_failed_attempts: number
+          pin_hash: string | null
+          pin_locked_until: string | null
+          pin_set_at: string | null
+          pos_role: string
           position: string
           preferred_shifts: string[] | null
           skills: string[] | null
@@ -8009,6 +8014,11 @@ export type Database = {
           name: string
           performance_score?: number | null
           phone?: string | null
+          pin_failed_attempts?: number
+          pin_hash?: string | null
+          pin_locked_until?: string | null
+          pin_set_at?: string | null
+          pos_role?: string
           position: string
           preferred_shifts?: string[] | null
           skills?: string[] | null
@@ -8034,6 +8044,11 @@ export type Database = {
           name?: string
           performance_score?: number | null
           phone?: string | null
+          pin_failed_attempts?: number
+          pin_hash?: string | null
+          pin_locked_until?: string | null
+          pin_set_at?: string | null
+          pos_role?: string
           position?: string
           preferred_shifts?: string[] | null
           skills?: string[] | null
@@ -9584,6 +9599,20 @@ export type Database = {
         Returns: undefined
       }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
+      set_staff_pin: {
+        Args: { _pin: string; _staff_id: string }
+        Returns: undefined
+      }
+      verify_staff_pin: {
+        Args: { _pin: string; _restaurant_user_id: string }
+        Returns: {
+          email: string
+          linked_user_id: string
+          pos_role: string
+          staff_id: string
+          staff_name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff" | "user" | "consultant"
