@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CustomerFeedback } from '@/hooks/useFeedbackData';
 import { SentimentBadge, StarRating } from './FeedbackBadges';
+import { labelFor } from '@/lib/enumLabels';
 
 interface Props {
   feedback: CustomerFeedback[];
