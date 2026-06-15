@@ -86,8 +86,16 @@ export async function callAIGateway(
     model,
     messages: opts.messages,
   };
-  if (opts.maxTokens) body.max_tokens = opts.maxTokens;
-  if (typeof opts.temperature === "number") body.temperature = opts.temperature;
+  // GPT-5.x family requires `max_completion_tokens` instead of `max_tokens`.
+  const usesCompletionTokens = /^openai\/gpt-5/i.test(model);
+  if (opts.maxTokens) {
+    if (usesCompletionTokens) body.max_completion_tokens = opts.maxTokens;
+    else body.max_tokens = opts.maxTokens;
+  }
+  // GPT-5.x also rejects custom `temperature` (only default supported).
+  if (typeof opts.temperature === "number" && !usesCompletionTokens) {
+    body.temperature = opts.temperature;
+  }
   if (opts.jsonMode) body.response_format = { type: "json_object" };
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
