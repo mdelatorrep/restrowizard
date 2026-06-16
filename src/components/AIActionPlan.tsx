@@ -28,10 +28,18 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   const { user } = useAuth();
   const { updateActionTracking, getActionTracking } = useDiagnosis();
   const [actionStatuses, setActionStatuses] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Namespace the action id by category so duplicate ids returned by the AI
+  // across quick_wins / priority / strategic don't collide in state nor in
+  // the (diagnosis_id, action_id) upsert key. Without this, marking one
+  // action would visually toggle every sibling sharing the same raw id and
+  // could surface a unique-constraint error when persisting.
+  const trackingKey = (category: string, rawId: string) => `${category}:${rawId}`;
 
   useEffect(() => {
     loadActionTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diagnosisId]);
 
   const loadActionTracking = async () => {
@@ -43,16 +51,24 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
     setActionStatuses(statuses);
   };
 
-  const toggleActionStatus = async (action: ActionPlanItem, priority: 'high' | 'medium' | 'low') => {
+  const toggleActionStatus = async (
+    action: ActionPlanItem,
+    priority: 'high' | 'medium' | 'low',
+    category: 'quick_wins' | 'priority' | 'strategic'
+  ) => {
     if (!user) return;
-    setLoading(true);
+    const key = trackingKey(category, action.id);
+    setLoadingId(key);
 
-    const currentStatus = actionStatuses[action.id] || 'pending';
+    const currentStatus = actionStatuses[key] || 'pending';
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
 
-    await updateActionTracking(
+    // Optimistic update so the UI feels responsive even on slow networks.
+    setActionStatuses(prev => ({ ...prev, [key]: newStatus }));
+
+    const result = await updateActionTracking(
       diagnosisId,
-      action.id,
+      key,
       action.title,
       action.pillar_id,
       priority,
@@ -60,12 +76,13 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
       user.id
     );
 
-    setActionStatuses(prev => ({
-      ...prev,
-      [action.id]: newStatus
-    }));
-    setLoading(false);
+    // Roll back if the server rejected the change.
+    if (!result) {
+      setActionStatuses(prev => ({ ...prev, [key]: currentStatus }));
+    }
+    setLoadingId(null);
   };
+
 
   const getEffortColor = (effort: string) => {
     switch (effort) {
