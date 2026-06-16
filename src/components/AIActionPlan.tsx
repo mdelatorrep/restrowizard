@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  CheckCircle, Circle, ArrowRight, Sparkles, Target, TrendingUp, 
-  Zap, Clock, PlayCircle, BarChart3, DollarSign, ListChecks
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  CheckCircle, Circle, Sparkles, Target, TrendingUp,
+  Zap, Clock, PlayCircle, BarChart3, DollarSign, ListChecks, HelpCircle, Info, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDiagnosis, AIActionPlan as AIActionPlanType, ActionPlanItem, DiagnosisResult } from '@/hooks/useDiagnosis';
@@ -26,10 +28,18 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   const { user } = useAuth();
   const { updateActionTracking, getActionTracking } = useDiagnosis();
   const [actionStatuses, setActionStatuses] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Namespace the action id by category so duplicate ids returned by the AI
+  // across quick_wins / priority / strategic don't collide in state nor in
+  // the (diagnosis_id, action_id) upsert key. Without this, marking one
+  // action would visually toggle every sibling sharing the same raw id and
+  // could surface a unique-constraint error when persisting.
+  const trackingKey = (category: string, rawId: string) => `${category}:${rawId}`;
 
   useEffect(() => {
     loadActionTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diagnosisId]);
 
   const loadActionTracking = async () => {
@@ -41,16 +51,24 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
     setActionStatuses(statuses);
   };
 
-  const toggleActionStatus = async (action: ActionPlanItem, priority: 'high' | 'medium' | 'low') => {
+  const toggleActionStatus = async (
+    action: ActionPlanItem,
+    priority: 'high' | 'medium' | 'low',
+    category: 'quick_wins' | 'priority' | 'strategic'
+  ) => {
     if (!user) return;
-    setLoading(true);
+    const key = trackingKey(category, action.id);
+    setLoadingId(key);
 
-    const currentStatus = actionStatuses[action.id] || 'pending';
+    const currentStatus = actionStatuses[key] || 'pending';
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
 
-    await updateActionTracking(
+    // Optimistic update so the UI feels responsive even on slow networks.
+    setActionStatuses(prev => ({ ...prev, [key]: newStatus }));
+
+    const result = await updateActionTracking(
       diagnosisId,
-      action.id,
+      key,
       action.title,
       action.pillar_id,
       priority,
@@ -58,12 +76,13 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
       user.id
     );
 
-    setActionStatuses(prev => ({
-      ...prev,
-      [action.id]: newStatus
-    }));
-    setLoading(false);
+    // Roll back if the server rejected the change.
+    if (!result) {
+      setActionStatuses(prev => ({ ...prev, [key]: currentStatus }));
+    }
+    setLoadingId(null);
   };
+
 
   const getEffortColor = (effort: string) => {
     switch (effort) {
@@ -100,30 +119,41 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
 
   const overallLevel = getLevelFromScore(diagnosisResult.overallScore);
 
-  const renderActionItem = (action: ActionPlanItem, priority: 'high' | 'medium' | 'low') => {
-    const isCompleted = actionStatuses[action.id] === 'completed';
+  const renderActionItem = (
+    action: ActionPlanItem,
+    priority: 'high' | 'medium' | 'low',
+    category: 'quick_wins' | 'priority' | 'strategic'
+  ) => {
+    const key = trackingKey(category, action.id);
+    const isCompleted = actionStatuses[key] === 'completed';
+    const isLoading = loadingId === key;
 
     return (
-      <div 
-        key={action.id}
+      <div
+        key={key}
         className={`p-4 rounded-lg border transition-all ${
-          isCompleted 
-            ? 'bg-success/5 border-success/30' 
+          isCompleted
+            ? 'bg-success/5 border-success/30'
             : 'bg-muted/30 border-border hover:border-primary/30'
         }`}
       >
         <div className="flex items-start gap-3">
           <button
-            onClick={() => toggleActionStatus(action, priority)}
-            disabled={loading}
+            onClick={() => toggleActionStatus(action, priority, category)}
+            disabled={isLoading}
+            aria-label={isCompleted ? 'Marcar como pendiente' : 'Marcar como completada'}
+            title={isCompleted ? 'Marcar como pendiente' : 'Marcar como completada'}
             className="mt-1 shrink-0"
           >
-            {isCompleted ? (
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            ) : isCompleted ? (
               <CheckCircle className="h-5 w-5 text-success" />
             ) : (
               <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
             )}
           </button>
+
           
           <div className="flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">
@@ -169,9 +199,34 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   };
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-6">
+      {/* Cómo resolver una acción */}
+      <Alert className="border-primary/30 bg-primary/5">
+        <Info className="h-4 w-4 text-primary" />
+        <AlertTitle className="font-lato-bold text-foreground flex items-center gap-2">
+          ¿Cómo resolver una acción?
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Toca el círculo a la izquierda de cada acción para marcarla como completada.
+              Tu progreso se guarda automáticamente y solo afecta a esa acción.
+            </TooltipContent>
+          </Tooltip>
+        </AlertTitle>
+        <AlertDescription className="text-sm text-muted-foreground space-y-1 mt-1">
+          <p>1. Lee el <strong>título, descripción y métrica de éxito</strong> de la acción.</p>
+          <p>2. Ejecuta los pasos sugeridos usando los <strong>recursos</strong> indicados (módulos, plantillas o equipo).</p>
+          <p>3. Cuando logres la métrica de éxito, toca el <CheckCircle className="inline h-3.5 w-3.5 text-success" /> círculo a la izquierda para marcarla como <strong>completada</strong>. Toca de nuevo para revertirla.</p>
+          <p>4. Mide el avance con los <strong>KPIs</strong> de la sección inferior según la frecuencia recomendada.</p>
+        </AlertDescription>
+      </Alert>
+
       {/* Header Card */}
       <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
+
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -260,7 +315,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {(actionPlan.quick_wins || []).map(action => renderActionItem(action, 'high'))}
+              {(actionPlan.quick_wins || []).map(action => renderActionItem(action, 'high', 'quick_wins'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -277,7 +332,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {(actionPlan.priority_actions || []).map(action => renderActionItem(action, 'medium'))}
+              {(actionPlan.priority_actions || []).map(action => renderActionItem(action, 'medium', 'priority'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -294,7 +349,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {(actionPlan.strategic_initiatives || []).map(action => renderActionItem(action, 'low'))}
+              {(actionPlan.strategic_initiatives || []).map(action => renderActionItem(action, 'low', 'strategic'))}
             </CardContent>
           </Card>
         </TabsContent>
@@ -339,6 +394,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 };
 
