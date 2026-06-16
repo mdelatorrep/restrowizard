@@ -119,30 +119,41 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
 
   const overallLevel = getLevelFromScore(diagnosisResult.overallScore);
 
-  const renderActionItem = (action: ActionPlanItem, priority: 'high' | 'medium' | 'low') => {
-    const isCompleted = actionStatuses[action.id] === 'completed';
+  const renderActionItem = (
+    action: ActionPlanItem,
+    priority: 'high' | 'medium' | 'low',
+    category: 'quick_wins' | 'priority' | 'strategic'
+  ) => {
+    const key = trackingKey(category, action.id);
+    const isCompleted = actionStatuses[key] === 'completed';
+    const isLoading = loadingId === key;
 
     return (
-      <div 
-        key={action.id}
+      <div
+        key={key}
         className={`p-4 rounded-lg border transition-all ${
-          isCompleted 
-            ? 'bg-success/5 border-success/30' 
+          isCompleted
+            ? 'bg-success/5 border-success/30'
             : 'bg-muted/30 border-border hover:border-primary/30'
         }`}
       >
         <div className="flex items-start gap-3">
           <button
-            onClick={() => toggleActionStatus(action, priority)}
-            disabled={loading}
+            onClick={() => toggleActionStatus(action, priority, category)}
+            disabled={isLoading}
+            aria-label={isCompleted ? 'Marcar como pendiente' : 'Marcar como completada'}
+            title={isCompleted ? 'Marcar como pendiente' : 'Marcar como completada'}
             className="mt-1 shrink-0"
           >
-            {isCompleted ? (
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            ) : isCompleted ? (
               <CheckCircle className="h-5 w-5 text-success" />
             ) : (
               <Circle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
             )}
           </button>
+
           
           <div className="flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">
