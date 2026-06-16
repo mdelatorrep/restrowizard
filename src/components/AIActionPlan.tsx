@@ -394,6 +394,7 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 };
 
