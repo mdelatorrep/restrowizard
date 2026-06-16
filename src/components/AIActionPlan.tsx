@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  CheckCircle, Circle, ArrowRight, Sparkles, Target, TrendingUp, 
-  Zap, Clock, PlayCircle, BarChart3, DollarSign, ListChecks
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  CheckCircle, Circle, Sparkles, Target, TrendingUp,
+  Zap, Clock, PlayCircle, BarChart3, DollarSign, ListChecks, HelpCircle, Info, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDiagnosis, AIActionPlan as AIActionPlanType, ActionPlanItem, DiagnosisResult } from '@/hooks/useDiagnosis';
