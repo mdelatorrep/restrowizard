@@ -199,9 +199,34 @@ const AIActionPlanComponent: React.FC<AIActionPlanProps> = ({
   };
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="space-y-6">
+      {/* Cómo resolver una acción */}
+      <Alert className="border-primary/30 bg-primary/5">
+        <Info className="h-4 w-4 text-primary" />
+        <AlertTitle className="font-lato-bold text-foreground flex items-center gap-2">
+          ¿Cómo resolver una acción?
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Toca el círculo a la izquierda de cada acción para marcarla como completada.
+              Tu progreso se guarda automáticamente y solo afecta a esa acción.
+            </TooltipContent>
+          </Tooltip>
+        </AlertTitle>
+        <AlertDescription className="text-sm text-muted-foreground space-y-1 mt-1">
+          <p>1. Lee el <strong>título, descripción y métrica de éxito</strong> de la acción.</p>
+          <p>2. Ejecuta los pasos sugeridos usando los <strong>recursos</strong> indicados (módulos, plantillas o equipo).</p>
+          <p>3. Cuando logres la métrica de éxito, toca el <CheckCircle className="inline h-3.5 w-3.5 text-success" /> círculo a la izquierda para marcarla como <strong>completada</strong>. Toca de nuevo para revertirla.</p>
+          <p>4. Mide el avance con los <strong>KPIs</strong> de la sección inferior según la frecuencia recomendada.</p>
+        </AlertDescription>
+      </Alert>
+
       {/* Header Card */}
       <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
+
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
