@@ -33,6 +33,24 @@ const mergePermissions = (
 };
 
 /**
+ * Pure permission resolver — single source of truth shared in spirit with the
+ * DB function public.has_module_access(). Precedence per module:
+ *   member override (if != 'none')  ->  custom role  ->  base-role default
+ * Custom role sits on top of the role defaults so partial custom roles still
+ * inherit sensible defaults; explicit 'none' in the custom role denies.
+ */
+export const resolveEffectivePermissions = (
+  roleDefaults: ModulePermissions,
+  customRolePermissions: ModulePermissions | null,
+  memberPermissions: ModulePermissions
+): ModulePermissions => {
+  const base = customRolePermissions
+    ? { ...roleDefaults, ...customRolePermissions }
+    : { ...roleDefaults };
+  return mergePermissions(base, memberPermissions);
+};
+
+/**
  * Effective permission context for the current user.
  * Owner → full admin on everything.
  * Team member → custom role permissions (if assigned) merged with per-member overrides,
@@ -89,11 +107,13 @@ export const useTeamPermissions = (): TeamPermissionContext => {
           | { label: string; permissions: ModulePermissions; default_landing: string | null }
           | null;
 
-        // base = custom role permissions OR default for base role
-        const basePerms = customRole?.permissions || DEFAULT_PERMISSIONS[role] || {};
-        // per-member overrides (only non-none values override)
+        // per-member overrides (only non-none values override the base)
         const memberPerms = (membership.permissions || {}) as ModulePermissions;
-        const effective = mergePermissions(basePerms, memberPerms);
+        const effective = resolveEffectivePermissions(
+          DEFAULT_PERMISSIONS[role] || {},
+          customRole?.permissions ?? null,
+          memberPerms
+        );
 
         return {
           isOwner: false,

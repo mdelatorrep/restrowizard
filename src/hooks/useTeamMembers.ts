@@ -290,7 +290,10 @@ export const useTeamMembers = () => {
     mutationFn: async (data: InviteTeamMemberData) => {
       if (!businessId) throw new Error('No business found');
 
-      const permissions = data.permissions || DEFAULT_PERMISSIONS[data.role];
+      // With a custom role assigned, store sparse overrides so the custom role governs
+      // (matches has_module_access precedence). Without one, seed base-role defaults.
+      const permissions = data.permissions
+        ?? (data.custom_role_id ? ({} as ModulePermissions) : DEFAULT_PERMISSIONS[data.role]);
 
       const insertData = {
         business_id: businessId,
