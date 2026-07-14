@@ -476,73 +476,20 @@ export const useLoyaltyData = () => {
     if (!userId) return null;
 
     try {
-      const customer = customers.find(c => c.id === customerId);
-      const item = catalog.find(i => i.id === catalogItemId);
-
-      if (!customer || !item) throw new Error('Cliente o recompensa no encontrada');
-      if (customer.current_points < item.points_required) {
-        toast({ title: 'Puntos insuficientes', description: 'El cliente no tiene suficientes puntos', variant: 'destructive' });
+      // B-22: canje atómico server-side (valida puntos, stock y vigencia; sin race conditions)
+      const { data, error } = await supabase.rpc('redeem_loyalty_reward', {
+        p_customer_id: customerId,
+        p_catalog_item_id: catalogItemId,
+      });
+      if (error) throw error;
+      const res = (data ?? {}) as { ok?: boolean; message?: string; redemption_code?: string; reward_id?: string };
+      if (!res.ok) {
+        toast({ title: 'No se pudo canjear', description: res.message || 'Error', variant: 'destructive' });
         return null;
       }
-
-      // Generate redemption code
-      const { data: codeData } = await supabase.rpc('generate_redemption_code');
-      const redemptionCode = codeData || `RW${Date.now().toString(36).toUpperCase()}`;
-
-      // Create redemption
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-
-      const { data: reward, error: rewardError } = await supabase
-        .from('loyalty_rewards')
-        .insert([{
-          user_id: userId,
-          customer_id: customerId,
-          catalog_item_id: catalogItemId,
-          points_spent: item.points_required,
-          redemption_code: redemptionCode,
-          expires_at: expiresAt.toISOString(),
-        }])
-        .select()
-        .single();
-
-      if (rewardError) throw rewardError;
-
-      // Deduct points
-      const newBalance = customer.current_points - item.points_required;
-
-      await supabase
-        .from('loyalty_points_transactions')
-        .insert([{
-          user_id: userId,
-          customer_id: customerId,
-          points: -item.points_required,
-          transaction_type: 'redeem',
-          source: 'reward_redemption',
-          source_id: reward.id,
-          description: `Canje: ${item.name}`,
-          balance_after: newBalance,
-        }]);
-
-      await supabase
-        .from('loyalty_customers')
-        .update({ current_points: newBalance })
-        .eq('id', customerId);
-
-      // Update stock
-      if (item.stock_limit) {
-        await supabase
-          .from('loyalty_rewards_catalog')
-          .update({ stock_used: item.stock_used + 1 })
-          .eq('id', catalogItemId);
-      }
-
-      toast({ 
-        title: 'Recompensa canjeada', 
-        description: `Código: ${redemptionCode}` 
-      });
+      toast({ title: 'Recompensa canjeada', description: `Código: ${res.redemption_code}` });
       await fetchData();
-      return reward;
+      return { id: res.reward_id, redemption_code: res.redemption_code } as any;
     } catch (error) {
       console.error('Error redeeming reward:', error);
       toast({ title: 'Error', description: 'No se pudo canjear la recompensa', variant: 'destructive' });
