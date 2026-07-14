@@ -291,24 +291,22 @@ export function usePublicReservation() {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('table_reservations')
-        .insert({
-          ...reservationData,
-          user_id: restaurantUserId,
-          source: 'website',
-        })
-        .select('confirmation_code')
-        .single();
-      
-      if (error) throw error;
-      
+      // B-15: reservas públicas vía edge validada (acepta-reservas, tamaño, ventana, rate-limit)
+      const { data, error } = await supabase.functions.invoke('website-public-reservation', {
+        body: { restaurant_user_id: restaurantUserId, ...reservationData },
+      });
+
+      const code = (data as any)?.confirmation_code as string | undefined;
+      if (error || !code) {
+        throw new Error((data as any)?.error || error?.message || 'No se pudo crear la reserva');
+      }
+
       toast({
         title: "¡Reserva confirmada!",
-        description: `Tu código de confirmación es: ${data.confirmation_code}`,
+        description: `Tu código de confirmación es: ${code}`,
       });
-      
-      return data.confirmation_code;
+
+      return code;
     } catch (error) {
       console.error('Error creating public reservation:', error);
       toast({

@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.mcp]
 verify_jwt = false
+
+[functions.website-public-reservation]
+verify_jwt = false
