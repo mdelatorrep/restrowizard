@@ -166,7 +166,7 @@ export const useInventoryDeduction = () => {
     }
   }, [user, getRecipeForMenuItem]);
 
-  // Deduct inventory for an entire order.
+  // Deduct inventory for an entire order (B-13: atómico + conversión de unidad, server-side).
   const deductInventoryForOrder = useCallback(async (
     orderId: string,
     items: OrderItem[]
@@ -174,39 +174,29 @@ export const useInventoryDeduction = () => {
     if (!user) {
       return { success: false, deductedCount: 0, missingRecipeCount: 0, errors: ['Usuario no autenticado'] };
     }
-
-    const errors: string[] = [];
-    let deductedCount = 0;
-    let missingRecipeCount = 0;
-
-    for (const item of items) {
-      if (!item.menu_item_id) {
-        logger.warn(`[inventoryDeduction] item without menu_item_id: ${item.name}`);
-        missingRecipeCount++;
-        continue;
+    try {
+      const payload = items
+        .filter((it) => it.menu_item_id)
+        .map((it) => ({ menu_item_id: it.menu_item_id, quantity: it.quantity }));
+      const { data, error } = await supabase.rpc('deduct_inventory_for_order', {
+        p_order_id: orderId,
+        p_items: payload,
+      });
+      if (error) {
+        logger.error('[inventoryDeduction] rpc error', error);
+        return { success: false, deductedCount: 0, missingRecipeCount: 0, errors: [error.message] };
       }
-
-      const result = await deductInventoryForItem(orderId, item.menu_item_id, item.quantity);
-      if (result === 'ok') {
-        deductedCount++;
-      } else if (result === 'no_recipe') {
-        missingRecipeCount++;
-      } else {
-        errors.push(`Error deduciendo inventario para: ${item.name}`);
+      const res = (data ?? {}) as { deducted?: number; low_stock?: Array<{ name: string; stock: number; unit: string }> };
+      for (const low of res.low_stock ?? []) {
+        toast.warning(`⚠️ Stock bajo: ${low.name} (${low.stock} ${low.unit})`);
       }
+      const missingRecipeCount = items.filter((it) => !it.menu_item_id).length;
+      return { success: true, deductedCount: Number(res.deducted ?? 0), missingRecipeCount, errors: [] };
+    } catch (e) {
+      logger.error('[inventoryDeduction] deductInventoryForOrder error', e);
+      return { success: false, deductedCount: 0, missingRecipeCount: 0, errors: [(e as Error).message] };
     }
-
-    if (deductedCount > 0) {
-      logger.debug(`[inventoryDeduction] deducted ${deductedCount} items for order ${orderId}`);
-    }
-
-    return {
-      success: errors.length === 0,
-      deductedCount,
-      missingRecipeCount,
-      errors,
-    };
-  }, [user, deductInventoryForItem]);
+  }, [user]);
 
   const reverseInventoryDeduction = useCallback(async (orderId: string): Promise<boolean> => {
     if (!user) return false;
