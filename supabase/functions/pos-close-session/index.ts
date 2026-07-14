@@ -37,14 +37,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Session not found' }), { status: 404, headers: corsHeaders });
     }
 
-    const startedAt = session.start_time ?? session.created_at;
+    const startedAt = session.opened_at ?? session.created_at;
 
     // Aggregate sales for this session
     const { data: orders } = await supabase
       .from('restaurant_orders')
-      .select('total,items,payment_method,status,created_at')
+      .select('total,items,payment_method,status,created_at,source')
       .eq('user_id', body.user_id)
+      .eq('source', 'in_store')
       .gte('created_at', startedAt)
+      .lte('created_at', new Date().toISOString())
       .neq('status', 'cancelled');
 
     const totalSales = (orders ?? []).reduce((s, o) => s + Number(o.total ?? 0), 0);
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
     const paymentBreakdown: Record<string, number> = {};
     const itemCount = new Map<string, { name: string; qty: number; revenue: number }>();
     for (const o of orders ?? []) {
-      const pm = o.payment_method ?? 'otro';
+      const pm = (o.payment_method ?? 'otro').toString().toLowerCase();
       paymentBreakdown[pm] = (paymentBreakdown[pm] ?? 0) + Number(o.total ?? 0);
       for (const it of (o.items as any[]) ?? []) {
         const key = it?.menu_item_id ?? it?.name ?? 'x';
@@ -67,7 +69,7 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    const expectedCash = Number(session.opening_cash ?? 0) + (paymentBreakdown['efectivo'] ?? 0);
+    const expectedCash = Number(session.opening_cash ?? 0) + (paymentBreakdown['efectivo'] ?? 0) + (paymentBreakdown['cash'] ?? 0);
     const cashDifference = body.actual_cash - expectedCash;
 
     // Audit summary for the session window
@@ -153,10 +155,10 @@ Deno.serve(async (req) => {
       .update({
         status: 'closed',
         actual_cash: body.actual_cash,
+        closing_cash: body.actual_cash,
         expected_cash: expectedCash,
-        cash_difference: cashDifference,
-        end_time: new Date().toISOString(),
-        actual_end_time: new Date().toISOString(),
+        difference: cashDifference,
+        closed_at: new Date().toISOString(),
         notes: body.notes ?? null,
       })
       .eq('id', body.session_id);

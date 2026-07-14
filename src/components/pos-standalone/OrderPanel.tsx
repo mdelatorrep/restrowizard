@@ -63,6 +63,8 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
     const total = payments.reduce((s, p) => s + p.amount, 0);
     const result = await processPayment(order.id, payments, tipAmount);
     if (!result) return;
+    // B-01/B-02: persistir el método de pago dominante para el cuadre de caja
+    const primaryMethod = [...payments].sort((a, b) => b.amount - a.amount)[0]?.method_name ?? "Efectivo";
     const sb = supabase as any;
     await sb
       .from("restaurant_orders")
@@ -70,6 +72,7 @@ export function OrderPanel({ table, restaurantUserId, waiterName, allTables, act
         payment_status: "paid",
         status: "completed",
         completed_at: new Date().toISOString(),
+        payment_method: primaryMethod,
         tip_amount: tipAmount,
         tip_breakdown: tipBreakdown,
         total,

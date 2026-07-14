@@ -134,52 +134,16 @@ export const usePOSSession = () => {
     }
 
     try {
-      // Calculate expected cash
-      const cashSales = await supabase
-        .from('pos_transactions')
-        .select('amount, transaction_type')
-        .eq('session_id', currentSession.id)
-        .in('transaction_type', ['sale', 'refund', 'cash_in', 'cash_out']);
-
-      let expectedCash = currentSession.opening_cash;
-      
-      if (cashSales.data) {
-        for (const tx of cashSales.data) {
-          if (tx.transaction_type === 'sale' || tx.transaction_type === 'cash_in') {
-            expectedCash += Number(tx.amount);
-          } else if (tx.transaction_type === 'refund' || tx.transaction_type === 'cash_out') {
-            expectedCash -= Number(tx.amount);
-          }
-        }
-      }
-
-      // Add cash movements
-      for (const movement of cashMovements) {
-        if (movement.movement_type === 'deposit') {
-          expectedCash += movement.amount;
-        } else if (movement.movement_type === 'withdrawal') {
-          expectedCash -= movement.amount;
-        }
-      }
-
-      const difference = actualCash - expectedCash;
-
-      const { data, error } = await supabase
-        .from('pos_sessions')
-        .update({
-          closed_at: new Date().toISOString(),
-          closing_cash: actualCash,
-          expected_cash: expectedCash,
-          actual_cash: actualCash,
-          difference: difference,
-          status: 'closed',
-          notes: notes
-        })
-        .eq('id', currentSession.id)
-        .select()
-        .single();
+      // B-01/B-02: cierre server-authoritative (efectivo esperado = apertura + solo ventas en efectivo, por sesión)
+      const { data, error } = await supabase.rpc('pos_close_session', {
+        p_session_id: currentSession.id,
+        p_actual_cash: actualCash,
+        p_notes: notes ?? null,
+      });
 
       if (error) throw error;
+      const closed = (Array.isArray(data) ? data[0] : data) as POSSession;
+      const difference = Number(closed?.difference ?? (actualCash - Number(closed?.expected_cash ?? actualCash)));
 
       setCurrentSession(null);
       setCashMovements([]);
@@ -190,7 +154,7 @@ export const usePOSSession = () => {
         description: `Diferencia: ${diffText}`
       });
 
-      return data as POSSession;
+      return closed;
     } catch (error: any) {
       console.error('Error closing session:', error);
       toast({
