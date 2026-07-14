@@ -34,7 +34,7 @@ export const usePOSDiscounts = () => {
     try {
       const { data, error } = await supabase
         .from('pos_discounts')
-        .select('*')
+        .select('id, user_id, name, discount_type, value, min_order_value, max_discount_amount, requires_authorization, is_active, valid_from, valid_until, usage_count, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('name');
@@ -97,54 +97,17 @@ export const usePOSDiscounts = () => {
     orderTotal: number,
     authCode?: string
   ): Promise<{ valid: boolean; amount: number; message?: string }> => {
-    const discount = discounts.find(d => d.id === discountId);
-    
-    if (!discount) {
-      return { valid: false, amount: 0, message: "Descuento no encontrado" };
+    // B-10: validación server-side (código, mínimo, vigencia, tope, incremento atómico)
+    const { data, error } = await supabase.rpc('validate_pos_discount', {
+      p_discount_id: discountId,
+      p_auth_code: authCode ?? null,
+      p_order_total: orderTotal,
+    });
+    if (error) {
+      return { valid: false, amount: 0, message: error.message };
     }
-
-    // Check authorization
-    if (discount.requires_authorization) {
-      if (!authCode || authCode !== discount.authorization_code) {
-        return { valid: false, amount: 0, message: "Código de autorización inválido" };
-      }
-    }
-
-    // Check min order value
-    if (orderTotal < discount.min_order_value) {
-      return { 
-        valid: false, 
-        amount: 0, 
-        message: `Pedido mínimo: $${discount.min_order_value.toLocaleString()}` 
-      };
-    }
-
-    // Check validity dates
-    const now = new Date();
-    if (discount.valid_from && new Date(discount.valid_from) > now) {
-      return { valid: false, amount: 0, message: "Descuento aún no válido" };
-    }
-    if (discount.valid_until && new Date(discount.valid_until) < now) {
-      return { valid: false, amount: 0, message: "Descuento expirado" };
-    }
-
-    // Calculate discount amount
-    let amount = discount.discount_type === 'percent' 
-      ? orderTotal * (discount.value / 100)
-      : discount.value;
-
-    // Apply max discount cap
-    if (discount.max_discount_amount && amount > discount.max_discount_amount) {
-      amount = discount.max_discount_amount;
-    }
-
-    // Increment usage count
-    await supabase
-      .from('pos_discounts')
-      .update({ usage_count: discount.usage_count + 1 })
-      .eq('id', discountId);
-
-    return { valid: true, amount };
+    const res = (data ?? {}) as { valid?: boolean; amount?: number; message?: string };
+    return { valid: !!res.valid, amount: Number(res.amount ?? 0), message: res.message };
   };
 
   const deleteDiscount = async (discountId: string) => {

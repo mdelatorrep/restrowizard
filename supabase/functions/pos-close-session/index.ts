@@ -27,6 +27,24 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // AUTH (B-11): verify the caller is the owner or an active team member of body.user_id's business.
+    const authHeader = req.headers.get('Authorization') || '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user: caller } } = await supabase.auth.getUser(jwt);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+    if (caller.id !== body.user_id) {
+      const { data: owned } = await supabase.from('restaurant_businesses').select('id').eq('owner_id', body.user_id);
+      const bizIds = (owned ?? []).map((b: any) => b.id);
+      const { data: mem } = await supabase.from('restaurant_team_members')
+        .select('id').eq('user_id', caller.id).eq('status', 'active')
+        .in('business_id', bizIds.length ? bizIds : ['00000000-0000-0000-0000-000000000000']);
+      if (!mem || mem.length === 0) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      }
+    }
+
     const { data: session, error: sErr } = await supabase
       .from('pos_sessions')
       .select('*')
