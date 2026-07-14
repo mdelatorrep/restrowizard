@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "sdk_version": "0.21.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://jeqmnulrerilwixohvgw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "restrowizard-mcp",
+      "version": "0.1.0",
+      "title": "RestroWizard"
+    },
+    "tools": [
+      {
+        "name": "get_my_profile",
+        "title": "Get my profile and restaurants",
+        "description": "Returns the signed-in RestroWizard user's basic profile info and the restaurants they own (id, name, city, cuisine).",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_menu_items",
+        "title": "List menu items",
+        "description": "List the signed-in user's menu items (name, category, price, cost). Optionally filter by a text query on name.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Optional text to filter items by name (ILIKE)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Max items to return. Default 50."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_inventory_items",
+        "title": "List inventory items",
+        "description": "List the signed-in user's inventory items with current stock. Optional low_stock_only flag returns only items at or below par level.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "low_stock_only": {
+              "type": "boolean",
+              "description": "If true, only return items at or below par_level."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Max items to return. Default 50."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_orders",
+        "title": "List recent orders",
+        "description": "Return the signed-in user's most recent restaurant orders (id, status, total, created_at).",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Max orders to return. Default 20."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_reservations",
+        "title": "List reservations",
+        "description": "Return the signed-in user's table reservations. Set upcoming_only=true to return only reservations from today onward.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "upcoming_only": {
+              "type": "boolean",
+              "description": "If true, only return reservations with date >= today."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Max rows to return. Default 50."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_latest_diagnosis",
+        "title": "Get latest maturity diagnosis",
+        "description": "Return the most recent restaurant maturity diagnosis for the signed-in user, including scores and AI summary if present.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
