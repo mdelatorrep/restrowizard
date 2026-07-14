@@ -336,6 +336,23 @@ export function useFirst90Days() {
 
   const weekNumber = Math.min(Math.ceil(daysOpen / 7), 13);
 
+  // B-27: evaluación honesta de hitos — por métrica real, no por antigüedad.
+  const _fRevenue = financeData?.reduce((sum, e) => sum + (e.total_revenue || 0), 0) || 0;
+  const _fFood = financeData?.reduce((sum, e) => sum + (e.food_cost || 0), 0) || 0;
+  const _fLabor = financeData?.reduce((sum, e) => sum + (e.labor_cost || 0), 0) || 0;
+  const _fCustomers = financeData?.reduce((sum, e) => sum + (e.covers_count || 0), 0) || 0;
+  const _fFoodPct = _fRevenue > 0 ? (_fFood / _fRevenue) * 100 : 0;
+  const _fNetProfit = _fRevenue - _fFood - _fLabor;
+  const evalMilestone = (m: { title: string; targetDay: number }): boolean => {
+    const t = m.title.toLowerCase();
+    if (t.includes('semana') || t.includes('días operando') || t.includes('90 días')) return daysOpen >= m.targetDay;
+    if (t.includes('food cost < 35')) return _fFoodPct > 0 && _fFoodPct < 35;
+    if (t.includes('food cost < 32')) return _fFoodPct > 0 && _fFoodPct < 32;
+    if (t.includes('100 clientes')) return _fCustomers >= 100;
+    if (t.includes('rentable')) return _fRevenue > 0 && _fNetProfit > 0;
+    return false; // reseñas, seguidores, equipo, evento, clientes frecuentes: no auto-completar
+  };
+
   // Build metrics
   const metrics: First90DaysMetrics | null = businessData ? {
     daysOpen,
@@ -380,12 +397,15 @@ export function useFirst90Days() {
     wastageReduction: 0,
     
     // Milestones
-    milestones: DEFAULT_MILESTONES.map((m, i) => ({
-      ...m,
-      id: `milestone-${i}`,
-      isCompleted: daysOpen >= m.targetDay,
-      completedAt: daysOpen >= m.targetDay ? new Date().toISOString() : undefined,
-    })),
+    milestones: DEFAULT_MILESTONES.map((m, i) => {
+      const done = evalMilestone(m);
+      return {
+        ...m,
+        id: `milestone-${i}`,
+        isCompleted: done,
+        completedAt: done ? new Date().toISOString() : undefined,
+      };
+    }),
     
     // Weekly focus
     weeklyFocus: {

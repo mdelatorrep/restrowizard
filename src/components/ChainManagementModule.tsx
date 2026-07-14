@@ -192,7 +192,7 @@ const ChainManagementModule = () => {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Ubicaciones</p><p className="text-2xl font-bold">{summary.activeLocations}/{summary.totalLocations}</p></div><MapPin className="h-8 w-8 text-primary opacity-20" /></div></CardContent></Card>
-        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Personal Total</p><p className="text-2xl font-bold">{summary.totalStaff}</p></div><Users className="h-8 w-8 text-blue-500 opacity-20" /></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Capacidad Total</p><p className="text-2xl font-bold">{summary.totalSeatingCapacity}</p></div><Users className="h-8 w-8 text-blue-500 opacity-20" /></div></CardContent></Card>
         <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Transferencias</p><p className="text-2xl font-bold">{summary.pendingTransfers}</p></div><Package className="h-8 w-8 text-orange-500 opacity-20" /></div></CardContent></Card>
         <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Checklists</p><p className="text-2xl font-bold">{complianceChecklists.length}</p></div><ClipboardCheck className="h-8 w-8 text-green-500 opacity-20" /></div></CardContent></Card>
       </div>

@@ -86,7 +86,7 @@ export const useChainData = () => {
   // Calculate summary metrics
   const totalLocations = locations?.length || 0;
   const activeLocations = locations?.filter(l => l.is_active)?.length || 0;
-  const totalStaff = locations?.reduce((sum, l) => sum + (l.seating_capacity || 0), 0) || 0;
+  const totalSeatingCapacity = locations?.reduce((sum, l) => sum + (l.seating_capacity || 0), 0) || 0;
   const pendingTransfers = inventoryTransfers?.filter(t => t.status === 'pending')?.length || 0;
 
   const hasData = (chains?.length || 0) > 0;
@@ -100,7 +100,7 @@ export const useChainData = () => {
     summary: {
       totalLocations,
       activeLocations,
-      totalStaff,
+      totalSeatingCapacity,
       pendingTransfers,
     },
     hasData,

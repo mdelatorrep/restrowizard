@@ -91,11 +91,24 @@ export const useGhostKitchenData = () => {
     o.created_at?.startsWith(today)
   ) || [];
 
+  // B-27: prep time y on-time reales desde timestamps (created_at, completed_at, estimated_delivery)
+  const completedToday = todayOrders.filter((o: any) => o.completed_at && o.created_at);
+  const avgPrepTime = completedToday.length
+    ? Math.round(
+        completedToday.reduce((s: number, o: any) =>
+          s + (new Date(o.completed_at).getTime() - new Date(o.created_at).getTime()), 0)
+        / completedToday.length / 60000)
+    : 0;
+  const withEta = completedToday.filter((o: any) => o.estimated_delivery);
+  const onTimeRate = withEta.length
+    ? Math.round((withEta.filter((o: any) => new Date(o.completed_at) <= new Date(o.estimated_delivery)).length / withEta.length) * 100)
+    : 0;
+
   const kpis = {
     totalOrders: todayOrders.length,
     totalRevenue: todayOrders.reduce((sum, o) => sum + (o.subtotal || 0), 0),
-    avgPrepTime: 0, // Would need completion times to calculate
-    onTimeRate: 0,
+    avgPrepTime,
+    onTimeRate,
     commissionPaid: todayOrders.reduce((sum, o) => sum + (o.commission || 0), 0),
   };
 
