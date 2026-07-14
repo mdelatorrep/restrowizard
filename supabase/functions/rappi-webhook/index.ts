@@ -22,10 +22,13 @@ Deno.serve(async (req) => {
       integ = data;
     }
 
-    // Best-effort HMAC validation
-    if (integ?.webhook_secret && signature) {
-      const ok = await verifyHmac(integ.webhook_secret, raw, signature);
-      if (!ok) return new Response("Invalid signature", { status: 401 });
+    // Mandatory HMAC validation when a webhook_secret is configured (B-14)
+    if (integ?.webhook_secret) {
+      if (!signature || !(await verifyHmac(integ.webhook_secret, raw, signature))) {
+        return new Response("Invalid signature", { status: 401, headers: corsHeaders });
+      }
+    } else if (integ) {
+      console.warn(`rappi-webhook: integration ${integ.id} has no webhook_secret configured — signature NOT verified`);
     }
 
     const eventId = payload.event_id ?? payload.id ?? `${Date.now()}-${crypto.randomUUID()}`;
@@ -105,6 +108,14 @@ async function verifyHmac(secret: string, body: string, signature: string): Prom
     );
     const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
     const hex = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
-    return signature.toLowerCase().includes(hex);
+    const provided = signature.trim().replace(/^sha256=/i, "").toLowerCase();
+    return timingSafeEqual(provided, hex);
   } catch { return false; }
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }

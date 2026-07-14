@@ -757,6 +757,26 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // AUTH (B-04): require an authenticated caller and enforce project ownership.
+    const authHeader = req.headers.get('Authorization') || '';
+    const jwt = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user: caller } } = await supabase.auth.getUser(jwt);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (projectId) {
+      const { data: ownerRow } = await supabase
+        .from('business_opening_projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .maybeSingle();
+      if (!ownerRow || ownerRow.user_id !== caller.id) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
     
     // ═══════════════════════════════════════════════════════════════
     // START FULL ANALYSIS - Creates a run and starts background job

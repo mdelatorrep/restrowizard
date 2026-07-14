@@ -99,8 +99,57 @@ serve(async (req) => {
       );
     }
 
-    // Calculate totals
-    const subtotal = body.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Server-side price validation (B-03): never trust client-provided prices.
+    const requestedIds = [...new Set(body.items.map((i) => i.id))];
+    const { data: ownerMenus } = await supabase
+      .from("restaurant_menus")
+      .select("id")
+      .eq("user_id", body.restaurant_user_id);
+    const menuIds = (ownerMenus || []).map((m) => m.id);
+    let dbItems: any[] = [];
+    if (menuIds.length > 0 && requestedIds.length > 0) {
+      const { data } = await supabase
+        .from("menu_items")
+        .select("id, name, price, is_available, menu_id")
+        .in("id", requestedIds)
+        .in("menu_id", menuIds);
+      dbItems = data || [];
+    }
+    const dbById = new Map(dbItems.map((i) => [i.id, i]));
+
+    const validatedItems = [] as Array<{ id: string; name: string; quantity: number; price: number; notes: string | null }>;
+    for (const item of body.items) {
+      const db = dbById.get(item.id);
+      if (!db) {
+        return new Response(
+          JSON.stringify({ error: `Producto no disponible: ${String(item.name || item.id).slice(0, 100)}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (db.is_available === false) {
+        return new Response(
+          JSON.stringify({ error: `Producto agotado: ${db.name}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const quantity = Math.min(Math.max(1, Math.floor(item.quantity)), 99);
+      validatedItems.push({
+        id: db.id,
+        name: String(db.name).slice(0, 100),
+        quantity,
+        price: Number(db.price),
+        notes: item.notes?.slice(0, 200) || null,
+      });
+    }
+    if (validatedItems.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No hay productos válidos en el pedido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Calculate totals from server-side prices
+    const subtotal = validatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     
     // Get delivery fee from zone if provided
     let deliveryFee = 0;
@@ -155,13 +204,7 @@ serve(async (req) => {
         customer_email: body.customer_email?.trim().slice(0, 255) || null,
         delivery_address: body.delivery_address.trim().slice(0, 500),
         delivery_notes: body.delivery_notes?.trim().slice(0, 500) || null,
-        items: body.items.map(item => ({
-          id: item.id,
-          name: item.name.slice(0, 100),
-          quantity: Math.min(Math.max(1, Math.floor(item.quantity)), 99),
-          price: item.price,
-          notes: item.notes?.slice(0, 200) || null,
-        })),
+        items: validatedItems,
         subtotal,
         delivery_fee: deliveryFee,
         discount: 0,

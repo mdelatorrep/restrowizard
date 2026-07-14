@@ -16,7 +16,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.business-opening-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-proactive-alerts]
 verify_jwt = false
