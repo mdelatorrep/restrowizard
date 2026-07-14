@@ -24,6 +24,8 @@ export interface AggregatedFinancesKPIs {
   totalFoodCost: number;
   totalLaborCost: number;
   totalTaxes: number;
+  netSales: number;
+  totalOtherCosts: number;
   totalOrders: number;
   totalCovers: number;
   avgTicket: number;
@@ -80,7 +82,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // 1) Orders (revenue/covers/order_count)
       const ordersPromise = supabase
         .from('restaurant_orders')
-        .select('id, total, tax_amount, guests_count, status, created_at')
+        .select('id, total, tax_amount, tip_amount, guests_count, status, created_at')
         .eq('user_id', userId)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
@@ -128,7 +130,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       (ordersRes.data || []).forEach((order: any) => {
         const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
         if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0, taxes: 0 };
-        ordersByDate[dateKey].revenue += Number(order.total) || 0;
+        ordersByDate[dateKey].revenue += Math.max(0, (Number(order.total) || 0) - (Number(order.tip_amount) || 0));
         ordersByDate[dateKey].count += 1;
         ordersByDate[dateKey].covers += order.guests_count || 0;
         ordersByDate[dateKey].taxes += Number(order.tax_amount) || 0;
@@ -181,6 +183,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const foodCost = shiftFood > 0 ? shiftFood : (manualByDate[dateStr]?.food || 0);
         const laborCost = shiftLabor > 0 ? shiftLabor : (manualByDate[dateStr]?.labor || 0);
         const revenue = orderData.revenue;
+        const netDay = Math.max(0, revenue - (orderData.taxes || 0));
 
         if (revenue > 0 || orderData.count > 0 || foodCost > 0 || laborCost > 0) {
           salesData.push({
@@ -192,9 +195,9 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
             labor_cost: laborCost,
             taxes: orderData.taxes,
             avg_ticket: orderData.count > 0 ? revenue / orderData.count : 0,
-            gross_margin: revenue > 0 ? ((revenue - foodCost) / revenue) * 100 : 0,
-            food_cost_percentage: revenue > 0 ? (foodCost / revenue) * 100 : 0,
-            labor_cost_percentage: revenue > 0 ? (laborCost / revenue) * 100 : 0,
+            gross_margin: netDay > 0 ? ((netDay - foodCost) / netDay) * 100 : 0,
+            food_cost_percentage: netDay > 0 ? (foodCost / netDay) * 100 : 0,
+            labor_cost_percentage: netDay > 0 ? (laborCost / netDay) * 100 : 0,
           });
         }
 
@@ -214,6 +217,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const totalTaxes = salesData.reduce((sum, d) => sum + (d.taxes || 0), 0);
         const totalOrders = salesData.reduce((sum, d) => sum + d.order_count, 0);
         const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
+        const netSales = Math.max(0, totalRevenue - totalTaxes);
+        const totalOtherCosts = (manualRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.other_costs) || 0), 0);
 
         setKpis({
           totalRevenue,
@@ -224,10 +229,12 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           totalCovers,
 
           avgTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-          grossMargin: totalRevenue > 0 ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100 : 0,
-          foodCostPercentage: totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 0,
-          laborCostPercentage: totalRevenue > 0 ? (totalLaborCost / totalRevenue) * 100 : 0,
-          netProfit: totalRevenue - totalFoodCost - totalLaborCost,
+          grossMargin: netSales > 0 ? ((netSales - totalFoodCost) / netSales) * 100 : 0,
+          foodCostPercentage: netSales > 0 ? (totalFoodCost / netSales) * 100 : 0,
+          laborCostPercentage: netSales > 0 ? (totalLaborCost / netSales) * 100 : 0,
+          netSales,
+          totalOtherCosts,
+          netProfit: netSales - totalFoodCost - totalLaborCost - totalOtherCosts,
           revenuePerCover: totalCovers > 0 ? totalRevenue / totalCovers : 0,
           ordersPerDay: salesData.length > 0 ? totalOrders / salesData.length : 0
         });
