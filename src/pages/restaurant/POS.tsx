@@ -198,6 +198,7 @@ const POS = () => {
         total: total + tipAmount,
         status: 'completed',
         order_type: selectedTable ? 'dine_in' : 'takeout',
+        sales_channel: 'pos',
         is_pos_order: true,
         guests_count: guestsCount,
         payment_method: paymentMethod,

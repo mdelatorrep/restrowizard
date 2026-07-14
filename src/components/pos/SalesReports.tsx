@@ -45,6 +45,9 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
+const PIE_COLORS = ['hsl(142, 76%, 36%)','hsl(221, 83%, 53%)','hsl(280, 65%, 60%)','hsl(31, 90%, 55%)','hsl(340, 75%, 55%)','hsl(190, 70%, 45%)','hsl(48, 90%, 50%)'];
+
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -363,11 +366,7 @@ export const SalesReports = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={[
-                      { name: 'Efectivo', value: kpis.cashPercent, color: 'hsl(var(--chart-1))' },
-                      { name: 'Tarjeta', value: kpis.cardPercent, color: 'hsl(var(--chart-2))' },
-                      { name: 'Otros', value: 100 - kpis.cashPercent - kpis.cardPercent, color: 'hsl(var(--chart-3))' }
-                    ]}
+                    data={paymentMethodBreakdown.map((p) => ({ name: p.method, value: p.percent }))}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -375,12 +374,8 @@ export const SalesReports = () => {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {[
-                      { name: 'Efectivo', value: kpis.cashPercent, color: 'hsl(142, 76%, 36%)' },
-                      { name: 'Tarjeta', value: kpis.cardPercent, color: 'hsl(221, 83%, 53%)' },
-                      { name: 'Otros', value: 100 - kpis.cashPercent - kpis.cardPercent, color: 'hsl(280, 65%, 60%)' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {paymentMethodBreakdown.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: any) => `${value.toFixed(1)}%`} />

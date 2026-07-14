@@ -89,6 +89,9 @@ const normalizeMethod = (raw: string | null | undefined): string => {
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
 
+// B-20: monto de VENTA (excluye propina). total = subtotal(+impuesto) + propina.
+const saleAmt = (o: any): number => Math.max(0, (Number(o?.total) || 0) - (Number(o?.tip_amount) || 0));
+
 export const useSalesReports = (
   period: ReportPeriod = 'daily',
   channel: SalesChannel = 'all'
@@ -128,7 +131,7 @@ export const useSalesReports = (
 
         let prevQ = supabase
           .from('restaurant_orders')
-          .select('total, tax_amount')
+          .select('total, tax_amount, tip_amount')
           .eq('user_id', userId)
           .gte('created_at', dateRange.prevStart.toISOString())
           .lte('created_at', dateRange.prevEnd.toISOString());
@@ -160,7 +163,7 @@ export const useSalesReports = (
     rawOrders.forEach(order => {
       const orderDate = format(parseISO(order.created_at), 'yyyy-MM-dd');
       if (!groupedData[orderDate]) return;
-      const total = Number(order.total) || 0;
+      const total = saleAmt(order);
       groupedData[orderDate].totalSales += total;
       groupedData[orderDate].orderCount += 1;
       const m = normalizeMethod(order.payment_method);
@@ -176,7 +179,7 @@ export const useSalesReports = (
   }, [rawOrders, dateRange, period]);
 
   const kpis = useMemo((): SalesReportKPIs => {
-    const totalRevenue = rawOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalRevenue = rawOrders.reduce((sum, o) => sum + saleAmt(o), 0);
     const taxCollected = rawOrders.reduce((sum, o) => sum + (Number(o.tax_amount) || 0), 0);
     const netRevenue = Math.max(0, totalRevenue - taxCollected);
     const totalOrders = rawOrders.length;
@@ -190,11 +193,11 @@ export const useSalesReports = (
     let bestDay = ''; let bestDayAmount = 0;
     chartData.forEach(p => { if (p.totalSales > bestDayAmount) { bestDayAmount = p.totalSales; bestDay = p.label; } });
 
-    const prevRevenue = previousPeriodOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const prevRevenue = previousPeriodOrders.reduce((sum, o) => sum + saleAmt(o), 0);
     const growthPercent = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
-    const cashTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Efectivo').reduce((s, o) => s + (Number(o.total) || 0), 0);
-    const cardTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Tarjeta').reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const cashTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Efectivo').reduce((s, o) => s + saleAmt(o), 0);
+    const cardTotal = rawOrders.filter(o => normalizeMethod(o.payment_method) === 'Tarjeta').reduce((s, o) => s + saleAmt(o), 0);
     const cashPercent = totalRevenue > 0 ? (cashTotal / totalRevenue) * 100 : 0;
     const cardPercent = totalRevenue > 0 ? (cardTotal / totalRevenue) * 100 : 0;
 
@@ -207,7 +210,7 @@ export const useSalesReports = (
     let total = 0;
     rawOrders.forEach(o => {
       const m = normalizeMethod(o.payment_method);
-      const amt = Number(o.total) || 0;
+      const amt = saleAmt(o);
       map[m] = (map[m] || 0) + amt;
       total += amt;
     });
@@ -223,7 +226,7 @@ export const useSalesReports = (
     rawOrders.forEach(o => {
       const ch = (o.sales_channel || 'other') as Exclude<SalesChannel, 'all'>;
       if (!map[ch]) map[ch] = { amount: 0, orders: 0 };
-      const amt = Number(o.total) || 0;
+      const amt = saleAmt(o);
       map[ch].amount += amt;
       map[ch].orders += 1;
       total += amt;
@@ -263,7 +266,7 @@ export const useSalesReports = (
     for (let h = 0; h < 24; h++) hourMap[h] = { sales: 0, orders: 0 };
     rawOrders.forEach(order => {
       const hour = parseISO(order.created_at).getHours();
-      hourMap[hour].sales += Number(order.total) || 0;
+      hourMap[hour].sales += saleAmt(order);
       hourMap[hour].orders += 1;
     });
     return Object.entries(hourMap).map(([hour, d]) => ({
