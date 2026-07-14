@@ -1,16 +1,20 @@
 import React, { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { Briefcase, Link2, Users } from 'lucide-react';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const consultantRef = searchParams.get('ref');
   const inviteToken = searchParams.get('invite');
   const teamInvite = searchParams.get('team_invite');
+  const nextParam = searchParams.get('next');
+  const { session } = useAuthContext();
 
   // Persist tokens so login/signup flows can claim/link after auth completes
   useEffect(() => {
@@ -18,6 +22,15 @@ const Auth = () => {
     if (inviteToken) localStorage.setItem('clientInviteToken', inviteToken);
     if (teamInvite) localStorage.setItem('teamInviteToken', teamInvite);
   }, [consultantRef, inviteToken, teamInvite]);
+
+  // OAuth/MCP consent redirect: after login, return to the preserved same-origin path.
+  useEffect(() => {
+    if (!session || !nextParam) return;
+    // Validate: must be a same-origin relative path.
+    if (nextParam.startsWith('/') && !nextParam.startsWith('//')) {
+      navigate(nextParam, { replace: true });
+    }
+  }, [session, nextParam, navigate]);
 
   const hasReferral = Boolean(consultantRef || inviteToken || teamInvite);
 
