@@ -30,6 +30,7 @@ import { PageSkeleton } from "./components/ui/skeletons";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 // Lazy: public marketing & secondary pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -167,6 +168,8 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                {/* OAuth 2.1 consent screen for MCP / agent integrations */}
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/diagnosis" element={<Diagnosis />} />
                 <Route path="/events" element={<Events />} />
