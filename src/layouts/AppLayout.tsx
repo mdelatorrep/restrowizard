@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { AppHeader } from '@/components/navigation/AppHeader';
@@ -7,6 +7,7 @@ import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useUserType } from '@/hooks/useUserType';
 import CopilotChat from '@/components/CopilotChat';
 import { BrandThemeProvider } from '@/components/brand/BrandThemeProvider';
+import { RouteErrorBoundary } from '@/components/errors/RouteErrorBoundary';
 
 interface AppLayoutProps {
   requiredUserType?: 'restaurant_owner' | 'consultant';
@@ -18,6 +19,7 @@ interface AppLayoutProps {
  */
 const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
   const { userType } = useUserType();
+  const location = useLocation();
   
   // Use the actual userType for rendering, fallback to required for initial render
   const effectiveUserType = userType || requiredUserType || 'restaurant_owner';
@@ -31,7 +33,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
             <AppHeader />
             {effectiveUserType === 'consultant' && <WorkingAsBar />}
              <div className="flex-1 p-4 md:p-6 overflow-auto">
-              <Outlet />
+              <RouteErrorBoundary key={location.pathname} label={location.pathname}>
+                <Outlet />
+              </RouteErrorBoundary>
             </div>
           </main>
           <CopilotChat />

@@ -1,0 +1,46 @@
+/**
+ * Central query-key factory (B-06 — fundación de escalabilidad).
+ *
+ * Fuente única de verdad para las keys de TanStack Query, para que los hooks
+ * compartan caché, deduzcan peticiones e invaliden de forma consistente.
+ * Al migrar hooks de useState/useEffect a useQuery/useMutation, usar estas keys
+ * en vez de arrays ad-hoc. Scopear siempre por el id de negocio/usuario de datos.
+ *
+ * Convención: qk.<dominio>.<sub>(...args) -> readonly unknown[]
+ */
+export const qk = {
+  team: {
+    members: (businessId?: string | null) => ['team-members', businessId] as const,
+    permissions: (userId?: string | null) => ['team-permissions', userId] as const,
+    customRoles: (businessId?: string | null) => ['custom-roles', businessId] as const,
+  },
+  pos: {
+    session: (userId?: string | null) => ['pos-session', userId] as const,
+    transactions: (sessionId?: string | null) => ['pos-transactions', sessionId] as const,
+    discounts: (userId?: string | null) => ['pos-discounts', userId] as const,
+  },
+  finances: {
+    summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,
+    sales: (userId?: string | null) => ['finances-sales', userId] as const,
+  },
+  inventory: {
+    items: (userId?: string | null) => ['inventory-items', userId] as const,
+    movements: (userId?: string | null) => ['inventory-movements', userId] as const,
+  },
+  menus: {
+    all: (userId?: string | null) => ['menus', userId] as const,
+    items: (menuId?: string | null) => ['menu-items', menuId] as const,
+  },
+  recipes: {
+    all: (userId?: string | null) => ['recipes', userId] as const,
+    detail: (recipeId?: string | null) => ['recipe', recipeId] as const,
+  },
+  loyalty: {
+    customers: (userId?: string | null) => ['loyalty-customers', userId] as const,
+  },
+  reservations: {
+    all: (userId?: string | null) => ['reservations', userId] as const,
+  },
+} as const;
+
+export type QueryKeyFactory = typeof qk;

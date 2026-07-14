@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { RouteErrorBoundary } from '@/components/errors/RouteErrorBoundary';
 
 const adminNavItems = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -92,7 +93,9 @@ const AdminLayout: React.FC = () => {
 
       {/* Main content */}
       <main className="flex-1 p-6 overflow-auto">
-        <Outlet />
+        <RouteErrorBoundary key={location.pathname} label={location.pathname}>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
     </div>
   );
