@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface Reservation {
   id: string;
@@ -69,60 +71,42 @@ export interface ReservationKPIs {
 export function useReservations() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [kpis, setKpis] = useState<ReservationKPIs>({
-    total: 0,
-    pending: 0,
-    confirmed: 0,
-    todayCount: 0,
-    thisWeekCount: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const calculateKPIs = (data: Reservation[]): ReservationKPIs => {
+  const { data: reservations = [], isLoading: loading } = useQuery({
+    queryKey: qk.reservations.all(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<Reservation[]> => {
+      const { data, error } = await supabase
+        .from('table_reservations')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('reservation_date', { ascending: true })
+        .order('reservation_time', { ascending: true });
+      if (error) throw error;
+      return (data || []) as Reservation[];
+    },
+  });
+
+  const kpis = useMemo((): ReservationKPIs => {
     const today = new Date().toISOString().split('T')[0];
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekStartStr = weekStart.toISOString().split('T')[0];
-    
+
     return {
-      total: data.length,
-      pending: data.filter(r => r.status === 'pending').length,
-      confirmed: data.filter(r => r.status === 'confirmed').length,
-      todayCount: data.filter(r => r.reservation_date === today).length,
-      thisWeekCount: data.filter(r => r.reservation_date >= weekStartStr).length,
+      total: reservations.length,
+      pending: reservations.filter(r => r.status === 'pending').length,
+      confirmed: reservations.filter(r => r.status === 'confirmed').length,
+      todayCount: reservations.filter(r => r.reservation_date === today).length,
+      thisWeekCount: reservations.filter(r => r.reservation_date >= weekStartStr).length,
     };
-  };
+  }, [reservations]);
 
-  const fetchReservations = async () => {
-    if (!user?.id) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('table_reservations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('reservation_date', { ascending: true })
-        .order('reservation_time', { ascending: true });
-      
-      if (error) throw error;
-      
-      const typedData = (data || []) as Reservation[];
-      setReservations(typedData);
-      setKpis(calculateKPIs(typedData));
-    } catch (error) {
-      console.error('Error fetching reservations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchReservations();
-    }
-  }, [user?.id]);
+  const fetchReservations = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.reservations.all(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   const updateReservationStatus = async (id: string, status: Reservation['status'], notes?: string) => {
     try {
@@ -136,9 +120,6 @@ export function useReservations() {
       
       if (error) throw error;
       
-      setReservations(prev => 
-        prev.map(r => r.id === id ? { ...r, ...updates } : r)
-      );
 
       // TK-5: sincronizar estado de la mesa con el estado de la reserva
       const reservation = reservations.find(r => r.id === id);
@@ -176,6 +157,8 @@ export function useReservations() {
         }
       }
       
+      await fetchReservations();
+
       toast({
         title: "Reserva actualizada",
         description: `Estado cambiado a ${status}`,
@@ -241,7 +224,7 @@ export function useReservations() {
 
       if (error) throw error;
 
-      setReservations(prev => [...prev, data as Reservation]);
+      await fetchReservations();
 
       toast({
         title: "Reserva creada",

@@ -82,6 +82,9 @@ export const qk = {
   business: {
     taxConfig: (userId?: string | null) => ['business-tax-config', userId] as const,
   },
+  dashboard: {
+    overview: (userId?: string | null) => ['dashboard-overview', userId] as const,
+  },
   consultant: {
     profile: (userId?: string | null) => ['consultant-profile', userId] as const,
     alerts: (consultantId?: string | null) => ['consultant-alerts', consultantId] as const,
