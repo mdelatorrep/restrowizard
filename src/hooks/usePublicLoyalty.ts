@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 import type {
   LoyaltyCustomer,
   LoyaltyTier,
@@ -11,34 +13,35 @@ import type {
   CustomerAchievement,
 } from '@/components/loyalty-public/loyaltyTypes';
 
+interface PublicLoyaltyData {
+  customer: LoyaltyCustomer;
+  transactions: PointsTransaction[];
+  availableRewards: RewardItem[];
+  redeemedRewards: RedeemedReward[];
+  achievements: Achievement[];
+  unlockedAchievements: CustomerAchievement[];
+  allTiers: LoyaltyTier[];
+}
+
+// Error centinela para distinguir "perfil no encontrado" del resto.
+const NOT_FOUND = 'No se encontró tu perfil de fidelidad. Verifica el código.';
+
 export const usePublicLoyalty = (codigo?: string) => {
   const { toast } = useToast();
-  const [customer, setCustomer] = useState<LoyaltyCustomer | null>(null);
-  const [transactions, setTransactions] = useState<PointsTransaction[]>([]);
-  const [availableRewards, setAvailableRewards] = useState<RewardItem[]>([]);
-  const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [unlockedAchievements, setUnlockedAchievements] = useState<CustomerAchievement[]>([]);
-  const [allTiers, setAllTiers] = useState<LoyaltyTier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCustomerData = useCallback(async () => {
-    if (!codigo) return;
-    try {
-      setLoading(true);
-      setError(null);
-
+  const query = useQuery({
+    queryKey: qk.loyalty.public(codigo),
+    enabled: !!codigo,
+    queryFn: async (): Promise<PublicLoyaltyData> => {
       const { data: customerData, error: customerError } = await supabase
         .from('loyalty_customers')
         .select(`*, tier:loyalty_tiers(*)`)
-        .eq('loyalty_code', codigo)
+        .eq('loyalty_code', codigo!)
         .single();
 
       if (customerError || !customerData) {
-        setError('No se encontró tu perfil de fidelidad. Verifica el código.');
-        setLoading(false);
-        return;
+        throw new Error(NOT_FOUND);
       }
 
       const mapped: LoyaltyCustomer = {
@@ -58,7 +61,6 @@ export const usePublicLoyalty = (codigo?: string) => {
           ? { ...customerData.tier, benefits: (customerData.tier.benefits as string[]) || [] }
           : null,
       };
-      setCustomer(mapped);
 
       const [tiersRes, txRes, rewardsRes, redeemedRes, achRes, unlockedRes] = await Promise.all([
         supabase.from('loyalty_tiers').select('*').eq('user_id', customerData.user_id).order('min_points', { ascending: true }),
@@ -69,37 +71,43 @@ export const usePublicLoyalty = (codigo?: string) => {
         supabase.from('loyalty_customer_achievements').select('*').eq('customer_id', customerData.id),
       ]);
 
-      if (tiersRes.data) setAllTiers(tiersRes.data.map(t => ({ ...t, benefits: (t.benefits as string[]) || [] })));
-      if (txRes.data) setTransactions(txRes.data as PointsTransaction[]);
-      if (rewardsRes.data) {
-        const filtered = rewardsRes.data.filter(r => !r.min_tier_id || r.min_tier_id === customerData.tier_id);
-        setAvailableRewards(filtered.map(r => ({
+      const allTiers = (tiersRes.data || []).map(t => ({ ...t, benefits: (t.benefits as string[]) || [] })) as LoyaltyTier[];
+      const transactions = (txRes.data || []) as PointsTransaction[];
+
+      const availableRewards = (rewardsRes.data || [])
+        .filter(r => !r.min_tier_id || r.min_tier_id === customerData.tier_id)
+        .map(r => ({
           id: r.id, name: r.name, description: r.description,
           points_required: r.points_required, reward_type: r.reward_type,
           reward_value: Number(r.reward_value), is_active: r.is_active,
           min_tier_id: r.min_tier_id,
-        })));
-      }
-      if (redeemedRes.data) {
-        setRedeemedRewards(redeemedRes.data.map((r: any) => ({
-          id: r.id, status: r.status, redeemed_at: r.redeemed_at,
-          expires_at: r.expires_at, redemption_code: r.redemption_code,
-          reward: r.reward ? { name: r.reward.name, reward_type: r.reward.reward_type, reward_value: Number(r.reward.reward_value) } : null,
-        })));
-      }
-      if (achRes.data) setAchievements(achRes.data as Achievement[]);
-      if (unlockedRes.data) setUnlockedAchievements(unlockedRes.data as CustomerAchievement[]);
-    } catch (err) {
-      console.error('Error fetching loyalty data:', err);
-      setError('Error al cargar los datos. Intenta de nuevo.');
-    } finally {
-      setLoading(false);
-    }
-  }, [codigo]);
+        })) as RewardItem[];
 
-  useEffect(() => { fetchCustomerData(); }, [fetchCustomerData]);
+      const redeemedRewards = (redeemedRes.data || []).map((r: any) => ({
+        id: r.id, status: r.status, redeemed_at: r.redeemed_at,
+        expires_at: r.expires_at, redemption_code: r.redemption_code,
+        reward: r.reward ? { name: r.reward.name, reward_type: r.reward.reward_type, reward_value: Number(r.reward.reward_value) } : null,
+      })) as RedeemedReward[];
+
+      const achievements = (achRes.data || []) as Achievement[];
+      const unlockedAchievements = (unlockedRes.data || []) as CustomerAchievement[];
+
+      return { customer: mapped, transactions, availableRewards, redeemedRewards, achievements, unlockedAchievements, allTiers };
+    },
+  });
+
+  const data = query.data;
+  const error = query.error
+    ? ((query.error as Error).message === NOT_FOUND ? NOT_FOUND : 'Error al cargar los datos. Intenta de nuevo.')
+    : null;
+
+  const refresh = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.loyalty.public(codigo) }),
+    [queryClient, codigo]
+  );
 
   const redeemReward = async (reward: RewardItem) => {
+    const customer = data?.customer;
     if (!customer) return null;
     const redemptionCode = `RW${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const expiresAt = new Date();
@@ -135,8 +143,7 @@ export const usePublicLoyalty = (codigo?: string) => {
         balance_after: newPoints,
       });
 
-      setCustomer(prev => prev ? { ...prev, current_points: newPoints } : null);
-      fetchCustomerData();
+      await refresh();
       return { code: redemptionCode, expiresAt: expiresAt.toISOString() };
     } catch (err) {
       console.error('Error redeeming reward:', err);
@@ -146,8 +153,16 @@ export const usePublicLoyalty = (codigo?: string) => {
   };
 
   return {
-    customer, transactions, availableRewards, redeemedRewards,
-    achievements, unlockedAchievements, allTiers, loading, error,
-    redeemReward, refresh: fetchCustomerData,
+    customer: data?.customer ?? null,
+    transactions: data?.transactions ?? [],
+    availableRewards: data?.availableRewards ?? [],
+    redeemedRewards: data?.redeemedRewards ?? [],
+    achievements: data?.achievements ?? [],
+    unlockedAchievements: data?.unlockedAchievements ?? [],
+    allTiers: data?.allTiers ?? [],
+    loading: query.isLoading,
+    error,
+    redeemReward,
+    refresh,
   };
 };

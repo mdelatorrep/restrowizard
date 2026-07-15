@@ -45,6 +45,14 @@ export const qk = {
   },
   loyalty: {
     customers: (userId?: string | null) => ['loyalty-customers', userId] as const,
+    public: (codigo?: string | null) => ['public-loyalty', codigo] as const,
+  },
+  talent: {
+    staff: (userId?: string | null) => ['talent-staff', userId] as const,
+    benchmarks: () => ['talent-benchmarks'] as const,
+  },
+  support: {
+    tickets: (userId?: string | null) => ['support-tickets', userId] as const,
   },
   reservations: {
     all: (userId?: string | null) => ['reservations', userId] as const,

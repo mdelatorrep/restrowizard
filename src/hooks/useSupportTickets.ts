@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { qk } from '@/lib/queryKeys';
 
 export interface SupportTicket {
   id: string;
@@ -57,89 +59,93 @@ export interface SupportKPIs {
   urgentTickets: number;
 }
 
+const calculateKPIs = (data: SupportTicket[]): SupportKPIs => {
+  const total = data.length;
+  if (total === 0) {
+    return { totalTickets: 0, openTickets: 0, avgResponseTime: 0, resolutionRate: 0, satisfactionScore: 0, urgentTickets: 0 };
+  }
+
+  const open = data.filter(t => ['open', 'in_progress', 'pending_customer'].includes(t.status)).length;
+  const resolved = data.filter(t => ['resolved', 'closed'].includes(t.status)).length;
+  const urgent = data.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
+
+  const ratings = data.filter(t => t.satisfaction_rating).map(t => t.satisfaction_rating!);
+  const avgSatisfaction = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+
+  const respondedTickets = data.filter(t => t.first_response_at);
+  let avgResponseHours = 0;
+  if (respondedTickets.length > 0) {
+    const totalHours = respondedTickets.reduce((sum, t) => {
+      const created = new Date(t.created_at).getTime();
+      const responded = new Date(t.first_response_at!).getTime();
+      return sum + (responded - created) / (1000 * 60 * 60);
+    }, 0);
+    avgResponseHours = totalHours / respondedTickets.length;
+  }
+
+  return {
+    totalTickets: total,
+    openTickets: open,
+    avgResponseTime: Math.round(avgResponseHours * 10) / 10,
+    resolutionRate: Math.round((resolved / total) * 100),
+    satisfactionScore: Math.round(avgSatisfaction * 10) / 10,
+    urgentTickets: urgent,
+  };
+};
+
+interface SupportData {
+  tickets: SupportTicket[];
+  templates: SupportTemplate[];
+}
+
 export const useSupportTickets = () => {
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [templates, setTemplates] = useState<SupportTemplate[]>([]);
-  const [kpis, setKpis] = useState<SupportKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  const calculateKPIs = (data: SupportTicket[]): SupportKPIs => {
-    const total = data.length;
-    if (total === 0) {
-      return { totalTickets: 0, openTickets: 0, avgResponseTime: 0, resolutionRate: 0, satisfactionScore: 0, urgentTickets: 0 };
-    }
-
-    const open = data.filter(t => ['open', 'in_progress', 'pending_customer'].includes(t.status)).length;
-    const resolved = data.filter(t => ['resolved', 'closed'].includes(t.status)).length;
-    const urgent = data.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
-    
-    const ratings = data.filter(t => t.satisfaction_rating).map(t => t.satisfaction_rating!);
-    const avgSatisfaction = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-    
-    const respondedTickets = data.filter(t => t.first_response_at);
-    let avgResponseHours = 0;
-    if (respondedTickets.length > 0) {
-      const totalHours = respondedTickets.reduce((sum, t) => {
-        const created = new Date(t.created_at).getTime();
-        const responded = new Date(t.first_response_at!).getTime();
-        return sum + (responded - created) / (1000 * 60 * 60);
-      }, 0);
-      avgResponseHours = totalHours / respondedTickets.length;
-    }
-
-    return {
-      totalTickets: total,
-      openTickets: open,
-      avgResponseTime: Math.round(avgResponseHours * 10) / 10,
-      resolutionRate: Math.round((resolved / total) * 100),
-      satisfactionScore: Math.round(avgSatisfaction * 10) / 10,
-      urgentTickets: urgent,
-    };
-  };
-
-  const fetchTickets = async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.support.tickets(userId),
+    enabled: !!userId,
+    queryFn: async (): Promise<SupportData> => {
+      const { data: ticketsRes, error } = await supabase
         .from('support_tickets')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      const ticketsData = (data || []) as unknown as SupportTicket[];
-      setTickets(ticketsData);
-      setKpis(calculateKPIs(ticketsData));
-      setHasData(ticketsData.length > 0);
 
       const { data: templatesData } = await supabase
         .from('support_templates')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .eq('is_active', true)
         .order('name');
-      
-      setTemplates((templatesData || []) as unknown as SupportTemplate[]);
-    } catch (error) {
-      console.error('Error fetching tickets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      return {
+        tickets: (ticketsRes || []) as unknown as SupportTicket[],
+        templates: (templatesData || []) as unknown as SupportTemplate[],
+      };
+    },
+  });
+
+  const tickets = data?.tickets ?? [];
+  const templates = data?.templates ?? [];
+  const kpis = useMemo(() => (data ? calculateKPIs(tickets) : null), [data, tickets]);
+  const hasData = tickets.length > 0;
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.support.tickets(userId) }),
+    [queryClient, userId]
+  );
 
   const createTicket = async (ticketData: { type: string; subject: string; description: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
+
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('support_tickets')
-        .insert([{ 
+        .insert([{
           type: ticketData.type,
           subject: ticketData.subject,
           description: ticketData.description,
@@ -154,10 +160,10 @@ export const useSupportTickets = () => {
         .single();
 
       if (error) throw error;
-      
-      toast({ title: 'Ticket creado', description: `Ticket #${data.ticket_number} registrado` });
-      await fetchTickets();
-      return data;
+
+      toast({ title: 'Ticket creado', description: `Ticket #${inserted.ticket_number} registrado` });
+      await invalidate();
+      return inserted;
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast({ title: 'Error', description: 'No se pudo crear el ticket', variant: 'destructive' });
@@ -173,9 +179,9 @@ export const useSupportTickets = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       toast({ title: 'Ticket actualizado', description: 'Los cambios han sido guardados' });
-      await fetchTickets();
+      await invalidate();
     } catch (error) {
       console.error('Error updating ticket:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar el ticket', variant: 'destructive' });
@@ -197,8 +203,8 @@ export const useSupportTickets = () => {
           .update({ first_response_at: new Date().toISOString() })
           .eq('id', ticketId);
       }
-      
-      await fetchTickets();
+
+      await invalidate();
     } catch (error) {
       console.error('Error adding message:', error);
       toast({ title: 'Error', description: 'No se pudo enviar el mensaje', variant: 'destructive' });
@@ -211,22 +217,22 @@ export const useSupportTickets = () => {
       .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at');
-    
+
     if (error) {
       console.error('Error fetching messages:', error);
       return [];
     }
-    
+
     return (data || []) as unknown as TicketMessage[];
   };
 
   const createTemplate = async (templateData: { name: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
+
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('support_templates')
-        .insert([{ 
+        .insert([{
           name: templateData.name,
           user_id: userId,
           category: templateData.category as string | undefined,
@@ -238,20 +244,16 @@ export const useSupportTickets = () => {
         .single();
 
       if (error) throw error;
-      
+
       toast({ title: 'Plantilla creada', description: 'La plantilla ha sido guardada' });
-      await fetchTickets();
-      return data;
+      await invalidate();
+      return inserted;
     } catch (error) {
       console.error('Error creating template:', error);
       toast({ title: 'Error', description: 'No se pudo crear la plantilla', variant: 'destructive' });
       return null;
     }
   };
-
-  useEffect(() => {
-    fetchTickets();
-  }, [userId]);
 
   return {
     tickets,
@@ -264,6 +266,6 @@ export const useSupportTickets = () => {
     addMessage,
     getTicketMessages,
     createTemplate,
-    refetch: fetchTickets,
+    refetch: invalidate,
   };
 };
