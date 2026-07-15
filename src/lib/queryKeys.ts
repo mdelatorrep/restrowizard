@@ -32,6 +32,7 @@ export const qk = {
     all: (userId?: string | null) => ['menus', userId] as const,
     items: (menuId?: string | null) => ['menu-items', menuId] as const,
     itemsByUser: (userId?: string | null) => ['menu-items-user', userId] as const,
+    availability: (userId?: string | null) => ['menu-availability', userId] as const,
   },
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
