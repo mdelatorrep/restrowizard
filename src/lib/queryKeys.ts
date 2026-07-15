@@ -42,6 +42,11 @@ export const qk = {
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
     detail: (recipeId?: string | null) => ['recipe', recipeId] as const,
+    menuLinks: (recipeId?: string | null) => ['recipe-menu-links', recipeId] as const,
+  },
+  sales: {
+    reports: (userId?: string | null, period?: string, channel?: string) =>
+      ['sales-reports', userId, period, channel] as const,
   },
   loyalty: {
     customers: (userId?: string | null) => ['loyalty-customers', userId] as const,

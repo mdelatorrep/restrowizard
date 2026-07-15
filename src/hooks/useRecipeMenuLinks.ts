@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { qk } from '@/lib/queryKeys';
 
 /**
  * BL-03: Recetas M:N con ítems de menú.
@@ -18,27 +20,30 @@ export interface RecipeMenuLink {
 }
 
 export const useRecipeMenuLinks = (recipeId?: string | null) => {
-  const [links, setLinks] = useState<RecipeMenuLink[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const refetch = useCallback(async () => {
-    if (!recipeId) { setLinks([]); return; }
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('recipe_menu_items')
-      .select('*, menu_item:menu_items(id, name, category)')
-      .eq('recipe_id', recipeId)
-      .order('sort_order');
-    if (error) {
-      console.error(error);
-      toast.error('No se pudieron cargar los ítems de menú vinculados');
-    } else {
-      setLinks((data as any) || []);
-    }
-    setLoading(false);
-  }, [recipeId]);
+  const { data: links = [], isLoading: loading } = useQuery({
+    queryKey: qk.recipes.menuLinks(recipeId),
+    enabled: !!recipeId,
+    queryFn: async (): Promise<RecipeMenuLink[]> => {
+      const { data, error } = await supabase
+        .from('recipe_menu_items')
+        .select('*, menu_item:menu_items(id, name, category)')
+        .eq('recipe_id', recipeId!)
+        .order('sort_order');
+      if (error) {
+        console.error(error);
+        toast.error('No se pudieron cargar los ítems de menú vinculados');
+        throw error;
+      }
+      return (data as any) || [];
+    },
+  });
 
-  useEffect(() => { refetch(); }, [refetch]);
+  const refetch = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.recipes.menuLinks(recipeId) }),
+    [queryClient, recipeId]
+  );
 
   const addLink = async (menuItemId: string, variantName?: string, isPrimary = false) => {
     if (!recipeId) return;
