@@ -19,6 +19,7 @@ export const qk = {
     transactions: (sessionId?: string | null) => ['pos-transactions', sessionId] as const,
     discounts: (userId?: string | null) => ['pos-discounts', userId] as const,
     channels: (userId?: string | null) => ['pos-channels', userId] as const,
+    menu: (userId?: string | null) => ['pos-menu', userId] as const,
   },
   finances: {
     summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,
@@ -49,6 +50,10 @@ export const qk = {
   },
   zones: {
     list: (consultantId?: string | null) => ['restaurant-zones', consultantId] as const,
+  },
+  operations: {
+    data: (userId?: string | null) => ['operations', userId] as const,
+    benchmarks: () => ['operations-benchmarks'] as const,
   },
 } as const;
 
