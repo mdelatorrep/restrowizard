@@ -20,6 +20,8 @@ export const qk = {
     discounts: (userId?: string | null) => ['pos-discounts', userId] as const,
     channels: (userId?: string | null) => ['pos-channels', userId] as const,
     menu: (userId?: string | null) => ['pos-menu', userId] as const,
+    context: (slug?: string | null) => ['pos-context', slug] as const,
+    liveMap: (userId?: string | null) => ['pos-live-map', userId] as const,
   },
   finances: {
     summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,
@@ -54,6 +56,11 @@ export const qk = {
   operations: {
     data: (userId?: string | null) => ['operations', userId] as const,
     benchmarks: () => ['operations-benchmarks'] as const,
+  },
+  public: {
+    menuBySlug: (slug?: string | null) => ['public-menu', slug] as const,
+    userMenus: (userId?: string | null) => ['public-user-menus', userId] as const,
+    menuItemsList: (menuId?: string | null) => ['public-menu-items', menuId] as const,
   },
 } as const;
 

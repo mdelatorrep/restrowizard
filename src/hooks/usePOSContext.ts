@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { qk } from "@/lib/queryKeys";
 
 export interface POSContext {
   slug: string;
@@ -29,81 +30,50 @@ const DEFAULT_BRAND = {
 };
 
 export function usePOSContext(slug: string | undefined): UsePOSContextReturn {
-  const [context, setContext] = useState<POSContext | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<"not_found" | "error" | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: qk.pos.context(slug),
+    enabled: !!slug,
+    retry: false,
+    queryFn: async (): Promise<POSContext> => {
+      const { data: site, error: siteErr } = await supabase
+        .from("restaurant_websites")
+        .select("user_id, slug")
+        .eq("slug", slug!)
+        .maybeSingle();
+      if (siteErr) throw siteErr;
+      if (!site) throw new Error("not_found");
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (!slug) {
-        setLoading(false);
-        setError("not_found");
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: site, error: siteErr } = await supabase
-          .from("restaurant_websites")
-          .select("user_id, slug")
-          .eq("slug", slug)
-          .maybeSingle();
-        if (siteErr) throw siteErr;
-        if (!site) {
-          if (!cancelled) {
-            setError("not_found");
-            setLoading(false);
+      const [brandRes, profileRes] = await Promise.all([
+        supabase.from("restaurant_brands")
+          .select("brand_name, primary_color, accent_color, secondary_color, logo_url")
+          .eq("user_id", site.user_id).maybeSingle(),
+        supabase.from("profiles").select("restaurant_name").eq("user_id", site.user_id).maybeSingle(),
+      ]);
+
+      const brand = brandRes.data
+        ? {
+            primary_color: brandRes.data.primary_color || DEFAULT_BRAND.primary_color,
+            accent_color: brandRes.data.accent_color || DEFAULT_BRAND.accent_color,
+            secondary_color: brandRes.data.secondary_color || DEFAULT_BRAND.secondary_color,
+            logo_url: brandRes.data.logo_url,
+            brand_name: brandRes.data.brand_name,
           }
-          return;
-        }
+        : DEFAULT_BRAND;
 
-        const [brandRes, profileRes] = await Promise.all([
-          supabase
-            .from("restaurant_brands")
-            .select("brand_name, primary_color, accent_color, secondary_color, logo_url")
-            .eq("user_id", site.user_id)
-            .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("restaurant_name")
-            .eq("user_id", site.user_id)
-            .maybeSingle(),
-        ]);
+      return {
+        slug: site.slug,
+        restaurantUserId: site.user_id,
+        restaurantName: brand.brand_name || profileRes.data?.restaurant_name || "Restaurante",
+        brand,
+      };
+    },
+  });
 
-        if (cancelled) return;
+  const mappedError: "not_found" | "error" | null = !slug
+    ? "not_found"
+    : error
+      ? ((error as Error).message === "not_found" ? "not_found" : "error")
+      : null;
 
-        const brand = brandRes.data
-          ? {
-              primary_color: brandRes.data.primary_color || DEFAULT_BRAND.primary_color,
-              accent_color: brandRes.data.accent_color || DEFAULT_BRAND.accent_color,
-              secondary_color: brandRes.data.secondary_color || DEFAULT_BRAND.secondary_color,
-              logo_url: brandRes.data.logo_url,
-              brand_name: brandRes.data.brand_name,
-            }
-          : DEFAULT_BRAND;
-
-        setContext({
-          slug: site.slug,
-          restaurantUserId: site.user_id,
-          restaurantName:
-            brand.brand_name || profileRes.data?.restaurant_name || "Restaurante",
-          brand,
-        });
-        setLoading(false);
-      } catch (e) {
-        console.error("usePOSContext error", e);
-        if (!cancelled) {
-          setError("error");
-          setLoading(false);
-        }
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-
-  return { context, loading, error };
+  return { context: data ?? null, loading: isLoading, error: mappedError };
 }

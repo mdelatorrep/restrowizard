@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { qk } from '@/lib/queryKeys';
 
 export interface PublicMenuItem {
   id: string;
@@ -19,43 +21,39 @@ export interface PublicMenuList {
 }
 
 export const usePublicRestaurantMenus = (userId: string | undefined, enabled: boolean) => {
-  const [menus, setMenus] = useState<PublicMenuList[]>([]);
-  const [menuItems, setMenuItems] = useState<PublicMenuItem[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!userId || !enabled) return;
-    (async () => {
+  const { data: menus = [] } = useQuery({
+    queryKey: qk.public.userMenus(userId),
+    enabled: !!userId && enabled,
+    queryFn: async (): Promise<PublicMenuList[]> => {
       const { data } = await supabase
         .from('restaurant_menus')
         .select('id, name, description')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .eq('status', 'published');
-      if (data && data.length > 0) {
-        setMenus(data);
-        setSelectedMenu(data[0].id);
-      }
-    })();
-  }, [userId, enabled]);
+      return data || [];
+    },
+  });
 
   useEffect(() => {
-    if (!selectedMenu) return;
-    (async () => {
+    if (menus.length > 0 && !selectedMenu) setSelectedMenu(menus[0].id);
+  }, [menus, selectedMenu]);
+
+  const { data: menuItems = [] } = useQuery({
+    queryKey: qk.public.menuItemsList(selectedMenu),
+    enabled: !!selectedMenu,
+    queryFn: async (): Promise<PublicMenuItem[]> => {
       const { data } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('menu_id', selectedMenu)
+        .eq('menu_id', selectedMenu!)
         .eq('is_available', true)
         .order('category')
         .order('sort_order');
-      if (data) {
-        setMenuItems(data.map((item: any) => ({
-          ...item,
-          dietary_tags: (item.dietary_tags as string[]) || [],
-        })));
-      }
-    })();
-  }, [selectedMenu]);
+      return (data || []).map((item: any) => ({ ...item, dietary_tags: (item.dietary_tags as string[]) || [] }));
+    },
+  });
 
   return { menus, menuItems, selectedMenu, setSelectedMenu };
 };
