@@ -37,6 +37,7 @@ export const qk = {
     items: (menuId?: string | null) => ['menu-items', menuId] as const,
     itemsByUser: (userId?: string | null) => ['menu-items-user', userId] as const,
     availability: (userId?: string | null) => ['menu-availability', userId] as const,
+    engineering: (userId?: string | null, periodDays?: number) => ['menu-engineering', userId, periodDays] as const,
   },
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
@@ -64,10 +65,14 @@ export const qk = {
   consultant: {
     profile: (userId?: string | null) => ['consultant-profile', userId] as const,
   },
+  modules: {
+    prerequisites: (userId?: string | null) => ['module-prerequisites', userId] as const,
+  },
   public: {
     menuBySlug: (slug?: string | null) => ['public-menu', slug] as const,
     userMenus: (userId?: string | null) => ['public-user-menus', userId] as const,
     menuItemsList: (menuId?: string | null) => ['public-menu-items', menuId] as const,
+    restaurantData: (slug?: string | null) => ['public-restaurant-data', slug] as const,
   },
 } as const;
 
