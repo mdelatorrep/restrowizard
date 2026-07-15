@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-auth.ts";
 import { callAIGateway, gatewayErrorResponse, safeParseJson } from "../_shared/ai-gateway.ts";
 import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
 import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
@@ -14,6 +15,11 @@ serve(async (req) => {
   }
 
   try {
+
+
+    const auth = await requireUser(req);
+
+    if (auth instanceof Response) return auth;
     const { action, data } = await req.json();
 
     let rolePrompt = "";

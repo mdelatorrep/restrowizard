@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-auth.ts";
 import { callAIGateway, gatewayErrorResponse } from "../_shared/ai-gateway.ts";
 import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
 import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
@@ -27,6 +28,11 @@ serve(async (req) => {
   }
 
   try {
+
+
+    const auth = await requireUser(req);
+
+    if (auth instanceof Response) return auth;
     // LOVABLE_API_KEY validation handled centrally by callAIGateway helper
 
     const { module, action, data } = await req.json();

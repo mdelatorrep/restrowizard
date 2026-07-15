@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-auth.ts";
 import { webResearch, formatSourcesForPrompt } from "../_shared/web-research.ts";
 import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
@@ -20,6 +21,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+
+
+    const auth = await requireUser(req);
+
+    if (auth instanceof Response) return auth;
     const { mode, course_title, category, level, target_role, lesson_title, course_context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");

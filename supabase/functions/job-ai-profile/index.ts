@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-auth.ts";
 import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
 import { composeSystemPrompt, checkIntegrity } from "../_shared/ai-guardrails.ts";
 
@@ -11,6 +12,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+
+
+    const auth = await requireUser(req);
+
+    if (auth instanceof Response) return auth;
     const { candidate_profile, job_description, job_title, skills_required } = await req.json();
 
     const rolePrompt = `Experto en reclutamiento gastronómico. Calcula compatibilidad entre el candidato y la oferta usando SOLO la información provista. No inventes experiencia, certificaciones ni datos que el candidato no declaró.

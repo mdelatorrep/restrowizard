@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/require-auth.ts";
 import { callAIGateway, safeParseJson } from "../_shared/ai-gateway.ts";
 import { composeSystemPrompt } from "../_shared/ai-guardrails.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -24,6 +25,11 @@ serve(async (req) => {
   }
 
   try {
+
+
+    const auth = await requireUser(req);
+
+    if (auth instanceof Response) return auth;
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
