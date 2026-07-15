@@ -178,7 +178,7 @@ export const useInventoryDeduction = () => {
       const payload = items
         .filter((it) => it.menu_item_id)
         .map((it) => ({ menu_item_id: it.menu_item_id, quantity: it.quantity }));
-      const { data, error } = await supabase.rpc('deduct_inventory_for_order', {
+      const { data, error } = await (supabase.rpc as any)('deduct_inventory_for_order', {
         p_order_id: orderId,
         p_items: payload,
       });

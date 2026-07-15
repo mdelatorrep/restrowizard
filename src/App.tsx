@@ -59,7 +59,6 @@ const PublicMenu = lazy(() => import("./pages/PublicMenu"));
 const PublicFeedback = lazy(() => import("./pages/PublicFeedback"));
 const PublicLoyalty = lazy(() => import("./pages/PublicLoyalty"));
 const LoyaltyPortal = lazy(() => import("./pages/LoyaltyPortal"));
-const PublicRestaurant = lazy(() => import("./pages/PublicRestaurant"));
 const PublicQuotationPage = lazy(() => import("./pages/PublicQuotation"));
 
 // Unified public restaurant pages

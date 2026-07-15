@@ -477,7 +477,7 @@ export const useLoyaltyData = () => {
 
     try {
       // B-22: canje atómico server-side (valida puntos, stock y vigencia; sin race conditions)
-      const { data, error } = await supabase.rpc('redeem_loyalty_reward', {
+      const { data, error } = await (supabase.rpc as any)('redeem_loyalty_reward', {
         p_customer_id: customerId,
         p_catalog_item_id: catalogItemId,
       });

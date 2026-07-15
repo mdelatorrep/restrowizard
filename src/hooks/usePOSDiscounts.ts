@@ -12,7 +12,7 @@ export interface POSDiscount {
   min_order_value: number;
   max_discount_amount: number | null;
   requires_authorization: boolean;
-  authorization_code: string | null;
+  authorization_code?: string | null;
   is_active: boolean;
   valid_from: string | null;
   valid_until: string | null;
@@ -98,7 +98,7 @@ export const usePOSDiscounts = () => {
     authCode?: string
   ): Promise<{ valid: boolean; amount: number; message?: string }> => {
     // B-10: validación server-side (código, mínimo, vigencia, tope, incremento atómico)
-    const { data, error } = await supabase.rpc('validate_pos_discount', {
+    const { data, error } = await (supabase.rpc as any)('validate_pos_discount', {
       p_discount_id: discountId,
       p_auth_code: authCode ?? null,
       p_order_total: orderTotal,

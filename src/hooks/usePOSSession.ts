@@ -135,7 +135,7 @@ export const usePOSSession = () => {
 
     try {
       // B-01/B-02: cierre server-authoritative (efectivo esperado = apertura + solo ventas en efectivo, por sesión)
-      const { data, error } = await supabase.rpc('pos_close_session', {
+      const { data, error } = await (supabase.rpc as any)('pos_close_session', {
         p_session_id: currentSession.id,
         p_actual_cash: actualCash,
         p_notes: notes ?? null,
