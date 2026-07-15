@@ -23,6 +23,8 @@ export const qk = {
     context: (slug?: string | null) => ['pos-context', slug] as const,
     liveMap: (userId?: string | null) => ['pos-live-map', userId] as const,
     tables: (userId?: string | null) => ['pos-tables', userId] as const,
+    cashMovements: (sessionId?: string | null) => ['pos-cash-movements', sessionId] as const,
+    order: (userId?: string | null, tableId?: string | null) => ['pos-order', userId, tableId] as const,
   },
   finances: {
     summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,

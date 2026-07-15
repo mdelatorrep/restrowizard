@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
+import { qk } from "@/lib/queryKeys";
 
 export interface POSOrderLine {
   line_id: string;
@@ -61,16 +63,13 @@ export function usePOSOrder(
   restaurantUserId: string | undefined,
   tableId: string | null,
 ): UsePOSOrderReturn {
-  const [order, setOrder] = useState<POSOrder | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = qk.pos.order(restaurantUserId, tableId);
 
-  const fetchOrder = useCallback(async () => {
-    if (!restaurantUserId || !tableId) {
-      setOrder(null);
-      return;
-    }
-    setLoading(true);
-    try {
+  const { data: order = null, isLoading: loading } = useQuery({
+    queryKey,
+    enabled: !!restaurantUserId && !!tableId,
+    queryFn: async (): Promise<POSOrder | null> => {
       const sb = supabase as any;
       const { data } = await sb
         .from("restaurant_orders")
@@ -82,20 +81,17 @@ export function usePOSOrder(
         .order("created_at", { ascending: false })
         .limit(1);
       const row = data?.[0];
-      if (row) {
-        const items = Array.isArray(row.items) ? (row.items as POSOrderLine[]) : [];
-        setOrder({ ...(row as POSOrder), items });
-      } else {
-        setOrder(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [restaurantUserId, tableId]);
+      if (!row) return null;
+      const items = Array.isArray(row.items) ? (row.items as POSOrderLine[]) : [];
+      return { ...(row as POSOrder), items };
+    },
+  });
 
-  useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+  const refresh = useCallback(
+    () => queryClient.invalidateQueries({ queryKey }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, restaurantUserId, tableId]
+  );
 
   useRealtimeTable({
     table: "restaurant_orders",
@@ -103,10 +99,12 @@ export function usePOSOrder(
     enabled: !!restaurantUserId && !!tableId,
     onChange: (payload) => {
       const row: any = payload.new || payload.old;
-      if (row?.table_id === tableId) fetchOrder();
+      if (row?.table_id === tableId) refresh();
     },
   });
 
+  // Escritura optimista: pinta ya en caché y persiste después (el POS debe
+  // responder al instante; un round-trip por ítem se siente lento en caja).
   const persist = async (next: POSOrder) => {
     const { subtotal, total } = recalcTotals(next.items);
     const updated: POSOrder = {
@@ -114,9 +112,9 @@ export function usePOSOrder(
       subtotal,
       total: total + (next.tax_amount || 0) + (next.tip_amount || 0) - (next.discount_amount || 0),
     };
-    setOrder(updated);
+    queryClient.setQueryData(queryKey, updated);
     const sb = supabase as any;
-    await sb
+    const { error } = await sb
       .from("restaurant_orders")
       .update({
         items: updated.items,
@@ -125,6 +123,11 @@ export function usePOSOrder(
         updated_at: new Date().toISOString(),
       })
       .eq("id", updated.id);
+    // Si la escritura falla, la caché quedaría mintiendo: recargar desde la BD.
+    if (error) {
+      console.error("persist order error", error);
+      await refresh();
+    }
   };
 
   const ensureOrder: UsePOSOrderReturn["ensureOrder"] = async ({
@@ -164,7 +167,10 @@ export function usePOSOrder(
       .update({ status: "occupied" })
       .eq("id", tId);
     const fresh = { ...(data as POSOrder), items: [] };
-    setOrder(fresh);
+    queryClient.setQueryData(queryKey, fresh);
+    // El mapa de mesas debe reflejar la ocupación inmediatamente.
+    await queryClient.invalidateQueries({ queryKey: qk.pos.tables(restaurantUserId) });
+    await queryClient.invalidateQueries({ queryKey: qk.pos.liveMap(restaurantUserId) });
     return fresh;
   };
 
@@ -221,8 +227,8 @@ export function usePOSOrder(
       i.status === "pending" ? { ...i, status: "sent" as const } : i,
     );
     const sb = supabase as any;
-    setOrder({ ...order, items: next, kitchen_status: "preparing" });
-    await sb
+    queryClient.setQueryData(queryKey, { ...order, items: next, kitchen_status: "preparing" });
+    const { error } = await sb
       .from("restaurant_orders")
       .update({
         items: next,
@@ -231,6 +237,10 @@ export function usePOSOrder(
         status: "preparing",
       })
       .eq("id", order.id);
+    if (error) {
+      console.error("sendToKitchen error", error);
+      await refresh();
+    }
   };
 
   const markLineStatus: UsePOSOrderReturn["markLineStatus"] = async (lineId, status) => {
@@ -249,6 +259,6 @@ export function usePOSOrder(
     removeItem,
     sendToKitchen,
     markLineStatus,
-    refresh: fetchOrder,
+    refresh,
   };
 }

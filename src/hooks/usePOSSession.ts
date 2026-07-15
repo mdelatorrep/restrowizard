@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface POSSession {
   id: string;
@@ -35,47 +37,50 @@ export interface CashMovement {
 export const usePOSSession = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentSession, setCurrentSession] = useState<POSSession | null>(null);
-  const [cashMovements, setCashMovements] = useState<CashMovement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchCurrentSession = useCallback(async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: currentSession = null, isLoading: loading } = useQuery({
+    queryKey: qk.pos.session(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<POSSession | null> => {
       const { data, error } = await supabase
         .from('pos_sessions')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .eq('status', 'open')
         .order('opened_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
-      
-      setCurrentSession(data as POSSession | null);
+      return (data as POSSession | null) ?? null;
+    },
+  });
 
-      if (data) {
-        const { data: movements, error: movError } = await supabase
-          .from('pos_cash_movements')
-          .select('*')
-          .eq('session_id', data.id)
-          .order('created_at', { ascending: false });
+  const { data: cashMovements = [] } = useQuery({
+    queryKey: qk.pos.cashMovements(currentSession?.id),
+    enabled: !!currentSession?.id,
+    queryFn: async (): Promise<CashMovement[]> => {
+      const { data, error } = await supabase
+        .from('pos_cash_movements')
+        .select('*')
+        .eq('session_id', currentSession!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as CashMovement[];
+    },
+  });
 
-        if (!movError) {
-          setCashMovements(movements as CashMovement[]);
-        }
-      }
-    } catch (error: any) {
-      console.error('Error fetching POS session:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+  const refetch = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.pos.session(user?.id) }),
+    [queryClient, user?.id]
+  );
+
+  // P2-9: otras instancias de usePOSSession (p.ej. la página del POS) piden refresco.
+  useEffect(() => {
+    const onRefresh = () => { refetch(); };
+    window.addEventListener('pos-session:refresh', onRefresh);
+    return () => window.removeEventListener('pos-session:refresh', onRefresh);
+  }, [refetch]);
 
   const openSession = async (cashierName: string, openingCash: number, terminalId: string = 'main') => {
     if (!user?.id) return null;
@@ -105,7 +110,7 @@ export const usePOSSession = () => {
 
       if (error) throw error;
 
-      setCurrentSession(data as POSSession);
+      await refetch();
       toast({
         title: "Caja abierta",
         description: `Sesión iniciada con $${openingCash.toLocaleString()} en efectivo`
@@ -145,8 +150,7 @@ export const usePOSSession = () => {
       const closed = (Array.isArray(data) ? data[0] : data) as POSSession;
       const difference = Number(closed?.difference ?? (actualCash - Number(closed?.expected_cash ?? actualCash)));
 
-      setCurrentSession(null);
-      setCashMovements([]);
+      await refetch();
 
       const diffText = difference >= 0 ? `+$${difference.toLocaleString()}` : `-$${Math.abs(difference).toLocaleString()}`;
       toast({
@@ -196,8 +200,8 @@ export const usePOSSession = () => {
 
       if (error) throw error;
 
-      setCashMovements(prev => [data as CashMovement, ...prev]);
-      
+      await queryClient.invalidateQueries({ queryKey: qk.pos.cashMovements(currentSession.id) });
+
       const typeLabels = {
         deposit: 'Depósito',
         withdrawal: 'Retiro',
@@ -225,6 +229,10 @@ export const usePOSSession = () => {
     if (!currentSession) return;
 
     try {
+      // OJO (deuda conocida): read-modify-write. Con dos terminales sobre la misma
+      // sesión se pueden perder incrementos. El cuadre de caja NO depende de esto
+      // (B-01/B-02 lo recalcula server-side desde pos_transactions); estos campos
+      // son informativos. Fix pendiente: RPC con incremento atómico.
       const { error } = await supabase
         .from('pos_sessions')
         .update({
@@ -236,26 +244,12 @@ export const usePOSSession = () => {
 
       if (error) throw error;
 
-      setCurrentSession(prev => prev ? {
-        ...prev,
-        sales_count: prev.sales_count + 1,
-        total_sales: Number(prev.total_sales) + saleAmount,
-        total_tips: Number(prev.total_tips) + tipAmount
-      } : null);
-
       // P2-9: notify other usePOSSession instances (e.g. POS page) to refresh
       window.dispatchEvent(new CustomEvent('pos-session:refresh'));
     } catch (error) {
       console.error('Error updating session stats:', error);
     }
   };
-
-  useEffect(() => {
-    fetchCurrentSession();
-    const onRefresh = () => fetchCurrentSession();
-    window.addEventListener('pos-session:refresh', onRefresh);
-    return () => window.removeEventListener('pos-session:refresh', onRefresh);
-  }, [fetchCurrentSession]);
 
   return {
     currentSession,
@@ -266,6 +260,6 @@ export const usePOSSession = () => {
     closeSession,
     addCashMovement,
     updateSessionStats,
-    refetch: fetchCurrentSession
+    refetch
   };
 };
