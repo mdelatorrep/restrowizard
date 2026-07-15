@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useRealtimeTable } from './useRealtimeTable';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface RestaurantTable {
   id: string;
@@ -23,35 +25,26 @@ export interface RestaurantTable {
 export const usePOSTables = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [tables, setTables] = useState<RestaurantTable[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchTables = useCallback(async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: tables = [], isLoading: loading } = useQuery({
+    queryKey: qk.pos.tables(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<RestaurantTable[]> => {
       const { data, error } = await supabase
         .from('restaurant_tables')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .order('table_number');
-
       if (error) throw error;
-      setTables((data || []) as RestaurantTable[]);
-    } catch (error: any) {
-      console.error('Error fetching tables:', error);
-      toast({
-        title: "Error al cargar mesas",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, toast]);
+      return (data || []) as RestaurantTable[];
+    },
+  });
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.pos.tables(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   const createTable = async (tableData: {
     table_number: string;
@@ -75,7 +68,7 @@ export const usePOSTables = () => {
 
       if (error) throw error;
 
-      setTables(prev => [...prev, data as RestaurantTable]);
+      await invalidate();
       toast({
         title: "Mesa creada",
         description: `Mesa ${tableData.table_number} agregada`
@@ -94,7 +87,7 @@ export const usePOSTables = () => {
   };
 
   const updateTableStatus = async (
-    tableId: string, 
+    tableId: string,
     status: RestaurantTable['status'],
     orderId?: string | null,
     waiterId?: string | null
@@ -113,7 +106,7 @@ export const usePOSTables = () => {
 
       if (error) throw error;
 
-      setTables(prev => prev.map(t => t.id === tableId ? data as RestaurantTable : t));
+      await invalidate();
       return data as RestaurantTable;
     } catch (error: any) {
       console.error('Error updating table:', error);
@@ -148,7 +141,7 @@ export const usePOSTables = () => {
     try {
       // Update the destination table
       await updateTableStatus(toTableId, 'occupied', fromTable.current_order_id, fromTable.waiter_id);
-      
+
       // Release the source table
       await releaseTable(fromTableId);
 
@@ -157,6 +150,8 @@ export const usePOSTables = () => {
         .from('restaurant_orders')
         .update({ table_id: toTableId })
         .eq('id', fromTable.current_order_id);
+
+      await invalidate();
 
       toast({
         title: "Mesa transferida",
@@ -184,7 +179,7 @@ export const usePOSTables = () => {
 
       if (error) throw error;
 
-      setTables(prev => prev.filter(t => t.id !== tableId));
+      await invalidate();
       toast({
         title: "Mesa eliminada"
       });
@@ -201,31 +196,17 @@ export const usePOSTables = () => {
     }
   };
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates -> invalidar la caché compartida
   useRealtimeTable<RestaurantTable>({
     table: 'restaurant_tables',
     filter: user?.id ? `user_id=eq.${user.id}` : undefined,
     enabled: !!user?.id,
-    onChange: (payload) => {
-      if (payload.eventType === 'INSERT') {
-        setTables(prev => [...prev, payload.new as RestaurantTable]);
-      } else if (payload.eventType === 'UPDATE') {
-        setTables(prev => prev.map(t =>
-          t.id === (payload.new as RestaurantTable).id ? payload.new as RestaurantTable : t
-        ));
-      } else if (payload.eventType === 'DELETE') {
-        setTables(prev => prev.filter(t => t.id !== (payload.old as RestaurantTable).id));
-      }
-    },
+    onChange: () => { invalidate(); },
   });
 
-  useEffect(() => {
-    fetchTables();
-  }, [fetchTables]);
-
-  const availableTables = tables.filter(t => t.status === 'available');
-  const occupiedTables = tables.filter(t => t.status === 'occupied');
-  const reservedTables = tables.filter(t => t.status === 'reserved');
+  const availableTables = useMemo(() => tables.filter(t => t.status === 'available'), [tables]);
+  const occupiedTables = useMemo(() => tables.filter(t => t.status === 'occupied'), [tables]);
+  const reservedTables = useMemo(() => tables.filter(t => t.status === 'reserved'), [tables]);
 
   return {
     tables,
@@ -239,6 +220,6 @@ export const usePOSTables = () => {
     releaseTable,
     transferTable,
     deleteTable,
-    refetch: fetchTables
+    refetch: invalidate
   };
 };

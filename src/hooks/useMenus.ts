@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type MenuTemplate = Tables<'menu_templates'>;
@@ -11,67 +14,59 @@ export type RestaurantMenuInsert = TablesInsert<'restaurant_menus'>;
 export type MenuItemInsert = TablesInsert<'menu_items'>;
 
 export const useMenus = () => {
-  const [templates, setTemplates] = useState<MenuTemplate[]>([]);
-  const [menus, setMenus] = useState<RestaurantMenu[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Load menu templates
-  const loadTemplates = async () => {
-    try {
+  // Plantillas: catálogo global, no depende del usuario.
+  const { data: templates = [] } = useQuery({
+    queryKey: qk.menus.templates(),
+    queryFn: async (): Promise<MenuTemplate[]> => {
       const { data, error } = await supabase
         .from('menu_templates')
         .select('*')
         .eq('is_active', true)
         .order('name');
-
       if (error) throw error;
-      setTemplates(data || []);
-    } catch (error) {
-      console.error('Error loading templates:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las plantillas',
-        variant: 'destructive',
-      });
-    }
-  };
+      return data || [];
+    },
+  });
 
-  // Load user's menus
-  const loadMenus = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-
+  const { data: menus = [], isLoading: loading } = useQuery({
+    queryKey: qk.menus.all(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<RestaurantMenu[]> => {
       const { data, error } = await supabase
         .from('restaurant_menus')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .order('updated_at', { ascending: false });
-
       if (error) throw error;
-      setMenus(data || []);
-    } catch (error) {
-      console.error('Error loading menus:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los menús',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data || [];
+    },
+  });
+
+  const loadMenus = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.menus.all(user?.id) }),
+    [queryClient, user?.id]
+  );
+
+  const loadTemplates = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.menus.templates() }),
+    [queryClient]
+  );
+
+  // Compatibilidad: otros módulos aún emiten `menus:changed`.
+  useEffect(() => {
+    const onChanged = () => { loadMenus(); };
+    window.addEventListener('menus:changed', onChanged);
+    return () => window.removeEventListener('menus:changed', onChanged);
+  }, [loadMenus]);
 
   // Create new menu
   const createMenu = async (menuData: Omit<RestaurantMenuInsert, 'user_id' | 'public_url_slug'> & { name: string; cuisine_type: string }) => {
     try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) throw new Error('User not authenticated');
+      if (!user?.id) throw new Error('User not authenticated');
 
       // Generate URL slug
       const { data: slugData } = await supabase.rpc('generate_menu_slug', {
@@ -92,11 +87,9 @@ export const useMenus = () => {
 
       if (error) throw error;
 
-      // Optimistic + global notify so other useMenus instances (e.g. the page
-      // mounted behind the dialog) refresh, and prerequisites re-evaluate so
-      // POS / Orders unlock after the menu is created.
-      setMenus(prev => [data as RestaurantMenu, ...(prev || []).filter(m => m.id !== (data as any).id)]);
-      window.dispatchEvent(new CustomEvent('menus:changed'));
+      // La caché compartida ya sincroniza cualquier otra instancia de useMenus.
+      // `prerequisites:refresh` sigue: POS/Pedidos se desbloquean al crear el menú.
+      await loadMenus();
       window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
 
       toast({
@@ -113,15 +106,12 @@ export const useMenus = () => {
         variant: 'destructive',
       });
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
   // Update menu
   const updateMenu = async (id: string, updates: TablesUpdate<'restaurant_menus'>) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('restaurant_menus')
         .update(updates)
@@ -132,7 +122,7 @@ export const useMenus = () => {
       if (error) throw error;
 
       await loadMenus();
-      
+
       toast({
         title: 'Éxito',
         description: 'Menú actualizado exitosamente',
@@ -147,8 +137,6 @@ export const useMenus = () => {
         variant: 'destructive',
       });
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -174,6 +162,14 @@ export const useMenus = () => {
     }
   };
 
+  const invalidateMenuItems = useCallback(
+    async (menuId: string) => {
+      await queryClient.invalidateQueries({ queryKey: qk.menus.items(menuId) });
+      await queryClient.invalidateQueries({ queryKey: qk.menus.itemsByUser(user?.id) });
+    },
+    [queryClient, user?.id]
+  );
+
   // Add menu item
   const addMenuItem = async (menuId: string, item: Omit<MenuItemInsert, 'menu_id'> & { name: string; category: string }) => {
     try {
@@ -190,6 +186,7 @@ export const useMenus = () => {
 
       if (error) throw error;
 
+      await invalidateMenuItems(menuId);
       // Notify prerequisites (POS unlock waits on menu items count)
       window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
 
@@ -222,6 +219,8 @@ export const useMenus = () => {
 
       if (error) throw error;
 
+      await invalidateMenuItems((data as any).menu_id);
+
       toast({
         title: 'Éxito',
         description: 'Elemento actualizado',
@@ -242,12 +241,21 @@ export const useMenus = () => {
   // Delete menu item
   const deleteMenuItem = async (id: string) => {
     try {
+      const { data: existing } = await supabase
+        .from('menu_items')
+        .select('menu_id')
+        .eq('id', id)
+        .maybeSingle();
+
       const { error } = await supabase
         .from('menu_items')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      if (existing?.menu_id) await invalidateMenuItems(existing.menu_id);
+      window.dispatchEvent(new CustomEvent('prerequisites:refresh'));
 
       toast({
         title: 'Éxito',
@@ -265,14 +273,6 @@ export const useMenus = () => {
       return false;
     }
   };
-
-  useEffect(() => {
-    loadTemplates();
-    loadMenus();
-    const onChanged = () => loadMenus();
-    window.addEventListener('menus:changed', onChanged);
-    return () => window.removeEventListener('menus:changed', onChanged);
-  }, []);
 
   return {
     templates,

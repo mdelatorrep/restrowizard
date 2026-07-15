@@ -22,6 +22,7 @@ export const qk = {
     menu: (userId?: string | null) => ['pos-menu', userId] as const,
     context: (slug?: string | null) => ['pos-context', slug] as const,
     liveMap: (userId?: string | null) => ['pos-live-map', userId] as const,
+    tables: (userId?: string | null) => ['pos-tables', userId] as const,
   },
   finances: {
     summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,
@@ -38,6 +39,7 @@ export const qk = {
     itemsByUser: (userId?: string | null) => ['menu-items-user', userId] as const,
     availability: (userId?: string | null) => ['menu-availability', userId] as const,
     engineering: (userId?: string | null, periodDays?: number) => ['menu-engineering', userId, periodDays] as const,
+    templates: () => ['menu-templates'] as const,
   },
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
