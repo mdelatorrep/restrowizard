@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface POSDiscount {
   id: string;
@@ -22,31 +24,27 @@ export interface POSDiscount {
 export const usePOSDiscounts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [discounts, setDiscounts] = useState<POSDiscount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchDiscounts = useCallback(async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: discounts = [], isLoading: loading } = useQuery({
+    queryKey: qk.pos.discounts(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<POSDiscount[]> => {
       const { data, error } = await supabase
         .from('pos_discounts')
         .select('id, user_id, name, discount_type, value, min_order_value, max_discount_amount, requires_authorization, is_active, valid_from, valid_until, usage_count, created_at, updated_at')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .eq('is_active', true)
         .order('name');
-
       if (error) throw error;
-      setDiscounts((data || []) as POSDiscount[]);
-    } catch (error: any) {
-      console.error('Error fetching discounts:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
+      return (data || []) as POSDiscount[];
+    },
+  });
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.pos.discounts(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   const createDiscount = async (discountData: {
     name: string;
@@ -74,7 +72,7 @@ export const usePOSDiscounts = () => {
 
       if (error) throw error;
 
-      setDiscounts(prev => [...prev, data as POSDiscount]);
+      await invalidate();
       toast({
         title: "Descuento creado",
         description: discountData.name
@@ -93,7 +91,7 @@ export const usePOSDiscounts = () => {
   };
 
   const applyDiscount = async (
-    discountId: string, 
+    discountId: string,
     orderTotal: number,
     authCode?: string
   ): Promise<{ valid: boolean; amount: number; message?: string }> => {
@@ -119,7 +117,7 @@ export const usePOSDiscounts = () => {
 
       if (error) throw error;
 
-      setDiscounts(prev => prev.filter(d => d.id !== discountId));
+      await invalidate();
       toast({ title: "Descuento eliminado" });
       return true;
     } catch (error: any) {
@@ -133,16 +131,12 @@ export const usePOSDiscounts = () => {
     }
   };
 
-  useEffect(() => {
-    fetchDiscounts();
-  }, [fetchDiscounts]);
-
   return {
     discounts,
     loading,
     createDiscount,
     applyDiscount,
     deleteDiscount,
-    refetch: fetchDiscounts
+    refetch: invalidate
   };
 };

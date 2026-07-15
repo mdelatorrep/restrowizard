@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultantProfile } from './useConsultantProfile';
+import { qk } from '@/lib/queryKeys';
 
 interface Alert {
   id: string;
@@ -23,28 +25,20 @@ interface Alert {
 export const useConsultantAlerts = () => {
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchAlerts = async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: alerts = [], isLoading: loading } = useQuery({
+    queryKey: qk.consultant.alerts(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async (): Promise<Alert[]> => {
       // First get all client user IDs
       const { data: clients } = await supabase
         .from('consultant_clients')
         .select('client_user_id')
-        .eq('consultant_id', profile.id)
+        .eq('consultant_id', profile!.id)
         .in('status', ['active', 'prospect']);
 
-      if (!clients || clients.length === 0) {
-        setAlerts([]);
-        setLoading(false);
-        return;
-      }
+      if (!clients || clients.length === 0) return [];
 
       const clientUserIds = clients.map(c => c.client_user_id);
 
@@ -82,13 +76,14 @@ export const useConsultantAlerts = () => {
         })
       );
 
-      setAlerts(enrichedAlerts);
-    } catch (error: any) {
-      console.error('Error fetching alerts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return enrichedAlerts as Alert[];
+    },
+  });
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.consultant.alerts(profile?.id) }),
+    [queryClient, profile?.id]
+  );
 
   const markAsRead = async (alertId: string) => {
     try {
@@ -99,7 +94,7 @@ export const useConsultantAlerts = () => {
 
       if (error) throw error;
 
-      setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, is_read: true } : a));
+      await invalidate();
     } catch (error: any) {
       console.error('Error marking alert as read:', error);
     }
@@ -114,18 +109,12 @@ export const useConsultantAlerts = () => {
 
       if (error) throw error;
 
-      setAlerts(prev => prev.filter(a => a.id !== alertId));
+      await invalidate();
       toast({ title: "Alerta resuelta" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchAlerts();
-    }
-  }, [profile?.id]);
 
   const highPriorityAlerts = alerts.filter(a => a.priority === 'high' || a.priority === 'critical');
   const unreadCount = alerts.filter(a => !a.is_read).length;
@@ -137,6 +126,6 @@ export const useConsultantAlerts = () => {
     loading,
     markAsRead,
     dismissAlert,
-    refetch: fetchAlerts
+    refetch: invalidate
   };
 };

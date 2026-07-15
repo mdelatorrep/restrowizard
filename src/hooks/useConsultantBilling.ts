@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultantProfile } from './useConsultantProfile';
+import { qk } from '@/lib/queryKeys';
 
 interface Invoice {
   id: string;
@@ -23,16 +25,12 @@ interface Invoice {
 export const useConsultantBilling = () => {
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchInvoices = async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: invoices = [], isLoading: loading } = useQuery({
+    queryKey: qk.consultant.billing(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async (): Promise<Invoice[]> => {
       const { data, error } = await supabase
         .from('consulting_invoices')
         .select(`
@@ -41,7 +39,7 @@ export const useConsultantBilling = () => {
             client_user_id
           )
         `)
-        .eq('consultant_id', profile.id)
+        .eq('consultant_id', profile!.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +48,7 @@ export const useConsultantBilling = () => {
       const enrichedInvoices = await Promise.all(
         (data || []).map(async (invoice: any) => {
           const clientUserId = invoice.consultant_clients?.client_user_id;
-          
+
           const { data: businessData } = await supabase
             .from('restaurant_businesses')
             .select('name')
@@ -71,13 +69,14 @@ export const useConsultantBilling = () => {
         })
       );
 
-      setInvoices(enrichedInvoices);
-    } catch (error: any) {
-      console.error('Error fetching invoices:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return enrichedInvoices as Invoice[];
+    },
+  });
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.consultant.billing(profile?.id) }),
+    [queryClient, profile?.id]
+  );
 
   const createInvoice = async (data: {
     client_id: string;
@@ -108,7 +107,7 @@ export const useConsultantBilling = () => {
       if (error) throw error;
 
       toast({ title: "Factura creada", description: `Número: ${invoiceNumber}` });
-      await fetchInvoices();
+      await invalidate();
       return { data: invoice, error: null };
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -125,9 +124,7 @@ export const useConsultantBilling = () => {
 
       if (error) throw error;
 
-      setInvoices(prev => prev.map(i => 
-        i.id === invoiceId ? { ...i, status: 'paid' as const, paid_at: new Date().toISOString() } : i
-      ));
+      await invalidate();
       toast({ title: "Factura marcada como pagada" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -143,20 +140,12 @@ export const useConsultantBilling = () => {
 
       if (error) throw error;
 
-      setInvoices(prev => prev.map(i => 
-        i.id === invoiceId ? { ...i, status: 'cancelled' as const } : i
-      ));
+      await invalidate();
       toast({ title: "Factura cancelada" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchInvoices();
-    }
-  }, [profile?.id]);
 
   const pendingInvoices = invoices.filter(i => i.status === 'pending');
   const overdueInvoices = invoices.filter(i => i.status === 'overdue');
@@ -183,6 +172,6 @@ export const useConsultantBilling = () => {
     createInvoice,
     markAsPaid,
     cancelInvoice,
-    refetch: fetchInvoices
+    refetch: invalidate
   };
 };

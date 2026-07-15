@@ -64,6 +64,8 @@ export const qk = {
   },
   consultant: {
     profile: (userId?: string | null) => ['consultant-profile', userId] as const,
+    alerts: (consultantId?: string | null) => ['consultant-alerts', consultantId] as const,
+    billing: (consultantId?: string | null) => ['consultant-billing', consultantId] as const,
   },
   modules: {
     prerequisites: (userId?: string | null) => ['module-prerequisites', userId] as const,
