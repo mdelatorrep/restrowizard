@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { qk } from '@/lib/queryKeys';
 
 export interface PaymentGatewayCredential {
   id: string;
@@ -26,31 +28,26 @@ export interface PaymentResult {
 
 export const usePaymentGateways = () => {
   const { user } = useAuth();
-  const [credentials, setCredentials] = useState<PaymentGatewayCredential[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [processing, setProcessing] = useState(false);
 
-  const fetchCredentials = useCallback(async () => {
-    if (!user) return;
-
-    try {
+  const { data: credentials = [], isLoading: loading } = useQuery({
+    queryKey: qk.payments.gateways(user?.id),
+    enabled: !!user,
+    queryFn: async (): Promise<PaymentGatewayCredential[]> => {
       const { data, error } = await supabase
         .from('payment_gateway_credentials')
         .select('*')
-        .eq('user_id', user.id);
-
+        .eq('user_id', user!.id);
       if (error) throw error;
-      setCredentials((data || []) as PaymentGatewayCredential[]);
-    } catch (error) {
-      console.error('Error fetching credentials:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+      return (data || []) as PaymentGatewayCredential[];
+    },
+  });
 
-  useEffect(() => {
-    fetchCredentials();
-  }, [fetchCredentials]);
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.payments.gateways(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   const saveCredentials = async (
     gateway: PaymentGatewayCredential['gateway'],
@@ -79,7 +76,7 @@ export const usePaymentGateways = () => {
       if (error) throw error;
 
       toast.success(`Credenciales de ${gateway} guardadas`);
-      await fetchCredentials();
+      await invalidate();
       return data;
     } catch (error) {
       console.error('Error saving credentials:', error);
@@ -101,7 +98,7 @@ export const usePaymentGateways = () => {
       if (error) throw error;
 
       toast.success(`${gateway} ${isActive ? 'activado' : 'desactivado'}`);
-      await fetchCredentials();
+      await invalidate();
     } catch (error) {
       console.error('Error toggling gateway:', error);
       toast.error('Error al actualizar pasarela');
@@ -121,7 +118,7 @@ export const usePaymentGateways = () => {
       if (error) throw error;
 
       toast.success(`Credenciales de ${gateway} eliminadas`);
-      await fetchCredentials();
+      await invalidate();
     } catch (error) {
       console.error('Error deleting credentials:', error);
       toast.error('Error al eliminar credenciales');
@@ -208,8 +205,8 @@ export const usePaymentGateways = () => {
   };
 
   const getActiveGateways = () => credentials.filter(c => c.is_active);
-  
-  const hasGateway = (gateway: PaymentGatewayCredential['gateway']) => 
+
+  const hasGateway = (gateway: PaymentGatewayCredential['gateway']) =>
     credentials.some(c => c.gateway === gateway && c.is_active);
 
   return {
@@ -223,6 +220,6 @@ export const usePaymentGateways = () => {
     createPaymentLink,
     getActiveGateways,
     hasGateway,
-    refetch: fetchCredentials
+    refetch: invalidate
   };
 };

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultantProfile } from './useConsultantProfile';
+import { qk } from '@/lib/queryKeys';
 
 interface Report {
   id: string;
@@ -20,17 +22,13 @@ interface Report {
 export const useConsultantReports = () => {
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
 
-  const fetchReports = async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: reports = [], isLoading: loading } = useQuery({
+    queryKey: qk.consultant.reports(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async (): Promise<Report[]> => {
       const { data, error } = await supabase
         .from('consultant_reports')
         .select(`
@@ -39,7 +37,7 @@ export const useConsultantReports = () => {
             client_user_id
           )
         `)
-        .eq('consultant_id', profile.id)
+        .eq('consultant_id', profile!.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -63,13 +61,14 @@ export const useConsultantReports = () => {
         })
       );
 
-      setReports(enrichedReports);
-    } catch (error: any) {
-      console.error('Error fetching reports:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return enrichedReports as Report[];
+    },
+  });
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.consultant.reports(profile?.id) }),
+    [queryClient, profile?.id]
+  );
 
   const generateReport = async (clientId: string, reportType: string, title: string) => {
     if (!profile?.id) return { error: 'No profile found' };
@@ -103,8 +102,8 @@ export const useConsultantReports = () => {
       // Call AI to generate report
       const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-restaurant-agent', {
         body: {
-          module: reportType === 'financial' ? 'finances' : 
-                  reportType === 'operations' ? 'operations' : 
+          module: reportType === 'financial' ? 'finances' :
+                  reportType === 'operations' ? 'operations' :
                   reportType === 'maturity' ? 'operations' : 'finances',
           action: 'analyze_profitability',
           data: {
@@ -142,7 +141,7 @@ export const useConsultantReports = () => {
       if (error) throw error;
 
       toast({ title: "Reporte generado", description: "El análisis IA ha sido completado." });
-      await fetchReports();
+      await invalidate();
       return { data: report, error: null };
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -161,9 +160,7 @@ export const useConsultantReports = () => {
 
       if (error) throw error;
 
-      setReports(prev => prev.map(r => 
-        r.id === reportId ? { ...r, is_shared_with_client: share } : r
-      ));
+      await invalidate();
       toast({ title: share ? "Reporte compartido" : "Reporte ocultado" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -179,18 +176,12 @@ export const useConsultantReports = () => {
 
       if (error) throw error;
 
-      setReports(prev => prev.filter(r => r.id !== reportId));
+      await invalidate();
       toast({ title: "Reporte eliminado" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchReports();
-    }
-  }, [profile?.id]);
 
   return {
     reports,
@@ -199,6 +190,6 @@ export const useConsultantReports = () => {
     generateReport,
     shareWithClient,
     deleteReport,
-    refetch: fetchReports
+    refetch: invalidate
   };
 };

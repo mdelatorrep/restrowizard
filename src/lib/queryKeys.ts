@@ -66,6 +66,13 @@ export const qk = {
     profile: (userId?: string | null) => ['consultant-profile', userId] as const,
     alerts: (consultantId?: string | null) => ['consultant-alerts', consultantId] as const,
     billing: (consultantId?: string | null) => ['consultant-billing', consultantId] as const,
+    reports: (consultantId?: string | null) => ['consultant-reports', consultantId] as const,
+  },
+  payments: {
+    gateways: (userId?: string | null) => ['payment-gateways', userId] as const,
+  },
+  social: {
+    mentions: (userId?: string | null) => ['social-mentions', userId] as const,
   },
   modules: {
     prerequisites: (userId?: string | null) => ['module-prerequisites', userId] as const,

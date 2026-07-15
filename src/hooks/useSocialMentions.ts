@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { qk } from '@/lib/queryKeys';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface SocialMention {
@@ -60,91 +62,95 @@ export interface SocialKPIs {
   reputationScore: number;
 }
 
+const calculateKPIs = (data: SocialMention[]): SocialKPIs => {
+  const total = data.length;
+  if (total === 0) {
+    return { totalMentions: 0, avgSentiment: 0, positivePercent: 0, negativePercent: 0, responseRate: 0, reputationScore: 0 };
+  }
+
+  const sentiments = data.filter(m => m.sentiment_score !== null).map(m => m.sentiment_score!);
+  const avgSentiment = sentiments.length > 0 ? sentiments.reduce((a, b) => a + b, 0) / sentiments.length : 0;
+
+  const positive = data.filter(m => m.sentiment_label === 'positive').length;
+  const negative = data.filter(m => m.sentiment_label === 'negative').length;
+  const responded = data.filter(m => m.responded).length;
+
+  const positiveRatio = positive / total;
+  const reputationScore = Math.round(((positiveRatio * 50) + ((avgSentiment + 1) / 2 * 50)));
+
+  return {
+    totalMentions: total,
+    avgSentiment: Math.round(avgSentiment * 100) / 100,
+    positivePercent: Math.round((positive / total) * 100),
+    negativePercent: Math.round((negative / total) * 100),
+    responseRate: Math.round((responded / total) * 100),
+    reputationScore: Math.min(100, Math.max(0, reputationScore)),
+  };
+};
+
+interface SocialData {
+  mentions: SocialMention[];
+  accounts: SocialAccount[];
+  reports: SentimentReport[];
+}
+
 export const useSocialMentions = () => {
-  const [mentions, setMentions] = useState<SocialMention[]>([]);
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
-  const [reports, setReports] = useState<SentimentReport[]>([]);
-  const [kpis, setKpis] = useState<SocialKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  const calculateKPIs = (data: SocialMention[]): SocialKPIs => {
-    const total = data.length;
-    if (total === 0) {
-      return { totalMentions: 0, avgSentiment: 0, positivePercent: 0, negativePercent: 0, responseRate: 0, reputationScore: 0 };
-    }
-
-    const sentiments = data.filter(m => m.sentiment_score !== null).map(m => m.sentiment_score!);
-    const avgSentiment = sentiments.length > 0 ? sentiments.reduce((a, b) => a + b, 0) / sentiments.length : 0;
-    
-    const positive = data.filter(m => m.sentiment_label === 'positive').length;
-    const negative = data.filter(m => m.sentiment_label === 'negative').length;
-    const responded = data.filter(m => m.responded).length;
-    
-    const positiveRatio = positive / total;
-    const reputationScore = Math.round(((positiveRatio * 50) + ((avgSentiment + 1) / 2 * 50)));
-
-    return {
-      totalMentions: total,
-      avgSentiment: Math.round(avgSentiment * 100) / 100,
-      positivePercent: Math.round((positive / total) * 100),
-      negativePercent: Math.round((negative / total) * 100),
-      responseRate: Math.round((responded / total) * 100),
-      reputationScore: Math.min(100, Math.max(0, reputationScore)),
-    };
-  };
-
-  const fetchMentions = async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.social.mentions(userId),
+    enabled: !!userId,
+    queryFn: async (): Promise<SocialData> => {
+      const { data: mentionsRes, error } = await supabase
         .from('social_mentions')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('published_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      
-      const mentionsData = (data || []) as unknown as SocialMention[];
-      setMentions(mentionsData);
-      setKpis(calculateKPIs(mentionsData));
-      setHasData(mentionsData.length > 0);
 
       const { data: accountsData } = await supabase
         .from('social_accounts')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('platform');
-      
-      setAccounts((accountsData || []) as unknown as SocialAccount[]);
 
       const { data: reportsData } = await supabase
         .from('sentiment_reports')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('report_date', { ascending: false })
         .limit(30);
-      
-      setReports((reportsData || []) as unknown as SentimentReport[]);
-    } catch (error) {
-      console.error('Error fetching mentions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      return {
+        mentions: (mentionsRes || []) as unknown as SocialMention[],
+        accounts: (accountsData || []) as unknown as SocialAccount[],
+        reports: (reportsData || []) as unknown as SentimentReport[],
+      };
+    },
+  });
+
+  const mentions = data?.mentions ?? [];
+  const accounts = data?.accounts ?? [];
+  const reports = data?.reports ?? [];
+  const kpis = useMemo(() => (data ? calculateKPIs(mentions) : null), [data, mentions]);
+  const hasData = mentions.length > 0;
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.social.mentions(userId) }),
+    [queryClient, userId]
+  );
 
   const addMention = async (mentionData: { platform: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
+
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('social_mentions')
-        .insert([{ 
+        .insert([{
           platform: mentionData.platform,
           user_id: userId,
           external_id: mentionData.external_id as string | undefined,
@@ -159,9 +165,9 @@ export const useSocialMentions = () => {
         .single();
 
       if (error) throw error;
-      
-      await fetchMentions();
-      return data;
+
+      await invalidate();
+      return inserted;
     } catch (error) {
       console.error('Error adding mention:', error);
       toast({ title: 'Error', description: 'No se pudo agregar la mención', variant: 'destructive' });
@@ -177,9 +183,9 @@ export const useSocialMentions = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       toast({ title: 'Respuesta guardada', description: 'Tu respuesta ha sido registrada' });
-      await fetchMentions();
+      await invalidate();
     } catch (error) {
       console.error('Error responding to mention:', error);
       toast({ title: 'Error', description: 'No se pudo guardar la respuesta', variant: 'destructive' });
@@ -188,11 +194,11 @@ export const useSocialMentions = () => {
 
   const addAccount = async (accountData: { platform: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
+
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('social_accounts')
-        .insert([{ 
+        .insert([{
           platform: accountData.platform,
           user_id: userId,
           account_name: accountData.account_name as string | undefined,
@@ -203,20 +209,16 @@ export const useSocialMentions = () => {
         .single();
 
       if (error) throw error;
-      
+
       toast({ title: 'Cuenta conectada', description: 'Tu cuenta ha sido vinculada' });
-      await fetchMentions();
-      return data;
+      await invalidate();
+      return inserted;
     } catch (error) {
       console.error('Error adding account:', error);
       toast({ title: 'Error', description: 'No se pudo conectar la cuenta', variant: 'destructive' });
       return null;
     }
   };
-
-  useEffect(() => {
-    fetchMentions();
-  }, [userId]);
 
   return {
     mentions,
@@ -228,6 +230,6 @@ export const useSocialMentions = () => {
     addMention,
     respondToMention,
     addAccount,
-    refetch: fetchMentions,
+    refetch: invalidate,
   };
 };
