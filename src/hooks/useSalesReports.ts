@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { qk } from '@/lib/queryKeys';
+import { toOrderLines, getLineName, getLineQuantity, getLineRevenue } from '@/lib/orderItems';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format, eachDayOfInterval, eachWeekOfInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -242,15 +243,13 @@ export const useSalesReports = (
   const topProducts = useMemo((): TopProduct[] => {
     const productMap: Record<string, { quantity: number; revenue: number }> = {};
     rawOrders.forEach(order => {
-      const items = order.items || [];
-      if (Array.isArray(items)) {
-        items.forEach((item: any) => {
-          const name = item.name || 'Sin nombre';
-          if (!productMap[name]) productMap[name] = { quantity: 0, revenue: 0 };
-          productMap[name].quantity += item.quantity || 1;
-          productMap[name].revenue += (item.price || 0) * (item.quantity || 1);
-        });
-      }
+      // B-37: las líneas del POS usan `unit_price` y las web/manuales `price`.
+      toOrderLines(order.items).forEach(item => {
+        const name = getLineName(item);
+        if (!productMap[name]) productMap[name] = { quantity: 0, revenue: 0 };
+        productMap[name].quantity += getLineQuantity(item);
+        productMap[name].revenue += getLineRevenue(item);
+      });
     });
     return Object.entries(productMap)
       .map(([name, d]) => ({ name, ...d }))

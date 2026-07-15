@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { labelFor } from '@/lib/enumLabels';
+import { toOrderLines, getLineMenuItemId, getLineQuantity, getLineRevenue } from '@/lib/orderItems';
  import { Scatter, Bar } from 'react-chartjs-2';
  import { 
    Brain, Star, TrendingUp, TrendingDown, AlertTriangle,
@@ -96,8 +97,8 @@ import { labelFor } from '@/lib/enumLabels';
                  if (!salesCount[itemId]) {
                    salesCount[itemId] = { count: 0, revenue: 0 };
                  }
-                 salesCount[itemId].count += item.quantity || 1;
-                 salesCount[itemId].revenue += (item.price || 0) * (item.quantity || 1);
+                 salesCount[itemId].count += getLineQuantity(item);
+                 salesCount[itemId].revenue += getLineRevenue(item);
                }
              }
            }

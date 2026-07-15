@@ -99,14 +99,20 @@ export const useOfflineSync = () => {
       let orderId = sale.orderId;
       
       if (!orderId) {
+        // B-36: la línea debe llevar `name` y `price` (forma canónica que leen los
+        // reportes); antes se perdía el nombre y el precio iba como `unit_price`.
         const orderItems = sale.items.map(item => ({
           menu_item_id: item.id,
+          name: item.name,
+          price: item.price,
           quantity: item.quantity,
-          unit_price: item.price,
           notes: item.notes || null
         }));
 
         const orderPayload: any = {
+          // B-36: `user_id` es NOT NULL — sin esto TODA sincronización offline
+          // fallaba y la venta moría en IndexedDB tras 3 reintentos.
+          user_id: user.id,
           table_id: sale.tableId,
           items: orderItems,
           subtotal: sale.subtotal,
@@ -117,7 +123,12 @@ export const useOfflineSync = () => {
           status: 'completed',
           payment_status: 'paid',
           customer_name: sale.customerName,
-          order_number: `OFF-${Date.now().toString(36).toUpperCase()}`
+          // B-36: `order_number` es integer con secuencia; mandarle "OFF-xxx"
+          // reventaba el insert. Se deja que la secuencia lo asigne.
+          // B-21: la venta offline nace en caja -> mismo canal que el POS.
+          sales_channel: 'pos',
+          is_pos_order: true,
+          created_at: sale.createdAt,
         };
 
         const { data: orderData, error: orderError } = await supabase

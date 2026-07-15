@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { qk } from '@/lib/queryKeys';
+import { toOrderLines, getLineMenuItemId, getLineQuantity, getLineRevenue } from '@/lib/orderItems';
 
 export interface MenuItemWithCosts {
   id: string;
@@ -78,15 +79,13 @@ export const useMenuEngineeringData = (periodDays: number = 30) => {
 
       const salesCount: Record<string, { count: number; revenue: number }> = {};
       for (const order of orders || []) {
-        const orderItems = order.items as any[];
-        if (Array.isArray(orderItems)) {
-          for (const item of orderItems) {
-            const itemId = item.menu_item_id;
-            if (itemId) {
-              if (!salesCount[itemId]) salesCount[itemId] = { count: 0, revenue: 0 };
-              salesCount[itemId].count += item.quantity || 1;
-              salesCount[itemId].revenue += (item.price || 0) * (item.quantity || 1);
-            }
+        // B-37: las líneas del POS usan `unit_price` y las web/manuales `price`.
+        for (const item of toOrderLines(order.items)) {
+          const itemId = getLineMenuItemId(item);
+          if (itemId) {
+            if (!salesCount[itemId]) salesCount[itemId] = { count: 0, revenue: 0 };
+            salesCount[itemId].count += getLineQuantity(item);
+            salesCount[itemId].revenue += getLineRevenue(item);
           }
         }
       }
