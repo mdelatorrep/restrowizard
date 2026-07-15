@@ -163,7 +163,7 @@ export const useDiagnosis = () => {
         throw error;
       }
 
-      console.log('✅ Diagnosis saved successfully:', data);
+      console.log('✅ Diagnosis saved successfully');
       
       toast({
         title: "¡Diagnóstico guardado!",
@@ -206,7 +206,7 @@ export const useDiagnosis = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      console.log('✅ AI Analysis received:', data.data);
+      console.log('✅ AI Analysis received');
 
       // Save to database (skip when anonymous)
       if (diagnosisId && diagnosisId !== 'anonymous') {
@@ -254,7 +254,7 @@ export const useDiagnosis = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      console.log('✅ AI Action Plan received:', data.data);
+      console.log('✅ AI Action Plan received');
 
       if (diagnosisId && diagnosisId !== 'anonymous') {
         await supabase
@@ -298,7 +298,7 @@ export const useDiagnosis = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      console.log('✅ Benchmark received:', data.data);
+      console.log('✅ Benchmark received');
 
       if (diagnosisId && diagnosisId !== 'anonymous') {
         await supabase

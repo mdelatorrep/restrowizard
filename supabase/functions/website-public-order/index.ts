@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     const body: OrderRequest = await req.json();
-    console.log("Received order request:", JSON.stringify(body, null, 2));
+    console.log("Received order request for restaurant:", body.restaurant_user_id, "items:", body.items?.length ?? 0);
 
     // Validate required fields
     if (!body.restaurant_user_id || !body.items || body.items.length === 0) {
