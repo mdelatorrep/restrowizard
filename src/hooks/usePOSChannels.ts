@@ -1,5 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { qk } from "@/lib/queryKeys";
 
 export interface AggregatorOrder {
   id: string;
@@ -25,50 +27,54 @@ export interface Reservation {
 }
 
 export function usePOSChannels(userId: string | null) {
-  const [delivery, setDelivery] = useState<AggregatorOrder[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-    const sb = supabase as any;
-    const today = new Date().toISOString().slice(0, 10);
-    const [d, r] = await Promise.all([
-      sb.from("aggregator_orders")
-        .select("*")
-        .eq("user_id", userId)
-        .in("status", ["new", "accepted", "preparing", "ready"])
-        .order("created_at", { ascending: false })
-        .limit(30),
-      sb.from("table_reservations")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("reservation_date", today)
-        .in("status", ["confirmed", "pending", "seated"])
-        .order("reservation_time", { ascending: true }),
-    ]);
-    setDelivery((d.data as AggregatorOrder[]) ?? []);
-    setReservations((r.data as Reservation[]) ?? []);
-    setLoading(false);
-  }, [userId]);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: qk.pos.channels(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      const sb = supabase as any;
+      const today = new Date().toISOString().slice(0, 10);
+      const [d, r] = await Promise.all([
+        sb.from("aggregator_orders")
+          .select("*")
+          .eq("user_id", userId)
+          .in("status", ["new", "accepted", "preparing", "ready"])
+          .order("created_at", { ascending: false })
+          .limit(30),
+        sb.from("table_reservations")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("reservation_date", today)
+          .in("status", ["confirmed", "pending", "seated"])
+          .order("reservation_time", { ascending: true }),
+      ]);
+      return {
+        delivery: (d.data as AggregatorOrder[]) ?? [],
+        reservations: (r.data as Reservation[]) ?? [],
+      };
+    },
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
+  // Realtime: invalida la query en cambios (B-06: comparte caché vía TanStack Query)
   useEffect(() => {
     if (!userId) return;
     const sb = supabase as any;
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.pos.channels(userId) });
     const ch = sb
       .channel(`pos-channels-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "aggregator_orders", filter: `user_id=eq.${userId}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "table_reservations", filter: `user_id=eq.${userId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "aggregator_orders", filter: `user_id=eq.${userId}` }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "table_reservations", filter: `user_id=eq.${userId}` }, invalidate)
       .subscribe();
     return () => {
       sb.removeChannel(ch);
     };
-  }, [userId, load]);
+  }, [userId, queryClient]);
 
-  return { delivery, reservations, loading, refresh: load };
+  return {
+    delivery: data?.delivery ?? [],
+    reservations: data?.reservations ?? [],
+    loading: isLoading,
+    refresh: refetch,
+  };
 }

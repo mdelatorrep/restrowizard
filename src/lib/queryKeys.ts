@@ -18,6 +18,7 @@ export const qk = {
     session: (userId?: string | null) => ['pos-session', userId] as const,
     transactions: (sessionId?: string | null) => ['pos-transactions', sessionId] as const,
     discounts: (userId?: string | null) => ['pos-discounts', userId] as const,
+    channels: (userId?: string | null) => ['pos-channels', userId] as const,
   },
   finances: {
     summary: (userId?: string | null, range?: string) => ['finances-summary', userId, range] as const,
@@ -30,6 +31,7 @@ export const qk = {
   menus: {
     all: (userId?: string | null) => ['menus', userId] as const,
     items: (menuId?: string | null) => ['menu-items', menuId] as const,
+    itemsByUser: (userId?: string | null) => ['menu-items-user', userId] as const,
   },
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
