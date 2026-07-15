@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { toast } from 'sonner';
+import { qk } from '@/lib/queryKeys';
 
-/**
- * BL-06: Conversión de unidades robusta.
- * Lee y gestiona conversiones específicas por ingrediente (densidad/peso)
- * y genéricas (taza ↔ ml, libra ↔ g, etc.).
- */
 export interface UnitConversion {
   id: string;
   from_unit_id: string;
@@ -23,43 +19,28 @@ export interface UnitConversion {
 
 export const useUnitConversions = () => {
   const { userId } = useDataUserId();
-  const [conversions, setConversions] = useState<UnitConversion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('unit_conversions')
-      .select(`
-        *,
-        from_unit:measurement_units!from_unit_id(id, name, abbreviation),
-        to_unit:measurement_units!to_unit_id(id, name, abbreviation),
-        ingredient:inventory_items(id, item_name)
-      `)
-      .order('created_at', { ascending: false });
-    if (error) console.error('unit_conversions:', error);
-    setConversions((data as any) || []);
-    setLoading(false);
-  }, []);
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: qk.inventory.conversions(userId),
+    queryFn: async (): Promise<UnitConversion[]> => {
+      const { data, error } = await supabase
+        .from('unit_conversions')
+        .select(`*, from_unit:measurement_units!from_unit_id(id, name, abbreviation), to_unit:measurement_units!to_unit_id(id, name, abbreviation), ingredient:inventory_items(id, item_name)`)
+        .order('created_at', { ascending: false });
+      if (error) console.error('unit_conversions:', error);
+      return (data as any) || [];
+    },
+  });
 
-  useEffect(() => { refetch(); }, [refetch]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.inventory.conversions(userId) });
 
   const addConversion = async (input: {
-    from_unit_id: string;
-    to_unit_id: string;
-    conversion_factor: number;
-    ingredient_id?: string | null;
-    notes?: string;
+    from_unit_id: string; to_unit_id: string; conversion_factor: number; ingredient_id?: string | null; notes?: string;
   }) => {
     if (!userId) return;
-    if (input.from_unit_id === input.to_unit_id) {
-      toast.error('Las unidades deben ser distintas');
-      return;
-    }
-    if (!(input.conversion_factor > 0)) {
-      toast.error('El factor debe ser mayor a 0');
-      return;
-    }
+    if (input.from_unit_id === input.to_unit_id) { toast.error('Las unidades deben ser distintas'); return; }
+    if (!(input.conversion_factor > 0)) { toast.error('El factor debe ser mayor a 0'); return; }
     const { error } = await supabase.from('unit_conversions').insert({
       from_unit_id: input.from_unit_id,
       to_unit_id: input.to_unit_id,
@@ -68,39 +49,26 @@ export const useUnitConversions = () => {
       notes: input.notes || null,
       user_id: userId,
     });
-    if (error) {
-      toast.error(error.message.includes('duplicate') ? 'Ya existe esa conversión' : 'No se pudo guardar');
-      return;
-    }
+    if (error) { toast.error(error.message.includes('duplicate') ? 'Ya existe esa conversión' : 'No se pudo guardar'); return; }
     toast.success('Conversión guardada');
-    await refetch();
+    await invalidate();
   };
 
   const removeConversion = async (id: string) => {
     const { error } = await supabase.from('unit_conversions').delete().eq('id', id);
     if (error) { toast.error('No se pudo eliminar'); return; }
-    await refetch();
+    await invalidate();
   };
 
-  /**
-   * Convierte una cantidad usando el RPC `convert_unit`. Si no hay cadena
-   * de conversión disponible devuelve null.
-   */
   const convertAmount = async (
     amount: number, fromUnitId: string, toUnitId: string, ingredientId?: string | null,
   ): Promise<number | null> => {
     const { data, error } = await supabase.rpc('convert_unit', {
-      p_amount: amount,
-      p_from_unit_id: fromUnitId,
-      p_to_unit_id: toUnitId,
-      p_ingredient_id: ingredientId || null,
+      p_amount: amount, p_from_unit_id: fromUnitId, p_to_unit_id: toUnitId, p_ingredient_id: ingredientId || null,
     });
-    if (error) {
-      console.error('convert_unit:', error);
-      return null;
-    }
+    if (error) { console.error('convert_unit:', error); return null; }
     return data === null ? null : Number(data);
   };
 
-  return { conversions, loading, addConversion, removeConversion, convertAmount, refetch };
+  return { conversions: data ?? [], loading: isLoading, addConversion, removeConversion, convertAmount, refetch };
 };

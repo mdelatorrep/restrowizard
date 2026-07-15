@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 
 interface ConsultantProfile {
   id: string;
@@ -24,61 +25,37 @@ interface ConsultantProfile {
 export const useConsultantProfile = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<ConsultantProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: profile = null, isLoading, refetch } = useQuery({
+    queryKey: qk.consultant.profile(user?.id),
+    enabled: !!user,
+    queryFn: async (): Promise<ConsultantProfile | null> => {
       const { data, error } = await supabase
         .from('consultant_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error && error.code !== 'PGRST116') throw error;
-      setProfile(data);
-    } catch (error: any) {
-      console.error('Error fetching consultant profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data;
+    },
+  });
 
   const updateProfile = async (updates: Partial<ConsultantProfile>) => {
     if (!user || !profile) return { error: 'No profile found' };
-
     try {
-      const { error } = await supabase
-        .from('consultant_profiles')
-        .update(updates)
-        .eq('id', profile.id);
-
+      const { error } = await supabase.from('consultant_profiles').update(updates).eq('id', profile.id);
       if (error) throw error;
-
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-      toast({ title: "Perfil actualizado", description: "Los cambios han sido guardados." });
+      await queryClient.invalidateQueries({ queryKey: qk.consultant.profile(user.id) });
+      toast({ title: 'Perfil actualizado', description: 'Los cambios han sido guardados.' });
       return { error: null };
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return { error: error.message };
     }
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
-
-  return {
-    profile,
-    loading,
-    updateProfile,
-    refetch: fetchProfile
-  };
+  return { profile, loading: isLoading, updateProfile, refetch };
 };

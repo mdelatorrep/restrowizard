@@ -30,6 +30,7 @@ export const qk = {
   inventory: {
     items: (userId?: string | null) => ['inventory-items', userId] as const,
     movements: (userId?: string | null) => ['inventory-movements', userId] as const,
+    conversions: (userId?: string | null) => ['unit-conversions', userId] as const,
   },
   menus: {
     all: (userId?: string | null) => ['menus', userId] as const,
@@ -56,6 +57,12 @@ export const qk = {
   operations: {
     data: (userId?: string | null) => ['operations', userId] as const,
     benchmarks: () => ['operations-benchmarks'] as const,
+  },
+  business: {
+    taxConfig: (userId?: string | null) => ['business-tax-config', userId] as const,
+  },
+  consultant: {
+    profile: (userId?: string | null) => ['consultant-profile', userId] as const,
   },
   public: {
     menuBySlug: (slug?: string | null) => ['public-menu', slug] as const,
