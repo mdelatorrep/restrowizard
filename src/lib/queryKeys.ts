@@ -54,6 +54,13 @@ export const qk = {
   support: {
     tickets: (userId?: string | null) => ['support-tickets', userId] as const,
   },
+  development: {
+    mine: (userId?: string | null) => ['my-development', userId] as const,
+  },
+  sustainability: {
+    data: (userId?: string | null, range?: string) => ['sustainability', userId, range] as const,
+    benchmarks: () => ['sustainability-benchmarks'] as const,
+  },
   reservations: {
     all: (userId?: string | null) => ['reservations', userId] as const,
   },

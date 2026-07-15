@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export type WasteCategory = 'overproduction' | 'plate_waste' | 'preparation' | 'spoilage' | 'storage' | 'other';
 
@@ -43,28 +45,63 @@ export interface SustainabilityBenchmarks {
   carbonPerCover: number;
 }
 
+interface SustainabilityData {
+  wasteLogs: FoodWasteLog[];
+  carbonItems: CarbonItem[];
+}
+
+const computeKPIs = (wasteData: FoodWasteLog[], carbonData: CarbonItem[]): SustainabilityKPIs => {
+  const totalWasteKg = wasteData.reduce((sum, w) => sum + Number(w.quantity_kg), 0);
+  const totalWasteCost = wasteData.reduce((sum, w) => sum + Number(w.estimated_cost || 0), 0);
+  const preventableCount = wasteData.filter(w => w.preventable).length;
+  const preventableWastePercentage = wasteData.length ? (preventableCount / wasteData.length) * 100 : 0;
+
+  const wasteByCategory: Record<string, number> = {};
+  wasteData.forEach(w => {
+    wasteByCategory[w.category] = (wasteByCategory[w.category] || 0) + Number(w.quantity_kg);
+  });
+
+  const totalCarbonFootprint = carbonData.reduce((sum, c) => sum + Number(c.co2_per_kg), 0);
+  const localItems = carbonData.filter(c => c.is_local).length;
+  const localSourcingPercentage = carbonData.length ? (localItems / carbonData.length) * 100 : 0;
+
+  const carbonByCategory: Record<string, number> = {};
+  carbonData.forEach(c => {
+    carbonByCategory[c.category] = (carbonByCategory[c.category] || 0) + Number(c.co2_per_kg);
+  });
+
+  const waterUsage = carbonData.reduce((sum, c) => sum + Number(c.water_usage_liters || 0), 0);
+
+  return {
+    totalWasteKg,
+    totalWasteCost,
+    preventableWastePercentage,
+    wasteByCategory,
+    totalCarbonFootprint,
+    localSourcingPercentage,
+    carbonByCategory,
+    waterUsage,
+  };
+};
+
 export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) => {
   const { userId, isViewingClient } = useDataUserId();
   const { toast } = useToast();
-  const [wasteLogs, setWasteLogs] = useState<FoodWasteLog[]>([]);
-  const [carbonItems, setCarbonItems] = useState<CarbonItem[]>([]);
-  const [kpis, setKpis] = useState<SustainabilityKPIs | null>(null);
-  const [benchmarks, setBenchmarks] = useState<SustainabilityBenchmarks | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchData = async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+  const rangeKey = dateRange
+    ? `${dateRange.start.toISOString().split('T')[0]}_${dateRange.end.toISOString().split('T')[0]}`
+    : 'all';
 
-    try {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.sustainability.data(userId, rangeKey),
+    enabled: !!userId,
+    queryFn: async (): Promise<SustainabilityData> => {
       // Fetch waste logs
       let wasteQuery = supabase
         .from('food_waste_logs')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('waste_date', { ascending: false });
 
       if (dateRange) {
@@ -80,87 +117,45 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
       const { data: carbonData, error: carbonError } = await supabase
         .from('carbon_footprint_items')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('item_name');
 
       if (carbonError) throw carbonError;
 
-      setWasteLogs(wasteData || []);
-      setCarbonItems(carbonData || []);
-      setHasData((wasteData?.length || 0) > 0 || (carbonData?.length || 0) > 0);
+      return {
+        wasteLogs: (wasteData || []) as FoodWasteLog[],
+        carbonItems: (carbonData || []) as CarbonItem[],
+      };
+    },
+  });
 
-      // Calculate KPIs
-      const totalWasteKg = (wasteData || []).reduce((sum, w) => sum + Number(w.quantity_kg), 0);
-      const totalWasteCost = (wasteData || []).reduce((sum, w) => sum + Number(w.estimated_cost || 0), 0);
-      const preventableCount = (wasteData || []).filter(w => w.preventable).length;
-      const preventableWastePercentage = wasteData?.length 
-        ? (preventableCount / wasteData.length) * 100 
-        : 0;
-
-      const wasteByCategory: Record<string, number> = {};
-      (wasteData || []).forEach(w => {
-        wasteByCategory[w.category] = (wasteByCategory[w.category] || 0) + Number(w.quantity_kg);
-      });
-
-      const totalCarbonFootprint = (carbonData || []).reduce((sum, c) => sum + Number(c.co2_per_kg), 0);
-      const localItems = (carbonData || []).filter(c => c.is_local).length;
-      const localSourcingPercentage = carbonData?.length 
-        ? (localItems / carbonData.length) * 100 
-        : 0;
-
-      const carbonByCategory: Record<string, number> = {};
-      (carbonData || []).forEach(c => {
-        carbonByCategory[c.category] = (carbonByCategory[c.category] || 0) + Number(c.co2_per_kg);
-      });
-
-      const waterUsage = (carbonData || []).reduce((sum, c) => sum + Number(c.water_usage_liters || 0), 0);
-
-      setKpis({
-        totalWasteKg,
-        totalWasteCost,
-        preventableWastePercentage,
-        wasteByCategory,
-        totalCarbonFootprint,
-        localSourcingPercentage,
-        carbonByCategory,
-        waterUsage
-      });
-    } catch (error: any) {
-      console.error('Error fetching sustainability data:', error);
-      toast({
-        title: "Error al cargar datos de sostenibilidad",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBenchmarks = async () => {
-    try {
+  const { data: benchmarks = null } = useQuery({
+    queryKey: qk.sustainability.benchmarks(),
+    queryFn: async (): Promise<SustainabilityBenchmarks | null> => {
       const { data, error } = await supabase
         .from('industry_benchmarks')
         .select('*')
         .eq('metric_category', 'sustainability');
-
       if (error) throw error;
+      if (!data || data.length === 0) return null;
+      const benchmarkMap: Record<string, number> = {};
+      data.forEach(b => { benchmarkMap[b.metric_name] = Number(b.avg_value); });
+      return {
+        wastePercentage: benchmarkMap['waste_percentage'] || 8.5,
+        carbonPerCover: benchmarkMap['carbon_footprint_per_cover'] || 2.8,
+      };
+    },
+  });
 
-      if (data && data.length > 0) {
-        const benchmarkMap: Record<string, number> = {};
-        data.forEach(b => {
-          benchmarkMap[b.metric_name] = Number(b.avg_value);
-        });
+  const wasteLogs = data?.wasteLogs ?? [];
+  const carbonItems = data?.carbonItems ?? [];
+  const kpis = useMemo(() => (data ? computeKPIs(wasteLogs, carbonItems) : null), [data, wasteLogs, carbonItems]);
+  const hasData = wasteLogs.length > 0 || carbonItems.length > 0;
 
-        setBenchmarks({
-          wastePercentage: benchmarkMap['waste_percentage'] || 8.5,
-          carbonPerCover: benchmarkMap['carbon_footprint_per_cover'] || 2.8
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching benchmarks:', error);
-    }
-  };
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.sustainability.data(userId, rangeKey) }),
+    [queryClient, userId, rangeKey]
+  );
 
   const addWasteLog = async (
     log: Omit<FoodWasteLog, 'id'> & { inventory_item_id?: string | null }
@@ -170,7 +165,7 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
     const { inventory_item_id, ...rest } = log;
 
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('food_waste_logs')
         .insert({
           ...rest,
@@ -210,12 +205,15 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
             unit_cost: unitCost,
             total_cost: unitCost * change,
             reference_type: 'food_waste_log',
-            reference_id: data.id,
+            reference_id: inserted.id,
             notes: rest.reason || `Desperdicio: ${rest.category}`,
           });
+
+          // El stock cambió: refrescar también las vistas de inventario.
+          await queryClient.invalidateQueries({ queryKey: qk.inventory.items(userId) });
+          await queryClient.invalidateQueries({ queryKey: qk.inventory.movements(userId) });
         }
       }
-
 
       toast({
         title: "Desperdicio registrado",
@@ -224,8 +222,8 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
           : "El registro se ha guardado correctamente",
       });
 
-      await fetchData();
-      return data;
+      await invalidate();
+      return inserted;
     } catch (error: any) {
       console.error('Error adding waste log:', error);
       toast({
@@ -237,12 +235,11 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
     }
   };
 
-
   const addCarbonItem = async (item: Omit<CarbonItem, 'id'>) => {
     if (!userId) return null;
 
     try {
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('carbon_footprint_items')
         .insert({
           ...item,
@@ -253,12 +250,10 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
 
       if (error) throw error;
 
-      toast({
-        title: "Ítem de huella de carbono agregado"
-      });
+      toast({ title: "Ítem de huella de carbono agregado" });
 
-      await fetchData();
-      return data;
+      await invalidate();
+      return inserted;
     } catch (error: any) {
       console.error('Error adding carbon item:', error);
       toast({
@@ -280,7 +275,7 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
       if (error) throw error;
 
       toast({ title: "Registro eliminado" });
-      await fetchData();
+      await invalidate();
     } catch (error: any) {
       toast({
         title: "Error al eliminar",
@@ -289,11 +284,6 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
       });
     }
   };
-
-  useEffect(() => {
-    fetchData();
-    fetchBenchmarks();
-  }, [userId, dateRange?.start, dateRange?.end]);
 
   return {
     wasteLogs,
@@ -306,6 +296,6 @@ export const useSustainabilityData = (dateRange?: { start: Date; end: Date }) =>
     addWasteLog,
     addCarbonItem,
     deleteWasteLog,
-    refetch: fetchData
+    refetch: invalidate
   };
 };

@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface MyTrainingProgress {
   id: string;
@@ -49,34 +51,39 @@ export interface MyBenefitRequest {
   benefit_type?: string;
 }
 
+type AvailableBenefit = { id: string; benefit_name: string; benefit_type: string; description: string | null; value: number; value_type: string };
+
+interface MyDevelopmentData {
+  staffMemberId: string;
+  staffName: string;
+  staffPosition: string;
+  training: MyTrainingProgress[];
+  benefits: MyBenefitAssignment[];
+  requests: MyBenefitRequest[];
+  availableBenefits: AvailableBenefit[];
+}
+
 export const useMyDevelopment = () => {
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [staffMemberId, setStaffMemberId] = useState<string | null>(null);
-  const [staffName, setStaffName] = useState<string>('');
-  const [staffPosition, setStaffPosition] = useState<string>('');
-  const [training, setTraining] = useState<MyTrainingProgress[]>([]);
-  const [benefits, setBenefits] = useState<MyBenefitAssignment[]>([]);
-  const [requests, setRequests] = useState<MyBenefitRequest[]>([]);
-  const [availableBenefits, setAvailableBenefits] = useState<Array<{ id: string; benefit_name: string; benefit_type: string; description: string | null; value: number; value_type: string }>>([]);
+  const queryClient = useQueryClient();
 
-  const fetchData = useCallback(async () => {
-    if (!user?.id) { setLoading(false); return; }
-    setLoading(true);
-    try {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.development.mine(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<MyDevelopmentData | null> => {
       // 1. Find the staff_member linked to this auth user
       // First try direct linking via linked_user_id
       let staffMember: any = null;
-      
+
       const { data: directLink, error: directError } = await supabase
         .from('staff_members')
         .select('id, name, position, user_id')
-        .eq('linked_user_id', user.id)
+        .eq('linked_user_id', user!.id)
         .maybeSingle();
 
       if (directError) throw directError;
-      
+
       if (directLink) {
         staffMember = directLink;
       } else {
@@ -84,37 +91,30 @@ export const useMyDevelopment = () => {
         const { data: teamLink } = await supabase
           .from('restaurant_team_members')
           .select('staff_member_id, restaurant_businesses!inner(owner_id)')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .eq('status', 'active')
           .not('staff_member_id', 'is', null)
           .maybeSingle();
-        
+
         if (teamLink?.staff_member_id) {
           const { data: linkedStaff } = await supabase
             .from('staff_members')
             .select('id, name, position, user_id')
             .eq('id', teamLink.staff_member_id)
             .single();
-          
+
           if (linkedStaff) {
             staffMember = linkedStaff;
             // Auto-link for future queries
             await supabase
               .from('staff_members')
-              .update({ linked_user_id: user.id })
+              .update({ linked_user_id: user!.id })
               .eq('id', linkedStaff.id);
           }
         }
       }
 
-      if (!staffMember) {
-        setLoading(false);
-        return;
-      }
-
-      setStaffMemberId(staffMember.id);
-      setStaffName(staffMember.name);
-      setStaffPosition(staffMember.position);
+      if (!staffMember) return null;
 
       // 2. Fetch training progress with program details
       const [progressRes, assignmentsRes, requestsRes, benefitsCatalogRes] = await Promise.all([
@@ -143,7 +143,7 @@ export const useMyDevelopment = () => {
       if (assignmentsRes.error) throw assignmentsRes.error;
       if (requestsRes.error) throw requestsRes.error;
 
-      setTraining((progressRes.data || []).map((p: any) => ({
+      const training = (progressRes.data || []).map((p: any) => ({
         id: p.id,
         training_program_id: p.training_program_id,
         status: p.status,
@@ -161,9 +161,9 @@ export const useMyDevelopment = () => {
         program_is_mandatory: p.training_programs?.is_mandatory || false,
         program_content: p.training_programs?.content,
         program_passing_score: p.training_programs?.passing_score || 70,
-      })));
+      })) as MyTrainingProgress[];
 
-      setBenefits((assignmentsRes.data || []).map((a: any) => ({
+      const benefits = (assignmentsRes.data || []).map((a: any) => ({
         id: a.id,
         benefit_id: a.benefit_id,
         status: a.status,
@@ -175,24 +175,35 @@ export const useMyDevelopment = () => {
         benefit_description: a.staff_benefits?.description,
         benefit_value: a.staff_benefits?.value || 0,
         benefit_value_type: a.staff_benefits?.value_type || 'fixed',
-      })));
+      })) as MyBenefitAssignment[];
 
-      setRequests((requestsRes.data || []).map((r: any) => ({
+      const requests = (requestsRes.data || []).map((r: any) => ({
         ...r,
         benefit_name: r.staff_benefits?.benefit_name,
         benefit_type: r.staff_benefits?.benefit_type,
-      })));
+      })) as MyBenefitRequest[];
 
-      setAvailableBenefits(benefitsCatalogRes.data || []);
-    } catch (error: any) {
-      console.error('Error fetching my development data:', error);
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, toast]);
+      return {
+        staffMemberId: staffMember.id,
+        staffName: staffMember.name,
+        staffPosition: staffMember.position,
+        training,
+        benefits,
+        requests,
+        availableBenefits: (benefitsCatalogRes.data || []) as AvailableBenefit[],
+      };
+    },
+  });
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const staffMemberId = data?.staffMemberId ?? null;
+  const training = data?.training ?? [];
+  const benefits = data?.benefits ?? [];
+  const requests = data?.requests ?? [];
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.development.mine(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   // Mark a training module as in progress or completed
   const updateMyProgress = async (progressId: string, updates: { status?: string; progress_percent?: number; score?: number; modules_completed?: any }) => {
@@ -208,7 +219,7 @@ export const useMyDevelopment = () => {
       const { error } = await supabase.from('staff_training_progress').update(updateData).eq('id', progressId);
       if (error) throw error;
       toast({ title: 'Progreso actualizado' });
-      await fetchData();
+      await invalidate();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -235,7 +246,7 @@ export const useMyDevelopment = () => {
       });
       if (error) throw error;
       toast({ title: 'Solicitud enviada', description: 'Tu solicitud ha sido enviada al administrador' });
-      await fetchData();
+      await invalidate();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
@@ -268,15 +279,15 @@ export const useMyDevelopment = () => {
   return {
     loading,
     isLinked: !!staffMemberId,
-    staffName,
-    staffPosition,
+    staffName: data?.staffName ?? '',
+    staffPosition: data?.staffPosition ?? '',
     training,
     benefits,
     requests,
-    availableBenefits,
+    availableBenefits: data?.availableBenefits ?? [],
     stats,
     updateMyProgress,
     requestBenefit,
-    refetch: fetchData,
+    refetch: invalidate,
   };
 };
