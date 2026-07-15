@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConsultantProfile } from '@/hooks/useConsultantProfile';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface RestaurantZone {
   id: string;
@@ -34,56 +35,35 @@ export interface ZoneFormData {
 }
 
 export function useRestaurantZones() {
-  const [zones, setZones] = useState<RestaurantZone[]>([]);
-  const [loading, setLoading] = useState(true);
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchZones = useCallback(async () => {
-    if (!profile?.id) return;
-    
-    setLoading(true);
-    try {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: qk.zones.list(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('restaurant_zones')
-        .select(`
-          *,
-          restaurant:restaurant_businesses(id, name)
-        `)
-        .eq('consultant_id', profile.id)
+        .select(`*, restaurant:restaurant_businesses(id, name)`)
+        .eq('consultant_id', profile!.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-
-      // Parse amenities from JSONB
-      const parsedData = (data || []).map((zone: any) => ({
+      return (data || []).map((zone: any) => ({
         ...zone,
         amenities: Array.isArray(zone.amenities) ? zone.amenities : [],
         images: zone.images || [],
-      }));
+      })) as RestaurantZone[];
+    },
+  });
 
-      setZones(parsedData as RestaurantZone[]);
-    } catch (error: any) {
-      console.error('Error fetching zones:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los espacios',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.id, toast]);
+  if (error) console.error('Error fetching zones:', error);
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchZones();
-    }
-  }, [profile?.id, fetchZones]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.zones.list(profile?.id) });
+  const zones = data ?? [];
 
   const createZone = async (data: ZoneFormData): Promise<string | null> => {
     if (!profile?.id) return null;
-
     try {
       const { data: zone, error } = await supabase
         .from('restaurant_zones')
@@ -101,23 +81,13 @@ export function useRestaurantZones() {
         })
         .select()
         .single();
-
       if (error) throw error;
-
-      toast({
-        title: 'Espacio creado',
-        description: 'El espacio se ha guardado correctamente',
-      });
-
-      await fetchZones();
+      toast({ title: 'Espacio creado', description: 'El espacio se ha guardado correctamente' });
+      await invalidate();
       return zone.id;
     } catch (error: any) {
       console.error('Error creating zone:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear el espacio',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'No se pudo crear el espacio', variant: 'destructive' });
       return null;
     }
   };
@@ -126,73 +96,39 @@ export function useRestaurantZones() {
     try {
       const { error } = await supabase
         .from('restaurant_zones')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', id);
-
       if (error) throw error;
-
-      toast({
-        title: 'Espacio actualizado',
-        description: 'Los cambios se han guardado correctamente',
-      });
-
-      await fetchZones();
+      toast({ title: 'Espacio actualizado', description: 'Los cambios se han guardado correctamente' });
+      await invalidate();
       return true;
     } catch (error: any) {
       console.error('Error updating zone:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el espacio',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'No se pudo actualizar el espacio', variant: 'destructive' });
       return false;
     }
   };
 
   const deleteZone = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('restaurant_zones')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('restaurant_zones').delete().eq('id', id);
       if (error) throw error;
-
-      toast({
-        title: 'Espacio eliminado',
-        description: 'El espacio se ha eliminado correctamente',
-      });
-
-      await fetchZones();
+      toast({ title: 'Espacio eliminado', description: 'El espacio se ha eliminado correctamente' });
+      await invalidate();
       return true;
     } catch (error: any) {
       console.error('Error deleting zone:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo eliminar el espacio',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'No se pudo eliminar el espacio', variant: 'destructive' });
       return false;
     }
   };
 
   const toggleZoneStatus = async (id: string, isActive: boolean): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('restaurant_zones')
-        .update({ is_active: isActive })
-        .eq('id', id);
-
+      const { error } = await supabase.from('restaurant_zones').update({ is_active: isActive }).eq('id', id);
       if (error) throw error;
-
-      toast({
-        title: isActive ? 'Espacio activado' : 'Espacio desactivado',
-      });
-
-      await fetchZones();
+      toast({ title: isActive ? 'Espacio activado' : 'Espacio desactivado' });
+      await invalidate();
       return true;
     } catch (error: any) {
       console.error('Error toggling zone status:', error);
@@ -202,12 +138,12 @@ export function useRestaurantZones() {
 
   return {
     zones,
-    loading,
+    loading: isLoading,
     createZone,
     updateZone,
     deleteZone,
     toggleZoneStatus,
-    refetch: fetchZones,
+    refetch,
     activeZones: zones.filter((z) => z.is_active),
   };
 }

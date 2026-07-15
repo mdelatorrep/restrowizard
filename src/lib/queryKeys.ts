@@ -44,6 +44,12 @@ export const qk = {
   reservations: {
     all: (userId?: string | null) => ['reservations', userId] as const,
   },
+  feedback: {
+    all: (userId?: string | null) => ['feedback', userId] as const,
+  },
+  zones: {
+    list: (consultantId?: string | null) => ['restaurant-zones', consultantId] as const,
+  },
 } as const;
 
 export type QueryKeyFactory = typeof qk;

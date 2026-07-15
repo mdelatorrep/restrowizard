@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { qk } from '@/lib/queryKeys';
 
 export interface CustomerFeedback {
   id: string;
@@ -46,83 +48,70 @@ export interface FeedbackKPIs {
   responseRate: number;
 }
 
+const calculateKPIs = (data: CustomerFeedback[]): FeedbackKPIs => {
+  const total = data.length;
+  if (total === 0) {
+    return { totalFeedback: 0, avgRating: 0, positivePercent: 0, negativePercent: 0, responseRate: 0 };
+  }
+  const ratings = data.filter((f) => f.rating).map((f) => f.rating!);
+  const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const positive = data.filter((f) => f.sentiment_label === 'positive' || (f.rating && f.rating >= 4)).length;
+  const negative = data.filter((f) => f.sentiment_label === 'negative' || (f.rating && f.rating <= 2)).length;
+  const responded = data.filter((f) => f.responded).length;
+  return {
+    totalFeedback: total,
+    avgRating: Math.round(avgRating * 10) / 10,
+    positivePercent: Math.round((positive / total) * 100),
+    negativePercent: Math.round((negative / total) * 100),
+    responseRate: Math.round((responded / total) * 100),
+  };
+};
+
 export const useFeedbackData = () => {
-  const [feedback, setFeedback] = useState<CustomerFeedback[]>([]);
-  const [campaigns, setCampaigns] = useState<FeedbackCampaign[]>([]);
-  const [kpis, setKpis] = useState<FeedbackKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  const calculateKPIs = (data: CustomerFeedback[]): FeedbackKPIs => {
-    const total = data.length;
-    if (total === 0) {
-      return { totalFeedback: 0, avgRating: 0, positivePercent: 0, negativePercent: 0, responseRate: 0 };
-    }
-
-    const ratings = data.filter(f => f.rating).map(f => f.rating!);
-    const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-    
-    const positive = data.filter(f => f.sentiment_label === 'positive' || (f.rating && f.rating >= 4)).length;
-    const negative = data.filter(f => f.sentiment_label === 'negative' || (f.rating && f.rating <= 2)).length;
-    const responded = data.filter(f => f.responded).length;
-
-    return {
-      totalFeedback: total,
-      avgRating: Math.round(avgRating * 10) / 10,
-      positivePercent: Math.round((positive / total) * 100),
-      negativePercent: Math.round((negative / total) * 100),
-      responseRate: Math.round((responded / total) * 100),
-    };
-  };
-
-  const fetchFeedback = async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: qk.feedback.all(userId),
+    enabled: !!userId,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_feedback')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      
       const feedbackData = (data || []) as unknown as CustomerFeedback[];
-      setFeedback(feedbackData);
-      setKpis(calculateKPIs(feedbackData));
-      setHasData(feedbackData.length > 0);
-
       const { data: campaignsData } = await supabase
         .from('feedback_campaigns')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false });
-      
-      setCampaigns((campaignsData || []) as unknown as FeedbackCampaign[]);
-    } catch (error) {
-      console.error('Error fetching feedback:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        feedback: feedbackData,
+        campaigns: (campaignsData || []) as unknown as FeedbackCampaign[],
+        kpis: calculateKPIs(feedbackData),
+        hasData: feedbackData.length > 0,
+      };
+    },
+  });
+
+  useEffect(() => { if (error) console.error('Error fetching feedback:', error); }, [error]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.feedback.all(userId) });
 
   const addFeedback = async (feedbackData: Partial<CustomerFeedback>) => {
     if (!userId) return null;
-    
     try {
       const { data, error } = await supabase
         .from('customer_feedback')
         .insert([{ ...feedbackData, user_id: userId }])
         .select()
         .single();
-
       if (error) throw error;
-      
       toast({ title: 'Feedback registrado', description: 'El comentario ha sido guardado' });
-      await fetchFeedback();
+      await invalidate();
       return data;
     } catch (error) {
       console.error('Error adding feedback:', error);
@@ -135,17 +124,11 @@ export const useFeedbackData = () => {
     try {
       const { error } = await supabase
         .from('customer_feedback')
-        .update({ 
-          responded: true, 
-          response_text: response, 
-          responded_at: new Date().toISOString() 
-        })
+        .update({ responded: true, response_text: response, responded_at: new Date().toISOString() })
         .eq('id', id);
-
       if (error) throw error;
-      
       toast({ title: 'Respuesta enviada', description: 'El cliente ha sido notificado' });
-      await fetchFeedback();
+      await invalidate();
     } catch (error) {
       console.error('Error responding to feedback:', error);
       toast({ title: 'Error', description: 'No se pudo enviar la respuesta', variant: 'destructive' });
@@ -154,11 +137,10 @@ export const useFeedbackData = () => {
 
   const createCampaign = async (campaignData: { name: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
     try {
       const { data, error } = await supabase
         .from('feedback_campaigns')
-        .insert([{ 
+        .insert([{
           name: campaignData.name,
           user_id: userId,
           qr_code_url: campaignData.qr_code_url as string | undefined,
@@ -168,11 +150,9 @@ export const useFeedbackData = () => {
         }])
         .select()
         .single();
-
       if (error) throw error;
-      
       toast({ title: 'Campaña creada', description: 'Tu campaña de feedback está activa' });
-      await fetchFeedback();
+      await invalidate();
       return data;
     } catch (error) {
       console.error('Error creating campaign:', error);
@@ -181,19 +161,15 @@ export const useFeedbackData = () => {
     }
   };
 
-  useEffect(() => {
-    fetchFeedback();
-  }, [userId]);
-
   return {
-    feedback,
-    campaigns,
-    kpis,
-    loading,
-    hasData,
+    feedback: data?.feedback ?? [],
+    campaigns: data?.campaigns ?? [],
+    kpis: data?.kpis ?? null,
+    loading: isLoading,
+    hasData: data?.hasData ?? false,
     addFeedback,
     respondToFeedback,
     createCampaign,
-    refetch: fetchFeedback,
+    refetch,
   };
 };
