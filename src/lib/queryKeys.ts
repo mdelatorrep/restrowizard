@@ -98,6 +98,8 @@ export const qk = {
   business: {
     taxConfig: (userId?: string | null) => ['business-tax-config', userId] as const,
     brand: (userId?: string | null) => ['restaurant-brand', userId] as const,
+    website: (userId?: string | null) => ['restaurant-website', userId] as const,
+    websiteTemplates: () => ['website-templates'] as const,
   },
   dashboard: {
     overview: (userId?: string | null) => ['dashboard-overview', userId] as const,
@@ -123,6 +125,7 @@ export const qk = {
     userMenus: (userId?: string | null) => ['public-user-menus', userId] as const,
     menuItemsList: (menuId?: string | null) => ['public-menu-items', menuId] as const,
     restaurantData: (slug?: string | null) => ['public-restaurant-data', slug] as const,
+    website: (slug?: string | null) => ['public-website', slug] as const,
   },
 } as const;
 

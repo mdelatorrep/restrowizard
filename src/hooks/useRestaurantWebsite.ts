@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
+import { qk } from '@/lib/queryKeys';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export interface WebsiteTemplate {
@@ -74,68 +76,54 @@ export interface PublicWebsiteData extends RestaurantWebsite {
   };
 }
 
+/** Los campos jsonb llegan sin forma garantizada: se normalizan al leer. */
+const parseWebsite = (data: any): RestaurantWebsite => ({
+  ...data,
+  business_hours: (data.business_hours as RestaurantWebsite['business_hours']) || {},
+  gallery_images: (data.gallery_images as string[]) || [],
+  theme_overrides: (data.theme_overrides as Record<string, unknown>) || {},
+  reservation_available_times: (data.reservation_available_times as string[]) || [],
+});
+
 export function useRestaurantWebsite() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [website, setWebsite] = useState<RestaurantWebsite | null>(null);
-  const [templates, setTemplates] = useState<WebsiteTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchWebsite = async () => {
-    if (!user?.id) return;
-    
-    try {
+  const { data: website = null, isLoading: loading } = useQuery({
+    queryKey: qk.business.website(user?.id),
+    enabled: !!user?.id,
+    queryFn: async (): Promise<RestaurantWebsite | null> => {
       const { data, error } = await supabase
         .from('restaurant_websites')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .maybeSingle();
-      
       if (error) throw error;
-      
-      if (data) {
-        setWebsite({
-          ...data,
-          business_hours: (data.business_hours as Record<string, { open: string; close: string; closed?: boolean }>) || {},
-          gallery_images: (data.gallery_images as string[]) || [],
-          theme_overrides: (data.theme_overrides as Record<string, unknown>) || {},
-          reservation_available_times: (data.reservation_available_times as string[]) || [],
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching website:', error);
-    }
-  };
+      return data ? parseWebsite(data) : null;
+    },
+  });
 
-  const fetchTemplates = async () => {
-    try {
+  // Catálogo global de plantillas: no depende del usuario.
+  const { data: templates = [] } = useQuery({
+    queryKey: qk.business.websiteTemplates(),
+    queryFn: async (): Promise<WebsiteTemplate[]> => {
       const { data, error } = await supabase
         .from('website_templates')
         .select('*')
         .eq('is_active', true);
-      
       if (error) throw error;
-      
-      setTemplates((data || []).map(t => ({
+      return (data || []).map(t => ({
         ...t,
         default_config: (t.default_config as Record<string, unknown>) || {},
-      })));
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-    }
-  };
+      }));
+    },
+  });
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchWebsite(), fetchTemplates()]);
-      setLoading(false);
-    };
-    
-    if (user?.id) {
-      loadData();
-    }
-  }, [user?.id]);
+  const fetchWebsite = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.business.website(user?.id) }),
+    [queryClient, user?.id]
+  );
 
   const createWebsite = async (slug: string, templateId?: string) => {
     if (!user?.id) return null;
@@ -190,27 +178,27 @@ export function useRestaurantWebsite() {
       
       if (error) throw error;
       
-      const newWebsite = {
-        ...data,
-        business_hours: {},
-        gallery_images: [],
-        theme_overrides: {},
-        reservation_available_times: [],
-      };
-      
-      setWebsite(newWebsite);
-      
+      const newWebsite = parseWebsite(data);
+
+      queryClient.setQueryData(qk.business.website(user.id), newWebsite);
+
       toast({
         title: "Sitio web creado (borrador)",
         description: `Pulsa "Publicar" para que sea visible en ${window.location.origin}/p/${slug}`,
       });
       
       return newWebsite;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating website:', error);
+      // 23505 = unique_violation. La comprobación previa del slug y el insert no
+      // son atómicos: si otro restaurante tomó el slug en medio, la BD lo frena
+      // (UNIQUE (slug)) y hay que decir POR QUÉ, no un error genérico.
+      const slugTaken = error?.code === '23505' || /duplicate key|slug/i.test(error?.message || '');
       toast({
-        title: "Error",
-        description: "No se pudo crear el sitio web",
+        title: slugTaken ? "Slug no disponible" : "Error",
+        description: slugTaken
+          ? "Ese nombre de URL acaba de ser tomado. Elige otro."
+          : "No se pudo crear el sitio web",
         variant: "destructive",
       });
       return null;
@@ -235,8 +223,11 @@ export function useRestaurantWebsite() {
       
       if (error) throw error;
       
-      setWebsite(prev => prev ? { ...prev, ...updates } : null);
-      
+      await fetchWebsite();
+      // El sitio público lee de estas mismas tablas: refrescarlo también.
+      await queryClient.invalidateQueries({ queryKey: qk.public.website(website.slug) });
+      await queryClient.invalidateQueries({ queryKey: qk.public.restaurantData(website.slug) });
+
       toast({
         title: "Guardado",
         description: "Los cambios han sido guardados",
@@ -283,79 +274,56 @@ export function useRestaurantWebsite() {
 
 // Hook for fetching public website data
 export function usePublicWebsite(slug: string) {
-  const [data, setData] = useState<PublicWebsiteData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: qk.public.website(slug),
+    enabled: !!slug,
+    queryFn: async (): Promise<PublicWebsiteData> => {
+      // Fetch website
+      const { data: websiteData, error: websiteError } = await supabase
+        .from('restaurant_websites')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .maybeSingle();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!slug) {
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Fetch website
-        const { data: websiteData, error: websiteError } = await supabase
-          .from('restaurant_websites')
-          .select('*')
-          .eq('slug', slug)
-          .eq('is_published', true)
-          .maybeSingle();
-        
-        if (websiteError) throw websiteError;
-        if (!websiteData) {
-          setError('not_found');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch brand
-        const { data: brandData } = await supabase
-          .from('restaurant_brands')
-          .select('brand_name, primary_color, secondary_color, accent_color, logo_url, tagline, social_links')
-          .eq('user_id', websiteData.user_id)
-          .maybeSingle();
-        
-        // Fetch profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('restaurant_name, phone')
-          .eq('user_id', websiteData.user_id)
-          .maybeSingle();
-        
-        setData({
-          ...websiteData,
-          business_hours: (websiteData.business_hours as Record<string, { open: string; close: string; closed?: boolean }>) || {},
-          gallery_images: (websiteData.gallery_images as string[]) || [],
-          theme_overrides: (websiteData.theme_overrides as Record<string, unknown>) || {},
-          reservation_available_times: (websiteData.reservation_available_times as string[]) || [],
-          brand: brandData ? {
-            brand_name: brandData.brand_name,
-            primary_color: brandData.primary_color,
-            secondary_color: brandData.secondary_color,
-            accent_color: brandData.accent_color,
-            primary_font: null,
-            secondary_font: null,
-            logo_url: brandData.logo_url,
-            tagline: brandData.tagline,
-            social_links: (brandData.social_links as Record<string, string>) || {},
-          } : undefined,
-          profile: profileData ? { ...profileData, address: null } : undefined,
-        });
-      } catch (err) {
-        console.error('Error fetching public website:', err);
-        setError('error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [slug]);
+      if (websiteError) throw websiteError;
+      if (!websiteData) throw new Error('not_found');
 
-  return { data, loading, error };
+      // Fetch brand
+      const { data: brandData } = await supabase
+        .from('restaurant_brands')
+        .select('brand_name, primary_color, secondary_color, accent_color, logo_url, tagline, social_links')
+        .eq('user_id', websiteData.user_id)
+        .maybeSingle();
+
+      // Fetch profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('restaurant_name, phone')
+        .eq('user_id', websiteData.user_id)
+        .maybeSingle();
+
+      return {
+        ...parseWebsite(websiteData),
+        brand: brandData ? {
+          brand_name: brandData.brand_name,
+          primary_color: brandData.primary_color,
+          secondary_color: brandData.secondary_color,
+          accent_color: brandData.accent_color,
+          primary_font: null,
+          secondary_font: null,
+          logo_url: brandData.logo_url,
+          tagline: brandData.tagline,
+          social_links: (brandData.social_links as Record<string, string>) || {},
+        } : undefined,
+        profile: profileData ? { ...profileData, address: null } : undefined,
+      } as PublicWebsiteData;
+    },
+  });
+
+  const error = query.error
+    ? ((query.error as Error).message === 'not_found' ? 'not_found' : 'error')
+    : null;
+
+  return { data: query.data ?? null, loading: query.isLoading, error };
 }
