@@ -38,6 +38,7 @@ export const qk = {
     items: (userId?: string | null) => ['inventory-items', userId] as const,
     movements: (userId?: string | null) => ['inventory-movements', userId] as const,
     conversions: (userId?: string | null) => ['unit-conversions', userId] as const,
+    enterprise: (userId?: string | null) => ['inventory-enterprise', userId] as const,
   },
   menus: {
     all: (userId?: string | null) => ['menus', userId] as const,
