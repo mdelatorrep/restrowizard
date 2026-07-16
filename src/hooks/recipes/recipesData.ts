@@ -202,7 +202,16 @@ export const computeRecipeKPIs = (data: RecipeWithDetails[]): RecipeKPIs => {
 export const ingredientLineCost = (ing: Pick<RecipeIngredient, 'quantity' | 'cost_per_unit' | 'yield_percentage'>, multiplier = 1): number => {
   const qty = (Number(ing.quantity) || 0) * multiplier;
   const unitCost = Number(ing.cost_per_unit) || 0;
-  const yieldPct = Math.max(Number(ing.yield_percentage) || 100, 1);
+
+  // Espejo EXACTO de `GREATEST(COALESCE(yield_percentage, 100), 1)` del SQL.
+  // Ojo con el atajo `Number(x) || 100`: como 0 es falsy daría 100, mientras el
+  // SQL daría 1 (COALESCE solo cubre NULL) — y ahí el escalado del cliente y el
+  // recálculo de la BD volvían a divergir, que es justo el bug de B-33.
+  // Un yield de 0% es dato imposible y ya lo frena un CHECK en la tabla.
+  const raw = ing.yield_percentage;
+  const coalesced = raw === null || raw === undefined ? 100 : Number(raw);
+  const yieldPct = Math.max(Number.isFinite(coalesced) ? coalesced : 100, 1);
+
   return (qty * unitCost) / yieldPct * 100;
 };
 
