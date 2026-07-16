@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export const useMyProviderProfile = () => {
   const { session } = useAuth();
@@ -49,7 +50,7 @@ export const useRegisterProvider = () => {
 export const useUpdateProviderProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; [key: string]: any }) => {
+    mutationFn: async ({ id, ...data }: { id: string } & TablesUpdate<'service_providers'>) => {
       const { error } = await supabase.from('service_providers').update(data).eq('id', id);
       if (error) throw error;
     },

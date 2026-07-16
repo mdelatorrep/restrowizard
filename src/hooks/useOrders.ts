@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface OrderItem {
   name: string;
@@ -287,7 +287,7 @@ export const useOrders = () => {
 
   const updateOrderStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const updates: Record<string, unknown> = { status };
+      const updates: TablesUpdate<'restaurant_orders'> = { status };
       if (status === 'completed') {
         updates.completed_at = new Date().toISOString();
       }

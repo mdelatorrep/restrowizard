@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import { toast } from 'sonner';
 import { KitchenOrder, playKitchenNotificationSound, getKitchenStatusLabel } from '@/components/kitchen/kitchenTypes';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export const useKitchenOrders = (soundEnabled: boolean) => {
   const { user } = useAuth();
@@ -99,7 +100,7 @@ export const useKitchenOrders = (soundEnabled: boolean) => {
 
   const updateOrderStatus = async (orderId: string, newStatus: KitchenOrder['kitchen_status']) => {
     try {
-      const updates: Record<string, any> = { kitchen_status: newStatus };
+      const updates: TablesUpdate<'restaurant_orders'> = { kitchen_status: newStatus };
       if (newStatus === 'preparing') {
         updates.kitchen_started_at = new Date().toISOString();
       } else if (newStatus === 'ready') {

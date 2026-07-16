@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 // Types
 export interface TrainingProgram {
@@ -311,7 +312,7 @@ export const useStaffDevelopment = () => {
     }
   };
 
-  const updateAssignment = async (id: string, updates: Partial<BenefitAssignment>) => {
+  const updateAssignment = async (id: string, updates: TablesUpdate<'staff_benefit_assignments'>) => {
     try {
       const { error } = await supabase.from('staff_benefit_assignments').update(updates).eq('id', id);
       if (error) throw error;

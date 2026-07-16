@@ -4,6 +4,7 @@ import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { calcShiftHours, calcShiftLaborCost } from '@/lib/laborCost';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 
 
@@ -221,7 +222,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
     }
   }, [userId, fetchSchedule, toast]);
 
-  const updateShift = useCallback(async (id: string, updates: Partial<StaffShift>) => {
+  const updateShift = useCallback(async (id: string, updates: TablesUpdate<'staff_shifts'>) => {
     try {
       const { error } = await supabase
         .from('staff_shifts')

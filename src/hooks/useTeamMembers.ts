@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from '@/hooks/useDataUserId';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, TablesUpdate, Json } from '@/integrations/supabase/types';
 
 export type TeamMemberRole = Database['public']['Enums']['team_member_role'];
 export type TeamMemberStatus = Database['public']['Enums']['team_member_status'];
@@ -332,11 +332,11 @@ export const useTeamMembers = () => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ memberId, data }: { memberId: string; data: UpdateTeamMemberData }) => {
-      const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const updatePayload: TablesUpdate<'restaurant_team_members'> = { updated_at: new Date().toISOString() };
       if (data.role) updatePayload.role = data.role;
       if (data.custom_role_id !== undefined) updatePayload.custom_role_id = data.custom_role_id;
       if (data.status) updatePayload.status = data.status;
-      if (data.permissions) updatePayload.permissions = data.permissions as unknown as Record<string, unknown>;
+      if (data.permissions) updatePayload.permissions = data.permissions as unknown as Json;
 
       const { error } = await supabase
         .from('restaurant_team_members')

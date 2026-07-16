@@ -2,6 +2,7 @@
  import { supabase } from '@/integrations/supabase/client';
  import { useDataUserId } from './useDataUserId';
  import { useToast } from './use-toast';
+ import type { TablesUpdate } from '@/integrations/supabase/types';
  
  // Types
  export interface StaffAvailability {
@@ -321,7 +322,7 @@
      }
    };
  
-   const updateStaffMember = async (id: string, updates: Partial<StaffMemberExtended>) => {
+   const updateStaffMember = async (id: string, updates: TablesUpdate<'staff_members'>) => {
      try {
        const { error } = await supabase
          .from('staff_members')

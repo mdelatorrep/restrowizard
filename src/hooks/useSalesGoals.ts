@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface SalesGoal {
   id: string;
@@ -150,11 +150,11 @@ export const useSalesGoals = () => {
     }
   };
 
-  const updateGoal = async (id: string, updates: Partial<SalesGoal>) => {
+  const updateGoal = async (id: string, updates: TablesUpdate<'sales_goals'>) => {
     try {
       const { error } = await supabase
         .from('sales_goals')
-        .update(updates as Record<string, unknown>)
+        .update(updates)
         .eq('id', id);
 
       if (error) throw error;

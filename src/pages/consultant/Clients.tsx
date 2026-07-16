@@ -13,6 +13,7 @@ import { ClientsKPIs } from '@/components/consultant/ClientsKPIs';
 import { CreateClientDialog } from '@/components/consultant/CreateClientDialog';
 import { ConsultantClientCard } from '@/components/consultant/ConsultantClientCard';
 import { SendInvitationDialog } from '@/components/consultant/SendInvitationDialog';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 const Clients: React.FC = () => {
   const {
@@ -63,7 +64,7 @@ const Clients: React.FC = () => {
     navigate('/c/finances');
   };
 
-  const handleStatusChange = async (clientId: string, newStatus: string) => {
+  const handleStatusChange = async (clientId: string, newStatus: TablesUpdate<'consultant_clients'>['status']) => {
     await updateClient(clientId, { status: newStatus });
   };
 

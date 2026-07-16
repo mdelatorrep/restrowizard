@@ -49,8 +49,7 @@ export function useRealtimeTable<T extends Record<string, any> = Record<string, 
     const channel: RealtimeChannel = supabase
       .channel(name)
       .on(
-        // @ts-expect-error - postgres_changes payload generic narrowing
-        "postgres_changes",
+        "postgres_changes" as never,
         { event, schema, table, ...(filter ? { filter } : {}) },
         (payload: RealtimePostgresChangesPayload<T>) => cbRef.current(payload),
       )

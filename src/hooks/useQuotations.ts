@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useConsultantProfile } from '@/hooks/useConsultantProfile';
 import { useToast } from '@/hooks/use-toast';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export interface QuotationMenuItem {
   id?: string;
@@ -282,7 +283,7 @@ export function useQuotations() {
 
   const updateQuotationStatus = async (id: string, status: string) => {
     try {
-      const updates: Record<string, any> = { status };
+      const updates: TablesUpdate<'event_quotations'> = { status };
       
       if (status === 'sent') {
         updates.sent_at = new Date().toISOString();

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export const useJobApplications = () => {
   const { user } = useAuth();
@@ -84,9 +85,11 @@ export const useJobApplications = () => {
   // Employer: update application status
   const updateApplicationStatus = useMutation({
     mutationFn: async ({ id, status, notes, interview_date, rejection_reason }: {
-      id: string; status: string; notes?: string; interview_date?: string; rejection_reason?: string;
+      // `status` es un enum de la BD, no un string libre: tiparlo evita mandar
+      // valores que Postgres rechaza en runtime.
+      id: string; status: TablesUpdate<'job_applications'>['status']; notes?: string; interview_date?: string; rejection_reason?: string;
     }) => {
-      const update: Record<string, any> = { status };
+      const update: TablesUpdate<'job_applications'> = { status };
       if (notes !== undefined) update.employer_notes = notes;
       if (interview_date !== undefined) update.interview_date = interview_date;
       if (rejection_reason !== undefined) update.rejection_reason = rejection_reason;

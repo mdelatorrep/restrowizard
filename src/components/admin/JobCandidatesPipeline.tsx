@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { User, Mail, Phone, Brain, Star, FileText, Loader2, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 const statusColumns = [
   { key: 'pending', label: 'Pendiente', color: 'bg-yellow-500' },
@@ -36,8 +37,11 @@ const JobCandidatesPipeline: React.FC<Props> = ({ jobId, jobTitle, onBack }) => 
     apps: applications.filter((a: any) => a.status === col.key),
   }));
 
+  // El Select de shadcn emite `string`; el estrechamiento al enum de la BD se
+  // hace aquí, en el borde, para que el resto del flujo vaya tipado.
   const handleStatusChange = (appId: string, newStatus: string) => {
-    updateApplicationStatus.mutate({ id: appId, status: newStatus });
+    const status = newStatus as TablesUpdate<'job_applications'>['status'];
+    updateApplicationStatus.mutate({ id: appId, status });
   };
 
   const handleSaveNotes = () => {

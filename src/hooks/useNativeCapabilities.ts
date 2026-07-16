@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
+// La Screen Orientation API es experimental: ni `OrientationLockType` ni
+// `screen.orientation.lock` están en la lib.dom de esta versión de TS.
+type ScreenOrientationLockType =
+  | 'any' | 'natural' | 'landscape' | 'portrait'
+  | 'portrait-primary' | 'portrait-secondary'
+  | 'landscape-primary' | 'landscape-secondary';
+
 // ─── Badging API ────────────────────────────────────────────
 export const useBadging = () => {
   const isSupported = 'setAppBadge' in navigator;
@@ -209,10 +216,10 @@ export const useScreenOrientation = () => {
     return () => screen.orientation.removeEventListener('change', handler);
   }, [isSupported]);
 
-  const lock = useCallback(async (type: OrientationLockType) => {
+  const lock = useCallback(async (type: ScreenOrientationLockType) => {
     if (!isSupported) return false;
     try {
-      await screen.orientation.lock(type);
+      await (screen.orientation as ScreenOrientation & { lock?: (t: ScreenOrientationLockType) => Promise<void> }).lock?.(type);
       return true;
     } catch { return false; }
   }, [isSupported]);

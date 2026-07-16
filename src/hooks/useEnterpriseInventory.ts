@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 // Types
 export interface StorageLocation {
@@ -495,7 +496,9 @@ export const useEnterpriseInventory = () => {
     }
   };
 
-  const updateInventoryItem = async (id: string, data: Partial<InventoryItemExtended>) => {
+  // InventoryItemExtended trae relaciones (preferred_supplier, storage_location) que
+  // no son columnas de la tabla: el update solo acepta columnas reales.
+  const updateInventoryItem = async (id: string, data: TablesUpdate<'inventory_items'>) => {
     try {
       const { error } = await supabase
         .from('inventory_items')
@@ -574,7 +577,8 @@ export const useEnterpriseInventory = () => {
     }
   };
 
-  const updatePurchaseOrder = async (id: string, data: Partial<PurchaseOrder>) => {
+  // PurchaseOrder trae `items` y `supplier` (joins), que no son columnas.
+  const updatePurchaseOrder = async (id: string, data: TablesUpdate<'purchase_orders'>) => {
     try {
       const { error } = await supabase
         .from('purchase_orders')

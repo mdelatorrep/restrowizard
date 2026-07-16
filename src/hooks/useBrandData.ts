@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 import { createSessionSupabaseClient } from '@/lib/createSessionSupabaseClient';
 
 export interface RestaurantBrand {
@@ -165,7 +165,7 @@ export const useBrandData = () => {
     
     try {
       // Convert arrays to JSON for storage
-      const updateData: Record<string, unknown> = { ...updates };
+      const updateData: TablesUpdate<'restaurant_brands'> = { ...updates } as TablesUpdate<'restaurant_brands'>;
       if (updates.brand_values !== undefined) {
         updateData.brand_values = updates.brand_values as unknown as Json;
       }

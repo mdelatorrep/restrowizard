@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export interface WebsiteTemplate {
   id: string;
@@ -221,7 +222,7 @@ export function useRestaurantWebsite() {
     
     try {
       // Convert to DB-compatible format
-      const dbUpdates: Record<string, unknown> = { ...updates };
+      const dbUpdates: TablesUpdate<'restaurant_websites'> = { ...updates } as TablesUpdate<'restaurant_websites'>;
       if (updates.business_hours) dbUpdates.business_hours = updates.business_hours as Json;
       if (updates.gallery_images) dbUpdates.gallery_images = updates.gallery_images as Json;
       if (updates.theme_overrides) dbUpdates.theme_overrides = updates.theme_overrides as Json;

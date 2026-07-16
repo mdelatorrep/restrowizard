@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultantProfile } from './useConsultantProfile';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 interface Client {
   id: string;
@@ -214,7 +215,7 @@ export const useConsultantClients = () => {
     return `${baseUrl}/auth?invite=${client.invitation_token}`;
   };
 
-  const updateClient = async (clientId: string, updates: Record<string, any>) => {
+  const updateClient = async (clientId: string, updates: TablesUpdate<'consultant_clients'>) => {
     try {
       const { error } = await supabase
         .from('consultant_clients')
