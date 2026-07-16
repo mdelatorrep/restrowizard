@@ -57,3 +57,17 @@ export const getLineRevenue = (item: OrderItemLike): number =>
 /** Normaliza el array `items` de un pedido a algo iterable con seguridad. */
 export const toOrderLines = (items: unknown): OrderItemLike[] =>
   Array.isArray(items) ? (items as OrderItemLike[]) : [];
+
+/**
+ * B-20 — Monto de VENTA de un pedido: total SIN propina.
+ *
+ * `restaurant_orders.total` = subtotal (+impuesto) + propina. La propina no es
+ * ingreso del negocio: es del mesero. Toda métrica de ventas (reportes,
+ * finanzas, metas, KPIs de pedidos) debe usar esta función.
+ *
+ * Vivía copiada en useSalesReports y useAggregatedFinances, y por eso se filtró
+ * en useOrders ("Ventas Hoy") y en fetchRealtimeToday: al duplicar la regla,
+ * cada copia nueva nacía sin ella. Una sola definición, un solo número.
+ */
+export const getOrderSaleAmount = (order: { total?: number | string | null; tip_amount?: number | string | null } | null | undefined): number =>
+  Math.max(0, (Number(order?.total) || 0) - (Number(order?.tip_amount) || 0));

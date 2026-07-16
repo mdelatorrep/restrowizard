@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { qk } from '@/lib/queryKeys';
-import { toOrderLines, getLineName, getLineQuantity, getLineRevenue } from '@/lib/orderItems';
+import { toOrderLines, getLineName, getLineQuantity, getLineRevenue, getOrderSaleAmount } from '@/lib/orderItems';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format, eachDayOfInterval, eachWeekOfInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -92,8 +92,8 @@ const normalizeMethod = (raw: string | null | undefined): string => {
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
 
-// B-20: monto de VENTA (excluye propina). total = subtotal(+impuesto) + propina.
-const saleAmt = (o: any): number => Math.max(0, (Number(o?.total) || 0) - (Number(o?.tip_amount) || 0));
+// B-20: regla única compartida (ver src/lib/orderItems.ts).
+const saleAmt = getOrderSaleAmount;
 
 export const useSalesReports = (
   period: ReportPeriod = 'daily',

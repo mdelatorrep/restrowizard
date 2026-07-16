@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { qk } from '@/lib/queryKeys';
+import { getOrderSaleAmount } from '@/lib/orderItems';
 import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface OrderItem {
@@ -61,76 +64,82 @@ export interface OrderKPIs {
   todaySales: number;
 }
 
+const calculateKPIs = (data: RestaurantOrder[]): OrderKPIs => {
+  const total = data.length;
+  if (total === 0) {
+    return { totalOrders: 0, todayOrders: 0, pendingOrders: 0, avgOrderValue: 0, deliveryOrders: 0, completionRate: 0, todaySales: 0 };
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayList = data.filter(o => o.created_at.startsWith(today));
+  const todayOrders = todayList.length;
+  // TK-03: Ventas Hoy debe sumar las órdenes del día (no canceladas), igual que Reportes/Dashboard.
+  // B-20: ...y por tanto SIN propina — antes sumaba `total` crudo y este número
+  // salía más alto que el mismo día en Reportes.
+  const todaySales = todayList
+    .filter(o => o.status !== 'cancelled')
+    .reduce((sum, o) => sum + getOrderSaleAmount(o), 0);
+  const pending = data.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length;
+  const avgValue = data.reduce((sum, o) => sum + getOrderSaleAmount(o), 0) / total;
+  const delivery = data.filter(o => o.order_type === 'delivery').length;
+  const completed = data.filter(o => o.status === 'completed').length;
+
+  return {
+    totalOrders: total,
+    todayOrders,
+    todaySales: Math.round(todaySales),
+    pendingOrders: pending,
+    avgOrderValue: Math.round(avgValue),
+    deliveryOrders: delivery,
+    completionRate: Math.round((completed / total) * 100),
+  };
+};
+
+interface OrdersData {
+  orders: RestaurantOrder[];
+  zones: DeliveryZone[];
+}
+
 export const useOrders = () => {
-  const [orders, setOrders] = useState<RestaurantOrder[]>([]);
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [kpis, setKpis] = useState<OrderKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  const calculateKPIs = (data: RestaurantOrder[]): OrderKPIs => {
-    const total = data.length;
-    if (total === 0) {
-      return { totalOrders: 0, todayOrders: 0, pendingOrders: 0, avgOrderValue: 0, deliveryOrders: 0, completionRate: 0, todaySales: 0 };
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    const todayList = data.filter(o => o.created_at.startsWith(today));
-    const todayOrders = todayList.length;
-    // TK-03: Ventas Hoy debe sumar las órdenes del día (no canceladas), igual que Reportes/Dashboard.
-    const todaySales = todayList
-      .filter(o => o.status !== 'cancelled')
-      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const pending = data.filter(o => ['pending', 'confirmed', 'preparing'].includes(o.status)).length;
-    const avgValue = data.reduce((sum, o) => sum + o.total, 0) / total;
-    const delivery = data.filter(o => o.order_type === 'delivery').length;
-    const completed = data.filter(o => o.status === 'completed').length;
-
-    return {
-      totalOrders: total,
-      todayOrders,
-      todaySales: Math.round(todaySales),
-      pendingOrders: pending,
-      avgOrderValue: Math.round(avgValue),
-      deliveryOrders: delivery,
-      completionRate: Math.round((completed / total) * 100),
-    };
-  };
-
-  const fetchOrders = async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.orders.list(userId),
+    enabled: !!userId,
+    queryFn: async (): Promise<OrdersData> => {
+      const { data: ordersRes, error } = await supabase
         .from('restaurant_orders')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      
-      const ordersData = (data || []) as unknown as RestaurantOrder[];
-      setOrders(ordersData);
-      setKpis(calculateKPIs(ordersData));
-      setHasData(ordersData.length > 0);
 
       const { data: zonesData } = await supabase
         .from('delivery_zones')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('zone_name');
-      
-      setZones((zonesData || []) as unknown as DeliveryZone[]);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      return {
+        orders: (ordersRes || []) as unknown as RestaurantOrder[],
+        zones: (zonesData || []) as unknown as DeliveryZone[],
+      };
+    },
+  });
+
+  const orders = useMemo(() => data?.orders ?? [], [data]);
+  const zones = data?.zones ?? [];
+  const kpis = useMemo(() => (data ? calculateKPIs(orders) : null), [data, orders]);
+  const hasData = orders.length > 0;
+
+  const fetchOrders = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.orders.list(userId) }),
+    [queryClient, userId]
+  );
 
   const createOrder = async (orderData: { items: OrderItem[]; subtotal: number; total: number; [key: string]: unknown }) => {
     if (!userId) return null;
@@ -343,10 +352,6 @@ export const useOrders = () => {
       return null;
     }
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [userId]);
 
   return {
     orders,

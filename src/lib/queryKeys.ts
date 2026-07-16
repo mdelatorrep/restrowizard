@@ -60,6 +60,9 @@ export const qk = {
   kitchen: {
     orders: (userId?: string | null) => ['kitchen-orders', userId] as const,
   },
+  orders: {
+    list: (userId?: string | null) => ['orders', userId] as const,
+  },
   loyalty: {
     customers: (userId?: string | null) => ['loyalty-customers', userId] as const,
     public: (codigo?: string | null) => ['public-loyalty', codigo] as const,

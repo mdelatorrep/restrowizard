@@ -6,10 +6,10 @@ import { useToast } from './use-toast';
 import { format, subDays } from 'date-fns';
 import { calcShiftLaborCost } from '@/lib/laborCost';
 import { qk } from '@/lib/queryKeys';
+import { getOrderSaleAmount } from '@/lib/orderItems';
 
-// B-20: monto de VENTA (excluye propina). Misma regla que useSalesReports.
-const saleAmt = (o: any): number =>
-  Math.max(0, (Number(o?.total) || 0) - (Number(o?.tip_amount) || 0));
+// B-20: regla única compartida (ver src/lib/orderItems.ts).
+const saleAmt = getOrderSaleAmount;
 
 export interface AggregatedDailySales {
   date: string;
