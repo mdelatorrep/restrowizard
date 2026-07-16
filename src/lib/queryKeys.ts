@@ -96,6 +96,7 @@ export const qk = {
   },
   business: {
     taxConfig: (userId?: string | null) => ['business-tax-config', userId] as const,
+    brand: (userId?: string | null) => ['restaurant-brand', userId] as const,
   },
   dashboard: {
     overview: (userId?: string | null) => ['dashboard-overview', userId] as const,
@@ -105,6 +106,7 @@ export const qk = {
     alerts: (consultantId?: string | null) => ['consultant-alerts', consultantId] as const,
     billing: (consultantId?: string | null) => ['consultant-billing', consultantId] as const,
     reports: (consultantId?: string | null) => ['consultant-reports', consultantId] as const,
+    clients: (consultantId?: string | null) => ['consultant-clients', consultantId] as const,
   },
   payments: {
     gateways: (userId?: string | null) => ['payment-gateways', userId] as const,

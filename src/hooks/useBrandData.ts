@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { useRealtimeTable } from './useRealtimeTable';
+import { qk } from '@/lib/queryKeys';
 import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 import { createSessionSupabaseClient } from '@/lib/createSessionSupabaseClient';
 
@@ -50,64 +53,73 @@ export interface BrandAsset {
   created_at: string;
 }
 
+/** Los campos jsonb llegan sin forma garantizada: se normalizan al leer. */
+const parseBrand = (data: any): RestaurantBrand => ({
+  ...data,
+  brand_values: Array.isArray(data.brand_values) ? (data.brand_values as string[]) : [],
+  social_links: typeof data.social_links === 'object' && data.social_links !== null
+    ? (data.social_links as Record<string, string>)
+    : {},
+  differentiators: Array.isArray(data.differentiators) ? (data.differentiators as string[]) : [],
+  gallery_photos: Array.isArray(data.gallery_photos)
+    ? (data.gallery_photos as RestaurantBrand['gallery_photos'])
+    : [],
+});
+
+interface BrandData {
+  brand: RestaurantBrand | null;
+  assets: BrandAsset[];
+}
+
 export const useBrandData = () => {
-  const [brand, setBrand] = useState<RestaurantBrand | null>(null);
-  const [assets, setAssets] = useState<BrandAsset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  const fetchBrand = useCallback(async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.business.brand(userId),
+    enabled: !!userId,
+    queryFn: async (): Promise<BrandData> => {
+      const { data: brandRes, error } = await supabase
         .from('restaurant_brands')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .maybeSingle();
 
       if (error) throw error;
-      
-      if (data) {
-        // Parse JSON fields safely
-        const parsedBrand: RestaurantBrand = {
-          ...data,
-          brand_values: Array.isArray(data.brand_values) ? data.brand_values as string[] : [],
-          social_links: typeof data.social_links === 'object' && data.social_links !== null 
-            ? data.social_links as Record<string, string>
-            : {},
-          differentiators: Array.isArray(data.differentiators) ? data.differentiators as string[] : [],
-          gallery_photos: Array.isArray(data.gallery_photos) 
-            ? (data.gallery_photos as Array<{ url: string; category: string; caption?: string; uploadedAt: string }>)
-            : [],
-        };
-        
-        setBrand(parsedBrand);
-        setHasData(true);
-        
-        const { data: assetsData } = await supabase
-          .from('brand_assets')
-          .select('*')
-          .eq('brand_id', data.id)
-          .order('created_at', { ascending: false });
-        
-        setAssets((assetsData || []) as unknown as BrandAsset[]);
-      } else {
-        setHasData(false);
-      }
-    } catch (error) {
-      console.error('Error fetching brand:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+      if (!brandRes) return { brand: null, assets: [] };
+
+      const { data: assetsData } = await supabase
+        .from('brand_assets')
+        .select('*')
+        .eq('brand_id', brandRes.id)
+        .order('created_at', { ascending: false });
+
+      return {
+        brand: parseBrand(brandRes),
+        assets: (assetsData || []) as unknown as BrandAsset[],
+      };
+    },
+  });
+
+  const brand = data?.brand ?? null;
+
+  const refetch = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.business.brand(userId) }),
+    [queryClient, userId]
+  );
+
+  // Realtime: keep admin UI synced when brand is updated from any source.
+  useRealtimeTable({
+    table: 'restaurant_brands',
+    filter: userId ? `user_id=eq.${userId}` : undefined,
+    enabled: !!userId,
+    onChange: () => { refetch(); },
+  });
 
   const createBrand = async (brandData: { brand_name: string; [key: string]: unknown }) => {
     if (!userId) return null;
-    
+
     try {
       const sessionSupabase = await createSessionSupabaseClient();
 
@@ -128,7 +140,7 @@ export const useBrandData = () => {
         gallery_photos: (brandData.gallery_photos ?? null) as Json,
       };
 
-      const { data, error } = await sessionSupabase
+      const { data: created, error } = await sessionSupabase
         .from('restaurant_brands')
         .insert([insertData])
         .select()
@@ -137,22 +149,13 @@ export const useBrandData = () => {
       if (error) throw error;
 
       toast({ title: 'Marca creada', description: 'Tu marca ha sido configurada exitosamente' });
-      // Optimistic update so the page reflects creation immediately.
-      if (data) {
-        const parsed: RestaurantBrand = {
-          ...(data as any),
-          brand_values: Array.isArray((data as any).brand_values) ? (data as any).brand_values : [],
-          social_links: typeof (data as any).social_links === 'object' && (data as any).social_links !== null
-            ? (data as any).social_links
-            : {},
-          differentiators: Array.isArray((data as any).differentiators) ? (data as any).differentiators : [],
-          gallery_photos: Array.isArray((data as any).gallery_photos) ? (data as any).gallery_photos : [],
-        };
-        setBrand(parsed);
-        setHasData(true);
+
+      // La página refleja la creación de inmediato sin esperar el refetch.
+      if (created) {
+        queryClient.setQueryData(qk.business.brand(userId), { brand: parseBrand(created), assets: [] } as BrandData);
       }
-      await fetchBrand();
-      return data;
+      await refetch();
+      return created;
     } catch (error) {
       console.error('Error creating brand:', error);
       toast({ title: 'Error', description: 'No se pudo crear la marca', variant: 'destructive' });
@@ -162,7 +165,7 @@ export const useBrandData = () => {
 
   const updateBrand = async (updates: Partial<RestaurantBrand>) => {
     if (!brand?.id) return null;
-    
+
     try {
       // Convert arrays to JSON for storage
       const updateData: TablesUpdate<'restaurant_brands'> = { ...updates } as TablesUpdate<'restaurant_brands'>;
@@ -179,7 +182,7 @@ export const useBrandData = () => {
         updateData.gallery_photos = updates.gallery_photos as unknown as Json;
       }
 
-      const { data, error } = await supabase
+      const { data: updated, error } = await supabase
         .from('restaurant_brands')
         .update(updateData)
         .eq('id', brand.id)
@@ -187,12 +190,13 @@ export const useBrandData = () => {
         .single();
 
       if (error) throw error;
-      
-      // Update local state immediately
-      setBrand(prev => prev ? { ...prev, ...updates } : null);
-      
+
+      await refetch();
+      // El sitio público pinta con estos colores/logo: refrescarlo también.
+      await queryClient.invalidateQueries({ queryKey: ['public-restaurant-data'] });
+
       toast({ title: 'Cambios guardados', description: 'La marca se ha actualizado' });
-      return data;
+      return updated;
     } catch (error) {
       console.error('Error updating brand:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar la marca', variant: 'destructive' });
@@ -202,18 +206,18 @@ export const useBrandData = () => {
 
   const addAsset = async (asset: Omit<BrandAsset, 'id' | 'brand_id' | 'created_at'>) => {
     if (!brand?.id) return null;
-    
+
     try {
-      const { data, error } = await supabase
+      const { data: created, error } = await supabase
         .from('brand_assets')
         .insert([{ ...asset, brand_id: brand.id }])
         .select()
         .single();
 
       if (error) throw error;
-      
-      await fetchBrand();
-      return data;
+
+      await refetch();
+      return created;
     } catch (error) {
       console.error('Error adding asset:', error);
       toast({ title: 'Error', description: 'No se pudo agregar el asset', variant: 'destructive' });
@@ -221,32 +225,14 @@ export const useBrandData = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBrand();
-  }, [fetchBrand]);
-
-  // Realtime: keep admin UI synced when brand is updated from any source.
-  useEffect(() => {
-    if (!userId) return;
-    const channel = supabase
-      .channel(`brand-sync-${userId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'restaurant_brands', filter: `user_id=eq.${userId}` },
-        () => { fetchBrand(); }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [userId, fetchBrand]);
-
   return {
     brand,
-    assets,
+    assets: data?.assets ?? [],
     loading,
-    hasData,
+    hasData: !!brand,
     createBrand,
     updateBrand,
     addAsset,
-    refetch: fetchBrand,
+    refetch,
   };
 };

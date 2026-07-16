@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthContext } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { useConsultantProfile } from './useConsultantProfile';
+import { qk } from '@/lib/queryKeys';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 
 interface Client {
@@ -56,27 +57,26 @@ interface CreateClientData {
 }
 
 export const useConsultantClients = () => {
-  const { user } = useAuthContext();
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchClients = async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: clients = [], isLoading: loading } = useQuery({
+    queryKey: qk.consultant.clients(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async (): Promise<Client[]> => {
       // Fetch clients
       const { data: clientsData, error } = await supabase
         .from('consultant_clients')
         .select('*')
-        .eq('consultant_id', profile.id)
+        .eq('consultant_id', profile!.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching clients:', error);
+        toast({ title: "Error", description: "No se pudieron cargar los clientes", variant: "destructive" });
+        throw error;
+      }
 
       // Enrich claimed clients with additional data
       const enrichedClients = await Promise.all(
@@ -133,14 +133,14 @@ export const useConsultantClients = () => {
         })
       );
 
-      setClients(enrichedClients as Client[]);
-    } catch (error: any) {
-      console.error('Error fetching clients:', error);
-      toast({ title: "Error", description: "No se pudieron cargar los clientes", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return enrichedClients as Client[];
+    },
+  });
+
+  const fetchClients = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.consultant.clients(profile?.id) }),
+    [queryClient, profile?.id]
+  );
 
   // Create a new client (consultant-managed, no user account needed)
   const createClient = async (data: CreateClientData) => {
@@ -224,7 +224,7 @@ export const useConsultantClients = () => {
 
       if (error) throw error;
 
-      setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updates } : c));
+      await fetchClients();
       toast({ title: "Cliente actualizado" });
       return { error: null };
     } catch (error: any) {
@@ -242,7 +242,7 @@ export const useConsultantClients = () => {
 
       if (error) throw error;
 
-      setClients(prev => prev.filter(c => c.id !== clientId));
+      await fetchClients();
       toast({ title: "Cliente eliminado" });
       return { error: null };
     } catch (error: any) {
@@ -251,17 +251,14 @@ export const useConsultantClients = () => {
     }
   };
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchClients();
-    }
-  }, [profile?.id]);
-
-  const activeClients = clients.filter(c => c.status === 'active');
-  const prospects = clients.filter(c => c.status === 'prospect');
-  const claimedClients = clients.filter(c => c.client_user_id !== null);
-  const pendingClients = clients.filter(c => c.client_user_id === null);
-  const totalMonthlyRevenue = activeClients.reduce((sum, c) => sum + (c.monthly_fee || 0), 0);
+  const activeClients = useMemo(() => clients.filter(c => c.status === 'active'), [clients]);
+  const prospects = useMemo(() => clients.filter(c => c.status === 'prospect'), [clients]);
+  const claimedClients = useMemo(() => clients.filter(c => c.client_user_id !== null), [clients]);
+  const pendingClients = useMemo(() => clients.filter(c => c.client_user_id === null), [clients]);
+  const totalMonthlyRevenue = useMemo(
+    () => activeClients.reduce((sum, c) => sum + (c.monthly_fee || 0), 0),
+    [activeClients]
+  );
 
   return {
     clients,
