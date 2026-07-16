@@ -3,6 +3,7 @@ import { offlineStorage, PendingSale } from '@/lib/offlineStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { principalPaymentMethod, canonicalPaymentMethod } from '@/lib/paymentMethods';
 
 interface OfflineSyncState {
   isOnline: boolean;
@@ -97,7 +98,7 @@ export const useOfflineSync = () => {
 
       // Create order if not exists
       let orderId = sale.orderId;
-      
+
       if (!orderId) {
         // B-36: la línea debe llevar `name` y `price` (forma canónica que leen los
         // reportes); antes se perdía el nombre y el precio iba como `unit_price`.
@@ -113,6 +114,12 @@ export const useOfflineSync = () => {
           // B-36: `user_id` es NOT NULL — sin esto TODA sincronización offline
           // fallaba y la venta moría en IndexedDB tras 3 reintentos.
           user_id: user.id,
+          // B-09: sin session_id la venta no entra al cuadre de su turno, y sin
+          // payment_method el cierre no sabe cuánto fue en efectivo.
+          session_id: sale.sessionId ?? null,
+          payment_method: principalPaymentMethod(sale.payments),
+          guests_count: sale.guestsCount ?? 1,
+          order_type: sale.orderType ?? 'takeout',
           table_id: sale.tableId,
           items: orderItems,
           subtotal: sale.subtotal,
@@ -139,17 +146,30 @@ export const useOfflineSync = () => {
 
         if (orderError) throw orderError;
         orderId = orderData.id;
+
+        // B-08: persistir el orderId ANTES de tocar las transacciones. Si el
+        // insert de pagos falla y se reintenta, sin esto se volvería a entrar
+        // por `if (!orderId)` y se crearía una SEGUNDA orden = venta duplicada.
+        await offlineStorage.updatePendingSale(sale.id, { orderId });
       }
 
       // Record transactions for each payment
       for (const payment of sale.payments) {
         const transactionPayload: any = {
+          // B-09: la transacción sin session_id no suma al efectivo esperado
+          // del turno (el RPC pos_close_session agrega por session_id).
+          session_id: sale.sessionId ?? null,
           order_id: orderId,
           payment_method_id: payment.methodId,
+          payment_method_name: payment.methodName,
           amount: payment.amount,
+          reference_number: payment.reference,
+          tip_amount: sale.tipAmount / Math.max(1, sale.payments.length),
+          status: 'completed',
           transaction_type: 'sale'
         };
-        await supabase.from('pos_transactions').insert(transactionPayload);
+        const { error: txError } = await supabase.from('pos_transactions').insert(transactionPayload);
+        if (txError) throw txError;
       }
 
       // Delete from pending

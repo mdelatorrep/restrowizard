@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useBusinessTaxConfig } from '@/hooks/useBusinessTaxConfig';
 import { useMenuAvailability } from '@/hooks/useMenuAvailability';
+import { principalPaymentMethod } from '@/lib/paymentMethods';
 
 // MenuGrid / CartPanel / POSHeader / Dialog components extracted to src/components/pos/
 
@@ -117,10 +118,17 @@ const POS = () => {
     if (!user?.id || items.length === 0) return;
 
     const saleId = `sale-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // B-09: la sesión y el contexto se capturan AQUÍ, al vender. Al sincronizar
+    // (horas después, quizá en otro turno) ya no habría forma de reconstruirlos.
+    const offlineTableObj = selectedTable ? tables.find(t => t.id === selectedTable) : null;
+
     const saleData = {
       id: saleId,
       tableId: selectedTable,
-      tableName: selectedTable ? tables.find(t => t.id === selectedTable)?.table_number?.toString() : undefined,
+      tableName: offlineTableObj?.table_number?.toString(),
+      sessionId: currentSession?.id ?? null,
+      guestsCount: Math.max(1, Number((offlineTableObj as any)?.capacity) || 1),
+      orderType: selectedTable ? 'dine_in' : 'takeout',
       items: items.map(i => ({
         id: i.menu_item_id,
         name: i.name,
@@ -135,7 +143,8 @@ const POS = () => {
       payments: payments.map(p => ({
         methodId: p.method_id,
         methodName: p.method_name,
-        amount: p.amount
+        amount: p.amount,
+        reference: p.reference,
       })),
       customerName: selectedCustomer?.customer_name,
       createdAt: new Date().toISOString()
@@ -164,19 +173,7 @@ const POS = () => {
       // Si hay pago dividido, se usa el método con mayor monto como principal y se
       // guarda el desglose completo en metadata.payments. Esto evita que Reportes
       // muestre "Otros 100%" cuando se cobró en efectivo / tarjeta / etc.
-      const canonical = (name: string): string => {
-        const n = (name || '').toLowerCase();
-        if (n.includes('efectivo') || n.includes('cash')) return 'efectivo';
-        if (n.includes('nequi')) return 'nequi';
-        if (n.includes('davi')) return 'daviplata';
-        if (n.includes('transfer')) return 'transferencia';
-        if (n.includes('crédito') || n.includes('credito') || n.includes('credit')) return 'tarjeta_credito';
-        if (n.includes('débito') || n.includes('debito') || n.includes('debit') || n.includes('tarjeta')) return 'tarjeta_debito';
-        if (n.includes('qr')) return 'qr';
-        return 'otro';
-      };
-      const principal = [...payments].sort((a, b) => b.amount - a.amount)[0];
-      const paymentMethod = principal ? canonical(principal.method_name) : 'otro';
+      const paymentMethod = principalPaymentMethod(payments);
 
       // BL-18: usar capacidad de la mesa como número de comensales por defecto
       const tableObj = selectedTable ? tables.find(t => t.id === selectedTable) : null;

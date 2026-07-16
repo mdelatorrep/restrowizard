@@ -11,9 +11,21 @@ const STORES = {
 
 interface PendingSale {
   id: string;
+  /**
+   * B-08: se persiste APENAS se crea la orden en el servidor. Sin esto, un
+   * reintento tras un fallo parcial vuelve a crear la orden → venta duplicada.
+   */
   orderId?: string;
   tableId?: string | null;
   tableName?: string;
+  /**
+   * B-09: contexto de la venta que el cierre de caja necesita. Si no se captura
+   * al vender, al sincronizar ya no hay forma de saber a qué turno pertenecía
+   * ni si entró en efectivo → la plata no cuadra.
+   */
+  sessionId?: string | null;
+  guestsCount?: number;
+  orderType?: string;
   items: Array<{
     id: string;
     name: string;
@@ -30,6 +42,7 @@ interface PendingSale {
     methodId: string;
     methodName: string;
     amount: number;
+    reference?: string;
   }>;
   customerName?: string;
   createdAt: string;
