@@ -1,278 +1,63 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './use-toast';
 import { useDataUserId } from './useDataUserId';
+import { qk } from '@/lib/queryKeys';
+import {
+  fetchRecipesData,
+  scaleRecipeCost,
+  type RecipesData,
+  type Recipe,
+  type RecipeWithDetails,
+  type RecipeIngredient,
+  type RecipeStep,
+  type RecipeNutrition,
+  type ScaledRecipe,
+} from './recipes/recipesData';
 
-// ============= TYPES =============
+// B-31: tipos, carga, KPIs y costeo viven en ./recipes/recipesData.
+export type {
+  MeasurementUnit, Allergen, RecipeNutrition, RecipeStep, RecipeIngredient,
+  SubRecipeLink, Recipe, RecipeWithDetails, RecipeKPIs, ScaledRecipe,
+} from './recipes/recipesData';
+export { ingredientLineCost, scaleRecipeCost } from './recipes/recipesData';
 
-export interface MeasurementUnit {
-  id: string;
-  name: string;
-  abbreviation: string;
-  category: string;
-  conversion_factor: number;
-}
-
-export interface Allergen {
-  id: string;
-  name: string;
-  icon: string | null;
-  severity: string;
-  description: string | null;
-}
-
-export interface RecipeNutrition {
-  id: string;
-  recipe_id: string;
-  calories: number;
-  protein_grams: number;
-  carbs_grams: number;
-  fat_grams: number;
-  fiber_grams: number;
-  sugar_grams: number;
-  sodium_mg: number;
-  saturated_fat_grams: number;
-  cholesterol_mg: number;
-  is_estimated: boolean;
-  notes: string | null;
-}
-
-export interface RecipeStep {
-  id: string;
-  recipe_id: string;
-  step_number: number;
-  title: string | null;
-  instruction: string;
-  duration_minutes: number | null;
-  temperature_celsius: number | null;
-  technique: string | null;
-  equipment: string | null;
-  photo_url: string | null;
-  tips: string | null;
-  critical_point: boolean;
-}
-
-export interface RecipeIngredient {
-  id: string;
-  recipe_id: string;
-  inventory_item_id: string | null;
-  ingredient_name: string;
-  quantity: number;
-  unit: string;
-  unit_id: string | null;
-  cost_per_unit: number;
-  notes: string | null;
-  is_optional: boolean;
-  sort_order: number;
-  gross_quantity: number | null;
-  yield_percentage: number;
-  preparation_method: string | null;
-  allergen_ids: string[];
-  calories_per_unit: number;
-  protein_per_unit: number;
-  carbs_per_unit: number;
-  fat_per_unit: number;
-}
-
-export interface SubRecipeLink {
-  id: string;
-  parent_recipe_id: string;
-  sub_recipe_id: string;
-  quantity: number;
-  unit: string;
-  notes: string | null;
-  sort_order: number;
-  sub_recipe?: Recipe;
-}
-
-export interface Recipe {
-  id: string;
-  user_id: string;
-  menu_item_id: string | null;
-  name: string;
-  category: string;
-  portions: number;
-  preparation_time_minutes: number | null;
-  difficulty: string;
-  instructions: string | null;
-  tips: string | null;
-  photo_url: string | null;
-  video_url: string | null;
-  is_secret: boolean;
-  total_cost: number;
-  cost_per_portion: number;
-  created_at: string;
-  updated_at: string;
-  // New professional fields
-  yield_quantity: number;
-  yield_unit: string;
-  yield_weight_grams: number | null;
-  waste_percentage: number;
-  labor_time_minutes: number | null;
-  labor_cost_per_hour: number;
-  overhead_percentage: number;
-  is_sub_recipe: boolean;
-  serving_size_grams: number | null;
-  shelf_life_hours: number | null;
-  storage_instructions: string | null;
-  plating_instructions: string | null;
-  equipment_needed: string[];
-  allergen_ids: string[];
-  tags: string[];
-}
-
-export interface RecipeWithDetails extends Recipe {
-  ingredients: RecipeIngredient[];
-  steps: RecipeStep[];
-  nutrition: RecipeNutrition | null;
-  sub_recipes: SubRecipeLink[];
-}
-
-// Backward compatibility alias
-export type RecipeWithIngredients = RecipeWithDetails;
-
-export interface RecipeKPIs {
-  totalRecipes: number;
-  avgCostPerPortion: number;
-  secretRecipes: number;
-  categoriesCount: number;
-  subRecipesCount: number;
-  avgNutritionCalories: number;
-}
-
-export interface ScaledRecipe {
-  multiplier: number;
-  ingredients: Array<{
-    name: string;
-    quantity: number;
-    unit: string;
-    cost: number;
-  }>;
-  totalCost: number;
-  yield: number;
-}
-
-// ============= HOOK =============
+const EMPTY: RecipesData = {
+  recipes: [], units: [], allergens: [],
+  kpis: {
+    totalRecipes: 0, avgCostPerPortion: 0, secretRecipes: 0,
+    categoriesCount: 0, subRecipesCount: 0, avgNutritionCalories: 0,
+  },
+};
 
 export const useRecipes = () => {
-  const [recipes, setRecipes] = useState<RecipeWithDetails[]>([]);
-  const [units, setUnits] = useState<MeasurementUnit[]>([]);
-  const [allergens, setAllergens] = useState<Allergen[]>([]);
-  const [kpis, setKpis] = useState<RecipeKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
   const { toast } = useToast();
   const { userId } = useDataUserId();
+  const queryClient = useQueryClient();
 
-  // Fetch reference data (units, allergens)
-  const fetchReferenceData = useCallback(async () => {
-    const [unitsRes, allergensRes] = await Promise.all([
-      supabase.from('measurement_units').select('*').order('category, name'),
-      supabase.from('allergens').select('*').order('name')
-    ]);
-    
-    if (unitsRes.data) setUnits(unitsRes.data as MeasurementUnit[]);
-    if (allergensRes.data) setAllergens(allergensRes.data as Allergen[]);
-  }, []);
+  const { data = EMPTY, isLoading: loading } = useQuery({
+    queryKey: qk.recipes.all(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      try {
+        return await fetchRecipesData(userId!);
+      } catch (error) {
+        console.error('Error fetching recipes:', error);
+        toast({ title: 'Error', description: 'No se pudieron cargar las recetas', variant: 'destructive' });
+        throw error;
+      }
+    },
+  });
 
-  // Calculate KPIs
-  const calculateKPIs = (data: RecipeWithDetails[]): RecipeKPIs => {
-    const total = data.length;
-    if (total === 0) {
-      return { 
-        totalRecipes: 0, 
-        avgCostPerPortion: 0, 
-        secretRecipes: 0, 
-        categoriesCount: 0,
-        subRecipesCount: 0,
-        avgNutritionCalories: 0
-      };
-    }
+  const { recipes, units, allergens, kpis } = data;
+  const hasData = recipes.length > 0;
 
-    const avgCost = data.reduce((sum, r) => sum + (r.cost_per_portion || 0), 0) / total;
-    const secretCount = data.filter(r => r.is_secret).length;
-    const subRecipesCount = data.filter(r => r.is_sub_recipe).length;
-    const categories = new Set(data.map(r => r.category));
-    
-    const recipesWithNutrition = data.filter(r => r.nutrition);
-    const avgCalories = recipesWithNutrition.length > 0
-      ? recipesWithNutrition.reduce((sum, r) => sum + (r.nutrition?.calories || 0), 0) / recipesWithNutrition.length
-      : 0;
-
-    return {
-      totalRecipes: total,
-      avgCostPerPortion: Math.round(avgCost * 100) / 100,
-      secretRecipes: secretCount,
-      categoriesCount: categories.size,
-      subRecipesCount,
-      avgNutritionCalories: Math.round(avgCalories)
-    };
-  };
-
-  // Fetch all recipes with details
-  const fetchRecipes = useCallback(async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      
-      // Fetch recipes
-      const { data: recipesData, error } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('user_id', userId)
-        .order('name');
-
-      if (error) throw error;
-      
-      const recipes = (recipesData || []) as unknown as Recipe[];
-      
-      // Fetch all related data in parallel
-      const recipeIds = recipes.map(r => r.id);
-      
-      const [ingredientsRes, stepsRes, nutritionRes, subRecipesRes] = await Promise.all([
-        supabase.from('recipe_ingredients').select('*').in('recipe_id', recipeIds).order('sort_order'),
-        supabase.from('recipe_steps').select('*').in('recipe_id', recipeIds).order('step_number'),
-        supabase.from('recipe_nutrition').select('*').in('recipe_id', recipeIds),
-        supabase.from('recipe_sub_recipes').select('*').in('parent_recipe_id', recipeIds).order('sort_order')
-      ]);
-
-      const ingredients = (ingredientsRes.data || []) as RecipeIngredient[];
-      const steps = (stepsRes.data || []) as RecipeStep[];
-      const nutritionData = (nutritionRes.data || []) as RecipeNutrition[];
-      const subRecipesLinks = (subRecipesRes.data || []) as SubRecipeLink[];
-
-      // Map data to recipes
-      const recipesWithDetails: RecipeWithDetails[] = recipes.map(recipe => {
-        const recipeIngredients = ingredients.filter(i => i.recipe_id === recipe.id);
-        const recipeSteps = steps.filter(s => s.recipe_id === recipe.id);
-        const recipeNutrition = nutritionData.find(n => n.recipe_id === recipe.id) || null;
-        const recipeSubRecipes = subRecipesLinks.filter(sr => sr.parent_recipe_id === recipe.id);
-        
-        // Attach sub-recipe details
-        recipeSubRecipes.forEach(sr => {
-          sr.sub_recipe = recipes.find(r => r.id === sr.sub_recipe_id) as Recipe | undefined;
-        });
-
-        return {
-          ...recipe,
-          ingredients: recipeIngredients,
-          steps: recipeSteps,
-          nutrition: recipeNutrition,
-          sub_recipes: recipeSubRecipes
-        };
-      });
-      
-      setRecipes(recipesWithDetails);
-      setKpis(calculateKPIs(recipesWithDetails));
-      setHasData(recipesWithDetails.length > 0);
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
-      toast({ title: 'Error', description: 'No se pudieron cargar las recetas', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, toast]);
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: qk.recipes.all(userId) });
+    // El costo de receta alimenta la ingeniería de menú (food cost por plato).
+    await queryClient.invalidateQueries({ queryKey: ['menu-engineering'] });
+  }, [queryClient, userId]);
 
   // Create recipe
   const createRecipe = async (recipeData: Partial<Recipe> & { name: string }) => {
@@ -304,7 +89,7 @@ export const useRecipes = () => {
       if (error) throw error;
       
       toast({ title: 'Receta creada', description: 'Tu receta ha sido guardada' });
-      await fetchRecipes();
+      await refetch();
       return data;
     } catch (error) {
       console.error('Error creating recipe:', error);
@@ -324,7 +109,7 @@ export const useRecipes = () => {
       if (error) throw error;
       
       toast({ title: 'Receta actualizada', description: 'Los cambios han sido guardados' });
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error updating recipe:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar la receta', variant: 'destructive' });
@@ -342,7 +127,7 @@ export const useRecipes = () => {
       if (error) throw error;
       
       toast({ title: 'Receta eliminada', description: 'La receta ha sido eliminada' });
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error deleting recipe:', error);
       toast({ title: 'Error', description: 'No se pudo eliminar la receta', variant: 'destructive' });
@@ -377,7 +162,7 @@ export const useRecipes = () => {
 
       if (error) throw error;
       await recalculateCost(recipeId);
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error adding ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo agregar el ingrediente', variant: 'destructive' });
@@ -394,7 +179,7 @@ export const useRecipes = () => {
 
       if (error) throw error;
       await recalculateCost(recipeId);
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error updating ingredient:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar el ingrediente', variant: 'destructive' });
@@ -411,7 +196,7 @@ export const useRecipes = () => {
 
       if (error) throw error;
       await recalculateCost(recipeId);
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error removing ingredient:', error);
     }
@@ -440,7 +225,7 @@ export const useRecipes = () => {
         }]);
 
       if (error) throw error;
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error adding step:', error);
       toast({ title: 'Error', description: 'No se pudo agregar el paso', variant: 'destructive' });
@@ -456,7 +241,7 @@ export const useRecipes = () => {
         .eq('id', stepId);
 
       if (error) throw error;
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error updating step:', error);
       toast({ title: 'Error', description: 'No se pudo actualizar el paso', variant: 'destructive' });
@@ -472,7 +257,7 @@ export const useRecipes = () => {
         .eq('id', stepId);
 
       if (error) throw error;
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error removing step:', error);
     }
@@ -486,7 +271,7 @@ export const useRecipes = () => {
           supabase.from('recipe_steps').update({ step_number: index + 1 }).eq('id', stepId)
         )
       );
-      await fetchRecipes();
+      await refetch();
     } catch (error) {
       console.error('Error reordering steps:', error);
     }
@@ -510,7 +295,7 @@ export const useRecipes = () => {
         if (error) throw error;
       }
       
-      await fetchRecipes();
+      await refetch();
       toast({ title: 'Nutrición guardada', description: 'La información nutricional ha sido actualizada' });
     } catch (error) {
       console.error('Error saving nutrition:', error);
@@ -531,7 +316,7 @@ export const useRecipes = () => {
         }]);
 
       if (error) throw error;
-      await fetchRecipes();
+      await refetch();
       await recalculateCost(parentRecipeId);
     } catch (error) {
       console.error('Error adding sub-recipe:', error);
@@ -548,7 +333,7 @@ export const useRecipes = () => {
         .eq('id', linkId);
 
       if (error) throw error;
-      await fetchRecipes();
+      await refetch();
       await recalculateCost(parentRecipeId);
     } catch (error) {
       console.error('Error removing sub-recipe:', error);
@@ -609,26 +394,9 @@ export const useRecipes = () => {
   };
 
   // Scale recipe
-  const scaleRecipe = (recipe: RecipeWithDetails, targetPortions: number): ScaledRecipe => {
-    const originalPortions = recipe.portions || recipe.yield_quantity || 1;
-    const multiplier = targetPortions / originalPortions;
-
-    const scaledIngredients = recipe.ingredients.map(ing => ({
-      name: ing.ingredient_name,
-      quantity: Math.round(ing.quantity * multiplier * 100) / 100,
-      unit: ing.unit,
-      cost: Math.round(ing.quantity * multiplier * ing.cost_per_unit * 100) / 100
-    }));
-
-    const totalCost = scaledIngredients.reduce((sum, ing) => sum + ing.cost, 0);
-
-    return {
-      multiplier,
-      ingredients: scaledIngredients,
-      totalCost: Math.round(totalCost * 100) / 100,
-      yield: targetPortions
-    };
-  };
+  /** B-33: escalado alineado con `recalculate_recipe_cost` (merma + sub-recetas). */
+  const scaleRecipe = (recipe: RecipeWithDetails, targetPortions: number): ScaledRecipe =>
+    scaleRecipeCost(recipe, targetPortions);
 
   // Calculate nutrition from ingredients
   const calculateNutritionFromIngredients = (recipe: RecipeWithDetails): Partial<RecipeNutrition> => {
@@ -657,13 +425,7 @@ export const useRecipes = () => {
   const getMainRecipes = () => recipes.filter(r => !r.is_sub_recipe);
 
   // Initialize
-  useEffect(() => {
-    fetchReferenceData();
-  }, [fetchReferenceData]);
 
-  useEffect(() => {
-    fetchRecipes();
-  }, [fetchRecipes]);
 
   return {
     recipes,
@@ -697,6 +459,6 @@ export const useRecipes = () => {
     recalculateCost,
     scaleRecipe,
     // Refresh
-    refetch: fetchRecipes,
+    refetch,
   };
 };
