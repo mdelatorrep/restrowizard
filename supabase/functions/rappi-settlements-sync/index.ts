@@ -1,8 +1,14 @@
 // Daily settlements sync from Rappi
 import { corsHeaders, supabaseService, rappiFetch } from "../_shared/rappi.ts";
+import { requireCron } from "../_shared/require-cron.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // B-26: corre con SERVICE_ROLE sobre TODOS los tenants -> no puede ser anónima.
+  const denied = requireCron(req, corsHeaders);
+  if (denied) return denied;
+
   try {
     const sb = supabaseService();
     const { data: integrations } = await sb

@@ -1,8 +1,14 @@
 // Polling fallback: fetch new orders from Rappi for each active integration
 import { corsHeaders, supabaseService, rappiFetch } from "../_shared/rappi.ts";
+import { requireCron } from "../_shared/require-cron.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // B-26: corre con SERVICE_ROLE sobre TODOS los tenants -> no puede ser anónima.
+  const denied = requireCron(req, corsHeaders);
+  if (denied) return denied;
+
   try {
     const sb = supabaseService();
     const { data: integrations } = await sb
@@ -16,7 +22,10 @@ Deno.serve(async (req) => {
       for (const storeId of integ.store_ids ?? []) {
         try {
           const res = await rappiFetch(integ.id, `/api/v2/restaurants/stores/${storeId}/orders?status=NEW`);
-          if (!res.ok) { results.push({ integration: integ.id, store: storeId, error: res.status }); continue; }
+          if (!res.ok) {
+            console.error("rappi poll: respuesta no OK", { store: storeId, status: res.status });
+            results.push({ ok: false }); continue;
+          }
           const body = await res.json();
           const orders = body.orders ?? body.data ?? [];
           for (const order of orders) {
@@ -37,9 +46,13 @@ Deno.serve(async (req) => {
               raw_payload: order,
             }, { onConflict: "platform,external_order_id" });
           }
-          results.push({ integration: integ.id, store: storeId, orders: orders.length });
+          // Antes se devolvían los IDs de integración/store de todos los negocios.
+          results.push({ ok: true, orders: orders.length });
         } catch (e) {
-          results.push({ integration: integ.id, store: storeId, error: String(e) });
+          // El detalle va al log del servidor, no a la respuesta: esto lo llama
+          // un cron, y devolver ids de integración/store expone a otros tenants.
+          console.error("rappi poll: error", { store: storeId, error: String(e) });
+          results.push({ ok: false });
         }
       }
     }
