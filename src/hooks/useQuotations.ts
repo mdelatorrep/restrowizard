@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useConsultantProfile } from '@/hooks/useConsultantProfile';
 import { useToast } from '@/hooks/use-toast';
+import { qk } from '@/lib/queryKeys';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 
 export interface QuotationMenuItem {
@@ -114,17 +115,14 @@ export interface QuotationFormData {
 }
 
 export function useQuotations() {
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { profile } = useConsultantProfile();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchQuotations = useCallback(async () => {
-    if (!profile?.id) return;
-    
-    setLoading(true);
-    try {
+  const { data: quotations = [], isLoading: loading } = useQuery({
+    queryKey: qk.consultant.quotations(profile?.id),
+    enabled: !!profile?.id,
+    queryFn: async (): Promise<Quotation[]> => {
       const { data, error } = await supabase
         .from('event_quotations')
         .select(`
@@ -132,32 +130,35 @@ export function useQuotations() {
           restaurant:restaurant_businesses(id, name),
           zone:restaurant_zones(id, name)
         `)
-        .eq('consultant_id', profile.id)
+        .eq('consultant_id', profile!.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching quotations:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar las cotizaciones',
+          variant: 'destructive',
+        });
+        throw error;
+      }
 
-      setQuotations((data || []) as Quotation[]);
-    } catch (error: any) {
-      console.error('Error fetching quotations:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las cotizaciones',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [profile?.id, toast]);
+      return (data || []) as Quotation[];
+    },
+  });
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchQuotations();
-    }
-  }, [profile?.id, fetchQuotations]);
+  const fetchQuotations = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.consultant.quotations(profile?.id) }),
+    [queryClient, profile?.id]
+  );
 
   const createQuotation = async (data: QuotationFormData): Promise<string | null> => {
     if (!profile?.id) return null;
+
+    // Si falla algún hijo (menú/servicios/galería) hay que borrar la cotización
+    // para no dejar un huérfano incompleto. El fix definitivo es una RPC
+    // transaccional; esto es compensación del lado del cliente.
+    let createdId: string | null = null;
 
     try {
       // Calculate totals
@@ -203,6 +204,7 @@ export function useQuotations() {
         .single();
 
       if (quotationError) throw quotationError;
+      createdId = quotation.id;
 
       // Insert menu items
       if (data.menu_items.length > 0) {
@@ -222,7 +224,9 @@ export function useQuotations() {
           .from('quotation_menu_items')
           .insert(menuItems);
 
-        if (menuError) console.error('Error inserting menu items:', menuError);
+        // Una cotización sin su menú es peor que ninguna: el consultor se la
+        // manda al cliente creyendo que está completa. Se aborta y se compensa.
+        if (menuError) throw menuError;
       }
 
       // Insert services
@@ -244,7 +248,7 @@ export function useQuotations() {
           .from('quotation_services')
           .insert(services);
 
-        if (servicesError) console.error('Error inserting services:', servicesError);
+        if (servicesError) throw servicesError;
       }
 
       // Insert gallery
@@ -260,7 +264,7 @@ export function useQuotations() {
           .from('quotation_gallery')
           .insert(gallery);
 
-        if (galleryError) console.error('Error inserting gallery:', galleryError);
+        if (galleryError) throw galleryError;
       }
 
       toast({
@@ -272,6 +276,14 @@ export function useQuotations() {
       return quotation.id;
     } catch (error: any) {
       console.error('Error creating quotation:', error);
+      if (createdId) {
+        // Compensar: sin esto quedaría una cotización a medias en la lista.
+        const { error: cleanupError } = await supabase
+          .from('event_quotations')
+          .delete()
+          .eq('id', createdId);
+        if (cleanupError) console.error('Cleanup failed for quotation', createdId, cleanupError);
+      }
       toast({
         title: 'Error',
         description: 'No se pudo crear la cotización',
@@ -386,7 +398,7 @@ export function useQuotations() {
   };
 
   // Stats
-  const stats = {
+  const stats = useMemo(() => ({
     total: quotations.length,
     drafts: quotations.filter((q) => q.status === 'draft').length,
     sent: quotations.filter((q) => q.status === 'sent').length,
@@ -401,7 +413,7 @@ export function useQuotations() {
             quotations.filter((q) => ['sent', 'accepted', 'rejected'].includes(q.status)).length) *
           100
         : 0,
-  };
+  }), [quotations]);
 
   return {
     quotations,

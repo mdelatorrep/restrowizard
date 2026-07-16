@@ -110,6 +110,7 @@ export const qk = {
     billing: (consultantId?: string | null) => ['consultant-billing', consultantId] as const,
     reports: (consultantId?: string | null) => ['consultant-reports', consultantId] as const,
     clients: (consultantId?: string | null) => ['consultant-clients', consultantId] as const,
+    quotations: (consultantId?: string | null) => ['quotations', consultantId] as const,
   },
   payments: {
     gateways: (userId?: string | null) => ['payment-gateways', userId] as const,
