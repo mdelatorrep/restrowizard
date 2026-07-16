@@ -1,9 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { format, subDays } from 'date-fns';
 import { calcShiftLaborCost } from '@/lib/laborCost';
+import { qk } from '@/lib/queryKeys';
+
+// B-20: monto de VENTA (excluye propina). Misma regla que useSalesReports.
+const saleAmt = (o: any): number =>
+  Math.max(0, (Number(o?.total) || 0) - (Number(o?.tip_amount) || 0));
 
 export interface AggregatedDailySales {
   date: string;
@@ -49,11 +55,7 @@ export interface FinancesTrend {
 export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) => {
   const { userId, isViewingClient } = useDataUserId();
   const { toast } = useToast();
-  const [dailySales, setDailySales] = useState<AggregatedDailySales[]>([]);
-  const [kpis, setKpis] = useState<AggregatedFinancesKPIs | null>(null);
-  const [trends, setTrends] = useState<FinancesTrend[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
+  const queryClient = useQueryClient();
 
   // Use numeric timestamps so deps are stable across renders even if the
   // parent passes a freshly-constructed { start, end } object each render.
@@ -67,15 +69,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     [startDayMs, endDayMs]
   );
 
-  const fetchAggregatedData = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.finances.aggregated(userId, startDayMs, endDayMs),
+    enabled: !!userId,
+    queryFn: async (): Promise<{ dailySales: AggregatedDailySales[]; kpis: AggregatedFinancesKPIs | null; trends: FinancesTrend[] }> => {
       const startStr = format(range.start, 'yyyy-MM-dd');
       const endStr = format(range.end, 'yyyy-MM-dd');
 
@@ -83,7 +80,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const ordersPromise = supabase
         .from('restaurant_orders')
         .select('id, total, tax_amount, tip_amount, guests_count, status, created_at')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
         .not('status', 'in', '("cancelled","pending")');
@@ -93,7 +90,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const deductionsPromise = supabase
         .from('inventory_deductions')
         .select('deducted_at, quantity_deducted, inventory_items(unit_cost)')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .gte('deducted_at', `${startStr}T00:00:00`)
         .lte('deducted_at', `${endStr}T23:59:59`);
 
@@ -103,7 +100,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const shiftsPromise = supabase
         .from('staff_shifts')
         .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, break_minutes, hourly_rate_override, status, staff_members(hourly_rate)')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .gte('shift_date', startStr)
         .lte('shift_date', endStr)
         .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed']);
@@ -112,7 +109,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const manualPromise = supabase
         .from('daily_sales')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .gte('sale_date', startStr)
         .lte('sale_date', endStr);
 
@@ -130,7 +127,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       (ordersRes.data || []).forEach((order: any) => {
         const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
         if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0, taxes: 0 };
-        ordersByDate[dateKey].revenue += Math.max(0, (Number(order.total) || 0) - (Number(order.tip_amount) || 0));
+        ordersByDate[dateKey].revenue += saleAmt(order);
         ordersByDate[dateKey].count += 1;
         ordersByDate[dateKey].covers += order.guests_count || 0;
         ordersByDate[dateKey].taxes += Number(order.tax_amount) || 0;
@@ -206,11 +203,11 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // Sort by date
       salesData.sort((a, b) => a.date.localeCompare(b.date));
 
-      setDailySales(salesData);
-      setHasData(salesData.length > 0);
-
       // Calculate KPIs
-      if (salesData.length > 0) {
+      if (salesData.length === 0) {
+        return { dailySales: salesData, kpis: null, trends: [] };
+      }
+      {
         const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
         const totalFoodCost = salesData.reduce((sum, d) => sum + d.food_cost, 0);
         const totalLaborCost = salesData.reduce((sum, d) => sum + d.labor_cost, 0);
@@ -220,7 +217,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const netSales = Math.max(0, totalRevenue - totalTaxes);
         const totalOtherCosts = (manualRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.other_costs) || 0), 0);
 
-        setKpis({
+        const computedKpis: AggregatedFinancesKPIs = {
           totalRevenue,
           totalFoodCost,
           totalLaborCost,
@@ -237,31 +234,21 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           netProfit: netSales - totalFoodCost - totalLaborCost - totalOtherCosts,
           revenuePerCover: totalCovers > 0 ? totalRevenue / totalCovers : 0,
           ordersPerDay: salesData.length > 0 ? totalOrders / salesData.length : 0
-        });
+        };
 
         // Build trends
-        setTrends(salesData.map(d => ({
+        const computedTrends: FinancesTrend[] = salesData.map(d => ({
           date: d.date,
           revenue: d.total_revenue,
           food_cost: d.food_cost,
           labor_cost: d.labor_cost,
           profit: d.total_revenue - d.food_cost - d.labor_cost
-        })));
-      } else {
-        setKpis(null);
-        setTrends([]);
+        }));
+
+        return { dailySales: salesData, kpis: computedKpis, trends: computedTrends };
       }
-    } catch (error: any) {
-      console.error('Error fetching aggregated finances:', error);
-      toast({
-        title: "Error al cargar finanzas",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, startDayMs, endDayMs, toast]);
+    },
+  });
 
   // Fetch realtime today data
   const fetchRealtimeToday = useCallback(async () => {
@@ -272,8 +259,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       
       const { data: orders, error } = await supabase
         .from('restaurant_orders')
-        .select('total, guests_count, status, created_at')
-        .eq('user_id', userId)
+        .select('total, tip_amount, guests_count, status, created_at')
+        .eq('user_id', userId!)
         .gte('created_at', `${today}T00:00:00`)
         .lte('created_at', `${today}T23:59:59`)
         .not('status', 'in', '("cancelled","pending")');
@@ -281,7 +268,9 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       if (error) throw error;
 
       if (orders && orders.length > 0) {
-        const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+        // B-20: excluir propina, igual que los KPIs del periodo. Antes esta
+        // tarjeta ("hoy") sumaba propinas y no cuadraba con el resto de Finanzas.
+        const totalRevenue = orders.reduce((sum, o) => sum + saleAmt(o), 0);
         const totalCovers = orders.reduce((sum, o) => sum + (o.guests_count || 0), 0);
 
         return {
@@ -298,18 +287,19 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     }
   }, [userId]);
 
-  useEffect(() => {
-    fetchAggregatedData();
-  }, [fetchAggregatedData]);
+  const refetch = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.finances.aggregated(userId, startDayMs, endDayMs) }),
+    [queryClient, userId, startDayMs, endDayMs]
+  );
 
   return {
-    dailySales,
-    kpis,
-    trends,
+    dailySales: data?.dailySales ?? [],
+    kpis: data?.kpis ?? null,
+    trends: data?.trends ?? [],
     loading,
-    hasData,
+    hasData: (data?.dailySales?.length ?? 0) > 0,
     isViewingClient,
     fetchRealtimeToday,
-    refetch: fetchAggregatedData
+    refetch
   };
 };

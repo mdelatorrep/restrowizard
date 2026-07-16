@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import { qk } from '@/lib/queryKeys';
 
 export interface DailySale {
   id: string;
@@ -35,26 +37,60 @@ export interface FinancesBenchmarks {
   averageTicketAvg: number;
 }
 
+const computeKPIs = (data: DailySale[]): FinancesKPIs | null => {
+  if (!data || data.length === 0) return null;
+
+  const totalRevenue = data.reduce((sum, s) => sum + Number(s.total_revenue), 0);
+  const totalFoodCost = data.reduce((sum, s) => sum + Number(s.food_cost || 0), 0);
+  const totalLaborCost = data.reduce((sum, s) => sum + Number(s.labor_cost || 0), 0);
+  const totalOtherCosts = data.reduce((sum, s) => sum + Number(s.other_costs || 0), 0);
+  const totalCovers = data.reduce((sum, s) => sum + (s.covers_count || 0), 0);
+
+  const grossMargin = totalRevenue > 0
+    ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100
+    : 0;
+  const foodCostPercentage = totalRevenue > 0
+    ? (totalFoodCost / totalRevenue) * 100
+    : 0;
+  const laborCostPercentage = totalRevenue > 0
+    ? (totalLaborCost / totalRevenue) * 100
+    : 0;
+  const averageTicket = totalCovers > 0
+    ? totalRevenue / totalCovers
+    : 0;
+  const profitability = totalRevenue - totalFoodCost - totalLaborCost - totalOtherCosts;
+
+  return {
+    totalRevenue,
+    totalFoodCost,
+    totalLaborCost,
+    totalOtherCosts,
+    grossMargin,
+    foodCostPercentage,
+    laborCostPercentage,
+    averageTicket,
+    totalCovers,
+    profitability,
+  };
+};
+
 export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
   const { userId, isViewingClient } = useDataUserId();
   const { toast } = useToast();
-  const [sales, setSales] = useState<DailySale[]>([]);
-  const [kpis, setKpis] = useState<FinancesKPIs | null>(null);
-  const [benchmarks, setBenchmarks] = useState<FinancesBenchmarks | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchSales = async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+  const rangeKey = dateRange
+    ? `${dateRange.start.toISOString().split('T')[0]}_${dateRange.end.toISOString().split('T')[0]}`
+    : 'all';
 
-    try {
+  const { data: sales = [], isLoading: loading } = useQuery({
+    queryKey: qk.finances.dailySales(userId, rangeKey),
+    enabled: !!userId,
+    queryFn: async (): Promise<DailySale[]> => {
       let query = supabase
         .from('daily_sales')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .order('sale_date', { ascending: false });
 
       if (dateRange) {
@@ -64,87 +100,38 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
+      return (data || []) as DailySale[];
+    },
+  });
 
-      setSales(data || []);
-      setHasData((data?.length || 0) > 0);
-
-      // Calculate KPIs
-      if (data && data.length > 0) {
-        const totalRevenue = data.reduce((sum, s) => sum + Number(s.total_revenue), 0);
-        const totalFoodCost = data.reduce((sum, s) => sum + Number(s.food_cost || 0), 0);
-        const totalLaborCost = data.reduce((sum, s) => sum + Number(s.labor_cost || 0), 0);
-        const totalOtherCosts = data.reduce((sum, s) => sum + Number(s.other_costs || 0), 0);
-        const totalCovers = data.reduce((sum, s) => sum + (s.covers_count || 0), 0);
-
-        const grossMargin = totalRevenue > 0 
-          ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100 
-          : 0;
-        const foodCostPercentage = totalRevenue > 0 
-          ? (totalFoodCost / totalRevenue) * 100 
-          : 0;
-        const laborCostPercentage = totalRevenue > 0 
-          ? (totalLaborCost / totalRevenue) * 100 
-          : 0;
-        const averageTicket = totalCovers > 0 
-          ? totalRevenue / totalCovers 
-          : 0;
-        const profitability = totalRevenue - totalFoodCost - totalLaborCost - totalOtherCosts;
-
-        setKpis({
-          totalRevenue,
-          totalFoodCost,
-          totalLaborCost,
-          totalOtherCosts,
-          grossMargin,
-          foodCostPercentage,
-          laborCostPercentage,
-          averageTicket,
-          totalCovers,
-          profitability
-        });
-      } else {
-        setKpis(null);
-      }
-    } catch (error: any) {
-      console.error('Error fetching finances data:', error);
-      toast({
-        title: "Error al cargar datos financieros",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBenchmarks = async () => {
-    try {
+  const { data: benchmarks = null } = useQuery({
+    queryKey: qk.finances.benchmarks(),
+    queryFn: async (): Promise<FinancesBenchmarks | null> => {
       const { data, error } = await supabase
         .from('industry_benchmarks')
         .select('*')
         .eq('metric_category', 'finances');
-
       if (error) throw error;
+      if (!data || data.length === 0) return null;
+      const benchmarkMap: Record<string, number> = {};
+      data.forEach(b => { benchmarkMap[b.metric_name] = Number(b.avg_value); });
+      return {
+        foodCostAvg: benchmarkMap['food_cost_percentage'] || 28.5,
+        laborCostAvg: benchmarkMap['labor_cost_percentage'] || 22,
+        grossMarginAvg: benchmarkMap['gross_margin'] || 65,
+        averageTicketAvg: benchmarkMap['average_ticket'] || 285,
+      };
+    },
+  });
 
-      if (data && data.length > 0) {
-        const benchmarkMap: Record<string, number> = {};
-        data.forEach(b => {
-          benchmarkMap[b.metric_name] = Number(b.avg_value);
-        });
+  const kpis = useMemo(() => computeKPIs(sales), [sales]);
+  const hasData = sales.length > 0;
 
-        setBenchmarks({
-          foodCostAvg: benchmarkMap['food_cost_percentage'] || 28.5,
-          laborCostAvg: benchmarkMap['labor_cost_percentage'] || 22,
-          grossMarginAvg: benchmarkMap['gross_margin'] || 65,
-          averageTicketAvg: benchmarkMap['average_ticket'] || 285
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching benchmarks:', error);
-    }
-  };
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.finances.dailySales(userId, rangeKey) }),
+    [queryClient, userId, rangeKey]
+  );
 
   const addSale = async (sale: Omit<DailySale, 'id'>) => {
     if (!userId) return null;
@@ -166,7 +153,8 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
         description: "Los datos se han guardado correctamente"
       });
 
-      await fetchSales();
+      // Cualquier rango cacheado puede contener esta fecha: invalidar la familia.
+      await queryClient.invalidateQueries({ queryKey: ['finances-daily-sales', userId] });
       return data;
     } catch (error: any) {
       console.error('Error adding sale:', error);
@@ -192,7 +180,7 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
         title: "Registro eliminado"
       });
 
-      await fetchSales();
+      await queryClient.invalidateQueries({ queryKey: ['finances-daily-sales', userId] });
     } catch (error: any) {
       console.error('Error deleting sale:', error);
       toast({
@@ -203,11 +191,6 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
     }
   };
 
-  useEffect(() => {
-    fetchSales();
-    fetchBenchmarks();
-  }, [userId, dateRange?.start, dateRange?.end]);
-
   return {
     sales,
     kpis,
@@ -217,6 +200,6 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
     isViewingClient,
     addSale,
     deleteSale,
-    refetch: fetchSales
+    refetch: invalidate
   };
 };
