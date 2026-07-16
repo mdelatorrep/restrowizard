@@ -295,14 +295,22 @@
                  <CardTitle className="text-[10px] sm:text-sm md:text-base">Días Fuertes</CardTitle>
                </CardHeader>
                <CardContent className="p-2.5 sm:p-4 pt-0">
-                 <div className="flex flex-wrap gap-1">
-                   {metrics.peakDays.slice(0, isMobile ? 2 : 3).map((day, i) => (
-                     <Badge key={i} variant="secondary" className="text-[8px] sm:text-xs">{day}</Badge>
-                   ))}
-                 </div>
-                 <p className="text-[8px] sm:text-xs text-muted-foreground mt-1.5">
-                   Pico: {metrics.peakHours.slice(0, 2).join(', ')}
-                 </p>
+                 {metrics.peakDays.length > 0 ? (
+                   <div className="flex flex-wrap gap-1">
+                     {metrics.peakDays.slice(0, isMobile ? 2 : 3).map((day, i) => (
+                       <Badge key={i} variant="secondary" className="text-[8px] sm:text-xs">{day}</Badge>
+                     ))}
+                   </div>
+                 ) : (
+                   <p className="text-[8px] sm:text-xs text-muted-foreground">
+                     Aún sin ventas suficientes para identificarlos
+                   </p>
+                 )}
+                 {metrics.peakHours.length > 0 && (
+                   <p className="text-[8px] sm:text-xs text-muted-foreground mt-1.5">
+                     Pico: {metrics.peakHours.slice(0, 2).join(', ')}
+                   </p>
+                 )}
                </CardContent>
              </Card>
            </div>

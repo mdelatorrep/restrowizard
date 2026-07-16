@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
+import { useAggregatedFinances, type AggregatedFinancesKPIs } from './useAggregatedFinances';
 import { qk } from '@/lib/queryKeys';
 
 export interface DailySale {
@@ -37,40 +38,34 @@ export interface FinancesBenchmarks {
   averageTicketAvg: number;
 }
 
-const computeKPIs = (data: DailySale[]): FinancesKPIs | null => {
-  if (!data || data.length === 0) return null;
-
-  const totalRevenue = data.reduce((sum, s) => sum + Number(s.total_revenue), 0);
-  const totalFoodCost = data.reduce((sum, s) => sum + Number(s.food_cost || 0), 0);
-  const totalLaborCost = data.reduce((sum, s) => sum + Number(s.labor_cost || 0), 0);
-  const totalOtherCosts = data.reduce((sum, s) => sum + Number(s.other_costs || 0), 0);
-  const totalCovers = data.reduce((sum, s) => sum + (s.covers_count || 0), 0);
-
-  const grossMargin = totalRevenue > 0
-    ? ((totalRevenue - totalFoodCost) / totalRevenue) * 100
-    : 0;
-  const foodCostPercentage = totalRevenue > 0
-    ? (totalFoodCost / totalRevenue) * 100
-    : 0;
-  const laborCostPercentage = totalRevenue > 0
-    ? (totalLaborCost / totalRevenue) * 100
-    : 0;
-  const averageTicket = totalCovers > 0
-    ? totalRevenue / totalCovers
-    : 0;
-  const profitability = totalRevenue - totalFoodCost - totalLaborCost - totalOtherCosts;
-
+/**
+ * B-23 — Adaptador al motor canónico de P&L.
+ *
+ * Antes este hook calculaba sus PROPIOS KPIs leyendo solo `daily_sales`
+ * (captura manual), con dos diferencias de fondo frente a `useAggregatedFinances`:
+ *   1. FUENTE: ignoraba las ventas reales del POS, las deducciones de inventario
+ *      y los turnos — o sea, solo veía lo que alguien tecleó a mano.
+ *   2. FÓRMULA: food% y margen sobre ingreso BRUTO (con IVA) y utilidad sin
+ *      `other_costs`.
+ *
+ * Resultado: Finanzas, el Dashboard y el copiloto IA daban números distintos
+ * del mismo restaurante y el mismo rango. Ahora los KPIs salen del motor único
+ * y este hook conserva `sales`/`addSale`/`deleteSale` para la tabla manual,
+ * que es su rol legítimo.
+ */
+const adaptCanonicalKPIs = (k: AggregatedFinancesKPIs | null): FinancesKPIs | null => {
+  if (!k) return null;
   return {
-    totalRevenue,
-    totalFoodCost,
-    totalLaborCost,
-    totalOtherCosts,
-    grossMargin,
-    foodCostPercentage,
-    laborCostPercentage,
-    averageTicket,
-    totalCovers,
-    profitability,
+    totalRevenue: k.totalRevenue,
+    totalFoodCost: k.totalFoodCost,
+    totalLaborCost: k.totalLaborCost,
+    totalOtherCosts: k.totalOtherCosts,
+    grossMargin: k.grossMargin,
+    foodCostPercentage: k.foodCostPercentage,
+    laborCostPercentage: k.laborCostPercentage,
+    averageTicket: k.avgTicket,
+    totalCovers: k.totalCovers,
+    profitability: k.netProfit,
   };
 };
 
@@ -125,7 +120,11 @@ export const useFinancesData = (dateRange?: { start: Date; end: Date }) => {
     },
   });
 
-  const kpis = useMemo(() => computeKPIs(sales), [sales]);
+  // B-23: los números vienen del motor único; este hook ya no calcula P&L.
+  const { kpis: canonicalKpis } = useAggregatedFinances(dateRange);
+  const kpis = useMemo(() => adaptCanonicalKPIs(canonicalKpis), [canonicalKpis]);
+
+  // `hasData` sigue significando "hay captura manual" (lo usa useOperationsData).
   const hasData = sales.length > 0;
 
   const invalidate = useCallback(

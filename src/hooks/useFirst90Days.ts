@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { differenceInDays } from 'date-fns';
+import { useAggregatedFinances } from './useAggregatedFinances';
 
 export interface First90DaysMetrics {
   daysOpen: number;
@@ -303,21 +304,6 @@ export function useFirst90Days() {
     enabled: !!user,
   });
 
-  const { data: financeData } = useQuery({
-    queryKey: ['first90-finances', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('daily_sales')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('sale_date', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-  });
-
   // Calculate if restaurant is within first 90 days
   // Use opening_date if available, fallback to created_at
   const openDate = businessData?.opening_date 
@@ -337,12 +323,18 @@ export function useFirst90Days() {
   const weekNumber = Math.min(Math.ceil(daysOpen / 7), 13);
 
   // B-27: evaluación honesta de hitos — por métrica real, no por antigüedad.
-  const _fRevenue = financeData?.reduce((sum, e) => sum + (e.total_revenue || 0), 0) || 0;
-  const _fFood = financeData?.reduce((sum, e) => sum + (e.food_cost || 0), 0) || 0;
-  const _fLabor = financeData?.reduce((sum, e) => sum + (e.labor_cost || 0), 0) || 0;
-  const _fCustomers = financeData?.reduce((sum, e) => sum + (e.covers_count || 0), 0) || 0;
-  const _fFoodPct = _fRevenue > 0 ? (_fFood / _fRevenue) * 100 : 0;
-  const _fNetProfit = _fRevenue - _fFood - _fLabor;
+  // B-23: los hitos se evalúan con el MOTOR CANÓNICO, no con `daily_sales` crudo.
+  // Antes: food% sobre ingreso bruto (con IVA) y utilidad sin `other_costs`,
+  // leyendo solo la captura manual e ignorando ventas de POS, deducciones de
+  // inventario y turnos. Un restaurante podía aparecer "rentable" aquí y no
+  // serlo en Finanzas — el mismo negocio, el mismo rango, dos veredictos.
+  const { kpis: canonicalKpis, dailySales: canonicalDaily } = useAggregatedFinances(
+    openDate ? { start: openDate, end: new Date() } : undefined
+  );
+  const _fRevenue = canonicalKpis?.totalRevenue ?? 0;
+  const _fCustomers = canonicalKpis?.totalCovers ?? 0;
+  const _fFoodPct = canonicalKpis?.foodCostPercentage ?? 0;
+  const _fNetProfit = canonicalKpis?.netProfit ?? 0;
   const evalMilestone = (m: { title: string; targetDay: number }): boolean => {
     const t = m.title.toLowerCase();
     if (t.includes('semana') || t.includes('días operando') || t.includes('90 días')) return daysOpen >= m.targetDay;
@@ -360,40 +352,32 @@ export function useFirst90Days() {
     progressPercentage: Math.min((daysOpen / 90) * 100, 100),
     weekNumber,
     
-    // Revenue metrics (from finance data or defaults)
-    totalRevenue: financeData?.reduce((sum, e) => sum + (e.total_revenue || 0), 0) || 0,
-    averageDailyRevenue: financeData?.length 
-      ? financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0) / Math.max(daysOpen, 1)
-      : 0,
-    revenueGrowth: calculateWeeklyGrowth(financeData || [], 'total_revenue'),
-    projectedMonthlyRevenue: financeData?.length
-      ? (financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0) / Math.max(daysOpen, 1)) * 30
-      : 0,
-    
+    // B-23: TODAS las cifras salen del motor canónico (useAggregatedFinances),
+    // el mismo que alimenta Finanzas y el Dashboard. Antes se leía solo
+    // `daily_sales` (captura manual) y los % iban sobre ingreso bruto con IVA:
+    // el mismo restaurante y el mismo rango daban números distintos según la
+    // pantalla, y el copiloto IA aconsejaba sobre los que no cuadraban.
+    totalRevenue: _fRevenue,
+    averageDailyRevenue: _fRevenue / Math.max(daysOpen, 1),
+    revenueGrowth: calculateWeeklyGrowth(canonicalDaily, 'total_revenue'),
+    projectedMonthlyRevenue: (_fRevenue / Math.max(daysOpen, 1)) * 30,
+
     // Customer metrics
-    totalCustomers: financeData?.reduce((sum, e) => sum + (e.covers_count || 0), 0) || 0,
-    averageDailyCustomers: financeData?.length
-      ? financeData.reduce((sum, e) => sum + (e.covers_count || 0), 0) / Math.max(daysOpen, 1)
-      : 0,
-    customerGrowth: calculateWeeklyGrowth(financeData || [], 'covers_count'),
-    repeatCustomerRate: 0, // Would need loyalty data
-    
+    totalCustomers: _fCustomers,
+    averageDailyCustomers: _fCustomers / Math.max(daysOpen, 1),
+    customerGrowth: calculateWeeklyGrowth(canonicalDaily, 'covers_count'),
+    repeatCustomerRate: 0, // B-27 pendiente: requiere cruzar con fidelización
+
     // Operational metrics
-    averageTicket: financeData?.length
-      ? financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0) / 
-        Math.max(financeData.reduce((sum, e) => sum + (e.covers_count || 0), 0), 1)
-      : 0,
+    // Ingreso por comensal (no por orden): es lo que calculaba antes.
+    averageTicket: canonicalKpis?.revenuePerCover ?? 0,
     ticketTrend: 'stable',
-    peakDays: ['Sábado', 'Viernes', 'Domingo'],
-    peakHours: ['14:00', '20:00', '21:00'],
-    
-    // Efficiency metrics - calculate percentage from absolute values
-    foodCostAverage: financeData?.length && financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0) > 0
-      ? (financeData.reduce((sum, e) => sum + (e.food_cost || 0), 0) / financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0)) * 100
-      : 0,
-    laborCostAverage: financeData?.length && financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0) > 0
-      ? (financeData.reduce((sum, e) => sum + (e.labor_cost || 0), 0) / financeData.reduce((sum, e) => sum + (e.total_revenue || 0), 0)) * 100
-      : 0,
+    peakDays: computePeakDays(canonicalDaily),
+    peakHours: [], // B-27 pendiente: requiere agregación por hora desde restaurant_orders
+
+    // Efficiency metrics — % sobre base NETA (sin IVA), igual que Finanzas.
+    foodCostAverage: _fFoodPct,
+    laborCostAverage: canonicalKpis?.laborCostPercentage ?? 0,
     wastageReduction: 0,
     
     // Milestones
@@ -425,6 +409,28 @@ export function useFirst90Days() {
 }
 
 // Helper to calculate weekly growth
+/**
+ * B-27 — Días fuertes calculados desde la serie diaria real (ingreso por día de
+ * la semana), no la lista fija ['Sábado','Viernes','Domingo'] que estaba escrita
+ * a mano y se mostraba igual a todos los restaurantes.
+ */
+function computePeakDays(daily: Array<{ date: string; total_revenue: number }>): string[] {
+  if (!daily?.length) return [];
+  const DOW = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const byDow = new Map<number, number>();
+  for (const d of daily) {
+    // `date` es 'yyyy-MM-dd': se parsea como local para no correr el día por UTC.
+    const [y, m, dd] = d.date.split('-').map(Number);
+    const dow = new Date(y, (m || 1) - 1, dd || 1).getDay();
+    byDow.set(dow, (byDow.get(dow) || 0) + (Number(d.total_revenue) || 0));
+  }
+  return [...byDow.entries()]
+    .filter(([, revenue]) => revenue > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([dow]) => DOW[dow]);
+}
+
 function calculateWeeklyGrowth(data: any[], field: string): number[] {
   if (!data.length) return [];
   
