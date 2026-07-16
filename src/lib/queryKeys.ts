@@ -70,6 +70,7 @@ export const qk = {
   talent: {
     staff: (userId?: string | null) => ['talent-staff', userId] as const,
     benchmarks: () => ['talent-benchmarks'] as const,
+    schedule: (userId?: string | null, weekStart?: string) => ['staff-schedule', userId, weekStart] as const,
   },
   support: {
     tickets: (userId?: string | null) => ['support-tickets', userId] as const,

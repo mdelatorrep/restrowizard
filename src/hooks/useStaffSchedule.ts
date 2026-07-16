@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { calcShiftHours, calcShiftLaborCost } from '@/lib/laborCost';
+import { qk } from '@/lib/queryKeys';
 import type { TablesUpdate } from '@/integrations/supabase/types';
-
-
 
 export interface StaffShift {
   id: string;
@@ -47,17 +47,24 @@ export interface ScheduleKPIs {
   noShowRate: number;
 }
 
+interface ScheduleData {
+  shifts: StaffShift[];
+  staffWithShifts: StaffMemberWithShifts[];
+  kpis: ScheduleKPIs;
+}
+
+// C8-01: estados que SÍ cuestan plata (alineado con useAggregatedFinances).
+// `no_show` se trae para poder medir ausentismo, pero no genera costo.
+const COSTABLE_STATUSES = ['scheduled', 'confirmed', 'in_progress', 'completed'];
+const FETCHED_STATUSES = [...COSTABLE_STATUSES, 'no_show'];
+
 export const useStaffSchedule = (weekStart?: Date) => {
   const { userId, isViewingClient } = useDataUserId();
   const { toast } = useToast();
-  const [shifts, setShifts] = useState<StaffShift[]>([]);
-  const [staffWithShifts, setStaffWithShifts] = useState<StaffMemberWithShifts[]>([]);
-  const [kpis, setKpis] = useState<ScheduleKPIs | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasData, setHasData] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Estabilizar el rango de fechas a primitivos (timestamps) para evitar loops
-  // de useEffect cuando weekStart se recrea en cada render del padre.
+  // Estabilizar el rango de fechas a primitivos (timestamps) para evitar refetch
+  // en loop cuando weekStart se recrea en cada render del padre.
   const weekStartTs = weekStart ? weekStart.getTime() : null;
   const { weekStartStr, weekEndStr } = useMemo(() => {
     const base = weekStartTs ? new Date(weekStartTs) : new Date();
@@ -69,37 +76,27 @@ export const useStaffSchedule = (weekStart?: Date) => {
     };
   }, [weekStartTs]);
 
-
-  // TK-2: fórmula única compartida con Finanzas.
-  const calculateHoursWorked = (shift: StaffShift): number => calcShiftHours(shift);
-
-  const fetchSchedule = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: qk.talent.schedule(userId, weekStartStr),
+    enabled: !!userId,
+    queryFn: async (): Promise<ScheduleData> => {
       // Fetch staff members
       const { data: staffMembers, error: staffError } = await supabase
         .from('staff_members')
         .select('id, name, position, hourly_rate')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .eq('is_active', true);
 
       if (staffError) throw staffError;
 
       // Fetch shifts for the week
-      // C8-01: alinear con Finanzas → excluir cancelled / no_show del costo laboral.
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('staff_shifts')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .gte('shift_date', weekStartStr)
         .lte('shift_date', weekEndStr)
-        .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
+        .in('status', FETCHED_STATUSES)
         .order('shift_date')
         .order('start_time');
 
@@ -108,8 +105,11 @@ export const useStaffSchedule = (weekStart?: Date) => {
       // Enrich shifts with staff names and calculated fields
       const enrichedShifts: StaffShift[] = (shiftsData || []).map(shift => {
         const staffMember = staffMembers?.find(s => s.id === shift.staff_member_id);
-        const hours = calculateHoursWorked(shift as StaffShift);
-        const cost = calcShiftLaborCost(shift as StaffShift, staffMember?.hourly_rate);
+        const costable = COSTABLE_STATUSES.includes(shift.status as string);
+        // Un no_show no trabajó: 0 horas y 0 costo (si no, calcShiftLaborCost
+        // le cobraría el turno programado).
+        const hours = costable ? calcShiftHours(shift as StaffShift) : 0;
+        const cost = costable ? calcShiftLaborCost(shift as StaffShift, staffMember?.hourly_rate) : 0;
 
         return {
           ...shift,
@@ -119,12 +119,9 @@ export const useStaffSchedule = (weekStart?: Date) => {
         } as StaffShift;
       });
 
-      setShifts(enrichedShifts);
-      setHasData(enrichedShifts.length > 0);
-
       // Group shifts by staff member
       const staffMap = new Map<string, StaffMemberWithShifts>();
-      
+
       for (const member of (staffMembers || [])) {
         staffMap.set(member.id, {
           id: member.id,
@@ -146,11 +143,13 @@ export const useStaffSchedule = (weekStart?: Date) => {
         }
       }
 
-      setStaffWithShifts(Array.from(staffMap.values()).filter(s => s.shifts.length > 0));
+      const staffWithShifts = Array.from(staffMap.values()).filter(s => s.shifts.length > 0);
 
       // Calculate KPIs
       const totalShifts = enrichedShifts.length;
       const completedShifts = enrichedShifts.filter(s => s.status === 'completed').length;
+      // Antes esto era SIEMPRE 0: la query excluía 'no_show', así que el filtro
+      // de abajo nunca encontraba ninguno y la tasa de ausentismo no subía nunca.
       const noShowShifts = enrichedShifts.filter(s => s.status === 'no_show').length;
       const totalHoursScheduled = enrichedShifts.reduce((sum, s) => {
         const [startH, startM] = s.start_time.split(':').map(Number);
@@ -163,34 +162,42 @@ export const useStaffSchedule = (weekStart?: Date) => {
       const totalLaborCost = enrichedShifts.reduce((sum, s) => sum + (s.cost || 0), 0);
       const staffCount = new Set(enrichedShifts.map(s => s.staff_member_id)).size;
 
-      setKpis({
-        totalShifts,
-        totalHoursScheduled,
-        totalHoursWorked,
-        totalLaborCost,
-        staffCount,
-        avgHoursPerStaff: staffCount > 0 ? totalHoursScheduled / staffCount : 0,
-        avgCostPerHour: totalHoursWorked > 0 ? totalLaborCost / totalHoursWorked : 0,
-        completionRate: totalShifts > 0 ? (completedShifts / totalShifts) * 100 : 0,
-        noShowRate: totalShifts > 0 ? (noShowShifts / totalShifts) * 100 : 0
-      });
-    } catch (error: any) {
-      console.error('Error fetching schedule:', error);
-      toast({
-        title: "Error al cargar horarios",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, weekStartStr, weekEndStr, toast]);
+      return {
+        shifts: enrichedShifts,
+        staffWithShifts,
+        kpis: {
+          totalShifts,
+          totalHoursScheduled,
+          totalHoursWorked,
+          totalLaborCost,
+          staffCount,
+          avgHoursPerStaff: staffCount > 0 ? totalHoursScheduled / staffCount : 0,
+          avgCostPerHour: totalHoursWorked > 0 ? totalLaborCost / totalHoursWorked : 0,
+          completionRate: totalShifts > 0 ? (completedShifts / totalShifts) * 100 : 0,
+          noShowRate: totalShifts > 0 ? (noShowShifts / totalShifts) * 100 : 0
+        },
+      };
+    },
+  });
+
+  const shifts = data?.shifts ?? [];
+
+  const fetchSchedule = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: qk.talent.schedule(userId, weekStartStr) }),
+    [queryClient, userId, weekStartStr]
+  );
+
+  // El costo laboral alimenta el P&L: si cambian los turnos, Finanzas cambia.
+  const invalidateDependents = useCallback(async () => {
+    await fetchSchedule();
+    await queryClient.invalidateQueries({ queryKey: ['finances-aggregated', userId] });
+  }, [fetchSchedule, queryClient, userId]);
 
   const addShift = useCallback(async (shift: Omit<StaffShift, 'id' | 'hours_worked' | 'cost' | 'staff_member_name'>) => {
     if (!userId) return null;
 
     try {
-      const { data, error } = await supabase
+      const { data: created, error } = await supabase
         .from('staff_shifts')
         .insert({
           user_id: userId,
@@ -209,8 +216,8 @@ export const useStaffSchedule = (weekStart?: Date) => {
       if (error) throw error;
 
       toast({ title: "Turno creado" });
-      await fetchSchedule();
-      return data;
+      await invalidateDependents();
+      return created;
     } catch (error: any) {
       console.error('Error adding shift:', error);
       toast({
@@ -220,7 +227,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
       });
       return null;
     }
-  }, [userId, fetchSchedule, toast]);
+  }, [userId, invalidateDependents, toast]);
 
   const updateShift = useCallback(async (id: string, updates: TablesUpdate<'staff_shifts'>) => {
     try {
@@ -232,7 +239,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
       if (error) throw error;
 
       toast({ title: "Turno actualizado" });
-      await fetchSchedule();
+      await invalidateDependents();
     } catch (error: any) {
       console.error('Error updating shift:', error);
       toast({
@@ -241,7 +248,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
         variant: "destructive"
       });
     }
-  }, [fetchSchedule, toast]);
+  }, [invalidateDependents, toast]);
 
   const deleteShift = useCallback(async (id: string) => {
     try {
@@ -253,7 +260,7 @@ export const useStaffSchedule = (weekStart?: Date) => {
       if (error) throw error;
 
       toast({ title: "Turno eliminado" });
-      await fetchSchedule();
+      await invalidateDependents();
     } catch (error: any) {
       console.error('Error deleting shift:', error);
       toast({
@@ -262,34 +269,30 @@ export const useStaffSchedule = (weekStart?: Date) => {
         variant: "destructive"
       });
     }
-  }, [fetchSchedule, toast]);
+  }, [invalidateDependents, toast]);
 
   const clockIn = useCallback(async (shiftId: string) => {
     const now = format(new Date(), 'HH:mm:ss');
-    await updateShift(shiftId, { 
-      status: 'in_progress', 
-      actual_start_time: now 
+    await updateShift(shiftId, {
+      status: 'in_progress',
+      actual_start_time: now
     });
   }, [updateShift]);
 
   const clockOut = useCallback(async (shiftId: string) => {
     const now = format(new Date(), 'HH:mm:ss');
-    await updateShift(shiftId, { 
-      status: 'completed', 
-      actual_end_time: now 
+    await updateShift(shiftId, {
+      status: 'completed',
+      actual_end_time: now
     });
   }, [updateShift]);
 
-  useEffect(() => {
-    fetchSchedule();
-  }, [fetchSchedule]);
-
   return {
     shifts,
-    staffWithShifts,
-    kpis,
+    staffWithShifts: data?.staffWithShifts ?? [],
+    kpis: data?.kpis ?? null,
     loading,
-    hasData,
+    hasData: shifts.length > 0,
     isViewingClient,
     addShift,
     updateShift,
