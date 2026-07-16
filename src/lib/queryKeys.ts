@@ -55,6 +55,10 @@ export const qk = {
   sales: {
     reports: (userId?: string | null, period?: string, channel?: string) =>
       ['sales-reports', userId, period, channel] as const,
+    goals: (userId?: string | null) => ['sales-goals', userId] as const,
+  },
+  kitchen: {
+    orders: (userId?: string | null) => ['kitchen-orders', userId] as const,
   },
   loyalty: {
     customers: (userId?: string | null) => ['loyalty-customers', userId] as const,
