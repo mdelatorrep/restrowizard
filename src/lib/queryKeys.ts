@@ -46,6 +46,7 @@ export const qk = {
     availability: (userId?: string | null) => ['menu-availability', userId] as const,
     engineering: (userId?: string | null, periodDays?: number) => ['menu-engineering', userId, periodDays] as const,
     templates: () => ['menu-templates'] as const,
+    management: (menuId?: string | null) => ['menu-management', menuId] as const,
   },
   recipes: {
     all: (userId?: string | null) => ['recipes', userId] as const,
