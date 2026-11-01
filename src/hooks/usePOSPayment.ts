@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useToast } from './use-toast';
 import { usePOSSession } from './usePOSSession';
 
@@ -39,7 +39,7 @@ export interface POSTransaction {
 }
 
 export const usePOSPayment = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const { toast } = useToast();
   const { currentSession, updateSessionStats } = usePOSSession();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);

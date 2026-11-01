@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { qk } from '@/lib/queryKeys';
 
 export interface DashboardStats {
@@ -129,7 +129,7 @@ const fetchRecentActivity = async (userId: string): Promise<RecentActivity[]> =>
 };
 
 export const useDashboard = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const queryClient = useQueryClient();
 
   const { data, isLoading: loading } = useQuery({

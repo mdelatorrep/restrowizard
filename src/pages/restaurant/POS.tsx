@@ -16,7 +16,7 @@ import { CartPanel } from '@/components/pos/CartPanel';
 import { POSHeader } from '@/components/pos/POSHeader';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useBusinessTaxConfig } from '@/hooks/useBusinessTaxConfig';
 import { useMenuAvailability } from '@/hooks/useMenuAvailability';
 import { principalPaymentMethod } from '@/lib/paymentMethods';
@@ -25,7 +25,7 @@ import { principalPaymentMethod } from '@/lib/paymentMethods';
 
 // Main POS Component
 const POS = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const { toast } = useToast();
   const { taxConfig, allowOversell } = useBusinessTaxConfig();
   const { outOfStockIds } = useMenuAvailability();
@@ -181,6 +181,7 @@ const POS = () => {
 
       // Create order
       const orderPayload: any = {
+        user_id: user?.id, // dueño del negocio, aunque venda un cajero
         session_id: currentSession?.id,
         table_id: selectedTable,
         items: items.map(i => ({

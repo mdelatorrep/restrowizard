@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
@@ -23,7 +23,7 @@ interface Recipe {
 }
 
 export const useInventoryDeduction = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
 
   // Fetch recipe linked to a menu item.
   // NOTE: We do NOT filter by user_id here — RLS on `recipes` already restricts

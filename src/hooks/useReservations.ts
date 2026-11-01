@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useToast } from '@/hooks/use-toast';
 import { qk } from '@/lib/queryKeys';
 
@@ -69,7 +69,7 @@ export interface ReservationKPIs {
 }
 
 export function useReservations() {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

@@ -27,7 +27,7 @@ export const useDataUserId = () => {
   const isConsultantMode = activeClientContext?.isConsultantMode ?? false;
 
   // Check if current user is a team member and get the owner's user_id
-  const { data: teamMemberData } = useQuery({
+  const { data: teamMemberData, isFetched: teamLookupDone } = useQuery({
     queryKey: ['team-member-owner', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -87,7 +87,8 @@ export const useDataUserId = () => {
       clientName: activeClient.business?.name || 'Cliente',
       businessId: null,
       isTeamMember: false,
-      teamRole: null
+      teamRole: null,
+      isResolved: true
     };
   }
 
@@ -100,7 +101,8 @@ export const useDataUserId = () => {
       businessId: teamMemberData.businessId,
       isTeamMember: true,
       teamRole: teamMemberData.role,
-      businessName: teamMemberData.businessName
+      businessName: teamMemberData.businessName,
+      isResolved: true
     };
   }
 
@@ -111,7 +113,10 @@ export const useDataUserId = () => {
     clientName: null,
     businessId: teamMemberData?.businessId || null,
     isTeamMember: false,
-    teamRole: null
+    teamRole: null,
+    // Mientras no se sabe si es miembro de un equipo, user.id puede no ser el
+    // dueño de los datos: quien escriba debe esperar a isResolved.
+    isResolved: !user?.id || isConsultantMode || teamLookupDone
   };
 };
 

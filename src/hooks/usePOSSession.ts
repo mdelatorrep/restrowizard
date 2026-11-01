@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useToast } from './use-toast';
 import { qk } from '@/lib/queryKeys';
 
@@ -35,7 +35,7 @@ export interface CashMovement {
 }
 
 export const usePOSSession = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

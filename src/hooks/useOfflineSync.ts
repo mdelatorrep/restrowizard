@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { offlineStorage, PendingSale } from '@/lib/offlineStorage';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { toast } from 'sonner';
 import { principalPaymentMethod, canonicalPaymentMethod } from '@/lib/paymentMethods';
 
@@ -14,7 +14,7 @@ interface OfflineSyncState {
 }
 
 export const useOfflineSync = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const [state, setState] = useState<OfflineSyncState>({
     isOnline: navigator.onLine,
     isSyncing: false,

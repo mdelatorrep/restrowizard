@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 import { toast } from 'sonner';
 import { KitchenOrder, playKitchenNotificationSound, getKitchenStatusLabel } from '@/components/kitchen/kitchenTypes';
@@ -22,7 +22,7 @@ const toKitchenOrder = (order: any): KitchenOrder => ({
 });
 
 export const useKitchenOrders = (soundEnabled: boolean) => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading: loading } = useQuery({

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useOwnerScopedUser } from '@/hooks/useOwnerScopedUser';
 import { useRealtimeTable } from './useRealtimeTable';
 import { useToast } from './use-toast';
 import { qk } from '@/lib/queryKeys';
@@ -23,7 +23,7 @@ export interface RestaurantTable {
 }
 
 export const usePOSTables = () => {
-  const { user } = useAuth();
+  const user = useOwnerScopedUser(); // datos del negocio: id del dueño
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
