@@ -51,7 +51,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
     title: 'Cajero',
     pitch: 'El punto de venta del turno: mesas, comandas, cobro y cierre de caja.',
     highlights: ['Mapa de mesas', 'Cobro con propina sugerida', 'Cierre de caja con cuadre'],
-    landing: '/r',
+    landing: '/r/pos',
   },
 ];
 

@@ -78,7 +78,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // /demo navega por su cuenta a la pantalla de cada rol; no competir con esa navegación.
     const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding', '/demo'];
-    const isInProtectedRoute = protectedPrefixes.some((prefix) => currentPath.startsWith(prefix));
+    const isInProtectedRoute =
+      currentPath === '/r' || currentPath === '/c' ||
+      protectedPrefixes.some((prefix) => currentPath.startsWith(prefix));
     if (!session?.user || isInProtectedRoute) {
       logger.debug('❌ Navigation skipped:', { currentPath, hasUser: !!session?.user, isInProtectedRoute });
       return;
