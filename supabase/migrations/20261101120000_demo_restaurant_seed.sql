@@ -129,7 +129,10 @@ BEGIN
          s.slot_start + (random() * interval '58 minutes') AS created_at,
          (1 + floor(random() * 4))::int + CASE WHEN random() < 0.2 THEN 2 ELSE 0 END AS guests,
          (2 + floor(random() * 3))::int AS nlines,
-         (s.hr < 13) AS is_brunch
+         (s.hr < 13) AS is_brunch,
+         -- Mezcla de canales de un sports bar: 10 % Rappi, 6 % domicilio propio por WhatsApp.
+         (SELECT CASE WHEN r < 0.10 THEN 'rappi' WHEN r < 0.16 THEN 'delivery_own' ELSE 'pos' END
+            FROM (SELECT random() + g * 0 AS r) x) AS ch
   FROM _slots s
   CROSS JOIN LATERAL generate_series(1, GREATEST(0, round(
       _demo_expected_orders(s.bday, s.hr) * (0.8 + random() * 0.4)))::int) g;
@@ -169,16 +172,23 @@ BEGIN
     tip_amount, tip_percent, guests_count, payment_method, payment_status, created_at, updated_at,
     completed_at, waiter_id, waiter_name, is_pos_order, sales_channel, kitchen_status,
     customer_name, customer_phone, table_id)
-  SELECT o.id, c_owner, 'pos', 'dine_in', 'completed',
+  SELECT o.id, c_owner,
+         CASE o.ch WHEN 'rappi' THEN 'rappi' WHEN 'delivery_own' THEN 'whatsapp' ELSE 'pos' END,
+         CASE WHEN o.ch = 'pos' THEN 'dine_in' ELSE 'delivery' END, 'completed',
          l.items, l.subtotal,
          l.subtotal + tip.amount,
          round(l.subtotal * 8 / 108), round(l.subtotal * 8 / 108),
          tip.amount, CASE WHEN tip.amount > 0 THEN 10 ELSE 0 END,
-         o.guests, pm.method, 'paid', o.created_at, o.created_at,
-         o.created_at + interval '75 minutes', wp.waiter_id, sm.name, true, 'pos', 'served',
-         cust.name, cust.phone,
-         (SELECT t.id FROM restaurant_tables t WHERE t.user_id = c_owner
-           ORDER BY random() + length(o.id::text) * 0 LIMIT 1)
+         CASE WHEN o.ch = 'pos' THEN o.guests ELSE 1 END,
+         CASE WHEN o.ch = 'rappi' THEN 'Rappi' ELSE pm.method END,
+         'paid', o.created_at, o.created_at,
+         o.created_at + CASE WHEN o.ch = 'pos' THEN interval '75 minutes' ELSE interval '40 minutes' END,
+         CASE WHEN o.ch = 'pos' THEN wp.waiter_id END, CASE WHEN o.ch = 'pos' THEN sm.name END,
+         o.ch = 'pos', o.ch, 'served',
+         COALESCE(cust.name, CASE WHEN o.ch = 'delivery_own' THEN dcust.name END),
+         COALESCE(cust.phone, CASE WHEN o.ch = 'delivery_own' THEN dcust.phone END),
+         CASE WHEN o.ch = 'pos' THEN (SELECT t.id FROM restaurant_tables t WHERE t.user_id = c_owner
+           ORDER BY random() + length(o.id::text) * 0 LIMIT 1) END
   FROM _new_orders o
   JOIN (SELECT order_id,
                jsonb_agg(jsonb_build_object('menu_item_id', menu_item_id, 'name', name, 'quantity', qty,
@@ -187,7 +197,7 @@ BEGIN
         FROM _lines GROUP BY order_id) l ON l.order_id = o.id
   LEFT JOIN _waiter_pick wp ON wp.order_id = o.id
   LEFT JOIN staff_members sm ON sm.id = wp.waiter_id
-  CROSS JOIN LATERAL (SELECT CASE WHEN random() + length(o.id::text) * 0 < 0.82
+  CROSS JOIN LATERAL (SELECT CASE WHEN o.ch = 'pos' AND random() + length(o.id::text) * 0 < 0.82
                              THEN round(l.subtotal * 0.10 / 100) * 100 ELSE 0 END AS amount) tip
   CROSS JOIN LATERAL (SELECT CASE WHEN r < 0.34 THEN 'Tarjeta crédito' WHEN r < 0.62 THEN 'Tarjeta débito'
                                   WHEN r < 0.80 THEN 'Efectivo' WHEN r < 0.94 THEN 'Nequi' ELSE 'QR Bancolombia' END AS method
@@ -197,7 +207,12 @@ BEGIN
   LEFT JOIN LATERAL (
     SELECT c.name, c.phone FROM _demo_customers c
     ORDER BY -ln(random() + length(o.id::text) * 0 + 1e-9) / c.affinity LIMIT 1
-  ) cust ON cr.r < 0.28;
+  ) cust ON cr.r < 0.28 AND o.ch <> 'rappi'
+  -- El domicilio propio siempre deja teléfono (pide por WhatsApp); Rappi no comparte el cliente.
+  LEFT JOIN LATERAL (
+    SELECT c.name, c.phone FROM _demo_customers c
+    ORDER BY -ln(random() + length(o.id::text) * 0 + 1e-9) / c.affinity LIMIT 1
+  ) dcust ON o.ch = 'delivery_own';
 
   GET DIAGNOSTICS v_count = ROW_COUNT;
 
@@ -226,7 +241,8 @@ BEGIN
                                 tip_amount, status, processed_at, processed_by)
   SELECT o.session_id, o.id, 'sale', o.payment_method, o.total, o.tip_amount, 'completed',
          o.created_at + interval '70 minutes', 'Laura Gómez'
-  FROM restaurant_orders o JOIN _new_orders n ON n.id = o.id;
+  FROM restaurant_orders o JOIN _new_orders n ON n.id = o.id
+  WHERE n.ch <> 'rappi';  -- Rappi liquida aparte: no entra a la caja
 
   UPDATE pos_sessions ps
      SET sales_count = x.n, total_sales = x.sales, total_tips = x.tips,
@@ -237,7 +253,7 @@ BEGIN
     FROM (SELECT session_id, COUNT(*) n, SUM(total - COALESCE(tip_amount, 0)) sales,
                  SUM(COALESCE(tip_amount, 0)) tips,
                  SUM(CASE WHEN payment_method = 'Efectivo' THEN total ELSE 0 END) cash
-          FROM restaurant_orders WHERE user_id = c_owner GROUP BY session_id) x
+          FROM restaurant_orders WHERE user_id = c_owner AND sales_channel <> 'rappi' GROUP BY session_id) x
    WHERE ps.id = x.session_id AND ps.user_id = c_owner
      AND ps.id IN (SELECT DISTINCT o.session_id FROM restaurant_orders o JOIN _new_orders n ON n.id = o.id);
   -- Las cajas de días ya terminados se cierran (el simulador corre cada hora)
@@ -328,7 +344,7 @@ BEGIN
   INSERT INTO staff_members (user_id, name, position, department, hourly_rate, hire_date, is_active,
                              max_hours_per_week, contract_type, performance_score, email, employee_id)
   SELECT c_owner, n, p, d, r, v_today - (60 + (i * 37) % 700), true, 42, ct,
-         round((3.6 + ((i * 7) % 14) / 10.0)::numeric, 1),
+         (62 + (i * 13) % 33)::numeric,  -- escala 0-100, igual que los restaurantes reales
          lower(replace(split_part(n, ' ', 1), 'á', 'a')) || '.' || i || '@clutch.demo', 'CL-' || lpad(i::text, 3, '0')
   FROM (VALUES
     (1,'Valentina Ochoa','Gerente general','Gerencia',30000,'indefinido'),
@@ -411,7 +427,9 @@ BEGIN
   -- 5. Inventario (unidad de costo = unidad de receta: el costeo cuadra sin conversiones)
   INSERT INTO inventory_items (user_id, item_name, category, unit, unit_cost, current_stock, reorder_point,
                                par_level, min_stock_level, supplier_name, track_stock, alert_when_low, is_perishable)
-  SELECT c_owner, n, c, u, cost, stock, rp, rp * 3, rp, sup, true, true, per
+  -- par = nivel objetivo tras el pedido (el stock arranca surtido). Antes par = 3 × reorden
+  -- dejaba los 37 insumos "bajo par" y la alerta perdía sentido.
+  SELECT c_owner, n, c, u, cost, stock, rp, stock, rp, sup, true, true, per
   FROM (VALUES
     ('Carne de res molida (blend burger)','Proteínas','kg',32000,18,8,'Carnes El Rodeo',true),
     ('Alitas de pollo','Proteínas','kg',18000,35,20,'Avícola San Cristóbal',true),
@@ -453,7 +471,7 @@ BEGIN
   ) AS i(n, c, u, cost, stock, rp, sup, per);
 
   -- Dos insumos por debajo del punto de reorden: la alerta de inventario tiene algo que mostrar
-  UPDATE inventory_items SET current_stock = 6 WHERE user_id = c_owner AND item_name = 'Alitas de pollo';
+  UPDATE inventory_items SET current_stock = 9 WHERE user_id = c_owner AND item_name = 'Alitas de pollo';
   UPDATE inventory_items SET current_stock = 1.5 WHERE user_id = c_owner AND item_name = 'Tocineta ahumada';
 
   -- 6. Proveedores
@@ -692,10 +710,9 @@ BEGIN
   PERFORM calculate_menu_item_scores(c_owner, 30);
 
   -- 13. Finanzas: costos fijos diarios y facturas de proveedores
-  INSERT INTO daily_sales (user_id, sale_date, other_costs, notes)
-  SELECT c_owner, d::date, 3000000,
-         'Costos fijos prorrateados: arriendo $30M, servicios $9M, carga prestacional $28M, licencias de TV deportiva $8M, mercadeo $5M, otros $10M al mes'
-  FROM generate_series(v_from, v_today - 1, interval '1 day') d;
+  -- Cierre de cada día terminado (venta, comensales, costos). Solo días cerrados:
+  -- un "hoy" a medias en daily_sales dispara alertas falsas de caída de ventas.
+  PERFORM _demo_refresh_daily_close(v_from, v_today - 1);
 
   INSERT INTO supplier_invoices (user_id, business_id, supplier_id, supplier_name, invoice_number, invoice_date,
                                  due_date, currency, subtotal, tax_amount, total_amount, status, items, ai_confidence, notes)
@@ -788,11 +805,17 @@ CREATE OR REPLACE FUNCTION public.demo_tick()
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
 DECLARE
   v_last timestamptz;
+  v_n integer;
+  v_today date;
 BEGIN
   SELECT date_trunc('hour', MAX(created_at)) + interval '1 hour' INTO v_last
   FROM restaurant_orders WHERE user_id = demo_owner_id();
   IF v_last IS NULL OR v_last >= date_trunc('hour', now()) THEN RETURN 0; END IF;
-  RETURN _demo_generate_orders(v_last, date_trunc('hour', now()));
+  v_n := _demo_generate_orders(v_last, date_trunc('hour', now()));
+  -- Cierre del día anterior (idempotente): queda listo apenas arranca el día nuevo.
+  v_today := ((now() AT TIME ZONE 'America/Bogota') - interval '6 hours')::date;
+  PERFORM _demo_refresh_daily_close(v_today - 1, v_today - 1);
+  RETURN v_n;
 END $$;
 
 REVOKE ALL ON FUNCTION public.seed_demo_restaurant() FROM PUBLIC, anon, authenticated;

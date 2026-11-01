@@ -23,6 +23,7 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } fro
 
 import { PrimeCostGauge } from './PrimeCostGauge';
 import { DailyFlashReport } from './DailyFlashReport';
+import { addBusinessDays, todayBusinessDay } from '@/lib/businessDay';
 import { ProfitLossStatement } from './ProfitLossStatement';
 import { CostAlertsPanel, generateCostAlerts } from './CostAlertsPanel';
 import { FinancesHeader, type PeriodType } from './FinancesHeader';
@@ -56,9 +57,18 @@ const AdvancedFinancesDashboard: React.FC = () => {
   const { dailySales, kpis, trends, loading, hasData, refetch } = useAggregatedFinances(dateRange);
   const { loading: aiLoading, analyzeFinances } = useAIAgent();
 
-  const today = dailySales.find((d) => d.date === format(new Date(), 'yyyy-MM-dd'));
-  const yesterday = dailySales.find((d) => d.date === format(subDays(new Date(), 1), 'yyyy-MM-dd'));
-  const lastWeekSameDay = dailySales.find((d) => d.date === format(subDays(new Date(), 7), 'yyyy-MM-dd'));
+  // El flash del día tiene su propia ventana (hoy y los 7 días operativos
+  // previos) para no depender del período elegido: el 1.º del mes "Este mes"
+  // no contiene a ayer. Compara contra ayer y la semana pasada A ESTA HORA.
+  const flashRange = useMemo(() => {
+    const end = new Date();
+    return { start: subDays(end, 7), end };
+  }, []);
+  const flash = useAggregatedFinances(flashRange);
+  const todayKey = todayBusinessDay();
+  const today = flash.dailySales.find((d) => d.date === todayKey);
+  const yesterdaySameTime = flash.revenueAtSameTimeByDate[addBusinessDays(todayKey, -1)];
+  const lastWeekSameTime = flash.revenueAtSameTimeByDate[addBusinessDays(todayKey, -7)];
 
   const alerts = kpis
     ? generateCostAlerts({
@@ -124,8 +134,8 @@ const AdvancedFinancesDashboard: React.FC = () => {
             avgTicket={today?.avg_ticket || 0}
             foodCost={today?.food_cost || 0}
             laborCost={today?.labor_cost || 0}
-            previousDayRevenue={yesterday?.total_revenue}
-            previousWeekRevenue={lastWeekSameDay?.total_revenue}
+            previousDayRevenue={yesterdaySameTime}
+            previousWeekRevenue={lastWeekSameTime}
           />
           {kpis && (
             <PrimeCostGauge

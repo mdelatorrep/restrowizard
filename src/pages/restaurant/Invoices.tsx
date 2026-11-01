@@ -8,6 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { ScanLine, Loader2, Upload, FileText, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 
+const INVOICE_STATUS_LABEL: Record<string, string> = {
+  pending: 'Por revisar',
+  confirmed: 'Confirmada',
+  rejected: 'Rechazada',
+  paid: 'Pagada',
+  overdue: 'Vencida',
+};
+
 interface Invoice {
   id: string;
   supplier_name: string | null;
@@ -35,6 +43,8 @@ const Invoices = () => {
       .from('supplier_invoices')
       .select('id,supplier_name,invoice_number,invoice_date,currency,total_amount,status,ai_confidence,storage_path,created_at,items')
       .eq('user_id', userId)
+      // Más reciente por fecha de la factura (no de carga): al subir varias juntas quedaban en desorden.
+      .order('invoice_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) toast.error('No se pudieron cargar las facturas');
@@ -184,7 +194,7 @@ const Invoices = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold truncate">{inv.supplier_name || 'Proveedor sin identificar'}</h3>
-                        <Badge variant={statusVariant as any} className="text-xs">{inv.status}</Badge>
+                        <Badge variant={statusVariant as any} className="text-xs">{INVOICE_STATUS_LABEL[inv.status] ?? inv.status}</Badge>
                         {inv.ai_confidence != null && (
                           <Badge variant="outline" className="text-xs">
                             IA {Math.round(inv.ai_confidence * 100)}%

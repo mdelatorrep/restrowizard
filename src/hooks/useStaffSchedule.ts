@@ -151,11 +151,14 @@ export const useStaffSchedule = (weekStart?: Date) => {
       // Antes esto era SIEMPRE 0: la query excluía 'no_show', así que el filtro
       // de abajo nunca encontraba ninguno y la tasa de ausentismo no subía nunca.
       const noShowShifts = enrichedShifts.filter(s => s.status === 'no_show').length;
-      const totalHoursScheduled = enrichedShifts.reduce((sum, s) => {
-        const [startH, startM] = s.start_time.split(':').map(Number);
-        const [endH, endM] = s.end_time.split(':').map(Number);
-        return sum + ((endH * 60 + endM) - (startH * 60 + startM) - s.break_minutes) / 60;
-      }, 0);
+      // Misma fórmula que el costo (lib/laborCost, B-46). La copia local restaba
+      // fin − inicio y un turno 18:00→02:00 sumaba −16 h: la semana del bar daba
+      // "−690 h programadas". Ausencias fuera, como en el costo.
+      const totalHoursScheduled = enrichedShifts
+        .filter(s => s.status !== 'no_show' && s.status !== 'cancelled')
+        .reduce((sum, s) => sum + calcShiftHours({
+          start_time: s.start_time, end_time: s.end_time, break_minutes: s.break_minutes,
+        }), 0);
       const totalHoursWorked = enrichedShifts
         .filter(s => s.status === 'completed')
         .reduce((sum, s) => sum + (s.hours_worked || 0), 0);

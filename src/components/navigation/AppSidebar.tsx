@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { getRoutePermission } from '@/config/routePermissions';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Sidebar,
@@ -377,12 +378,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
 
   // Check if user has permission for a module
   const hasModulePermission = (item: MenuItem): boolean => {
-    // If no permission module defined, allow access
-    if (!item.permissionModule) return true;
+    // El módulo sale del ítem o, si no lo declara, de la tabla única de rutas
+    // (config/routePermissions). Sin esto "Dashboard" aparecía en el menú del
+    // cajero y al tocarlo veía "Acceso restringido".
+    const module = item.permissionModule
+      ?? (item.path.startsWith('/r/') ? getRoutePermission(item.path.slice(3))?.module : undefined);
+    if (!module) return true;
     // Owners and loading state - allow access
     if (teamPermissions.isLoading || teamPermissions.isOwner) return true;
-    // Check team permissions
-    return teamPermissions.canAccess(item.permissionModule, 'read');
+    return teamPermissions.canAccess(module, 'read');
   };
 
   // Filter menu items based on lifecycle stage and permissions

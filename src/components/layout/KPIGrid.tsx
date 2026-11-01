@@ -58,11 +58,21 @@
        <CardContent className="p-4 md:p-5">
          <div className="flex items-start justify-between gap-3">
            <div className="min-w-0 flex-1">
-             <p className="text-xs md:text-sm text-muted-foreground truncate">{label}</p>
-             <p className={cn(
-               'text-xl md:text-2xl lg:text-3xl font-bold mt-1 truncate',
-               valueColorClass
-             )}>
+             {/* Una cifra en pesos ("$10.912.400") no cabe a text-3xl en una grilla de 5-6
+                 columnas y se cortaba en "$10,9…": el tamaño baja con la longitud y nunca se trunca. */}
+             <p className="text-xs md:text-sm text-muted-foreground line-clamp-2" title={label}>{label}</p>
+             <p
+               className={cn(
+                 'font-bold mt-1 break-words leading-tight tabular-nums',
+                 String(value).length > 11
+                   ? 'text-base md:text-lg lg:text-xl'
+                   : String(value).length > 7
+                     ? 'text-lg md:text-xl lg:text-2xl'
+                     : 'text-xl md:text-2xl lg:text-3xl',
+                 valueColorClass
+               )}
+               title={String(value)}
+             >
                {value}
              </p>
              {subtext && (

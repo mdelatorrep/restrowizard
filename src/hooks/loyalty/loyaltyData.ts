@@ -165,6 +165,39 @@ export const calculateDaysSinceLastOrder = (lastOrderAt: string | null): number 
  * @param pointsEarned  Σ puntos otorgados (transaction_type='earn')
  * @param pointsRedeemed Σ puntos canjeados (valor absoluto de type='redeem')
  */
+/**
+ * Una sola definición de "cliente en riesgo" y de "VIP". Antes el KPI usaba
+ * churn ≥ 0,6 y la lista churn ≥ 0,5 o +30 días sin comprar: la tarjeta decía
+ * "0 en riesgo" sobre una lista de clientes en riesgo. Y VIP exigía 5.000 puntos
+ * (con 1 punto por $1.000 son $5M de consumo histórico): ningún cliente real
+ * llegaba. VIP es relativo al negocio: nivel oro/platino o el 10 % que más gasta
+ * (con al menos 3 visitas).
+ */
+export const AT_RISK_DAYS = 30;
+
+type SegmentCustomer = Pick<LoyaltyCustomer, 'churn_risk_score' | 'last_order_at' | 'total_spent' | 'total_orders' | 'lifetime_points'> & {
+  tier?: { name?: string | null } | null;
+};
+
+export const isAtRiskCustomer = (c: SegmentCustomer, now: Date = new Date()): boolean => {
+  if ((Number(c.churn_risk_score) || 0) >= 0.5) return true;
+  if (!c.last_order_at || (Number(c.total_orders) || 0) < 2) return false; // un solo pedido no es fuga, es un visitante
+  const days = (now.getTime() - new Date(c.last_order_at).getTime()) / 86_400_000;
+  return days > AT_RISK_DAYS;
+};
+
+export const vipSpendThreshold = (customers: SegmentCustomer[]): number => {
+  const spends = customers.filter(c => (Number(c.total_orders) || 0) >= 3).map(c => Number(c.total_spent) || 0).sort((a, b) => b - a);
+  if (spends.length === 0) return Number.POSITIVE_INFINITY;
+  return spends[Math.max(0, Math.ceil(spends.length * 0.1) - 1)];
+};
+
+export const isVipCustomer = (c: SegmentCustomer, threshold: number): boolean => {
+  const tier = c.tier?.name?.toLowerCase() || '';
+  if (tier.includes('oro') || tier.includes('gold') || tier.includes('platino') || tier.includes('platinum')) return true;
+  return (Number(c.total_orders) || 0) >= 3 && (Number(c.total_spent) || 0) >= threshold;
+};
+
 export const computeLoyaltyKPIs = (
   customersData: LoyaltyCustomer[],
   pointsEarned: number,
@@ -176,7 +209,7 @@ export const computeLoyaltyKPIs = (
   const active = customersData.filter(c => c.is_active).length;
   const totalPoints = customersData.reduce((sum, c) => sum + c.current_points, 0);
   const totalSpent = customersData.reduce((sum, c) => sum + c.total_spent, 0);
-  const atRisk = customersData.filter(c => c.churn_risk_score >= 0.6).length;
+  const atRisk = customersData.filter(c => isAtRiskCustomer(c)).length;
 
   // Clientes con más de 1 pedido en los últimos 90 días
   const ninetyDaysAgo = new Date();

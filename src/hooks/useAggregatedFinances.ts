@@ -4,8 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
 import { useToast } from './use-toast';
-import { format, subDays } from 'date-fns';
-import { calcShiftLaborCost } from '@/lib/laborCost';
+import { calcShiftLaborCost, calcShiftLaborCostElapsed } from '@/lib/laborCost';
+import {
+  addBusinessDays, businessDayOf, businessRangeIso, elapsedInBusinessDay, localCalendarDay, todayBusinessDay,
+} from '@/lib/businessDay';
 import { qk } from '@/lib/queryKeys';
 import { getOrderSaleAmount } from '@/lib/orderItems';
 
@@ -58,24 +60,31 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Use numeric timestamps so deps are stable across renders even if the
-  // parent passes a freshly-constructed { start, end } object each render.
-  const startMs = dateRange ? dateRange.start.getTime() : subDays(new Date(), 30).setHours(0, 0, 0, 0);
-  const endMs = dateRange ? dateRange.end.getTime() : new Date().setHours(23, 59, 59, 999);
-  // Round to the day so re-renders within the same day don't change deps.
-  const startDayMs = Math.floor(startMs / 86400000);
-  const endDayMs = Math.floor(endMs / 86400000);
-  const range = useMemo(
-    () => ({ start: new Date(startDayMs * 86400000), end: new Date((endDayMs + 1) * 86400000 - 1) }),
-    [startDayMs, endDayMs]
-  );
+  // Período en DÍAS OPERATIVOS (src/lib/businessDay.ts). Antes se redondeaba a
+  // medianoche UTC y en Bogotá "últimos 7 días" consultaba 8: Dashboard y
+  // Reportes no cuadraban. El inicio es la fecha de calendario que eligió el
+  // usuario; el fin, el día operativo del instante final (a la 1 a. m. "hoy"
+  // todavía es la noche de ayer).
+  const today = todayBusinessDay();
+  const fromDay = dateRange ? localCalendarDay(dateRange.start) : addBusinessDays(today, -30);
+  const rawToDay = dateRange ? businessDayOf(dateRange.end) : today;
+  const toDay = rawToDay < fromDay ? fromDay : rawToDay;
 
   const { data, isLoading: loading } = useQuery({
-    queryKey: qk.finances.aggregated(userId, startDayMs, endDayMs),
+    queryKey: qk.finances.aggregated(userId, fromDay, toDay),
     enabled: !!userId,
-    queryFn: async (): Promise<{ dailySales: AggregatedDailySales[]; kpis: AggregatedFinancesKPIs | null; trends: FinancesTrend[] }> => {
-      const startStr = format(range.start, 'yyyy-MM-dd');
-      const endStr = format(range.end, 'yyyy-MM-dd');
+    queryFn: async (): Promise<{
+      dailySales: AggregatedDailySales[];
+      kpis: AggregatedFinancesKPIs | null;
+      trends: FinancesTrend[];
+      revenueAtSameTimeByDate: Record<string, number>;
+    }> => {
+      const startStr = fromDay;
+      const endStr = toDay;
+      const window = businessRangeIso(fromDay, toDay);
+      const nowMs = Date.now();
+      const currentDay = todayBusinessDay();
+      const elapsedNow = elapsedInBusinessDay(nowMs);
 
       // B-47: las cuatro consultas se paginan; sin esto un mes con volumen se cortaba en 1.000 filas.
       // 1) Orders (revenue/covers/order_count)
@@ -83,8 +92,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         .from('restaurant_orders')
         .select('id, total, tax_amount, tip_amount, guests_count, status, created_at')
         .eq('user_id', userId!)
-        .gte('created_at', `${startStr}T00:00:00`)
-        .lte('created_at', `${endStr}T23:59:59`)
+        .gte('created_at', window.from)
+        .lt('created_at', window.toExclusive)
         .not('status', 'in', '("cancelled","pending")')
         .order('id'));
 
@@ -93,8 +102,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         .from('inventory_deductions')
         .select('id, deducted_at, quantity_deducted, inventory_items(unit_cost)')
         .eq('user_id', userId!)
-        .gte('deducted_at', `${startStr}T00:00:00`)
-        .lte('deducted_at', `${endStr}T23:59:59`)
+        .gte('deducted_at', window.from)
+        .lt('deducted_at', window.toExclusive)
         .order('id'));
 
       // 3) Staff shifts (labor cost)
@@ -129,8 +138,14 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
 
       // Group orders by date
       const ordersByDate: Record<string, { revenue: number; count: number; covers: number; taxes: number }> = {};
+      // Venta acumulada de cada día hasta la misma hora de hoy: el flash compara
+      // "hoy a esta hora" contra "ayer a esta hora", no contra el día completo.
+      const revenueAtSameTimeByDate: Record<string, number> = {};
       (ordersRes.data || []).forEach((order: any) => {
-        const dateKey = format(new Date(order.created_at), 'yyyy-MM-dd');
+        const dateKey = businessDayOf(order.created_at);
+        if (elapsedInBusinessDay(order.created_at) <= elapsedNow) {
+          revenueAtSameTimeByDate[dateKey] = (revenueAtSameTimeByDate[dateKey] || 0) + saleAmt(order);
+        }
         if (!ordersByDate[dateKey]) ordersByDate[dateKey] = { revenue: 0, count: 0, covers: 0, taxes: 0 };
         ordersByDate[dateKey].revenue += saleAmt(order);
         ordersByDate[dateKey].count += 1;
@@ -142,7 +157,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       // Food cost by date = Σ(qty_deducted × unit_cost)
       const foodCostByDate: Record<string, number> = {};
       (deductionsRes.data || []).forEach((d: any) => {
-        const dateKey = format(new Date(d.deducted_at), 'yyyy-MM-dd');
+        const dateKey = businessDayOf(d.deducted_at);
         const unitCost = Number(d.inventory_items?.unit_cost) || 0;
         foodCostByDate[dateKey] = (foodCostByDate[dateKey] || 0) + (Number(d.quantity_deducted) || 0) * unitCost;
       });
@@ -151,7 +166,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const laborCostByDate: Record<string, number> = {};
       (shiftsRes.data || []).forEach((s: any) => {
         const dateKey = s.shift_date as string;
-        const cost = calcShiftLaborCost(s, s.staff_members?.hourly_rate);
+        // El día en curso lleva solo lo devengado hasta ahora (igual que la venta).
+        const cost = dateKey === currentDay
+          ? calcShiftLaborCostElapsed(s, s.staff_members?.hourly_rate, nowMs)
+          : calcShiftLaborCost(s, s.staff_members?.hourly_rate);
         if (cost > 0) {
           laborCostByDate[dateKey] = (laborCostByDate[dateKey] || 0) + cost;
         }
@@ -210,7 +228,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
 
       // Calculate KPIs
       if (salesData.length === 0) {
-        return { dailySales: salesData, kpis: null, trends: [] };
+        return { dailySales: salesData, kpis: null, trends: [], revenueAtSameTimeByDate };
       }
       {
         const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
@@ -250,7 +268,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           profit: d.total_revenue - d.food_cost - d.labor_cost
         }));
 
-        return { dailySales: salesData, kpis: computedKpis, trends: computedTrends };
+        return { dailySales: salesData, kpis: computedKpis, trends: computedTrends, revenueAtSameTimeByDate };
       }
     },
   });
@@ -260,14 +278,14 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     if (!userId) return null;
 
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
+      const day = todayBusinessDay();
+      const win = businessRangeIso(day, day);
       const { data: orders, error } = await supabase
         .from('restaurant_orders')
         .select('total, tip_amount, guests_count, status, created_at')
         .eq('user_id', userId!)
-        .gte('created_at', `${today}T00:00:00`)
-        .lte('created_at', `${today}T23:59:59`)
+        .gte('created_at', win.from)
+        .lt('created_at', win.toExclusive)
         .not('status', 'in', '("cancelled","pending")');
 
       if (error) throw error;
@@ -293,8 +311,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
   }, [userId]);
 
   const refetch = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: qk.finances.aggregated(userId, startDayMs, endDayMs) }),
-    [queryClient, userId, startDayMs, endDayMs]
+    () => queryClient.invalidateQueries({ queryKey: qk.finances.aggregated(userId, fromDay, toDay) }),
+    [queryClient, userId, fromDay, toDay]
   );
 
   return {
@@ -303,6 +321,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     trends: data?.trends ?? [],
     loading,
     hasData: (data?.dailySales?.length ?? 0) > 0,
+    /** Venta acumulada de cada día operativo hasta la hora actual del día en curso. */
+    revenueAtSameTimeByDate: data?.revenueAtSameTimeByDate ?? {},
+    /** Días operativos que cubre el período (inclusive). */
+    period: { fromDay, toDay },
     isViewingClient,
     fetchRealtimeToday,
     refetch

@@ -94,13 +94,13 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
           <div className="flex justify-center gap-6 mt-4">
             {previousDayRevenue !== undefined && (
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">vs Ayer</p>
+                <p className="text-xs text-muted-foreground">vs ayer a esta hora</p>
                 <TrendIndicator value={dayOverDayChange} />
               </div>
             )}
             {previousWeekRevenue !== undefined && (
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">vs Sem. Pasada</p>
+                <p className="text-xs text-muted-foreground">vs sem. pasada a esta hora</p>
                 <TrendIndicator value={weekOverWeekChange} />
               </div>
             )}

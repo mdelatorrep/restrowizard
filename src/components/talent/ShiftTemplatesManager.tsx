@@ -1,4 +1,5 @@
  import { useState } from 'react';
+import { calcShiftHours } from '@/lib/laborCost';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
@@ -76,12 +77,9 @@ import { toast } from 'sonner';
     });
   };
  
-   const calculateHours = (start: string, end: string, breakMin: number) => {
-     const [sh, sm] = start.split(':').map(Number);
-     const [eh, em] = end.split(':').map(Number);
-     const totalMinutes = (eh * 60 + em) - (sh * 60 + sm) - breakMin;
-     return (totalMinutes / 60).toFixed(1);
-   };
+   // Plantilla de cierre (18:00→02:00) daba horas negativas: misma fórmula que el costo.
+   const calculateHours = (start: string, end: string, breakMin: number) =>
+     calcShiftHours({ start_time: start, end_time: end, break_minutes: breakMin }).toFixed(1);
  
    return (
      <div className="space-y-4">

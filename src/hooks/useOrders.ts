@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDataUserId } from './useDataUserId';
+import { businessDayOf, businessRangeIso, todayBusinessDay } from '@/lib/businessDay';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { qk } from '@/lib/queryKeys';
 import { getOrderSaleAmount } from '@/lib/orderItems';
 import type { Json, TablesUpdate } from '@/integrations/supabase/types';
@@ -64,14 +66,18 @@ export interface OrderKPIs {
   todaySales: number;
 }
 
-const calculateKPIs = (data: RestaurantOrder[]): OrderKPIs => {
+const calculateKPIs = (data: RestaurantOrder[], todayAll?: RestaurantOrder[]): OrderKPIs => {
   const total = data.length;
   if (total === 0) {
     return { totalOrders: 0, todayOrders: 0, pendingOrders: 0, avgOrderValue: 0, deliveryOrders: 0, completionRate: 0, todaySales: 0 };
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayList = data.filter(o => o.created_at.startsWith(today));
+  // Día operativo (Bogotá, corte 6 a. m.), no día UTC: antes "Pedidos hoy"
+  // arrancaba a las 7 p. m. del día anterior y no cuadraba con Finanzas.
+  const today = todayBusinessDay();
+  // `todayAll` trae TODAS las órdenes del día; la lista visible son las últimas
+  // 100 y un sábado de bar pasa de 100 (antes "Pedidos hoy" se topaba en 100).
+  const todayList = todayAll ?? data.filter(o => businessDayOf(o.created_at) === today);
   const todayOrders = todayList.length;
   // TK-03: Ventas Hoy debe sumar las órdenes del día (no canceladas), igual que Reportes/Dashboard.
   // B-20: ...y por tanto SIN propina — antes sumaba `total` crudo y este número
@@ -97,6 +103,7 @@ const calculateKPIs = (data: RestaurantOrder[]): OrderKPIs => {
 
 interface OrdersData {
   orders: RestaurantOrder[];
+  todayOrders: RestaurantOrder[];
   zones: DeliveryZone[];
 }
 
@@ -118,6 +125,17 @@ export const useOrders = () => {
 
       if (error) throw error;
 
+      const day = todayBusinessDay();
+      const win = businessRangeIso(day, day);
+      const { data: todayRes, error: todayErr } = await fetchAllRows(() => supabase
+        .from('restaurant_orders')
+        .select('*')
+        .eq('user_id', userId!)
+        .gte('created_at', win.from)
+        .lt('created_at', win.toExclusive)
+        .order('id'));
+      if (todayErr) throw todayErr;
+
       const { data: zonesData } = await supabase
         .from('delivery_zones')
         .select('*')
@@ -126,6 +144,7 @@ export const useOrders = () => {
 
       return {
         orders: (ordersRes || []) as unknown as RestaurantOrder[],
+        todayOrders: (todayRes || []) as unknown as RestaurantOrder[],
         zones: (zonesData || []) as unknown as DeliveryZone[],
       };
     },
@@ -133,7 +152,7 @@ export const useOrders = () => {
 
   const orders = useMemo(() => data?.orders ?? [], [data]);
   const zones = data?.zones ?? [];
-  const kpis = useMemo(() => (data ? calculateKPIs(orders) : null), [data, orders]);
+  const kpis = useMemo(() => (data ? calculateKPIs(orders, data.todayOrders) : null), [data, orders]);
   const hasData = orders.length > 0;
 
   const fetchOrders = useCallback(

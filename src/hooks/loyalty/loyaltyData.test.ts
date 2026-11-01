@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: vi.fn() } }));
 
-import { computeLoyaltyKPIs, calculateDaysSinceLastOrder } from './loyaltyData';
+import { computeLoyaltyKPIs, calculateDaysSinceLastOrder, isAtRiskCustomer, isVipCustomer, vipSpendThreshold } from './loyaltyData';
 import type { LoyaltyCustomer } from './loyaltyData';
 
 const cliente = (over: Partial<LoyaltyCustomer> = {}): LoyaltyCustomer => ({
@@ -51,11 +51,11 @@ describe('computeLoyaltyKPIs — B-43: la tasa de canje', () => {
 });
 
 describe('computeLoyaltyKPIs — riesgo y retención', () => {
-  it('cuenta en riesgo desde churn_risk_score >= 0.6', () => {
+  it('el KPI de "en riesgo" usa la misma regla que la lista (churn >= 0.5)', () => {
     const k = computeLoyaltyKPIs([
-      cliente({ churn_risk_score: 0.59 }),
-      cliente({ churn_risk_score: 0.6 }),
-      cliente({ churn_risk_score: 0.9 }),
+      cliente({ churn_risk_score: 0.49, last_order_at: hace(5) }),
+      cliente({ churn_risk_score: 0.5, last_order_at: hace(5) }),
+      cliente({ churn_risk_score: 0.9, last_order_at: hace(5) }),
     ], 0, 0);
     expect(k.atRiskCustomers).toBe(2);
   });
@@ -88,5 +88,26 @@ describe('calculateDaysSinceLastOrder', () => {
 
   it('cuenta los días desde el último pedido', () => {
     expect(calculateDaysSinceLastOrder(hace(5))).toBe(5);
+  });
+});
+
+describe('segmentos: en riesgo y VIP (una sola definición)', () => {
+  const now = new Date('2026-11-01T12:00:00Z');
+  const base = { churn_risk_score: 0, total_spent: 100_000, total_orders: 4, lifetime_points: 100, last_order_at: '2026-10-25T00:00:00Z' };
+  it('en riesgo: más de 30 días sin volver o churn ≥ 0,5', () => {
+    expect(isAtRiskCustomer({ ...base, last_order_at: '2026-09-20T00:00:00Z' }, now)).toBe(true);
+    expect(isAtRiskCustomer({ ...base, churn_risk_score: 0.55 }, now)).toBe(true);
+    expect(isAtRiskCustomer(base, now)).toBe(false);
+  });
+  it('un cliente de una sola visita no está "en riesgo"', () => {
+    expect(isAtRiskCustomer({ ...base, total_orders: 1, last_order_at: '2026-08-01T00:00:00Z' }, now)).toBe(false);
+  });
+  it('VIP = 10 % que más gasta con 3+ visitas, o nivel oro', () => {
+    const list = Array.from({ length: 20 }, (_, i) => ({ ...base, total_spent: (i + 1) * 100_000 }));
+    const th = vipSpendThreshold(list);
+    expect(th).toBe(1_900_000);
+    expect(list.filter(c => isVipCustomer(c, th))).toHaveLength(2);
+    expect(isVipCustomer({ ...base, tier: { name: 'Oro' } }, th)).toBe(true);
+    expect(isVipCustomer({ ...base, total_orders: 2, total_spent: 9_000_000 }, th)).toBe(false);
   });
 });

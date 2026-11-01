@@ -45,3 +45,35 @@ export const calcShiftLaborCost = (
   const rate = Number(shift.hourly_rate_override) || Number(baseHourlyRate) || 0;
   return hours * rate;
 };
+
+/**
+ * Horas ya trabajadas de un turno a un instante dado (para el día en curso).
+ * El flash del día comparaba la nómina COMPLETA del día contra las ventas de
+ * medio día y mostraba costo laboral de 140 %. Un turno programado de 18:00 a
+ * 02:00 a las 8 p. m. lleva 2 h devengadas, no 8. Las horas del turno se toman
+ * en hora de Bogotá; un inicio antes de las 6 a. m. es la madrugada del día
+ * siguiente (mismo día operativo).
+ */
+export const calcShiftHoursElapsed = (shift: ShiftLike & { shift_date: string }, nowMs: number): number => {
+  const start = shift.actual_start_time || shift.start_time;
+  if (!start) return 0;
+  const totalHours = calcShiftHours(shift);
+  if (totalHours <= 0) return 0;
+  const startMin = parseHms(start);
+  const dayOffset = startMin < 6 * 60 ? 1 : 0;
+  const startMs = Date.parse(`${shift.shift_date}T00:00:00Z`) + dayOffset * 86_400_000 + (startMin + 5 * 60) * 60_000;
+  const breakH = (Number(shift.break_minutes) || 0) / 60;
+  const grossSpanH = totalHours + breakH;
+  const elapsedH = Math.min(Math.max((nowMs - startMs) / 3_600_000, 0), grossSpanH);
+  // El descanso se prorratea a lo largo del turno.
+  return grossSpanH > 0 ? elapsedH * (totalHours / grossSpanH) : 0;
+};
+
+export const calcShiftLaborCostElapsed = (
+  shift: ShiftLike & { shift_date: string },
+  baseHourlyRate: number | null | undefined,
+  nowMs: number,
+): number => {
+  const rate = Number(shift.hourly_rate_override) || Number(baseHourlyRate) || 0;
+  return calcShiftHoursElapsed(shift, nowMs) * rate;
+};

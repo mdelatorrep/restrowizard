@@ -31,7 +31,7 @@ export const qk = {
     sales: (userId?: string | null) => ['finances-sales', userId] as const,
     dailySales: (userId?: string | null, range?: string) => ['finances-daily-sales', userId, range] as const,
     benchmarks: () => ['finances-benchmarks'] as const,
-    aggregated: (userId?: string | null, startDay?: number, endDay?: number) =>
+    aggregated: (userId?: string | null, startDay?: string, endDay?: string) =>
       ['finances-aggregated', userId, startDay, endDay] as const,
   },
   inventory: {

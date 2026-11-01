@@ -7,6 +7,9 @@ import { qk } from '@/lib/queryKeys';
 import type { Json } from '@/integrations/supabase/types';
 import {
   fetchLoyaltyData,
+  isAtRiskCustomer,
+  isVipCustomer,
+  vipSpendThreshold,
   type LoyaltyData,
   type LoyaltyTier,
   type LoyaltyCustomer,
@@ -363,15 +366,17 @@ export const useLoyaltyData = () => {
 
   // === ANALYTICS ===
   const getAtRiskCustomers = useCallback(() => {
+    // Más días sin volver primero: a quién llamar hoy.
     return customers
-      .filter(c => c.churn_risk_score >= 0.5 || (c.days_since_last_order && c.days_since_last_order > 30))
-      .sort((a, b) => b.churn_risk_score - a.churn_risk_score);
+      .filter(c => isAtRiskCustomer(c))
+      .sort((a, b) => (a.last_order_at || '').localeCompare(b.last_order_at || ''));
   }, [customers]);
 
   const getVIPCustomers = useCallback(() => {
+    const threshold = vipSpendThreshold(customers);
     return customers
-      .filter(c => c.tier?.name?.toLowerCase().includes('oro') || c.tier?.name?.toLowerCase().includes('platino') || c.lifetime_points > 5000)
-      .sort((a, b) => b.lifetime_points - a.lifetime_points);
+      .filter(c => isVipCustomer(c, threshold))
+      .sort((a, b) => b.total_spent - a.total_spent);
   }, [customers]);
 
   const getCustomersByTier = useCallback(() => {

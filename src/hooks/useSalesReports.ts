@@ -6,6 +6,9 @@ import { useDataUserId } from './useDataUserId';
 import { qk } from '@/lib/queryKeys';
 import { toOrderLines, getLineName, getLineQuantity, getLineRevenue, getOrderSaleAmount } from '@/lib/orderItems';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, format, eachDayOfInterval, eachWeekOfInterval, parseISO } from 'date-fns';
+import {
+  BUSINESS_UTC_OFFSET_HOURS, addBusinessDays, businessDayOf, businessDayStartIso, businessRangeIso, elapsedInBusinessDay, todayBusinessDay,
+} from '@/lib/businessDay';
 import { es } from 'date-fns/locale';
 
 export type ReportPeriod = 'daily' | 'weekly' | 'monthly';
@@ -102,16 +105,27 @@ export const useSalesReports = (
 ) => {
   const { userId } = useDataUserId();
 
+  // Ventanas en días operativos (src/lib/businessDay.ts): "últimos 7 días" son
+  // hoy + los 6 días operativos previos, igual que el Dashboard. El período de
+  // comparación cubre el MISMO tiempo transcurrido (6 días completos + lo que va
+  // de hoy), para no comparar un día a medias contra uno completo.
   const dateRange = useMemo(() => {
-    const now = new Date();
-    switch (period) {
-      case 'daily':
-        return { start: subDays(now, 7), end: now, prevStart: subDays(now, 14), prevEnd: subDays(now, 7) };
-      case 'weekly':
-        return { start: subDays(now, 28), end: now, prevStart: subDays(now, 56), prevEnd: subDays(now, 28) };
-      case 'monthly':
-        return { start: subDays(now, 90), end: now, prevStart: subDays(now, 180), prevEnd: subDays(now, 90) };
-    }
+    const span = period === 'daily' ? 7 : period === 'weekly' ? 28 : 90;
+    const today = todayBusinessDay();
+    const fromDay = addBusinessDays(today, -(span - 1));
+    const prevFromDay = addBusinessDays(fromDay, -span);
+    const prevLastDay = addBusinessDays(fromDay, -1);
+    const elapsed = elapsedInBusinessDay(Date.now());
+    return {
+      // Fechas al mediodía local: solo sirven para rotular el eje del gráfico.
+      start: new Date(`${fromDay}T12:00:00`),
+      end: new Date(`${today}T12:00:00`),
+      current: businessRangeIso(fromDay, today),
+      previous: {
+        from: businessDayStartIso(prevFromDay),
+        toExclusive: new Date(Date.parse(businessDayStartIso(prevLastDay)) + elapsed).toISOString(),
+      },
+    };
   }, [period]);
 
   const { data, isLoading: loading } = useQuery({
@@ -124,8 +138,8 @@ export const useSalesReports = (
           .from('restaurant_orders')
           .select('*')
           .eq('user_id', userId!)
-          .gte('created_at', dateRange.start.toISOString())
-          .lte('created_at', dateRange.end.toISOString());
+          .gte('created_at', dateRange.current.from)
+          .lt('created_at', dateRange.current.toExclusive);
         if (channel !== 'all') q = q.eq('sales_channel', channel);
         return q.order('created_at', { ascending: true }).order('id');
       };
@@ -137,8 +151,8 @@ export const useSalesReports = (
           .from('restaurant_orders')
           .select('id, total, tax_amount, tip_amount')
           .eq('user_id', userId!)
-          .gte('created_at', dateRange.prevStart.toISOString())
-          .lte('created_at', dateRange.prevEnd.toISOString());
+          .gte('created_at', dateRange.previous.from)
+          .lt('created_at', dateRange.previous.toExclusive);
         if (channel !== 'all') q = q.eq('sales_channel', channel);
         return q.order('id');
       };
@@ -166,7 +180,7 @@ export const useSalesReports = (
     });
 
     rawOrders.forEach(order => {
-      const orderDate = format(parseISO(order.created_at), 'yyyy-MM-dd');
+      const orderDate = businessDayOf(order.created_at);
       if (!groupedData[orderDate]) return;
       const total = saleAmt(order);
       groupedData[orderDate].totalSales += total;
@@ -268,7 +282,8 @@ export const useSalesReports = (
     const hourMap: Record<number, { sales: number; orders: number }> = {};
     for (let h = 0; h < 24; h++) hourMap[h] = { sales: 0, orders: 0 };
     rawOrders.forEach(order => {
-      const hour = parseISO(order.created_at).getHours();
+      // Hora de Bogotá, no la del navegador.
+      const hour = new Date(Date.parse(order.created_at) + BUSINESS_UTC_OFFSET_HOURS * 3_600_000).getUTCHours();
       hourMap[hour].sales += saleAmt(order);
       hourMap[hour].orders += 1;
     });
