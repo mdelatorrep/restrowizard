@@ -225,7 +225,7 @@ Responde SOLO con JSON: { "title", "message", "priority": "low|medium" }. No inv
     });
   } catch (error) {
     console.error('Proactive alerts error:', error);
-    return new Response(JSON.stringify({ error: error.message, success: false }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)), success: false }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

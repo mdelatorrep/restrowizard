@@ -312,7 +312,7 @@ Responde en JSON con: celebration, focus_area, motivation_message, next_mileston
   } catch (error) {
     console.error('Maturity AI Engine error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: (error instanceof Error ? error.message : String(error)) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

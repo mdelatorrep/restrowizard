@@ -620,7 +620,7 @@ Proporciona:
   } catch (error) {
     console.error('Error in AI restaurant agent:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Error en el servicio de IA', 
+      error: (error instanceof Error ? error.message : String(error)) || 'Error en el servicio de IA', 
       success: false 
     }), {
       status: 500,

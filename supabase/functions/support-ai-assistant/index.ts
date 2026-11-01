@@ -103,7 +103,7 @@ Resolución: ${data.resolution_rate}% | Tiempo resp: ${data.avg_response_time}h`
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error in support-ai-assistant:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

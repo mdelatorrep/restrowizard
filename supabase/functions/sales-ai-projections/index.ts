@@ -91,7 +91,7 @@ Tendencia: ${data.trend || 'estable'} | Tipo: ${data.restaurant_type || 'N/E'}`;
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error in sales-ai-projections:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
