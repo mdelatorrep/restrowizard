@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { generateText } from 'npm:ai';
-import { createLovableAiGatewayProvider } from '../_shared/ai-gateway.ts';
+import { createLovableAiGatewayProvider } from '../_shared/ai-sdk-gateway.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
