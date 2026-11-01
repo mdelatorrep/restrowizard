@@ -30,6 +30,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Exige sesión (el POS la tiene también con PIN) y que el usuario sea el dueño o del
+    // equipo de ese restaurante: antes cualquiera leía el ranking de ventas de otro
+    // negocio y consumía créditos de IA.
+    const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const { data: { user: caller } } = await supabase.auth.getUser(jwt);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+    if (caller.id !== body.user_id) {
+      const { data: owned } = await supabase.from('restaurant_businesses').select('id').eq('owner_id', body.user_id);
+      const bizIds = (owned ?? []).map((b: any) => b.id);
+      const { data: mem } = await supabase.from('restaurant_team_members')
+        .select('id').eq('user_id', caller.id).eq('status', 'active')
+        .in('business_id', bizIds.length ? bizIds : ['00000000-0000-0000-0000-000000000000']);
+      if (!mem || mem.length === 0) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      }
+    }
+
     // 1) Co-occurrence based on what's already in the order
     const currentIds = (body.current_items ?? []).map((i) => i.menu_item_id);
     let suggestions: { menu_item_id: string; name: string; reason: string; score: number }[] = [];
