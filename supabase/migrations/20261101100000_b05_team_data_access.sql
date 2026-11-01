@@ -126,3 +126,11 @@ DROP POLICY IF EXISTS team_read ON public.purchase_order_items;
 CREATE POLICY team_read ON public.purchase_order_items FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM purchase_orders po WHERE po.id = purchase_order_items.purchase_order_id
                  AND public.team_can(po.user_id, ARRAY['inventory','suppliers'])));
+
+-- El miembro del equipo debe poder ver el negocio al que pertenece: sin esto,
+-- useDataUserId no resolvía el owner_id (el join con restaurant_businesses volvía
+-- vacío) y el gerente quedaba como un usuario sin restaurante.
+DROP POLICY IF EXISTS team_member_read ON public.restaurant_businesses;
+CREATE POLICY team_member_read ON public.restaurant_businesses FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.restaurant_team_members m
+                 WHERE m.business_id = restaurant_businesses.id AND m.user_id = auth.uid() AND m.status = 'active'));

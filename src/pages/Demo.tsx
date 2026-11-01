@@ -64,7 +64,7 @@ const Demo = () => {
             Entra a {DEMO_BUSINESS_NAME}
           </h1>
           <p className="text-lg sm:text-xl font-lato-light text-white/65 leading-relaxed">
-            Un sports bar en Laureles con 25 personas, 32 mesas y la temporada de NFL y Champions encima.
+            Un sports bar en Laureles con 36 personas, 32 mesas y la temporada de NFL y Champions encima.
             Tiene 90 días de operación y las ventas de hoy se van sumando cada hora.
             Elige con qué rol quieres entrar: cada uno ve lo suyo.
           </p>

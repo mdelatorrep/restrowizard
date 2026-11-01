@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useDataUserId } from './useDataUserId';
 import { differenceInDays, parseISO, isFuture, isPast } from 'date-fns';
 
 export type RestaurantStage = 
@@ -44,16 +44,19 @@ const CONCEPTION_PHASES = ['legal_requirements', 'location_analysis', 'equipment
 const ENABLEMENT_PHASES = ['staffing_plan', 'marketing_launch', 'financial_projection'];
 
 export function useRestaurantLifecycle(): LifecycleData {
-  const { user } = useAuth();
+  // La etapa es del NEGOCIO, no de quien inició sesión: un gerente o cajero ve la
+  // etapa del restaurante de su jefe. Antes se usaba su propio id y el menú lateral
+  // quedaba en "Sin proyecto" con casi todo oculto.
+  const { userId } = useDataUserId();
 
   // Fetch active business opening project
   const { data: project, isLoading: loadingProject } = useQuery({
-    queryKey: ['business-opening-project', user?.id],
+    queryKey: ['business-opening-project', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('business_opening_projects')
         .select('*')
-        .eq('user_id', user!.id)
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -61,17 +64,17 @@ export function useRestaurantLifecycle(): LifecycleData {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!userId,
   });
 
   // Fetch restaurant business
   const { data: business, isLoading: loadingBusiness } = useQuery({
-    queryKey: ['restaurant-business', user?.id],
+    queryKey: ['restaurant-business', userId],
     queryFn: async (): Promise<{ id: string; name: string; opening_date: string | null } | null> => {
       const { data, error } = await supabase
         .from('restaurant_businesses')
         .select('id, name, opening_date')
-        .eq('owner_id', user!.id)
+        .eq('owner_id', userId!)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -79,7 +82,7 @@ export function useRestaurantLifecycle(): LifecycleData {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!userId,
   });
 
   const lifecycleData = useMemo<LifecycleData>(() => {
