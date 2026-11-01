@@ -322,6 +322,7 @@ SET search_path TO 'public'
 AS $$
 DECLARE
   v_card_fee numeric := 3; v_card_wh numeric := 0; v_digital_fee numeric := 0; v_rappi_fee numeric := 25;
+  v_sales_from date; v_sales_to date;
   v_result jsonb;
 BEGIN
   IF p_owner IS NULL OR p_owner NOT IN (SELECT public.team_owner_ids(ARRAY['finances'], 'read')) THEN
@@ -336,6 +337,13 @@ BEGIN
     FROM finance_settings WHERE user_id = p_owner;
   IF NOT FOUND THEN v_card_fee := 3; v_card_wh := 0; v_digital_fee := 0; v_rappi_fee := 25; END IF;
 
+  -- Una liquidación que empieza antes (o termina después) del período consultado
+  -- se compara contra TODAS las ventas de su propio período, no solo las del rango.
+  SELECT LEAST(p_from, coalesce(min(period_start), p_from)), GREATEST(p_to, coalesce(max(period_end), p_to))
+    INTO v_sales_from, v_sales_to
+    FROM finance_settlements
+   WHERE user_id = p_owner AND period_end >= p_from AND period_start <= p_to;
+
   WITH sales AS (
     SELECT ((o.created_at AT TIME ZONE 'America/Bogota') - interval '6 hours')::date AS bday,
            finance_pay_group(o.payment_method, o.sales_channel) AS grp,
@@ -344,8 +352,8 @@ BEGIN
            count(*) AS n
     FROM restaurant_orders o
     WHERE o.user_id = p_owner AND o.status NOT IN ('cancelled', 'pending')
-      AND o.created_at >= (p_from::timestamp + interval '6 hours') AT TIME ZONE 'America/Bogota'
-      AND o.created_at <  ((p_to + 1)::timestamp + interval '6 hours') AT TIME ZONE 'America/Bogota'
+      AND o.created_at >= (v_sales_from::timestamp + interval '6 hours') AT TIME ZONE 'America/Bogota'
+      AND o.created_at <  ((v_sales_to + 1)::timestamp + interval '6 hours') AT TIME ZONE 'America/Bogota'
     GROUP BY 1, 2
   ), expected_day AS (
     SELECT bday, grp, gross, n,
@@ -370,13 +378,14 @@ BEGIN
     SELECT e.grp, sum(e.gross) AS gross, sum(e.gross - e.fees) AS net, count(DISTINCT e.bday) AS days,
            min(e.bday) AS first_day, max(e.bday) AS last_day
     FROM expected_day e
-    WHERE NOT EXISTS (SELECT 1 FROM finance_settlements s
+    WHERE e.bday BETWEEN p_from AND p_to
+      AND NOT EXISTS (SELECT 1 FROM finance_settlements s
                        WHERE s.user_id = p_owner AND s.channel = e.grp AND e.bday BETWEEN s.period_start AND s.period_end)
     GROUP BY e.grp
   ), channels AS (
     SELECT g.grp,
-           coalesce((SELECT sum(gross) FROM expected_day WHERE grp = g.grp), 0) AS exp_gross,
-           coalesce((SELECT sum(gross - fees) FROM expected_day WHERE grp = g.grp), 0) AS exp_net,
+           coalesce((SELECT sum(gross) FROM expected_day WHERE grp = g.grp AND bday BETWEEN p_from AND p_to), 0) AS exp_gross,
+           coalesce((SELECT sum(gross - fees) FROM expected_day WHERE grp = g.grp AND bday BETWEEN p_from AND p_to), 0) AS exp_net,
            coalesce((SELECT sum(exp_net) FROM st_eval WHERE channel = g.grp), 0) AS covered_exp_net,
            coalesce((SELECT sum(net_deposited) FROM st_eval WHERE channel = g.grp), 0) AS reported_net,
            coalesce((SELECT net FROM uncovered WHERE grp = g.grp), 0) AS unreported_net,
