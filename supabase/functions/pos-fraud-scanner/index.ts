@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireUser } from '../_shared/require-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,9 +15,27 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const body = (await req.json()) as ScanRequest;
-    if (!body?.user_id) {
-      return new Response(JSON.stringify({ error: 'user_id required' }), { status: 400, headers: corsHeaders });
+    // Exige sesión: antes cualquiera podía escanear (y leer cancelaciones, anulaciones
+    // y descuentos de) cualquier restaurante conociendo su user_id.
+    const auth = await requireUser(req);
+    if (auth instanceof Response) return auth;
+
+    const body = ((await req.json().catch(() => ({}))) ?? {}) as ScanRequest;
+    if (!body.user_id) body.user_id = auth.userId;
+
+    // Solo el dueño o un miembro del equipo con acceso a Auditoría POS de ese restaurante.
+    if (body.user_id !== auth.userId) {
+      const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: owners } = await asCaller.rpc('team_owner_ids', { _modules: ['pos_audit'], _level: 'read' });
+      const allowed = ((owners ?? []) as unknown[]).map((o) => (typeof o === 'string' ? o : (o as any)?.team_owner_ids));
+      if (!allowed.includes(body.user_id)) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
     const windowHours = Math.min(Math.max(body.window_hours ?? 24, 1), 24 * 7);
 

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useDataUserId } from "@/hooks/useDataUserId";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -61,19 +62,21 @@ const ACTION_LABEL: Record<string, string> = {
 
 export default function POSAudit() {
   const { user } = useAuth();
+  // El gerente audita el restaurante del dueño, no su propio user_id (antes veía la página vacía).
+  const { userId: ownerId, isResolved } = useDataUserId();
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [signals, setSignals] = useState<FraudSignal[]>([]);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
 
   const load = useCallback(async () => {
-    if (!user?.id) return;
+    if (!ownerId || !isResolved) return;
     setLoading(true);
     try {
       const sb = supabase as any;
       const [a, s] = await Promise.all([
-        sb.from("pos_audit_log").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
-        sb.from("pos_fraud_signals").select("*").eq("user_id", user.id).order("detected_at", { ascending: false }).limit(100),
+        sb.from("pos_audit_log").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }).limit(200),
+        sb.from("pos_fraud_signals").select("*").eq("user_id", ownerId).order("detected_at", { ascending: false }).limit(100),
       ]);
       setAudit((a.data as AuditEntry[]) ?? []);
       setSignals((s.data as FraudSignal[]) ?? []);
@@ -82,18 +85,18 @@ export default function POSAudit() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [ownerId, isResolved]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const runScan = async () => {
-    if (!user?.id) return;
+    if (!ownerId || !isResolved) return;
     setScanning(true);
     try {
       const { data, error } = await (supabase as any).functions.invoke("pos-fraud-scanner", {
-        body: { user_id: user.id, window_hours: 24 },
+        body: { user_id: ownerId, window_hours: 24 },
       });
       if (error) throw error;
       toast.success(`Scan: ${data?.signals_detected ?? 0} señales (${data?.signals_inserted ?? 0} nuevas)`);

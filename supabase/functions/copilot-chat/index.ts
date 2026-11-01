@@ -56,6 +56,14 @@ Deno.serve(async (req) => {
       userId = data.user?.id ?? null;
     }
 
+    // El copiloto vive dentro de la app: sin sesión no se llama al modelo (evita
+    // que cualquiera con la URL consuma créditos de IA).
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const body = await req.json().catch(() => ({}));
