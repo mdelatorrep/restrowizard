@@ -75,6 +75,11 @@ export const qk = {
     schedule: (userId?: string | null, weekStart?: string) => ['staff-schedule', userId, weekStart] as const,
     development: (userId?: string | null) => ['staff-development', userId] as const,
     advanced: (userId?: string | null) => ['talent-advanced', userId] as const,
+    tipPeriods: (userId?: string | null) => ['tip-periods', userId] as const,
+    tipAllocations: (periodId?: string | null) => ['tip-allocations', periodId] as const,
+    tipSettings: (userId?: string | null) => ['tip-settings', userId] as const,
+    demandEvents: (userId?: string | null, from?: string) => ['demand-events', userId, from] as const,
+    staffingRules: (userId?: string | null) => ['staffing-rules', userId] as const,
   },
   support: {
     tickets: (userId?: string | null) => ['support-tickets', userId] as const,

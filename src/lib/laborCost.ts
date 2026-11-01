@@ -29,7 +29,11 @@ export const calcShiftHours = (shift: ShiftLike): number => {
   const start = shift.actual_start_time || shift.start_time;
   const end = shift.actual_end_time || shift.end_time;
   if (!start || !end) return 0;
-  const minutes = parseHms(end) - parseHms(start) - (Number(shift.break_minutes) || 0);
+  // B-46: un turno que cruza la medianoche (18:00 → 02:00) termina "antes" de
+  // empezar. Sin esto la resta da negativo y el turno costaba $0 en el P&L.
+  let span = parseHms(end) - parseHms(start);
+  if (span <= 0) span += 24 * 60;
+  const minutes = span - (Number(shift.break_minutes) || 0);
   return Math.max(0, minutes / 60);
 };
 

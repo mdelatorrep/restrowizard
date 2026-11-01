@@ -8,6 +8,7 @@ import { useUserType } from '@/hooks/useUserType';
 import CopilotChat from '@/components/CopilotChat';
 import { BrandThemeProvider } from '@/components/brand/BrandThemeProvider';
 import { RouteErrorBoundary } from '@/components/errors/RouteErrorBoundary';
+import { DemoBar } from '@/components/demo/DemoBar';
 
 interface AppLayoutProps {
   requiredUserType?: 'restaurant_owner' | 'consultant';
@@ -30,6 +31,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar userType={effectiveUserType} />
           <main className="flex-1 flex flex-col min-h-screen">
+            <DemoBar />
             <AppHeader />
             {effectiveUserType === 'consultant' && <WorkingAsBar />}
              <div className="flex-1 p-4 md:p-6 overflow-auto">

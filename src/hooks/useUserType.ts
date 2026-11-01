@@ -12,6 +12,33 @@ type UserTypeQueryData = {
   hasCompletedOnboarding: boolean;
 };
 
+/**
+ * Un usuario "restaurante" tiene acceso a la app si es dueño de un negocio O si es
+ * miembro activo del equipo de uno (gerente, cajero, cocina…). Antes solo se miraba
+ * la propiedad, así que un gerente invitado era enviado al onboarding de dueño y
+ * terminaba creando un restaurante vacío en vez de ver el de su jefe.
+ */
+const hasRestaurantAccess = async (userId: string): Promise<{ ok: boolean; error: boolean }> => {
+  const { data: business, error } = await supabase
+    .from('restaurant_businesses')
+    .select('id')
+    .eq('owner_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) return { ok: false, error: true };
+  if (business) return { ok: true, error: false };
+
+  const { data: membership } = await supabase
+    .from('restaurant_team_members')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  return { ok: !!membership, error: false };
+};
+
 const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise<UserTypeQueryData> => {
   console.log('📊 [useUserType] fetchUserTypeData called for userId:', userId, 'metaUserType:', metaUserType);
   
@@ -22,25 +49,9 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
 
   // If we have a type from metadata, check onboarding status
   if (type === 'restaurant_owner') {
-    // IMPORTANT: some users can end up with multiple businesses.
-    // We only need to know whether at least one exists; limit(1) prevents PGRST116.
-    const { data: business, error } = await supabase
-      .from('restaurant_businesses')
-      .select('id')
-      .eq('owner_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    console.log('📊 [useUserType] restaurant_businesses query result:', { business, error });
-
-    if (error) {
-      console.error('📊 [useUserType] Error fetching business:', error);
-      // Don't throw - return incomplete status
-      return { userType: type, hasCompletedOnboarding: false };
-    }
-
-    return { userType: type, hasCompletedOnboarding: !!business };
+    const access = await hasRestaurantAccess(userId);
+    if (access.error) console.error('📊 [useUserType] Error checking restaurant access');
+    return { userType: type, hasCompletedOnboarding: access.ok };
   }
 
   if (type === 'consultant') {
@@ -90,15 +101,8 @@ const fetchUserTypeData = async (userId: string, metaUserType?: string): Promise
 
   // Check onboarding for the type found in profile
   if (profileType === 'restaurant_owner') {
-    const { data: business } = await supabase
-      .from('restaurant_businesses')
-      .select('id')
-      .eq('owner_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    return { userType: profileType, hasCompletedOnboarding: !!business };
+    const access = await hasRestaurantAccess(userId);
+    return { userType: profileType, hasCompletedOnboarding: access.ok };
   }
 
   const { data: consultantProfile } = await supabase

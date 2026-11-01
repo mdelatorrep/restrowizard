@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Users, CalendarDays, Clock, CalendarOff, LayoutTemplate, GraduationCap, Gift, Loader2 } from 'lucide-react';
+import { Users, CalendarDays, Clock, CalendarOff, LayoutTemplate, GraduationCap, Gift, Loader2, Coins } from 'lucide-react';
 import TalentAIModule from '@/components/TalentAIModule';
 import StaffSchedule from './StaffSchedule';
 import { AvailabilityManager } from '@/components/talent/AvailabilityManager';
@@ -9,6 +9,7 @@ import { ShiftTemplatesManager } from '@/components/talent/ShiftTemplatesManager
 import { StaffProfileSheet } from '@/components/talent/StaffProfileSheet';
 import { TrainingProgramsManager } from '@/components/talent/TrainingProgramsManager';
 import { BenefitsManager } from '@/components/talent/BenefitsManager';
+import { TipsPanel } from '@/components/talent/tips/TipsPanel';
 import { useTalentAdvanced, StaffMemberExtended } from '@/hooks/useTalentAdvanced';
 import { useStaffDevelopment } from '@/hooks/useStaffDevelopment';
 import { ModulePageLayout, PageHeader, ResponsiveTabs, TabsContent } from '@/components/layout';
@@ -66,6 +67,7 @@ const Talent: React.FC = () => {
    const tabs = [
      { value: 'talent', label: 'Equipo', icon: Users },
      { value: 'schedule', label: 'Turnos', icon: CalendarDays },
+     { value: 'tips', label: 'Propinas', icon: Coins },
      { value: 'availability', label: 'Disponibilidad', icon: Clock },
      { value: 'timeoff', label: 'Ausencias', icon: CalendarOff },
      { value: 'templates', label: 'Plantillas', icon: LayoutTemplate },
@@ -76,7 +78,7 @@ const Talent: React.FC = () => {
   return (
      <ModulePageLayout>
        <PageHeader
-         title="Talento y Turnos"
+         title="Equipo, turnos y propinas"
          description="Gestión integral de tu equipo, disponibilidad y programación de turnos"
          icon={Users}
        />
@@ -88,6 +90,10 @@ const Talent: React.FC = () => {
  
          <TabsContent value="schedule">
           <StaffSchedule />
+        </TabsContent>
+
+         <TabsContent value="tips">
+          <TipsPanel />
         </TabsContent>
 
          <TabsContent value="availability">

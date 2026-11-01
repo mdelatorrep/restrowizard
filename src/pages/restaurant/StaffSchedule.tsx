@@ -12,6 +12,7 @@ import { AddShiftDialog } from '@/components/schedule/AddShiftDialog';
 import { ScheduleKPIs } from '@/components/schedule/ScheduleKPIs';
 import { WeeklyShiftGrid } from '@/components/schedule/WeeklyShiftGrid';
 import { StaffSummaryList } from '@/components/schedule/StaffSummaryList';
+import { ScheduleGeneratorDialog } from '@/components/schedule/ScheduleGeneratorDialog';
 
 const StaffSchedule: React.FC = () => {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -72,6 +73,7 @@ const StaffSchedule: React.FC = () => {
             <Sparkles className="h-4 w-4 mr-2" />
             {aiLoading ? 'Analizando...' : 'Optimizar con IA'}
           </Button>
+          <ScheduleGeneratorDialog viewedWeek={weekStart} />
           <AddShiftDialog open={showAddDialog} onOpenChange={setShowAddDialog} staff={staff} onAdd={addShift} />
         </div>
       </div>

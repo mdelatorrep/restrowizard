@@ -37,8 +37,8 @@ const Hero = () => {
             Todo en una sola plataforma.
           </p>
 
-          {/* Single CTA */}
-          <div className="pt-4">
+          {/* CTAs: el dueño quiere ver algo funcionando antes de registrarse */}
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => user ? navigate(getLoggedInPath()) : navigate('/auth')}
               className="group inline-flex items-center gap-3 bg-white text-purple-intense font-lato-bold text-lg px-10 py-5 rounded-full hover:bg-white/90 transition-all duration-300 shadow-lg shadow-white/10"
@@ -46,6 +46,14 @@ const Hero = () => {
               <span>{user ? 'Ir al Dashboard' : 'Comenzar gratis'}</span>
               <ArrowRight className="text-sm group-hover:translate-x-1 transition-transform" />
             </button>
+            {!user && (
+              <button
+                onClick={() => navigate('/demo')}
+                className="inline-flex items-center gap-2 border border-white/30 text-white font-lato-bold text-lg px-8 py-5 rounded-full hover:bg-white/10 transition-all duration-300"
+              >
+                Ver demo en vivo
+              </button>
+            )}
           </div>
 
           {/* Minimal trust line — no unverifiable counts. */}

@@ -34,6 +34,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 // Lazy: public marketing & secondary pages
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Demo = lazy(() => import("./pages/Demo"));
 const Diagnosis = lazy(() => import("./pages/Diagnosis"));
 const Events = lazy(() => import("./pages/Events"));
 const About = lazy(() => import("./pages/About"));
@@ -170,6 +171,7 @@ const App = () => (
                 {/* OAuth 2.1 consent screen for MCP / agent integrations */}
                 <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/demo" element={<Demo />} />
                 <Route path="/diagnosis" element={<Diagnosis />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/eventos" element={<Navigate to="/events" replace />} />
