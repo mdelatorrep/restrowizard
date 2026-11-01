@@ -318,7 +318,10 @@ BEGIN
       JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name
       WHERE c.table_schema = 'public' AND c.column_name = 'user_id' AND c.udt_name = 'uuid'
         AND t.table_type = 'BASE TABLE'
-        AND c.table_name NOT IN ('profiles','user_roles','restaurant_team_members')
+        -- pos_audit_log es inmutable por diseño: la auditoría de la demo se conserva
+        -- (no tiene llaves foráneas que impidan borrar las órdenes). Intentar borrarla
+        -- hacía fallar el reseteo completo apenas alguien usaba el POS de la demo.
+        AND c.table_name NOT IN ('profiles','user_roles','restaurant_team_members','pos_audit_log')
     LOOP
       BEGIN
         EXECUTE format('DELETE FROM public.%I WHERE user_id IN ($1, $2, $3)', v_t.table_name)
