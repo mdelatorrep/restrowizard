@@ -82,6 +82,7 @@ const RestaurantGhostKitchen = lazy(() => import("./pages/restaurant/GhostKitche
 const RestaurantRappiIntegration = lazy(() => import("./pages/restaurant/integrations/Rappi"));
 const RestaurantChainManagement = lazy(() => import("./pages/restaurant/ChainManagement"));
 const RestaurantBrand = lazy(() => import("./pages/restaurant/Brand"));
+const RestaurantMarketing = lazy(() => import("./pages/restaurant/Marketing"));
 const RestaurantFeedback = lazy(() => import("./pages/restaurant/Feedback"));
 const RestaurantRecipes = lazy(() => import("./pages/restaurant/Recipes"));
 const RestaurantOrders = lazy(() => import("./pages/restaurant/Orders"));
@@ -244,6 +245,7 @@ const App = () => (
                   <Route path="ghost-kitchen" element={<GuardedRoute pathKey="ghost-kitchen"><RestaurantGhostKitchen /></GuardedRoute>} />
                   <Route path="chain-management" element={<GuardedRoute pathKey="chain-management"><RestaurantChainManagement /></GuardedRoute>} />
                   <Route path="brand" element={<GuardedRoute pathKey="brand"><RestaurantBrand /></GuardedRoute>} />
+                  <Route path="marketing" element={<GuardedRoute pathKey="marketing"><RestaurantMarketing /></GuardedRoute>} />
                   <Route path="feedback" element={<GuardedRoute pathKey="feedback"><RestaurantFeedback /></GuardedRoute>} />
                   <Route path="recipes" element={<GuardedRoute pathKey="recipes"><RestaurantRecipes /></GuardedRoute>} />
                   <Route path="orders" element={<GuardedRoute pathKey="orders"><RestaurantOrders /></GuardedRoute>} />

@@ -122,3 +122,14 @@ CREATE POLICY team_write ON public.marketing_content FOR ALL TO authenticated
 DROP TRIGGER IF EXISTS aa_team_owner_user_id ON public.marketing_content;
 CREATE TRIGGER aa_team_owner_user_id BEFORE INSERT ON public.marketing_content
   FOR EACH ROW EXECUTE FUNCTION public.assign_team_owner_user_id();
+
+-- El calendario de partidos y eventos (demand_events) alimenta el generador de
+-- horarios y el marketing, pero no tenía pantalla para cargarlo: solo lo llenaba
+-- el seed de la demo. La pantalla vive en Marketing; quien tenga permiso de marca
+-- también puede editarlo.
+ALTER POLICY team_write ON public.demand_events
+  USING (user_id IN (SELECT public.team_owner_ids(ARRAY['talent', 'reservations', 'brand'], 'write')))
+  WITH CHECK (user_id IN (SELECT public.team_owner_ids(ARRAY['talent', 'reservations', 'brand'], 'write')));
+DROP TRIGGER IF EXISTS aa_team_owner_user_id ON public.demand_events;
+CREATE TRIGGER aa_team_owner_user_id BEFORE INSERT ON public.demand_events
+  FOR EACH ROW EXECUTE FUNCTION public.assign_team_owner_user_id();

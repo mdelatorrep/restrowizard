@@ -62,6 +62,7 @@ import {
   ChevronDown,
   Shield,
   GraduationCap,
+  Megaphone,
 } from 'lucide-react';
 import { ClientSelector } from '@/components/consultant/ClientSelector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -113,6 +114,14 @@ const myRestaurantItems: MenuItem[] = [
     icon: Palette, 
     path: '/r/brand',
     stages: ['conception', 'enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
+    moduleKey: 'brand',
+    permissionModule: 'brand'
+  },
+  {
+    title: 'Marketing',
+    icon: Megaphone,
+    path: '/r/marketing',
+    stages: ['pre_opening', 'first_90_days', 'normal_operation'],
     moduleKey: 'brand',
     permissionModule: 'brand'
   },

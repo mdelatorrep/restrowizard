@@ -792,6 +792,8 @@ BEGIN
 
   -- 15. Finanzas integrales: gastos, saldos, supuestos y liquidaciones (sobre las ventas ya generadas).
   PERFORM _demo_seed_finance();
+  -- 16. Marca y sitio web (voz del marketing, link de reservas, página pública).
+  PERFORM _demo_seed_marketing();
 
   RETURN jsonb_build_object(
     'orders', v_orders,

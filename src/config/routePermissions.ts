@@ -20,6 +20,7 @@ export const RESTAURANT_ROUTE_PERMISSIONS: RoutePermission[] = [
   { path: 'ghost-kitchen', module: 'ghost_kitchen' },
   { path: 'chain-management', module: 'chain_management' },
   { path: 'brand', module: 'brand' },
+  { path: 'marketing', module: 'brand' },
   { path: 'feedback', module: 'feedback' },
   { path: 'recipes', module: 'recipes' },
   { path: 'orders', module: 'orders' },
