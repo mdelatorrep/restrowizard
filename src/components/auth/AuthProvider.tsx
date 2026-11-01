@@ -76,7 +76,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Those calls were causing the app to hang right after login.
     // Instead, we navigate immediately and let route guards/hooks fetch what they need.
 
-    const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding'];
+    // /demo navega por su cuenta a la pantalla de cada rol; no competir con esa navegación.
+    const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding', '/demo'];
     const isInProtectedRoute = protectedPrefixes.some((prefix) => currentPath.startsWith(prefix));
     if (!session?.user || isInProtectedRoute) {
       logger.debug('❌ Navigation skipped:', { currentPath, hasUser: !!session?.user, isInProtectedRoute });
