@@ -30,8 +30,8 @@
      reservation_time: string;
      special_requests?: string;
    }) => {
-     if (!userId) return null;
-     return await createPublicReservation(userId, formData);
+     if (!slug) return null;
+     return await createPublicReservation(slug, formData);
    };
  
    return (

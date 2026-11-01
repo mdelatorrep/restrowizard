@@ -294,27 +294,11 @@ export default function POSMain() {
         onOpenChange={setCloseDlg}
         session={currentSession}
         onClose={async (closingCash, notes) => {
+          // Cierre por la RPC pos_close_session (cuadre calculado en el servidor).
+          // Antes se llamaba primero a la edge pos-close-session, que no arranca
+          // en producción (503): el cajero veía "Error al cerrar" aunque el
+          // respaldo sí cerraba la caja, y no sabía si había quedado cerrada.
           try {
-            if (currentSession?.id && context?.restaurantUserId) {
-              const { data, error } = await (supabase as any).functions.invoke("pos-close-session", {
-                body: {
-                  user_id: context.restaurantUserId,
-                  session_id: currentSession.id,
-                  actual_cash: closingCash,
-                  notes,
-                },
-              });
-              if (error) throw error;
-              if (data?.closure?.ai_summary) {
-                toast({ title: "Cierre con IA", description: data.closure.ai_summary });
-              } else {
-                toast({ title: "Caja cerrada", description: `Diferencia: $${Math.round(data?.closure?.cash_difference ?? 0).toLocaleString("es-CO")}` });
-              }
-            } else {
-              await closeSession(closingCash, notes);
-            }
-          } catch (e: any) {
-            toast({ title: "Error al cerrar", description: e?.message ?? "Reintentar", variant: "destructive" });
             await closeSession(closingCash, notes);
           } finally {
             setCloseDlg(false);

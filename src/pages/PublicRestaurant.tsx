@@ -36,8 +36,8 @@ export default function PublicRestaurant() {
   }, [website?.user_id, website?.show_delivery]);
 
   const handleReservationSubmit = async (data: any) => {
-    if (!website?.user_id) return null;
-    return await createPublicReservation(website.user_id, data);
+    if (!slug) return null;
+    return await createPublicReservation(slug, data);
   };
 
   if (loading) {

@@ -259,8 +259,11 @@ export function usePublicReservation() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // La reserva pública va por la RPC public_create_reservation (valida en el
+  // servidor). La edge website-public-reservation nunca se desplegó: cada reserva
+  // desde la web daba 404. El primer argumento es el slug del sitio publicado.
   const createPublicReservation = async (
-    restaurantUserId: string,
+    siteSlug: string,
     reservationData: {
       customer_name: string;
       customer_email?: string;
@@ -272,29 +275,33 @@ export function usePublicReservation() {
     }
   ) => {
     setLoading(true);
-    
     try {
-      // B-15: reservas públicas vía edge validada (acepta-reservas, tamaño, ventana, rate-limit)
-      const { data, error } = await supabase.functions.invoke('website-public-reservation', {
-        body: { restaurant_user_id: restaurantUserId, ...reservationData },
+      const { data, error } = await (supabase.rpc as any)('public_create_reservation', {
+        p_slug: siteSlug,
+        p_customer_name: reservationData.customer_name,
+        p_customer_phone: reservationData.customer_phone,
+        p_party_size: Number(reservationData.party_size),
+        p_reservation_date: reservationData.reservation_date,
+        p_reservation_time: reservationData.reservation_time,
+        p_customer_email: reservationData.customer_email || null,
+        p_special_requests: reservationData.special_requests || null,
       });
-
-      const code = (data as any)?.confirmation_code as string | undefined;
-      if (error || !code) {
-        throw new Error((data as any)?.error || error?.message || 'No se pudo crear la reserva');
-      }
+      if (error) throw error;
+      const code = (data as { confirmation_code?: string } | null)?.confirmation_code;
+      if (!code) throw new Error('No se pudo crear la reserva');
 
       toast({
-        title: "¡Reserva confirmada!",
-        description: `Tu código de confirmación es: ${code}`,
+        title: "¡Reserva recibida!",
+        description: `Tu código es ${code}. El restaurante te confirmará por teléfono.`,
       });
-
       return code;
     } catch (error) {
       console.error('Error creating public reservation:', error);
+      // Los mensajes de validación del servidor ya vienen en español y son para el cliente.
+      const message = (error as { message?: string })?.message;
       toast({
-        title: "Error",
-        description: "No se pudo crear la reserva. Intenta de nuevo.",
+        title: "No pudimos tomar tu reserva",
+        description: message && message.length < 120 ? message : "Intenta de nuevo o llama al restaurante.",
         variant: "destructive",
       });
       return null;
