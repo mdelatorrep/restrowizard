@@ -10,7 +10,7 @@ import {
 } from '@/lib/businessDay';
 import { qk } from '@/lib/queryKeys';
 import { getOrderSaleAmount } from '@/lib/orderItems';
-import { allocateExpenses, monthEndOf, monthStartOf, type ExpenseForPnl } from '@/hooks/finance/expenseAllocation';
+import { allocateExpenses, manualOtherCostsNotCoveredByExpenses, monthEndOf, monthStartOf, type ExpenseForPnl } from '@/hooks/finance/expenseAllocation';
 
 // B-20: regla única compartida (ver src/lib/orderItems.ts).
 const saleAmt = getOrderSaleAmount;
@@ -152,11 +152,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       if (shiftsRes.error) throw shiftsRes.error;
       if (manualRes.error) throw manualRes.error;
       // Si la tabla de gastos aún no existe en un entorno, el P&L sigue funcionando sin ella.
-      const expenseAlloc = allocateExpenses(
-        expensesRes.error ? [] : ((expensesRes.data || []) as ExpenseForPnl[]),
-        startStr,
-        endStr,
-      );
+      const expenseRows = expensesRes.error ? [] : ((expensesRes.data || []) as ExpenseForPnl[]);
+      const expenseAlloc = allocateExpenses(expenseRows, startStr, endStr);
 
       // Group orders by date
       const ordersByDate: Record<string, { revenue: number; count: number; covers: number; taxes: number }> = {};
@@ -261,7 +258,9 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
         const netSales = Math.max(0, totalRevenue - totalTaxes);
         // Otros costos = costos manuales del cierre diario + gastos registrados (devengados).
-        const totalOtherCosts = (manualRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.other_costs) || 0), 0)
+        // Otros costos = gastos registrados (devengados) + la estimación plana del
+        // cierre diario solo en los meses que todavía no tienen gastos registrados.
+        const totalOtherCosts = manualOtherCostsNotCoveredByExpenses(manualRes.data || [], expenseRows)
           + expenseAlloc.total;
 
         const computedKpis: AggregatedFinancesKPIs = {

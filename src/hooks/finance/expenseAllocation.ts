@@ -65,6 +65,21 @@ export const allocateExpenses = (
   return result;
 };
 
+/**
+ * Costos "otros" del cierre diario (daily_sales.other_costs) que siguen valiendo.
+ * Era la forma antigua de estimar los fijos (un valor plano por día). Cuando un
+ * mes ya tiene gastos registrados, esos gastos reemplazan la estimación: sumar
+ * ambos contaría dos veces el arriendo. En los meses sin gastos registrados la
+ * estimación se mantiene, así nadie pierde costos al empezar a usar Gastos.
+ */
+export const manualOtherCostsNotCoveredByExpenses = (
+  dailyRows: { sale_date: string; other_costs: number | string | null }[],
+  expenses: Pick<ExpenseForPnl, 'expense_date' | 'status'>[],
+): number => {
+  const months = new Set(expenses.filter(e => e.status !== 'cancelled').map(e => e.expense_date.slice(0, 7)));
+  return dailyRows.reduce((sum, r) => (months.has(r.sale_date.slice(0, 7)) ? sum : sum + (Number(r.other_costs) || 0)), 0);
+};
+
 /** Primer día del mes de un día operativo (para traer los fijos que se prorratean en el período). */
 export const monthStartOf = (day: string): string => `${day.slice(0, 7)}-01`;
 

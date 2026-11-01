@@ -2,9 +2,10 @@
 -- liquidaciones. Lo llama seed_demo_restaurant() al final, después de generar
 -- las ventas (las liquidaciones se calculan sobre esas ventas).
 --
--- Los ~$88M mensuales de gastos reemplazan los $3M/día planos que estaban en
--- daily_sales.other_costs, así que el margen del demo no cambia (~11 %) pero
--- ahora cada peso tiene concepto, fecha, vencimiento y estado.
+-- Los ~$88M mensuales de gastos reemplazan, en el P&L, la estimación plana de
+-- $3M/día de daily_sales.other_costs (que se conserva para meses sin gastos):
+-- el margen del demo no cambia (~11 %) pero cada peso tiene concepto, fecha,
+-- vencimiento y estado.
 --
 -- Hallazgos sembrados para que la demo tenga qué mostrar:
 --   · una semana de datáfono depositada con $412.300 de menos (contracargo)
@@ -94,8 +95,8 @@ BEGIN
   UPDATE supplier_invoices SET paid_at = due_date, payment_method = 'Transferencia', account_id = v_bank
    WHERE user_id = c_owner AND status = 'paid' AND paid_at IS NULL;
 
-  -- Los costos fijos ahora viven en restaurant_expenses: el cierre diario ya no los repite.
-  UPDATE daily_sales SET other_costs = 0, notes = 'Cierre del día.' WHERE user_id = c_owner;
+  -- daily_sales.other_costs (estimación plana de fijos) se deja: el P&L la ignora en
+  -- los meses que ya tienen gastos registrados (manualOtherCostsNotCoveredByExpenses).
 
   -- Liquidaciones del datáfono: semanas lunes-domingo ya cerradas (8 semanas), depositadas al día siguiente.
   INSERT INTO finance_settlements (user_id, channel, period_start, period_end, gross_reported, fees_reported,

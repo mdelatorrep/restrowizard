@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { allocateExpenses, monthEndOf } from './expenseAllocation';
+import { allocateExpenses, manualOtherCostsNotCoveredByExpenses, monthEndOf } from './expenseAllocation';
 
 const rent = { expense_date: '2026-10-05', amount: 31_000_000, is_fixed: true, status: 'paid', category: 'arriendo' };
 
@@ -39,5 +39,20 @@ describe('ventana de consulta de gastos', () => {
     expect(allocateExpenses([nov], '2026-11-01', '2026-11-01').total).toBeCloseTo(1_000_000);
     expect(monthEndOf('2026-11-01')).toBe('2026-11-30');
     expect(monthEndOf('2028-02-10')).toBe('2028-02-29');
+  });
+});
+
+describe('estimación plana vs gastos registrados', () => {
+  const daily = [
+    { sale_date: '2026-10-30', other_costs: 3_000_000 },
+    { sale_date: '2026-10-31', other_costs: 3_000_000 },
+    { sale_date: '2026-11-01', other_costs: 3_000_000 },
+  ];
+  it('en los meses con gastos registrados la estimación no se suma (no se cuenta dos veces)', () => {
+    expect(manualOtherCostsNotCoveredByExpenses(daily, [{ expense_date: '2026-10-05', status: 'paid' }])).toBe(3_000_000);
+  });
+  it('sin gastos registrados se conserva la estimación; un gasto anulado no cuenta', () => {
+    expect(manualOtherCostsNotCoveredByExpenses(daily, [])).toBe(9_000_000);
+    expect(manualOtherCostsNotCoveredByExpenses(daily, [{ expense_date: '2026-11-05', status: 'cancelled' }])).toBe(9_000_000);
   });
 });

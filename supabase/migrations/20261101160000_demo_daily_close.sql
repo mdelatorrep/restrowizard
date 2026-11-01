@@ -70,8 +70,10 @@ BEGIN
   )
   INSERT INTO daily_sales (user_id, sale_date, total_revenue, covers_count, average_ticket,
                            food_cost, labor_cost, other_costs, notes)
-  -- other_costs = 0: los costos fijos viven en restaurant_expenses (_demo_seed_finance).
-  SELECT c_owner, c.bday, c.revenue, c.covers, c.avg_ticket, c.food, c.labor, 0, 'Cierre del día.'
+  -- other_costs: estimación plana de fijos ($90M/mes). El P&L la reemplaza por los
+  -- gastos registrados en los meses que los tienen (ver expenseAllocation.ts).
+  SELECT c_owner, c.bday, c.revenue, c.covers, c.avg_ticket, c.food, c.labor, 3000000,
+         'Cierre del día. Estimación de fijos: $3M/día (se reemplaza por los gastos registrados del mes).'
   FROM computed c
   WHERE c.bday NOT IN (SELECT sale_date FROM updated);
   GET DIAGNOSTICS v_rows = ROW_COUNT;
