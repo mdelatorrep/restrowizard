@@ -15,7 +15,7 @@ export const useCopilotAlerts = () => {
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`copilot_alerts:${userId}`)
+      .channel(`copilot_alerts:${userId}:${Math.random().toString(36).slice(2)}`) // único por suscripción (ver useRealtimeTable)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'copilot_alerts', filter: `user_id=eq.${userId}` },

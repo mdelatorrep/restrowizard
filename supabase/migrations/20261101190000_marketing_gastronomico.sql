@@ -59,6 +59,11 @@ BEGIN
     SELECT *, net_price - coalesce(cost, 0) AS margin,
            CASE WHEN net_price > 0 AND cost IS NOT NULL THEN (net_price - cost) / net_price END AS margin_pct
     FROM items
+  ), cat_th AS (
+    -- Popularidad contra los platos de su misma categoría (Kasavana–Smith): el
+    -- brunch solo se vende el fin de semana y contra toda la carta salía "perro".
+    SELECT category, 0.7 * coalesce(avg(units), 0) AS pop_threshold
+    FROM calc GROUP BY category
   ), th AS (
     SELECT 0.7 * coalesce(avg(units), 0) AS pop_threshold,
            CASE WHEN sum(units) FILTER (WHERE cost IS NOT NULL) > 0
@@ -79,11 +84,11 @@ BEGIN
         'has_cost', c.cost IS NOT NULL,
         'quadrant', CASE
           WHEN c.cost IS NULL THEN 'sin_costo'
-          WHEN c.units >= th.pop_threshold AND c.margin >= th.margin_threshold THEN 'estrella'
-          WHEN c.units >= th.pop_threshold THEN 'caballo'
+          WHEN c.units >= ct.pop_threshold AND c.margin >= th.margin_threshold THEN 'estrella'
+          WHEN c.units >= ct.pop_threshold THEN 'caballo'
           WHEN c.margin >= th.margin_threshold THEN 'rompecabezas'
           ELSE 'perro' END)
-      ORDER BY c.margin * c.units DESC) FROM calc c, th), '[]'::jsonb)
+      ORDER BY c.margin * c.units DESC) FROM calc c JOIN cat_th ct ON ct.category = c.category, th), '[]'::jsonb)
   ) INTO v_result;
   RETURN v_result;
 END $$;

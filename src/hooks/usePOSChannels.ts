@@ -62,7 +62,7 @@ export function usePOSChannels(userId: string | null) {
     const sb = supabase as any;
     const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.pos.channels(userId) });
     const ch = sb
-      .channel(`pos-channels-${userId}`)
+      .channel(`pos-channels-${userId}-${Math.random().toString(36).slice(2)}`) // único por suscripción (ver useRealtimeTable)
       .on("postgres_changes", { event: "*", schema: "public", table: "aggregator_orders", filter: `user_id=eq.${userId}` }, invalidate)
       .on("postgres_changes", { event: "*", schema: "public", table: "table_reservations", filter: `user_id=eq.${userId}` }, invalidate)
       .subscribe();

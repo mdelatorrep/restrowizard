@@ -35,6 +35,8 @@ interface Options<T extends Record<string, any> = Record<string, any>> {
  *     onChange: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
  *   });
  */
+let channelSeq = 0;
+
 export function useRealtimeTable<T extends Record<string, any> = Record<string, any>>(
   opts: Options<T>,
 ) {
@@ -45,7 +47,12 @@ export function useRealtimeTable<T extends Record<string, any> = Record<string, 
 
   useEffect(() => {
     if (!enabled) return;
-    const name = channelName ?? `rt:${schema}.${table}:${filter ?? "all"}`;
+    // Nombre único por suscripción: varios componentes (menú lateral, encabezado,
+    // tema de marca) escuchan la misma tabla a la vez. Con realtime-js reciente,
+    // supabase.channel(nombre) devuelve el canal YA suscrito y .on() lanza
+    // "cannot add postgres_changes callbacks after subscribe()": toda la app caía
+    // en "Algo salió mal" apenas el restaurante tenía marca.
+    const name = `${channelName ?? `rt:${schema}.${table}:${filter ?? "all"}`}#${++channelSeq}`;
     const channel: RealtimeChannel = supabase
       .channel(name)
       .on(

@@ -114,7 +114,7 @@ export function usePublicRestaurantData(slug: string): UsePublicRestaurantDataRe
     if (!ownerUserId) return;
     const invalidate = () => queryClient.invalidateQueries({ queryKey: qk.public.restaurantData(slug) });
     const channel = supabase
-      .channel(`public-restaurant-${ownerUserId}`)
+      .channel(`public-restaurant-${ownerUserId}-${Math.random().toString(36).slice(2)}`) // único por suscripción (ver useRealtimeTable)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_brands', filter: `user_id=eq.${ownerUserId}` }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_websites', filter: `user_id=eq.${ownerUserId}` }, invalidate)
       .subscribe();
