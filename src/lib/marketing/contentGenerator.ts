@@ -293,7 +293,9 @@ export const generateContent = (
     },
   ];
 
-  return { food, drink, offer, pieces };
+  // "a las 7:20 p. m." + ". " dejaba "p. m.." en el texto.
+  const tidy = (t: string) => t.replace(/\.(\s*)\./g, '.$1').replace(/[ \t]{2,}/g, ' ');
+  return { food, drink, offer, pieces: pieces.map(p => ({ ...p, title: tidy(p.title), body: tidy(p.body) })) };
 };
 
 // ── Momentos ──────────────────────────────────────────────────────────────

@@ -268,11 +268,13 @@ export function PublicReservationWidget({
         <CardContent className="p-6 space-y-5">
           {/* Name */}
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="res-name" className="text-sm font-medium flex items-center gap-2">
               <User className="w-4 h-4 text-muted-foreground" />
               Nombre completo *
             </label>
             <Input
+              id="res-name"
+              autoComplete="name"
               required
               placeholder="¿Cómo te llamas?"
               value={formData.customer_name}
@@ -283,11 +285,13 @@ export function PublicReservationWidget({
 
           {/* Phone */}
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="res-phone" className="text-sm font-medium flex items-center gap-2">
               <Phone className="w-4 h-4 text-muted-foreground" />
               Teléfono *
             </label>
             <Input
+              id="res-phone"
+              autoComplete="tel"
               required
               type="tel"
               placeholder="+57 300 123 4567"
@@ -299,11 +303,13 @@ export function PublicReservationWidget({
 
           {/* Email */}
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="res-email" className="text-sm font-medium flex items-center gap-2">
               <Mail className="w-4 h-4 text-muted-foreground" />
               Email <span className="text-muted-foreground font-normal">(opcional)</span>
             </label>
             <Input
+              id="res-email"
+              autoComplete="email"
               type="email"
               placeholder="Para enviarte la confirmación"
               value={formData.customer_email}
@@ -314,11 +320,12 @@ export function PublicReservationWidget({
 
           {/* Special requests */}
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
+            <label htmlFor="res-notes" className="text-sm font-medium flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-muted-foreground" />
               Peticiones especiales
             </label>
             <Textarea
+              id="res-notes"
               placeholder="Alergias, celebraciones, preferencia de mesa..."
               value={formData.special_requests}
               onChange={e => setFormData(prev => ({ ...prev, special_requests: e.target.value }))}

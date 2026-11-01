@@ -68,6 +68,13 @@ export const allocateExpenses = (
 /** Primer día del mes de un día operativo (para traer los fijos que se prorratean en el período). */
 export const monthStartOf = (day: string): string => `${day.slice(0, 7)}-01`;
 
+/**
+ * Último día del mes. Un fijo fechado el 5 (arriendo) también se devenga el 1.º:
+ * la consulta debe traer los gastos hasta fin de mes aunque el período corte hoy.
+ */
+export const monthEndOf = (day: string): string =>
+  `${day.slice(0, 7)}-${String(daysInMonth(day)).padStart(2, '0')}`;
+
 export const EXPENSE_CATEGORY_LABEL: Record<string, string> = {
   arriendo: 'Arriendo',
   servicios_publicos: 'Servicios públicos',

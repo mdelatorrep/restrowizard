@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { allocateExpenses } from './expenseAllocation';
+import { allocateExpenses, monthEndOf } from './expenseAllocation';
 
 const rent = { expense_date: '2026-10-05', amount: 31_000_000, is_fixed: true, status: 'paid', category: 'arriendo' };
 
@@ -30,5 +30,14 @@ describe('allocateExpenses (P&L por devengo)', () => {
 
   it('los anulados no cuentan', () => {
     expect(allocateExpenses([{ ...rent, status: 'cancelled' }], '2026-10-01', '2026-10-31').total).toBe(0);
+  });
+});
+
+describe('ventana de consulta de gastos', () => {
+  it('el arriendo fechado el 5 ya se devenga el día 1 (hay que traerlo aunque el período corte hoy)', () => {
+    const nov = { expense_date: '2026-11-05', amount: 30_000_000, is_fixed: true, status: 'pending', category: 'arriendo' };
+    expect(allocateExpenses([nov], '2026-11-01', '2026-11-01').total).toBeCloseTo(1_000_000);
+    expect(monthEndOf('2026-11-01')).toBe('2026-11-30');
+    expect(monthEndOf('2028-02-10')).toBe('2028-02-29');
   });
 });

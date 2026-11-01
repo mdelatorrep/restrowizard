@@ -21,6 +21,8 @@ interface DailyFlashReportProps {
   laborCost: number;
   previousDayRevenue?: number;
   previousWeekRevenue?: number;
+  /** Mientras carga se muestra "…" en vez de $0 (que parecía un día sin ventas). */
+  loading?: boolean;
 }
 
 export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
@@ -33,7 +35,8 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
   foodCost,
   laborCost,
   previousDayRevenue,
-  previousWeekRevenue
+  previousWeekRevenue,
+  loading = false,
 }) => {
   const revenueProgress = revenueTarget > 0 ? (revenue / revenueTarget) * 100 : 0;
   const primeCost = revenue > 0 ? ((foodCost + laborCost) / revenue) * 100 : 0;
@@ -73,7 +76,7 @@ export const DailyFlashReport: React.FC<DailyFlashReportProps> = ({
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-1">Ventas del Día</p>
           <p className="text-5xl font-bold text-foreground">
-            {formatCurrency(revenue)}
+            {loading ? "…" : formatCurrency(revenue)}
           </p>
           
           {/* Revenue target progress */}

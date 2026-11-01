@@ -105,3 +105,10 @@ describe('momentos y horas', () => {
     expect(slowestWeekday(daily)).toBe(2);
   });
 });
+
+describe('ortografía del contenido', () => {
+  it('no deja doble punto después de "p. m."', () => {
+    const c = generateContent({ restaurantName: 'Clutch' }, { ...nfl, time: '12:00:00', title: 'NFL Sunday' }, menu);
+    for (const p of c.pieces) expect(p.body).not.toMatch(/\.\s*\./);
+  });
+});

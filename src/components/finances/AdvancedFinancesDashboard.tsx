@@ -54,7 +54,7 @@ const AdvancedFinancesDashboard: React.FC = () => {
     }
   }, [period]);
 
-  const { dailySales, kpis, trends, loading, hasData, refetch, otherCostsByCategory } = useAggregatedFinances(dateRange);
+  const { dailySales, kpis, trends, loading, hasData, refetch, otherCostsByCategory, period: pnlPeriod } = useAggregatedFinances(dateRange);
   // Gastos del período por línea del P&L. Antes el estado de resultados no
   // recibía ningún gasto fijo y la utilidad operativa salía inflada.
   const pnlExpenses = useMemo(() => {
@@ -139,6 +139,7 @@ const AdvancedFinancesDashboard: React.FC = () => {
         <div className="grid lg:grid-cols-2 gap-6">
           <DailyFlashReport
             date={new Date()}
+            loading={flash.loading}
             revenue={today?.total_revenue || 0}
             orders={today?.order_count || 0}
             covers={today?.covers_count || 0}
@@ -188,10 +189,15 @@ const AdvancedFinancesDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="pnl">
+          {kpis && pnlPeriod.toDay === todayBusinessDay() && (
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              Incluye el día de hoy en curso: ventas y nómina hasta este momento, gastos fijos del día completo. El margen de hoy se lee al cierre.
+            </p>
+          )}
           {kpis && (
             <ProfitLossStatement
               periodStart={dateRange.start}
-              periodEnd={dateRange.end}
+              periodEnd={new Date(Math.min(dateRange.end.getTime(), Date.now()))}
               totalRevenue={kpis.totalRevenue}
               taxes={kpis.totalTaxes}
               foodCost={kpis.totalFoodCost}

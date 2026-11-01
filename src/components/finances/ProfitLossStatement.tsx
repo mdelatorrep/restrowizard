@@ -122,8 +122,10 @@ export const ProfitLossStatement: React.FC<ProfitLossStatementProps> = ({
             {percentage.toFixed(1)}%
           </span>
         )}
-        <span className={`font-mono w-28 text-right ${amount < 0 ? 'text-red-600' : ''}`}>
-          ${Math.abs(amount).toLocaleString()}
+        {/* Pesos enteros con formato colombiano: antes salía "$893,785.526" (decimales del
+            prorrateo con formato del navegador) y parecía una cifra en millones. */}
+        <span className={`font-mono min-w-28 text-right tabular-nums ${amount < 0 ? 'text-red-600' : ''}`}>
+          {amount < 0 ? '−' : ''}{formatCurrency(Math.round(Math.abs(amount)), 'COP')}
         </span>
         <div className="w-20">
           <VarianceIndicator current={amount} previous={previousAmount} />

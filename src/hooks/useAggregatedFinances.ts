@@ -10,7 +10,7 @@ import {
 } from '@/lib/businessDay';
 import { qk } from '@/lib/queryKeys';
 import { getOrderSaleAmount } from '@/lib/orderItems';
-import { allocateExpenses, monthStartOf, type ExpenseForPnl } from '@/hooks/finance/expenseAllocation';
+import { allocateExpenses, monthEndOf, monthStartOf, type ExpenseForPnl } from '@/hooks/finance/expenseAllocation';
 
 // B-20: regla única compartida (ver src/lib/orderItems.ts).
 const saleAmt = getOrderSaleAmount;
@@ -68,8 +68,11 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
   // todavía es la noche de ayer).
   const today = todayBusinessDay();
   const fromDay = dateRange ? localCalendarDay(dateRange.start) : addBusinessDays(today, -30);
+  // Nunca más allá de hoy: "Este mes" el día 1 es el día 1, no el mes completo.
+  // Antes el arriendo de noviembre entero se cargaba contra un día de ventas.
   const rawToDay = dateRange ? businessDayOf(dateRange.end) : today;
-  const toDay = rawToDay < fromDay ? fromDay : rawToDay;
+  const cappedToDay = rawToDay > today ? today : rawToDay;
+  const toDay = cappedToDay < fromDay ? fromDay : cappedToDay;
 
   const { data, isLoading: loading } = useQuery({
     queryKey: qk.finances.aggregated(userId, fromDay, toDay),
@@ -136,7 +139,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         .select('id, expense_date, amount, is_fixed, status, category')
         .eq('user_id', userId!)
         .gte('expense_date', monthStartOf(startStr))
-        .lte('expense_date', endStr)
+        .lte('expense_date', monthEndOf(endStr))
         .neq('status', 'cancelled')
         .order('id'));
 
@@ -349,8 +352,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     revenueAtSameTimeByDate: data?.revenueAtSameTimeByDate ?? {},
     /** Gastos registrados del período por categoría (devengados). */
     otherCostsByCategory: data?.otherCostsByCategory ?? {},
-    /** Días operativos que cubre el período (inclusive). */
+    /** Días operativos que cubre el período (inclusive), recortado a hoy. */
     period: { fromDay, toDay },
+    /** El período elegido todavía no termina: cifras acumuladas a la fecha. */
+    isPartialPeriod: rawToDay > today,
     isViewingClient,
     fetchRealtimeToday,
     refetch
