@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      _demo_customers: {
+        Row: {
+          affinity: number | null
+          name: string | null
+          phone: string
+        }
+        Insert: {
+          affinity?: number | null
+          name?: string | null
+          phone: string
+        }
+        Update: {
+          affinity?: number | null
+          name?: string | null
+          phone?: string
+        }
+        Relationships: []
+      }
+      _demo_menu_weights: {
+        Row: {
+          category: string | null
+          id: string
+          is_brunch_only: boolean | null
+          name: string | null
+          price: number | null
+          weight: number | null
+        }
+        Insert: {
+          category?: string | null
+          id: string
+          is_brunch_only?: boolean | null
+          name?: string | null
+          price?: number | null
+          weight?: number | null
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          is_brunch_only?: boolean | null
+          name?: string | null
+          price?: number | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       aggregator_integrations: {
         Row: {
           access_token_encrypted: string | null
@@ -1727,6 +1772,45 @@ export type Database = {
         }
         Relationships: []
       }
+      demand_events: {
+        Row: {
+          category: string
+          created_at: string
+          event_date: string
+          expected_lift: number
+          id: string
+          notes: string | null
+          start_time: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          event_date: string
+          expected_lift?: number
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          event_date?: string
+          expected_lift?: number
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_categories: {
         Row: {
           created_at: string
@@ -1997,6 +2081,140 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      finance_accounts: {
+        Row: {
+          account_type: string
+          balance: number
+          balance_as_of: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_type?: string
+          balance?: number
+          balance_as_of?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          account_type?: string
+          balance?: number
+          balance_as_of?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_settings: {
+        Row: {
+          card_fee_pct: number
+          card_settlement_days: number
+          card_withholding_pct: number
+          digital_fee_pct: number
+          min_cash_buffer: number
+          rappi_commission_pct: number
+          rappi_settlement_days: number
+          supplier_payment_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_fee_pct?: number
+          card_settlement_days?: number
+          card_withholding_pct?: number
+          digital_fee_pct?: number
+          min_cash_buffer?: number
+          rappi_commission_pct?: number
+          rappi_settlement_days?: number
+          supplier_payment_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          card_fee_pct?: number
+          card_settlement_days?: number
+          card_withholding_pct?: number
+          digital_fee_pct?: number
+          min_cash_buffer?: number
+          rappi_commission_pct?: number
+          rappi_settlement_days?: number
+          supplier_payment_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_settlements: {
+        Row: {
+          account_id: string | null
+          channel: string
+          created_at: string
+          deposit_date: string | null
+          fees_reported: number
+          gross_reported: number | null
+          id: string
+          net_deposited: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          reference: string | null
+          user_id: string
+          withholdings_reported: number
+        }
+        Insert: {
+          account_id?: string | null
+          channel: string
+          created_at?: string
+          deposit_date?: string | null
+          fees_reported?: number
+          gross_reported?: number | null
+          id?: string
+          net_deposited: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          reference?: string | null
+          user_id?: string
+          withholdings_reported?: number
+        }
+        Update: {
+          account_id?: string | null
+          channel?: string
+          created_at?: string
+          deposit_date?: string | null
+          fees_reported?: number
+          gross_reported?: number | null
+          id?: string
+          net_deposited?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          reference?: string | null
+          user_id?: string
+          withholdings_reported?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_settlements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       food_waste_logs: {
         Row: {
@@ -3814,6 +4032,54 @@ export type Database = {
           name?: string
           points_multiplier?: number
           sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      marketing_content: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          menu_item_ids: string[]
+          moment_date: string
+          moment_title: string
+          offer: Json | null
+          publish_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          menu_item_ids?: string[]
+          moment_date: string
+          moment_title: string
+          offer?: Json | null
+          publish_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          menu_item_ids?: string[]
+          moment_date?: string
+          moment_title?: string
+          offer?: Json | null
+          publish_at?: string | null
+          status?: string
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -6739,6 +7005,84 @@ export type Database = {
           },
         ]
       }
+      restaurant_expenses: {
+        Row: {
+          account_id: string | null
+          amount: number
+          category: string
+          created_at: string
+          description: string
+          due_date: string | null
+          expense_date: string
+          id: string
+          is_fixed: boolean
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          recurrence: string
+          recurrence_parent: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vendor: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          category: string
+          created_at?: string
+          description: string
+          due_date?: string | null
+          expense_date: string
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          recurrence?: string
+          recurrence_parent?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          expense_date?: string
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          recurrence?: string
+          recurrence_parent?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_expenses_recurrence_parent_fkey"
+            columns: ["recurrence_parent"]
+            isOneToOne: false
+            referencedRelation: "restaurant_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_menus: {
         Row: {
           ai_recommendations: Json | null
@@ -8603,6 +8947,39 @@ export type Database = {
           },
         ]
       }
+      staffing_rules: {
+        Row: {
+          id: string
+          is_active: boolean
+          max_staff: number
+          min_staff: number
+          orders_per_staff_hour: number
+          peak_only: boolean
+          position: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          max_staff?: number
+          min_staff?: number
+          orders_per_staff_hour?: number
+          peak_only?: boolean
+          position: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          max_staff?: number
+          min_staff?: number
+          orders_per_staff_hour?: number
+          peak_only?: boolean
+          position?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       storage_locations: {
         Row: {
           created_at: string | null
@@ -8726,6 +9103,7 @@ export type Database = {
       }
       supplier_invoices: {
         Row: {
+          account_id: string | null
           ai_confidence: number | null
           ai_model: string | null
           business_id: string | null
@@ -8738,6 +9116,8 @@ export type Database = {
           invoice_number: string | null
           items: Json | null
           notes: string | null
+          paid_at: string | null
+          payment_method: string | null
           raw_text: string | null
           status: string
           storage_path: string | null
@@ -8750,6 +9130,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_id?: string | null
           ai_confidence?: number | null
           ai_model?: string | null
           business_id?: string | null
@@ -8762,6 +9143,8 @@ export type Database = {
           invoice_number?: string | null
           items?: Json | null
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
           raw_text?: string | null
           status?: string
           storage_path?: string | null
@@ -8774,6 +9157,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_id?: string | null
           ai_confidence?: number | null
           ai_model?: string | null
           business_id?: string | null
@@ -8786,6 +9170,8 @@ export type Database = {
           invoice_number?: string | null
           items?: Json | null
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
           raw_text?: string | null
           status?: string
           storage_path?: string | null
@@ -8798,6 +9184,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_invoices_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_invoices_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -9294,6 +9687,185 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tip_allocations: {
+        Row: {
+          adjustment: number
+          adjustment_reason: string | null
+          days_worked: number
+          factor_reason: string | null
+          hours_worked: number
+          id: string
+          manager_factor: number
+          period_id: string
+          position: string | null
+          role_weight: number
+          shared_amount: number
+          shared_points: number
+          staff_member_id: string
+          staff_name: string
+          table_tips_generated: number
+          table_tips_kept: number
+          tip_group: string | null
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          adjustment?: number
+          adjustment_reason?: string | null
+          days_worked?: number
+          factor_reason?: string | null
+          hours_worked?: number
+          id?: string
+          manager_factor?: number
+          period_id: string
+          position?: string | null
+          role_weight?: number
+          shared_amount?: number
+          shared_points?: number
+          staff_member_id: string
+          staff_name: string
+          table_tips_generated?: number
+          table_tips_kept?: number
+          tip_group?: string | null
+          total_amount?: number
+          user_id: string
+        }
+        Update: {
+          adjustment?: number
+          adjustment_reason?: string | null
+          days_worked?: number
+          factor_reason?: string | null
+          hours_worked?: number
+          id?: string
+          manager_factor?: number
+          period_id?: string
+          position?: string | null
+          role_weight?: number
+          shared_amount?: number
+          shared_points?: number
+          staff_member_id?: string
+          staff_name?: string
+          table_tips_generated?: number
+          table_tips_kept?: number
+          tip_group?: string | null
+          total_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tip_allocations_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "tip_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tip_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          computed_at: string | null
+          created_at: string
+          end_date: string
+          id: string
+          label: string
+          notes: string | null
+          orders_count: number
+          shared_pool: number
+          start_date: string
+          status: string
+          table_kept: number
+          total_tips: number
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          computed_at?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          label: string
+          notes?: string | null
+          orders_count?: number
+          shared_pool?: number
+          start_date: string
+          status?: string
+          table_kept?: number
+          total_tips?: number
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          computed_at?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          orders_count?: number
+          shared_pool?: number
+          start_date?: string
+          status?: string
+          table_kept?: number
+          total_tips?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tip_policies: {
+        Row: {
+          pool_basis: string
+          rounding: number
+          table_share_pct: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          pool_basis?: string
+          rounding?: number
+          table_share_pct?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          pool_basis?: string
+          rounding?: number
+          table_share_pct?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tip_role_weights: {
+        Row: {
+          earns_table_tips: boolean
+          id: string
+          position: string
+          tip_group: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          earns_table_tips?: boolean
+          id?: string
+          position: string
+          tip_group?: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          earns_table_tips?: boolean
+          id?: string
+          position?: string
+          tip_group?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
       }
       training_courses: {
         Row: {
@@ -9864,6 +10436,34 @@ export type Database = {
       }
     }
     Functions: {
+      _demo_expected_orders: {
+        Args: { p_day: string; p_hr: number }
+        Returns: number
+      }
+      _demo_generate_orders: {
+        Args: { p_from: string; p_to: string }
+        Returns: number
+      }
+      _demo_refresh_daily_close: {
+        Args: { p_from: string; p_to: string }
+        Returns: number
+      }
+      _demo_seed_finance: { Args: never; Returns: Json }
+      _demo_seed_marketing: { Args: never; Returns: undefined }
+      _demo_upsert_auth_user: {
+        Args: { _email: string; _id: string; _name: string; _type: string }
+        Returns: undefined
+      }
+      award_loyalty_points: {
+        Args: {
+          p_customer_id: string
+          p_description?: string
+          p_points: number
+          p_source: string
+          p_source_id?: string
+        }
+        Returns: Json
+      }
       calculate_menu_item_scores: {
         Args: { p_days?: number; p_user_id: string }
         Returns: undefined
@@ -9873,6 +10473,8 @@ export type Database = {
         Returns: Json
       }
       claim_team_invitation: { Args: { p_token: string }; Returns: Json }
+      close_tip_period: { Args: { p_period_id: string }; Returns: Json }
+      compute_tip_period: { Args: { p_period_id: string }; Returns: Json }
       convert_unit: {
         Args: {
           p_amount: number
@@ -9882,8 +10484,34 @@ export type Database = {
         }
         Returns: number
       }
+      deduct_inventory_for_order: {
+        Args: { p_items: Json; p_order_id: string }
+        Returns: Json
+      }
+      demo_owner_id: { Args: never; Returns: string }
+      demo_tick: { Args: never; Returns: number }
+      finance_cash_flow_projection: {
+        Args: { p_owner: string; p_weeks?: number }
+        Returns: Json
+      }
+      finance_materialize_recurring: {
+        Args: { p_month?: string }
+        Returns: number
+      }
+      finance_pay_group: {
+        Args: { p_channel: string; p_method: string }
+        Returns: string
+      }
+      finance_reconciliation: {
+        Args: { p_from: string; p_owner: string; p_to: string }
+        Returns: Json
+      }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       generate_redemption_code: { Args: never; Returns: string }
+      generate_schedule_proposal: {
+        Args: { p_apply?: boolean; p_owner: string; p_week_start: string }
+        Returns: Json
+      }
       get_aggregated_daily_sales: {
         Args: { p_date: string; p_user_id: string }
         Returns: {
@@ -9955,6 +10583,7 @@ export type Database = {
         Args: { _client_user: string; _consultant_user: string }
         Returns: boolean
       }
+      is_demo_user: { Args: { _uid: string }; Returns: boolean }
       is_team_admin: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
@@ -9975,6 +10604,10 @@ export type Database = {
         }
         Returns: string
       }
+      marketing_menu_opportunities: {
+        Args: { p_days?: number; p_owner: string }
+        Returns: Json
+      }
       match_knowledge: {
         Args: {
           match_count?: number
@@ -9990,6 +10623,36 @@ export type Database = {
           source_title: string
           source_type: string
         }[]
+      }
+      menu_out_of_stock_ids: { Args: { p_owner: string }; Returns: string[] }
+      pos_close_session: {
+        Args: { p_actual_cash: number; p_notes?: string; p_session_id: string }
+        Returns: {
+          actual_cash: number | null
+          cashier_name: string
+          closed_at: string | null
+          closing_cash: number | null
+          created_at: string
+          difference: number | null
+          expected_cash: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opening_cash: number
+          sales_count: number | null
+          status: string
+          terminal_id: string | null
+          total_sales: number | null
+          total_tips: number | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pos_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       pos_log_audit: {
         Args: {
@@ -10032,6 +10695,19 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      public_create_reservation: {
+        Args: {
+          p_customer_email?: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_party_size: number
+          p_reservation_date: string
+          p_reservation_time: string
+          p_slug: string
+          p_special_requests?: string
+        }
+        Returns: Json
+      }
       recalculate_recipe_cost: {
         Args: { p_depth?: number; p_recipe_id: string }
         Returns: number
@@ -10040,10 +10716,15 @@ export type Database = {
         Args: { _email: string; _phone: string; _user_id: string }
         Returns: undefined
       }
+      redeem_loyalty_reward: {
+        Args: { p_catalog_item_id: string; p_customer_id: string }
+        Returns: Json
+      }
       reverse_order_inventory_deduction: {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      seed_demo_restaurant: { Args: never; Returns: Json }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
       seed_system_roles_for_business: {
         Args: { _business_id: string }
@@ -10052,6 +10733,27 @@ export type Database = {
       set_staff_pin: {
         Args: { _pin: string; _staff_id: string }
         Returns: undefined
+      }
+      shift_net_hours: {
+        Args: { _break: number; _end: string; _start: string }
+        Returns: number
+      }
+      team_can: {
+        Args: { _level?: string; _modules: string[]; _owner: string }
+        Returns: boolean
+      }
+      team_member_owner_id: { Args: { _uid: string }; Returns: string }
+      team_owner_ids: {
+        Args: { _level?: string; _modules: string[] }
+        Returns: string[]
+      }
+      validate_pos_discount: {
+        Args: {
+          p_auth_code: string
+          p_discount_id: string
+          p_order_total: number
+        }
+        Returns: Json
       }
       verify_staff_pin: {
         Args: { _pin: string; _restaurant_user_id: string }
@@ -10207,12 +10909,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10236,11 +10938,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10261,11 +10963,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10286,11 +10988,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -10303,11 +11005,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
