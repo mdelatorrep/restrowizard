@@ -318,7 +318,7 @@ BEGIN
   INSERT INTO restaurant_businesses (id, owner_id, name, business_type, cuisine_type, address, city, state, country,
                                      phone, employee_count, monthly_revenue_range, opening_date, tax_config, allow_oversell)
   VALUES (c_biz, c_owner, 'Clutch Sports Bar & Grill', 'bar', 'Americana · Sports bar',
-          'Laureles', 'Medellín', 'Antioquia', 'Colombia', '+57 300 000 0000', 35, '200M-300M',
+          'Laureles', 'Medellín', 'Antioquia', 'Colombia', '+57 300 000 0000', 36, '200M-300M',
           v_today - 420,
           '{"type":"impoconsumo","rate":8,"included_in_price":true,"label":"Impoconsumo 8%"}'::jsonb, true);
 
@@ -354,6 +354,7 @@ BEGIN
     (21,'Luisa Fernanda Toro','Host','Sala',9000,'por horas'),
     (22,'Laura Gómez','Cajero','Caja',9500,'indefinido'),
     (23,'Andrés Felipe Úsuga','Cajero','Caja',9500,'fijo'),
+    (36,'Simón Herrera','Cajero','Caja',9500,'por horas'),
     (24,'Ricardo Salazar','Jefe de cocina','Cocina',22000,'indefinido'),
     (25,'Marcela Duque','Jefe de cocina','Cocina',16000,'indefinido'),
     (26,'Jhon Fredy Osorio','Cocinero de línea','Cocina',11500,'indefinido'),
@@ -395,17 +396,17 @@ BEGIN
     (c_owner, 'Gerente general', 'excluido', 0, false);
 
   -- Dotación: cuántas órdenes por hora atiende cada cargo
-  INSERT INTO staffing_rules (user_id, position, orders_per_staff_hour, min_staff, max_staff) VALUES
-    (c_owner, 'Mesero', 3.2, 2, 7),
-    (c_owner, 'Bartender', 9, 1, 3),
-    (c_owner, 'Barback', 14, 0, 1),
-    (c_owner, 'Host', 14, 1, 2),
-    (c_owner, 'Cajero', 40, 1, 1),
-    (c_owner, 'Jefe de piso', 100, 1, 1),
-    (c_owner, 'Jefe de cocina', 100, 1, 1),
-    (c_owner, 'Cocinero de línea', 6, 1, 3),
-    (c_owner, 'Auxiliar de cocina', 11, 1, 2),
-    (c_owner, 'Steward', 14, 1, 2);
+  INSERT INTO staffing_rules (user_id, position, orders_per_staff_hour, min_staff, max_staff, peak_only) VALUES
+    (c_owner, 'Mesero', 3.2, 2, 7, false),
+    (c_owner, 'Bartender', 9, 1, 3, false),
+    (c_owner, 'Barback', 14, 0, 1, true),
+    (c_owner, 'Host', 14, 1, 2, true),
+    (c_owner, 'Cajero', 40, 1, 1, false),
+    (c_owner, 'Jefe de piso', 100, 1, 1, true),
+    (c_owner, 'Jefe de cocina', 100, 1, 1, true),
+    (c_owner, 'Cocinero de línea', 6, 1, 3, false),
+    (c_owner, 'Auxiliar de cocina', 11, 1, 2, false),
+    (c_owner, 'Steward', 14, 1, 2, false);
 
   -- 5. Inventario (unidad de costo = unidad de receta: el costeo cuadra sin conversiones)
   INSERT INTO inventory_items (user_id, item_name, category, unit, unit_cost, current_stock, reorder_point,

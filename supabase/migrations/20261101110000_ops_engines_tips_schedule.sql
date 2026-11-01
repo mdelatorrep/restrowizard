@@ -351,8 +351,11 @@ CREATE TABLE IF NOT EXISTS public.staffing_rules (
   min_staff integer NOT NULL DEFAULT 1 CHECK (min_staff >= 0),
   max_staff integer NOT NULL DEFAULT 10 CHECK (max_staff >= min_staff),
   is_active boolean NOT NULL DEFAULT true,
+  -- true = el cargo solo se programa en el bloque pico (cierre): jefes, host, barback
+  peak_only boolean NOT NULL DEFAULT false,
   UNIQUE (user_id, position)
 );
+ALTER TABLE public.staffing_rules ADD COLUMN IF NOT EXISTS peak_only boolean NOT NULL DEFAULT false;
 ALTER TABLE public.staffing_rules ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS team_read ON public.staffing_rules;
 CREATE POLICY team_read ON public.staffing_rules FOR SELECT TO authenticated
@@ -398,6 +401,7 @@ DECLARE
   v_cost numeric := 0;
   v_surcharge numeric := 0;
   v_has_history boolean;
+  r_day record;
 BEGIN
   IF current_setting('app.demo_seeding', true) IS DISTINCT FROM 'on'
      AND NOT public.team_can(p_owner, ARRAY['talent'], CASE WHEN p_apply THEN 'write' ELSE 'read' END) THEN
@@ -466,9 +470,15 @@ BEGIN
     start_time time, end_time time, hours numeric, cost numeric, surcharge numeric, block text
   ) ON COMMIT DROP;
 
-  FOR i IN 0..6 LOOP
-    v_day := p_week_start + i;
-    v_dow := i + 1;
+  -- Primero los días de más demanda: si falta gente, que falte un martes y no el domingo de partido.
+  FOR r_day IN
+    SELECT g::date AS d, EXTRACT(ISODOW FROM g)::int AS dow
+    FROM generate_series(p_week_start, p_week_start + 6, interval '1 day') g
+    ORDER BY COALESCE((SELECT SUM(orders) FROM _demand WHERE dow = EXTRACT(ISODOW FROM g)::int), 0)
+             * COALESCE((SELECT MAX(expected_lift) FROM demand_events WHERE user_id = p_owner AND event_date = g::date), 1) DESC
+  LOOP
+    v_day := r_day.d;
+    v_dow := r_day.dow;
 
     SELECT MIN(hr), MAX(hr) + 1 INTO v_open, v_close FROM _demand WHERE dow = v_dow AND orders >= 0.5;
     IF v_open IS NULL THEN CONTINUE; END IF;
@@ -494,7 +504,7 @@ BEGIN
         WHERE v_close - v_open <= 9
         UNION ALL
         SELECT 'apertura', v_open, v_open + 8, v_need_open
-        WHERE v_close - v_open > 9
+        WHERE v_close - v_open > 9 AND NOT r_rule.peak_only
         UNION ALL
         SELECT 'cierre', v_close - 8, v_close, v_need_close
         WHERE v_close - v_open > 9
@@ -577,7 +587,7 @@ BEGIN
     'week_start', p_week_start,
     'applied', p_apply,
     'shifts', v_shifts,
-    'gaps', v_gaps,
+    'gaps', (SELECT COALESCE(jsonb_agg(g ORDER BY g->>'date', g->>'position'), '[]'::jsonb) FROM jsonb_array_elements(v_gaps) g),
     'total_hours', (SELECT COALESCE(SUM(hours), 0) FROM _proposal),
     'base_cost', v_cost,
     'estimated_surcharges', v_surcharge,
