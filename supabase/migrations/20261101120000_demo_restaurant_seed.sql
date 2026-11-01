@@ -790,6 +790,9 @@ BEGIN
     PERFORM close_tip_period(v_period.id);
   END LOOP;
 
+  -- 15. Finanzas integrales: gastos, saldos, supuestos y liquidaciones (sobre las ventas ya generadas).
+  PERFORM _demo_seed_finance();
+
   RETURN jsonb_build_object(
     'orders', v_orders,
     'revenue_30d', (SELECT SUM(total - COALESCE(tip_amount, 0)) FROM restaurant_orders

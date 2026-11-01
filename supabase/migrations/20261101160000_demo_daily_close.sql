@@ -70,8 +70,8 @@ BEGIN
   )
   INSERT INTO daily_sales (user_id, sale_date, total_revenue, covers_count, average_ticket,
                            food_cost, labor_cost, other_costs, notes)
-  SELECT c_owner, c.bday, c.revenue, c.covers, c.avg_ticket, c.food, c.labor, 3000000,
-         'Cierre del día. Costos fijos prorrateados: arriendo $30M, servicios $9M, carga prestacional $28M, licencias de TV deportiva $8M, mercadeo $5M, otros $10M al mes'
+  -- other_costs = 0: los costos fijos viven en restaurant_expenses (_demo_seed_finance).
+  SELECT c_owner, c.bday, c.revenue, c.covers, c.avg_ticket, c.food, c.labor, 0, 'Cierre del día.'
   FROM computed c
   WHERE c.bday NOT IN (SELECT sale_date FROM updated);
   GET DIAGNOSTICS v_rows = ROW_COUNT;

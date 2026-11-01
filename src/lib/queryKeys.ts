@@ -69,6 +69,15 @@ export const qk = {
     customers: (userId?: string | null) => ['loyalty-customers', userId] as const,
     public: (codigo?: string | null) => ['public-loyalty', codigo] as const,
   },
+  financeIntegral: {
+    all: (userId?: string | null) => ['finance-integral', userId] as const,
+    settings: (userId?: string | null) => ['finance-integral', userId, 'settings'] as const,
+    accounts: (userId?: string | null) => ['finance-integral', userId, 'accounts'] as const,
+    expenses: (userId?: string | null, month?: string) => ['finance-integral', userId, 'expenses', month] as const,
+    payables: (userId?: string | null) => ['finance-integral', userId, 'payables'] as const,
+    cashFlow: (userId?: string | null, weeks?: number) => ['finance-integral', userId, 'cash-flow', weeks] as const,
+    reconciliation: (userId?: string | null, from?: string, to?: string) => ['finance-integral', userId, 'reconciliation', from, to] as const,
+  },
   talent: {
     staff: (userId?: string | null) => ['talent-staff', userId] as const,
     benchmarks: () => ['talent-benchmarks'] as const,

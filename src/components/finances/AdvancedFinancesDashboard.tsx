@@ -54,7 +54,18 @@ const AdvancedFinancesDashboard: React.FC = () => {
     }
   }, [period]);
 
-  const { dailySales, kpis, trends, loading, hasData, refetch } = useAggregatedFinances(dateRange);
+  const { dailySales, kpis, trends, loading, hasData, refetch, otherCostsByCategory } = useAggregatedFinances(dateRange);
+  // Gastos del período por línea del P&L. Antes el estado de resultados no
+  // recibía ningún gasto fijo y la utilidad operativa salía inflada.
+  const pnlExpenses = useMemo(() => {
+    const byCat = otherCostsByCategory || {};
+    const rent = byCat.arriendo || 0;
+    const utilities = byCat.servicios_publicos || 0;
+    const marketing = byCat.mercadeo || 0;
+    const allocated = Object.values(byCat).reduce((s, v) => s + v, 0);
+    const total = kpis?.totalOtherCosts || 0;
+    return { rent, utilities, marketing, other: Math.max(0, total - rent - utilities - marketing), allocated };
+  }, [otherCostsByCategory, kpis?.totalOtherCosts]);
   const { loading: aiLoading, analyzeFinances } = useAIAgent();
 
   // El flash del día tiene su propia ventana (hoy y los 7 días operativos
@@ -185,6 +196,10 @@ const AdvancedFinancesDashboard: React.FC = () => {
               taxes={kpis.totalTaxes}
               foodCost={kpis.totalFoodCost}
               laborCost={kpis.totalLaborCost}
+              rent={pnlExpenses.rent}
+              utilities={pnlExpenses.utilities}
+              marketing={pnlExpenses.marketing}
+              otherCosts={pnlExpenses.other}
             />
 
           )}

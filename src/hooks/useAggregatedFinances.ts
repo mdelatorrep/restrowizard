@@ -10,6 +10,7 @@ import {
 } from '@/lib/businessDay';
 import { qk } from '@/lib/queryKeys';
 import { getOrderSaleAmount } from '@/lib/orderItems';
+import { allocateExpenses, monthStartOf, type ExpenseForPnl } from '@/hooks/finance/expenseAllocation';
 
 // B-20: regla única compartida (ver src/lib/orderItems.ts).
 const saleAmt = getOrderSaleAmount;
@@ -78,6 +79,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       kpis: AggregatedFinancesKPIs | null;
       trends: FinancesTrend[];
       revenueAtSameTimeByDate: Record<string, number>;
+      otherCostsByCategory: Record<string, number>;
     }> => {
       const startStr = fromDay;
       const endStr = toDay;
@@ -127,14 +129,31 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         .lte('sale_date', endStr)
         .order('id'));
 
-      const [ordersRes, deductionsRes, shiftsRes, manualRes] = await Promise.all([
-        ordersPromise, deductionsPromise, shiftsPromise, manualPromise,
+      // 5) Gastos registrados (arriendo, servicios, prestaciones…): los fijos se
+      //    prorratean en su mes, así que se traen desde el inicio del mes.
+      const expensesPromise = fetchAllRows(() => (supabase as any)
+        .from('restaurant_expenses')
+        .select('id, expense_date, amount, is_fixed, status, category')
+        .eq('user_id', userId!)
+        .gte('expense_date', monthStartOf(startStr))
+        .lte('expense_date', endStr)
+        .neq('status', 'cancelled')
+        .order('id'));
+
+      const [ordersRes, deductionsRes, shiftsRes, manualRes, expensesRes] = await Promise.all([
+        ordersPromise, deductionsPromise, shiftsPromise, manualPromise, expensesPromise,
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
       if (deductionsRes.error) throw deductionsRes.error;
       if (shiftsRes.error) throw shiftsRes.error;
       if (manualRes.error) throw manualRes.error;
+      // Si la tabla de gastos aún no existe en un entorno, el P&L sigue funcionando sin ella.
+      const expenseAlloc = allocateExpenses(
+        expensesRes.error ? [] : ((expensesRes.data || []) as ExpenseForPnl[]),
+        startStr,
+        endStr,
+      );
 
       // Group orders by date
       const ordersByDate: Record<string, { revenue: number; count: number; covers: number; taxes: number }> = {};
@@ -228,7 +247,7 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
 
       // Calculate KPIs
       if (salesData.length === 0) {
-        return { dailySales: salesData, kpis: null, trends: [], revenueAtSameTimeByDate };
+        return { dailySales: salesData, kpis: null, trends: [], revenueAtSameTimeByDate, otherCostsByCategory: expenseAlloc.byCategory };
       }
       {
         const totalRevenue = salesData.reduce((sum, d) => sum + d.total_revenue, 0);
@@ -238,7 +257,9 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
         const totalOrders = salesData.reduce((sum, d) => sum + d.order_count, 0);
         const totalCovers = salesData.reduce((sum, d) => sum + d.covers_count, 0);
         const netSales = Math.max(0, totalRevenue - totalTaxes);
-        const totalOtherCosts = (manualRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.other_costs) || 0), 0);
+        // Otros costos = costos manuales del cierre diario + gastos registrados (devengados).
+        const totalOtherCosts = (manualRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.other_costs) || 0), 0)
+          + expenseAlloc.total;
 
         const computedKpis: AggregatedFinancesKPIs = {
           totalRevenue,
@@ -268,7 +289,10 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
           profit: d.total_revenue - d.food_cost - d.labor_cost
         }));
 
-        return { dailySales: salesData, kpis: computedKpis, trends: computedTrends, revenueAtSameTimeByDate };
+        return {
+          dailySales: salesData, kpis: computedKpis, trends: computedTrends, revenueAtSameTimeByDate,
+          otherCostsByCategory: expenseAlloc.byCategory,
+        };
       }
     },
   });
@@ -323,6 +347,8 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
     hasData: (data?.dailySales?.length ?? 0) > 0,
     /** Venta acumulada de cada día operativo hasta la hora actual del día en curso. */
     revenueAtSameTimeByDate: data?.revenueAtSameTimeByDate ?? {},
+    /** Gastos registrados del período por categoría (devengados). */
+    otherCostsByCategory: data?.otherCostsByCategory ?? {},
     /** Días operativos que cubre el período (inclusive). */
     period: { fromDay, toDay },
     isViewingClient,
