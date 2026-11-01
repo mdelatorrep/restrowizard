@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
@@ -76,42 +77,46 @@ export const useAggregatedFinances = (dateRange?: { start: Date; end: Date }) =>
       const startStr = format(range.start, 'yyyy-MM-dd');
       const endStr = format(range.end, 'yyyy-MM-dd');
 
+      // B-47: las cuatro consultas se paginan; sin esto un mes con volumen se cortaba en 1.000 filas.
       // 1) Orders (revenue/covers/order_count)
-      const ordersPromise = supabase
+      const ordersPromise = fetchAllRows(() => supabase
         .from('restaurant_orders')
         .select('id, total, tax_amount, tip_amount, guests_count, status, created_at')
         .eq('user_id', userId!)
         .gte('created_at', `${startStr}T00:00:00`)
         .lte('created_at', `${endStr}T23:59:59`)
-        .not('status', 'in', '("cancelled","pending")');
-
+        .not('status', 'in', '("cancelled","pending")')
+        .order('id'));
 
       // 2) Inventory deductions joined with item unit_cost (food cost from sales)
-      const deductionsPromise = supabase
+      const deductionsPromise = fetchAllRows(() => supabase
         .from('inventory_deductions')
-        .select('deducted_at, quantity_deducted, inventory_items(unit_cost)')
+        .select('id, deducted_at, quantity_deducted, inventory_items(unit_cost)')
         .eq('user_id', userId!)
         .gte('deducted_at', `${startStr}T00:00:00`)
-        .lte('deducted_at', `${endStr}T23:59:59`);
+        .lte('deducted_at', `${endStr}T23:59:59`)
+        .order('id'));
 
       // 3) Staff shifts (labor cost)
       // BL-16: incluir también shifts confirmados/en progreso, no solo completados.
       // Si no hay actual_*, usamos horarios programados.
-      const shiftsPromise = supabase
+      const shiftsPromise = fetchAllRows(() => supabase
         .from('staff_shifts')
-        .select('shift_date, start_time, end_time, actual_start_time, actual_end_time, break_minutes, hourly_rate_override, status, staff_members(hourly_rate)')
+        .select('id, shift_date, start_time, end_time, actual_start_time, actual_end_time, break_minutes, hourly_rate_override, status, staff_members(hourly_rate)')
         .eq('user_id', userId!)
         .gte('shift_date', startStr)
         .lte('shift_date', endStr)
-        .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed']);
+        .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
+        .order('id'));
 
       // 4) Manual daily_sales overrides (other_costs and any manually-entered food/labor)
-      const manualPromise = supabase
+      const manualPromise = fetchAllRows(() => supabase
         .from('daily_sales')
         .select('*')
         .eq('user_id', userId!)
         .gte('sale_date', startStr)
-        .lte('sale_date', endStr);
+        .lte('sale_date', endStr)
+        .order('id'));
 
       const [ordersRes, deductionsRes, shiftsRes, manualRes] = await Promise.all([
         ordersPromise, deductionsPromise, shiftsPromise, manualPromise,

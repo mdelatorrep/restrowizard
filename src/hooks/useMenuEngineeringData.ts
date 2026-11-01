@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
@@ -69,12 +70,13 @@ export const useMenuEngineeringData = (periodDays: number = 30) => {
       const { data: items, error: itemsError } = await supabase.from('menu_items_with_costs').select('*').in('menu_id', menuIds);
       if (itemsError) throw itemsError;
 
-      const { data: orders, error: ordersError } = await supabase
+      const { data: orders, error: ordersError } = await fetchAllRows(() => supabase
         .from('restaurant_orders')
-        .select('items, total')
+        .select('id, items, total')
         .eq('user_id', userId!)
         .gte('created_at', new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString())
-        .not('status', 'in', '("cancelled","pending")');
+        .not('status', 'in', '("cancelled","pending")')
+        .order('id'));
       if (ordersError) throw ordersError;
 
       const salesCount: Record<string, { count: number; revenue: number }> = {};

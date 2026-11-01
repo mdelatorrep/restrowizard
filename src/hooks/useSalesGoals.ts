@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -109,13 +110,14 @@ export const useSalesGoals = () => {
       // B-20: se excluye la propina, igual que en Reportes y Finanzas.
       let actualRevenue = 0;
       if (active) {
-        const { data: ordersRes, error: ordersErr } = await supabase
+        const { data: ordersRes, error: ordersErr } = await fetchAllRows(() => supabase
           .from('restaurant_orders')
-          .select('total, tip_amount')
+          .select('id, total, tip_amount')
           .eq('user_id', userId!)
           .gte('created_at', `${active.period_start}T00:00:00`)
           .lte('created_at', `${active.period_end}T23:59:59`)
-          .not('status', 'in', '("cancelled","pending")');
+          .not('status', 'in', '("cancelled","pending")')
+          .order('id'));
         if (ordersErr) throw ordersErr;
         actualRevenue = (ordersRes || []).reduce(
           (sum, o: any) => sum + Math.max(0, (Number(o.total) || 0) - (Number(o.tip_amount) || 0)),

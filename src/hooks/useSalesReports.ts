@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataUserId } from './useDataUserId';
@@ -117,25 +118,31 @@ export const useSalesReports = (
     queryKey: qk.sales.reports(userId, period, channel),
     enabled: !!userId,
     queryFn: async (): Promise<{ rawOrders: any[]; previousPeriodOrders: any[] }> => {
-      let curQ = supabase
-        .from('restaurant_orders')
-        .select('*')
-        .eq('user_id', userId!)
-        .gte('created_at', dateRange.start.toISOString())
-        .lte('created_at', dateRange.end.toISOString())
-        .order('created_at', { ascending: true });
-      if (channel !== 'all') curQ = curQ.eq('sales_channel', channel);
-      const { data: currentData, error: curErr } = await curQ;
+      // B-47: paginado; un mes de ventas supera las 1.000 filas que devuelve una consulta.
+      const curQ = () => {
+        let q = supabase
+          .from('restaurant_orders')
+          .select('*')
+          .eq('user_id', userId!)
+          .gte('created_at', dateRange.start.toISOString())
+          .lte('created_at', dateRange.end.toISOString());
+        if (channel !== 'all') q = q.eq('sales_channel', channel);
+        return q.order('created_at', { ascending: true }).order('id');
+      };
+      const { data: currentData, error: curErr } = await fetchAllRows(curQ);
       if (curErr) throw curErr;
 
-      let prevQ = supabase
-        .from('restaurant_orders')
-        .select('total, tax_amount, tip_amount')
-        .eq('user_id', userId!)
-        .gte('created_at', dateRange.prevStart.toISOString())
-        .lte('created_at', dateRange.prevEnd.toISOString());
-      if (channel !== 'all') prevQ = prevQ.eq('sales_channel', channel);
-      const { data: prevData, error: prevErr } = await prevQ;
+      const prevQ = () => {
+        let q = supabase
+          .from('restaurant_orders')
+          .select('id, total, tax_amount, tip_amount')
+          .eq('user_id', userId!)
+          .gte('created_at', dateRange.prevStart.toISOString())
+          .lte('created_at', dateRange.prevEnd.toISOString());
+        if (channel !== 'all') q = q.eq('sales_channel', channel);
+        return q.order('id');
+      };
+      const { data: prevData, error: prevErr } = await fetchAllRows(prevQ);
       if (prevErr) throw prevErr;
 
       return { rawOrders: currentData || [], previousPeriodOrders: prevData || [] };
