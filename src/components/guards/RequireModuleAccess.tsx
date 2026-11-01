@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTeamPermissions } from '@/hooks/useTeamPermissions';
-import type { ModulePermissions, ModulePermission } from '@/hooks/useTeamMembers';
+import { ROLE_LABELS, type ModulePermissions, type ModulePermission } from '@/hooks/useTeamMembers';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export const RequireModuleAccess: React.FC<RequireModuleAccessProps> = ({
             <p className="text-muted-foreground mb-4">
               {role ? (
                 <>
-                  Tu rol de <span className="font-medium">{role}</span> no tiene permisos 
+                  Tu rol de <span className="font-medium">{(ROLE_LABELS as Record<string, string>)[role]?.toLowerCase() ?? role}</span> no tiene permisos 
                   para acceder a este módulo.
                 </>
               ) : (
