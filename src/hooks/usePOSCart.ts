@@ -25,7 +25,23 @@ export interface POSCart {
   total: number;
 }
 
-export const usePOSCart = (taxRate: number = 0) => {
+/**
+ * Impuesto y total de la cuenta.
+ * - Impuesto aparte (IVA sobre precio neto): se suma al total.
+ * - Impuesto incluido (impoconsumo en la carta colombiana, el caso normal): el
+ *   precio ya lo trae; se desglosa base × tasa / (100 + tasa) y el total no cambia.
+ * `ratePct` va en puntos porcentuales (8 = 8%).
+ */
+export const computeCartTax = (base: number, ratePct: number, included: boolean) => {
+  if (!(ratePct > 0) || !(base > 0)) return { taxAmount: 0, totalBeforeTip: Math.max(0, base) };
+  if (included) {
+    return { taxAmount: Math.round((base * ratePct) / (100 + ratePct)), totalBeforeTip: base };
+  }
+  const taxAmount = Math.round((base * ratePct) / 100);
+  return { taxAmount, totalBeforeTip: base + taxAmount };
+};
+
+export const usePOSCart = (taxRate: number = 0, taxIncluded: boolean = false) => {
   const [items, setItems] = useState<POSCartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -54,9 +70,10 @@ export const usePOSCart = (taxRate: number = 0) => {
 
   const subtotalAfterDiscount = subtotal - calculatedDiscountAmount;
   
-  const taxAmount = useMemo(() => {
-    return subtotalAfterDiscount * (taxRate / 100);
-  }, [subtotalAfterDiscount, taxRate]);
+  const { taxAmount, totalBeforeTip } = useMemo(
+    () => computeCartTax(subtotalAfterDiscount, taxRate, taxIncluded),
+    [subtotalAfterDiscount, taxRate, taxIncluded],
+  );
 
   const calculatedTipAmount = useMemo(() => {
     if (tipAmount > 0) return tipAmount;
@@ -65,8 +82,8 @@ export const usePOSCart = (taxRate: number = 0) => {
   }, [subtotalAfterDiscount, tipAmount, tipPercent]);
 
   const total = useMemo(() => {
-    return subtotalAfterDiscount + taxAmount + calculatedTipAmount;
-  }, [subtotalAfterDiscount, taxAmount, calculatedTipAmount]);
+    return totalBeforeTip + calculatedTipAmount;
+  }, [totalBeforeTip, calculatedTipAmount]);
 
   const addItem = useCallback((item: Omit<POSCartItem, 'id' | 'quantity'>, quantity: number = 1) => {
     setItems(prev => {

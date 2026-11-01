@@ -31,7 +31,7 @@ const POS = () => {
   const { outOfStockIds } = useMenuAvailability();
   const taxRatePct = Math.round((taxConfig.rate || 0) * 100);
   const { currentSession, hasOpenSession, openSession, closeSession, loading: sessionLoading } = usePOSSession();
-  const { cart, items, addItem, removeItem, updateItemQuantity, clearCart, total, subtotal, taxAmount } = usePOSCart(taxRatePct);
+  const { cart, items, addItem, removeItem, updateItemQuantity, clearCart, total, subtotal, taxAmount } = usePOSCart(taxRatePct, !!taxConfig.included_in_price);
   const { tables, updateTableStatus, releaseTable } = usePOSTables();
   const { processPayment } = usePOSPayment();
   const { discounts, applyDiscount: validateDiscount } = usePOSDiscounts();

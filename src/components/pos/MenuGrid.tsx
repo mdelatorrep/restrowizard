@@ -41,7 +41,7 @@ export const MenuGrid = ({
   outOfStockIds,
 }: MenuGridProps) => {
   return (
-    <div className="flex-1 flex flex-col border-r">
+    <div className="flex-1 min-w-0 flex flex-col border-r">
       <div className="p-4 border-b space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -53,7 +53,7 @@ export const MenuGrid = ({
           />
         </div>
         <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             <Button
               size="sm"
               variant={!selectedCategory ? 'default' : 'outline'}

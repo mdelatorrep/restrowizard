@@ -320,7 +320,7 @@ BEGIN
   VALUES (c_biz, c_owner, 'Clutch Sports Bar & Grill', 'bar', 'Americana · Sports bar',
           'Laureles', 'Medellín', 'Antioquia', 'Colombia', '+57 300 000 0000', 36, '200M-300M',
           v_today - 420,
-          '{"type":"impoconsumo","rate":8,"included_in_price":true,"label":"Impoconsumo 8%"}'::jsonb, true);
+          '{"type":"impoconsumo","rate":0.08,"included_in_price":true,"label":"Impoconsumo 8%"}'::jsonb, true);
 
   UPDATE profiles SET restaurant_name = 'Clutch Sports Bar & Grill' WHERE user_id IN (c_owner, c_mgr, c_cash);
 
