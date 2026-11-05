@@ -158,10 +158,10 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <InactivityManager />
       <InstallPWAPrompt />
       <BrowserRouter>
         <AuthProvider>
+          <InactivityManager />
           <ActiveClientProvider>
             <RouteErrorBoundary label="app">
               <Suspense fallback={<RouteFallback />}>
