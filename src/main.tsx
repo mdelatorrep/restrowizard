@@ -4,6 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import './i18n';
 import './lib/chartSetup';
+import { enforceNoFraming } from './lib/frameGuard';
+
+enforceNoFraming();
 
 // Register Service Worker for PWA (only in production to avoid cache issues during development)
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

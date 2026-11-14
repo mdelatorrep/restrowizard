@@ -10,6 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { pickSdkModel } from "../_shared/ai-sdk-gateway.ts";
 import { embedTexts } from "../_shared/embeddings.ts";
 import { buildGuardrailPrompt } from "../_shared/ai-guardrails.ts";
+import { checkAiQuota } from "../_shared/ai-quota.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,14 +76,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    // B-25: tope diario por usuario.
+    const quota = await checkAiQuota(admin, userId, "copilot-chat");
+    if (!quota.allowed) {
+      return new Response(
+        JSON.stringify({ error: `Llegaste al límite de ${quota.limit} mensajes del copiloto por hoy. Vuelve mañana.` }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const tools = buildTools(admin, userId);
 
     const result = streamText({
       model: pickSdkModel("fast"),
       system: SYSTEM_PROMPT + (userId ? "" : "\n\nNOTA: Usuario no autenticado, las herramientas de datos están deshabilitadas."),
-      messages: await convertToModelMessages(messages),
+      // B-25: solo los últimos 30 mensajes viajan al modelo.
+      messages: await convertToModelMessages(messages.slice(-30)),
       tools,
-      stopWhen: stepCountIs(50),
+      stopWhen: stepCountIs(8), // B-25: antes 50 pasos por mensaje
       abortSignal: req.signal,
     });
 

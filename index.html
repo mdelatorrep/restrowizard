@@ -14,6 +14,8 @@
     <link rel="icon" href="/favicon.png" type="image/png" />
 
     <!-- Security headers (meta-equivalents; HTTP headers should be set at the edge) -->
+    <!-- B-15: CSP. frame-ancestors no aplica en <meta>; el bloqueo de incrustación lo hace src/lib/frameGuard.ts hasta tener cabeceras propias (B-05). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://api.qrserver.com; frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(), geolocation=(self), payment=(self), usb=(), accelerometer=(), gyroscope=()" />
