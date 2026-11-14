@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION public._ops_schema_dump()
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public
+SET search_path = pg_catalog  -- así todo nombre sale calificado con su esquema
 AS $fn$
 DECLARE
   out text := '';
@@ -69,13 +69,18 @@ BEGIN
   END LOOP;
   out := out || E'\n';
 
-  -- Funciones (antes que las tablas: defaults y checks pueden usarlas)
-  out := out || E'-- Funciones\n';
+  -- Funciones que no dependen del tipo fila de una tabla o vista: antes que las
+  -- tablas, porque defaults y checks pueden usarlas.
+  out := out || E'-- Funciones (1 de 2)\n';
   FOR r IN
     SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.prokind IN ('f','p')
-      AND p.proname <> '_ops_schema_dump'
-      AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e') -- de extensiones
+      AND p.proname NOT LIKE '\_ops\_%'
+      AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
+      AND NOT EXISTS (
+        SELECT 1 FROM unnest(array_append(coalesce(p.proallargtypes, p.proargtypes::oid[]), p.prorettype)) t(typ)
+        JOIN pg_type ty ON ty.oid = t.typ JOIN pg_class rc ON rc.oid = ty.typrelid
+        WHERE rc.relkind IN ('r','p','v','m'))
     ORDER BY p.proname, p.oid
   LOOP
     out := out || pg_get_functiondef(r.oid) || E';\n\n';
@@ -171,6 +176,22 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- Funciones que reciben o devuelven el tipo fila de una tabla o vista.
+  out := out || E'-- Funciones (2 de 2)\n';
+  FOR r IN
+    SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.prokind IN ('f','p')
+      AND p.proname NOT LIKE '\_ops\_%'
+      AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
+      AND EXISTS (
+        SELECT 1 FROM unnest(array_append(coalesce(p.proallargtypes, p.proargtypes::oid[]), p.prorettype)) t(typ)
+        JOIN pg_type ty ON ty.oid = t.typ JOIN pg_class rc ON rc.oid = ty.typrelid
+        WHERE rc.relkind IN ('r','p','v','m'))
+    ORDER BY p.proname, p.oid
+  LOOP
+    out := out || pg_get_functiondef(r.oid) || E';\n\n';
+  END LOOP;
+
   -- Triggers
   out := out || E'-- Triggers\n';
   FOR r IN
@@ -238,7 +259,7 @@ BEGIN
   FOR r IN
     SELECT p.oid, p.proname, pg_get_function_identity_arguments(p.oid) args, p.proacl
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.prokind IN ('f','p') AND p.proname <> '_ops_schema_dump'
+    WHERE n.nspname = 'public' AND p.prokind IN ('f','p') AND p.proname NOT LIKE '\_ops\_%'
       AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
     ORDER BY p.proname, p.oid
   LOOP
@@ -267,7 +288,7 @@ BEGIN
   -- Buckets
   FOR r IN SELECT id, name, public, file_size_limit, allowed_mime_types FROM storage.buckets ORDER BY id LOOP
     out := out || format(E'INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES (%L, %L, %s, %s, %s) ON CONFLICT (id) DO NOTHING;\n',
-      r.id, r.name, r.public, coalesce(r.file_size_limit::text, 'NULL'),
+      r.id, r.name, CASE WHEN r.public THEN 'true' ELSE 'false' END, coalesce(r.file_size_limit::text, 'NULL'),
       CASE WHEN r.allowed_mime_types IS NULL THEN 'NULL' ELSE quote_literal(r.allowed_mime_types::text) || '::text[]' END);
   END LOOP;
   FOR r IN
