@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import restrowizardLogo from '@/assets/logos/restrowizard.png';
-import { Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
+import { FEATURES } from '@/config/features';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -25,12 +25,12 @@ const Footer = () => {
   return (
     <footer className="bg-soft-black text-white/50">
       <div className="container mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-4 gap-10 mb-12">
+        <div className={`grid ${FEATURES.ecosystem ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-10 mb-12`}>
           {/* Brand */}
           <div className="md:col-span-1">
             <img src={restrowizardLogo} alt="RestroWizard" className="h-9 w-auto mb-4 brightness-0 invert" />
             <p className="font-lato-light text-sm leading-relaxed">
-              La plataforma integral con IA para la industria gastronómica.
+              Finanzas, operación y presencia digital con IA para restaurantes y bares.
             </p>
           </div>
 
@@ -38,13 +38,13 @@ const Footer = () => {
           <div>
             <h4 className="font-headline text-white/80 text-sm mb-4">Producto</h4>
             <ul className="space-y-2 text-sm font-lato-light">
-              <li><a href="#ecosistema" onClick={handleNav('#ecosistema')} className="hover:text-white transition-colors">Plataforma</a></li>
-              <li><a href="#soluciones" onClick={handleNav('#soluciones')} className="hover:text-white transition-colors">Soluciones</a></li>
-              <li><a href="#consultores" onClick={handleNav('#consultores')} className="hover:text-white transition-colors">Consultores</a></li>
+              <li><a href="#producto" onClick={handleNav('#producto')} className="hover:text-white transition-colors">Plataforma</a></li>
+              <li><a href="/demo" onClick={handleNav('/demo')} className="hover:text-white transition-colors">Demo en vivo</a></li>
               <li><a href="/diagnosis" onClick={handleNav('/diagnosis')} className="hover:text-white transition-colors">Diagnóstico Gratis</a></li>
             </ul>
           </div>
 
+          {FEATURES.ecosystem && (
           <div>
             <h4 className="font-headline text-white/80 text-sm mb-4">Ecosistema</h4>
             <ul className="space-y-2 text-sm font-lato-light">
@@ -54,6 +54,7 @@ const Footer = () => {
               <li><a href="/growth" onClick={handleNav('/growth')} className="hover:text-white transition-colors">RestroGrowth</a></li>
             </ul>
           </div>
+          )}
 
           <div>
             <h4 className="font-headline text-white/80 text-sm mb-4">Empresa</h4>
@@ -69,13 +70,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm font-lato-light">© {new Date().getFullYear()} RestroWizard. Todos los derechos reservados.</p>
-          <div className="flex gap-3">
-            {[Linkedin, Instagram, Facebook, Youtube].map((Icon, i) => (
-            <a key={i} href="#" className="w-9 h-9 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
-              <Icon className="text-sm" />
-            </a>
-          ))}
-          </div>
+          {/* Redes sociales: se muestran cuando existan las cuentas reales (antes apuntaban a "#"). */}
         </div>
       </div>
     </footer>

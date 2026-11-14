@@ -63,7 +63,7 @@ const Growth = () => {
       <SEOHead
         title="RestroGrowth - Inversión y Emprendimiento Gastronómico | RestroWizard"
         description="Conecta inversionistas con restauranteros. Valida tu concepto gastronómico, encuentra capital y socios estratégicos con herramientas de análisis de mercado e IA."
-        canonical="https://restrowizard.lovable.app/growth"
+        canonical="https://restrowizard.co/growth"
       />
       <Header />
 

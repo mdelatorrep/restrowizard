@@ -21,6 +21,8 @@ import AdminLayout from "./layouts/AdminLayout";
 import OnboardingGuard from "./components/guards/OnboardingGuard";
 import RequireSuperAdmin from "./components/guards/RequireSuperAdmin";
 import GuardedRoute from "./components/guards/GuardedRoute";
+import FeatureGate from "./components/guards/FeatureGate";
+import { FEATURES } from "./config/features";
 import RoleLanding from "./components/guards/RoleLanding";
 
 import { RouteErrorBoundary } from "./components/errors/RouteErrorBoundary";
@@ -174,7 +176,7 @@ const App = () => (
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/demo" element={<Demo />} />
                 <Route path="/diagnosis" element={<Diagnosis />} />
-                <Route path="/events" element={<Events />} />
+                <Route path="/events" element={<FeatureGate feature="ecosystem"><Events /></FeatureGate>} />
                 <Route path="/eventos" element={<Navigate to="/events" replace />} />
                 {/* Legacy redirect kept for old shared links — F-03 renamed nav to "Testimonios". */}
                 <Route path="/casos-de-exito" element={<Navigate to="/#testimonios" replace />} />
@@ -182,20 +184,20 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
-                <Route path="/jobs" element={<Jobs />} />
-                <Route path="/jobs/:id" element={<JobDetail />} />
-                <Route path="/jobs/mi-perfil" element={<CandidateDashboard />} />
-                <Route path="/learn" element={<LearnHome />} />
-                <Route path="/learn/track/:slug" element={<TrackDetail />} />
-                <Route path="/learn/course/:id" element={<CourseDetail />} />
-                <Route path="/learn/course/:id/lesson/:lessonId" element={<LessonViewer />} />
-                <Route path="/learn/mi-progreso" element={<StudentDashboard />} />
-                <Route path="/services" element={<ServicesHome />} />
-                <Route path="/services/provider/:id" element={<ProviderDetail />} />
-                <Route path="/services/request/:id" element={<RequestDetail />} />
-                <Route path="/services/dashboard" element={<ProviderDashboard />} />
-                <Route path="/services/register" element={<ProviderRegister />} />
-                <Route path="/growth" element={<Growth />} />
+                <Route path="/jobs" element={<FeatureGate feature="ecosystem"><Jobs /></FeatureGate>} />
+                <Route path="/jobs/:id" element={<FeatureGate feature="ecosystem"><JobDetail /></FeatureGate>} />
+                <Route path="/jobs/mi-perfil" element={<FeatureGate feature="ecosystem"><CandidateDashboard /></FeatureGate>} />
+                <Route path="/learn" element={<FeatureGate feature="ecosystem"><LearnHome /></FeatureGate>} />
+                <Route path="/learn/track/:slug" element={<FeatureGate feature="ecosystem"><TrackDetail /></FeatureGate>} />
+                <Route path="/learn/course/:id" element={<FeatureGate feature="ecosystem"><CourseDetail /></FeatureGate>} />
+                <Route path="/learn/course/:id/lesson/:lessonId" element={<FeatureGate feature="ecosystem"><LessonViewer /></FeatureGate>} />
+                <Route path="/learn/mi-progreso" element={<FeatureGate feature="ecosystem"><StudentDashboard /></FeatureGate>} />
+                <Route path="/services" element={<FeatureGate feature="ecosystem"><ServicesHome /></FeatureGate>} />
+                <Route path="/services/provider/:id" element={<FeatureGate feature="ecosystem"><ProviderDetail /></FeatureGate>} />
+                <Route path="/services/request/:id" element={<FeatureGate feature="ecosystem"><RequestDetail /></FeatureGate>} />
+                <Route path="/services/dashboard" element={<FeatureGate feature="ecosystem"><ProviderDashboard /></FeatureGate>} />
+                <Route path="/services/register" element={<FeatureGate feature="ecosystem"><ProviderRegister /></FeatureGate>} />
+                <Route path="/growth" element={<FeatureGate feature="ecosystem"><Growth /></FeatureGate>} />
                 <Route path="/menus" element={<Menus />} />
                 <Route path="/menu/:slug" element={<PublicMenu />} />
 
@@ -242,21 +244,21 @@ const App = () => (
                   <Route path="talent" element={<GuardedRoute pathKey="talent"><RestaurantTalent /></GuardedRoute>} />
                   <Route path="menu-engineering" element={<Navigate to="/r/menus" replace />} />
                   <Route path="sustainability" element={<GuardedRoute pathKey="sustainability"><RestaurantSustainability /></GuardedRoute>} />
-                  <Route path="ghost-kitchen" element={<GuardedRoute pathKey="ghost-kitchen"><RestaurantGhostKitchen /></GuardedRoute>} />
-                  <Route path="chain-management" element={<GuardedRoute pathKey="chain-management"><RestaurantChainManagement /></GuardedRoute>} />
+                  <Route path="ghost-kitchen" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="ghost-kitchen"><RestaurantGhostKitchen /></GuardedRoute></FeatureGate>} />
+                  <Route path="chain-management" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="chain-management"><RestaurantChainManagement /></GuardedRoute></FeatureGate>} />
                   <Route path="brand" element={<GuardedRoute pathKey="brand"><RestaurantBrand /></GuardedRoute>} />
                   <Route path="marketing" element={<GuardedRoute pathKey="marketing"><RestaurantMarketing /></GuardedRoute>} />
                   <Route path="feedback" element={<GuardedRoute pathKey="feedback"><RestaurantFeedback /></GuardedRoute>} />
                   <Route path="recipes" element={<GuardedRoute pathKey="recipes"><RestaurantRecipes /></GuardedRoute>} />
                   <Route path="orders" element={<GuardedRoute pathKey="orders"><RestaurantOrders /></GuardedRoute>} />
                   <Route path="sales-goals" element={<Navigate to="/r/pos-reports?tab=goals" replace />} />
-                  <Route path="support" element={<GuardedRoute pathKey="support"><RestaurantSupport /></GuardedRoute>} />
+                  <Route path="support" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="support"><RestaurantSupport /></GuardedRoute></FeatureGate>} />
                   <Route path="social-listening" element={<Navigate to="/r/feedback?mainTab=reputation" replace />} />
-                  <Route path="new-business" element={<GuardedRoute pathKey="new-business"><RestaurantNewBusiness /></GuardedRoute>} />
+                  <Route path="new-business" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="new-business"><RestaurantNewBusiness /></GuardedRoute></FeatureGate>} />
                   <Route path="menus" element={<GuardedRoute pathKey="menus"><RestaurantMenus /></GuardedRoute>} />
                   <Route path="loyalty" element={<GuardedRoute pathKey="loyalty"><RestaurantLoyalty /></GuardedRoute>} />
-                  <Route path="first-90-days" element={<GuardedRoute pathKey="first-90-days"><RestaurantFirst90Days /></GuardedRoute>} />
-                  <Route path="pre-opening" element={<GuardedRoute pathKey="pre-opening"><RestaurantPreOpening /></GuardedRoute>} />
+                  <Route path="first-90-days" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="first-90-days"><RestaurantFirst90Days /></GuardedRoute></FeatureGate>} />
+                  <Route path="pre-opening" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="pre-opening"><RestaurantPreOpening /></GuardedRoute></FeatureGate>} />
                   <Route path="pos" element={<GuardedRoute pathKey="pos"><RestaurantPOS /></GuardedRoute>} />
                   <Route path="pos-reports" element={<GuardedRoute pathKey="pos-reports"><RestaurantPOSReports /></GuardedRoute>} />
                   <Route path="pos-audit" element={<GuardedRoute pathKey="pos-audit"><RestaurantPOSAudit /></GuardedRoute>} />
@@ -266,18 +268,18 @@ const App = () => (
                   <Route path="staff-schedule" element={<Navigate to="/r/talent?tab=schedule" replace />} />
                   <Route path="inventory" element={<GuardedRoute pathKey="inventory"><RestaurantInventory /></GuardedRoute>} />
                   <Route path="delivery" element={<GuardedRoute pathKey="delivery"><RestaurantDelivery /></GuardedRoute>} />
-                  <Route path="integrations/rappi" element={<GuardedRoute pathKey="integrations/rappi"><RestaurantRappiIntegration /></GuardedRoute>} />
+                  <Route path="integrations/rappi" element={<FeatureGate feature="rappi" notice={{ title: "Rappi se habilita al obtener acceso de aliado", description: "La integración necesita credenciales de la API de aliados de Rappi para cada restaurante. Mientras tanto, recibe pedidos a domicilio desde tu propio sitio web." }}><GuardedRoute pathKey="integrations/rappi"><RestaurantRappiIntegration /></GuardedRoute></FeatureGate>} />
                   <Route path="suppliers" element={<Navigate to="/r/inventory?tab=suppliers" replace />} />
                   <Route path="settings" element={<GuardedRoute pathKey="settings"><RestaurantSettings /></GuardedRoute>} />
-                  <Route path="ecosystem-admin" element={<GuardedRoute pathKey="ecosystem-admin"><RestaurantEcosystemAdmin /></GuardedRoute>} />
-                  <Route path="my-development" element={<GuardedRoute pathKey="my-development"><RestaurantMyDevelopment /></GuardedRoute>} />
+                  <Route path="ecosystem-admin" element={<FeatureGate feature="ecosystem" redirectTo="/r/dashboard"><GuardedRoute pathKey="ecosystem-admin"><RestaurantEcosystemAdmin /></GuardedRoute></FeatureGate>} />
+                  <Route path="my-development" element={<FeatureGate feature="orphanModules" redirectTo="/r/dashboard"><GuardedRoute pathKey="my-development"><RestaurantMyDevelopment /></GuardedRoute></FeatureGate>} />
                   <Route path="knowledge" element={<GuardedRoute pathKey="knowledge"><RestaurantKnowledge /></GuardedRoute>} />
                   <Route path="invoices" element={<GuardedRoute pathKey="invoices"><RestaurantInvoices /></GuardedRoute>} />
                   <Route path="electronic-invoicing" element={<GuardedRoute pathKey="electronic-invoicing"><RestaurantElectronicInvoicing /></GuardedRoute>} />
                 </Route>
 
                 {/* Consultant onboarding */}
-                <Route path="/c/onboarding" element={
+                <Route path="/c/onboarding" element={!FEATURES.ecosystem ? <Navigate to="/" replace /> : 
                   <OnboardingGuard requireOnboarding={false} userType="consultant">
                     <ConsultantOnboarding />
                   </OnboardingGuard>
@@ -285,9 +287,11 @@ const App = () => (
 
                 {/* Consultant routes */}
                 <Route path="/c" element={
-                  <OnboardingGuard requireOnboarding={true} userType="consultant">
-                    <AppLayout requiredUserType="consultant" />
-                  </OnboardingGuard>
+                  <FeatureGate feature="ecosystem">
+                    <OnboardingGuard requireOnboarding={true} userType="consultant">
+                      <AppLayout requiredUserType="consultant" />
+                    </OnboardingGuard>
+                  </FeatureGate>
                 }>
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<ConsultantDashboard />} />

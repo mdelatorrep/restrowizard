@@ -84,7 +84,7 @@ const Jobs = () => {
       <SEOHead
         title="RestroJobs - Bolsa de Empleo Gastronómico | RestroWizard"
         description="Encuentra empleo en gastronomía o contrata talento para tu restaurante. Ofertas de cocina, servicio, gestión, bartender y más en la bolsa de trabajo especializada."
-        canonical="https://restrowizard.lovable.app/jobs"
+        canonical="https://restrowizard.co/jobs"
       />
       <Header />
 

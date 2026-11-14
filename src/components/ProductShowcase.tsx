@@ -10,7 +10,7 @@ const painPoints = [
     icon: Users,
     title: 'Gestión de Talento',
     stat: 'El 45% no encuentra personal calificado',
-    solution: 'Turnos inteligentes, control de ausencias, programas de formación y beneficios que reducen la rotación.',
+    solution: 'Turnos inteligentes y control de ausencias para cubrir cada turno sin sobrecostos de nómina.',
   },
   {
     icon: Boxes,
@@ -22,7 +22,7 @@ const painPoints = [
     icon: Globe,
     title: 'Presencia Digital',
     stat: 'El 60% no tiene sitio web',
-    solution: 'Sitio web, menú digital, reservas y delivery sin comisiones, listo en minutos.',
+    solution: 'Sitio web, menú digital y reservas sin comisiones, listo el mismo día.',
   },
   {
     icon: Bot,

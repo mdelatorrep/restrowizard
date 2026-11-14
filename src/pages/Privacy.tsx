@@ -4,7 +4,7 @@ import SEOHead from '@/components/SEOHead';
 
 const Privacy = () => (
   <div className="min-h-screen bg-background">
-    <SEOHead title="Política de Privacidad | RestroWizard" description="Conoce cómo protegemos tus datos personales en RestroWizard." canonical="https://restrowizard.lovable.app/privacy" />
+    <SEOHead title="Política de Privacidad | RestroWizard" description="Conoce cómo protegemos tus datos personales en RestroWizard." canonical="https://restrowizard.co/privacy" />
     <Header />
     <section className="pt-28 pb-16">
       <div className="container mx-auto px-6 max-w-3xl prose prose-gray">

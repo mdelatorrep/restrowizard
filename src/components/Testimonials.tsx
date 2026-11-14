@@ -17,7 +17,7 @@ const Testimonials = () => {
             Pronto: voces reales de cocinas reales.
           </h2>
           <p className="text-dark-gray font-lato-regular text-lg leading-relaxed mt-6">
-            Estamos en piloto privado con un grupo selecto de restaurantes en LatAm.
+            Estamos en piloto privado con restaurantes y bares en Colombia.
             Publicaremos sus historias — con nombre, foto y cifras — solo cuando
             tengamos su autorización por escrito. Mientras tanto, prueba la
             plataforma y mide los resultados en tu propia operación.

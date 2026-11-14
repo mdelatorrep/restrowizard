@@ -34,10 +34,9 @@ const NotFound = () => {
             </Button>
           </div>
           <div className="mt-10 flex flex-wrap gap-2 justify-center text-sm">
-            <Button variant="link" size="sm" onClick={() => navigate('/jobs')}>RestroJobs</Button>
-            <Button variant="link" size="sm" onClick={() => navigate('/learn')}>RestroLearn</Button>
-            <Button variant="link" size="sm" onClick={() => navigate('/services')}>RestroServices</Button>
-            <Button variant="link" size="sm" onClick={() => navigate('/growth')}>RestroGrowth</Button>
+            <Button variant="link" size="sm" onClick={() => navigate('/demo')}>Demo en vivo</Button>
+            <Button variant="link" size="sm" onClick={() => navigate('/diagnosis')}>Diagnóstico gratis</Button>
+            <Button variant="link" size="sm" onClick={() => navigate('/auth')}>Crear cuenta</Button>
           </div>
         </div>
       </div>

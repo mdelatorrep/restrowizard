@@ -20,7 +20,7 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Contacto | RestroWizard" description="Contáctanos para resolver tus dudas sobre RestroWizard." canonical="https://restrowizard.lovable.app/contact" />
+      <SEOHead title="Contacto | RestroWizard" description="Contáctanos para resolver tus dudas sobre RestroWizard." canonical="https://restrowizard.co/contact" />
       <Header />
       <section className="pt-28 pb-16 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="container mx-auto px-6 text-center max-w-3xl">

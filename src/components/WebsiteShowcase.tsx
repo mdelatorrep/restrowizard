@@ -247,7 +247,7 @@ const WebsiteShowcase = () => {
             <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
           <p className="mt-4 text-sm text-soft-black/50 font-lato-light">
-            Activo en 10 minutos • Sin conocimientos técnicos • 100% personalizable
+            Listo el mismo día • Sin conocimientos técnicos • 100% personalizable
           </p>
         </div>
       </div>

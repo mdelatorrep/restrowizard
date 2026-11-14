@@ -16,4 +16,4 @@ Disallow: /r/
 Disallow: /c/
 Disallow: /admin/
 
-Sitemap: https://restrowizard.lovable.app/sitemap.xml
+Sitemap: https://restrowizard.co/sitemap.xml

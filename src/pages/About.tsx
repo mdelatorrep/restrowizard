@@ -6,7 +6,7 @@ import SEOHead from '@/components/SEOHead';
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Sobre Nosotros | RestroWizard" description="Conoce al equipo detrás de RestroWizard, la plataforma integral con IA para la industria gastronómica." canonical="https://restrowizard.lovable.app/about" />
+      <SEOHead title="Sobre Nosotros | RestroWizard" description="Conoce al equipo detrás de RestroWizard, la plataforma integral con IA para la industria gastronómica." canonical="https://restrowizard.co/about" />
       <Header />
       <section className="pt-28 pb-16 bg-gradient-to-br from-primary/10 to-primary/5">
         <div className="container mx-auto px-6 text-center max-w-3xl">
@@ -21,9 +21,9 @@ const About = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
             {[
               { icon: Target, title: 'Misión', desc: 'Democratizar el acceso a herramientas de gestión inteligente para restaurantes de todos los tamaños en Latinoamérica.' },
-              { icon: Lightbulb, title: 'Visión', desc: 'Ser el ecosistema líder que conecta la tecnología con la pasión gastronómica.' },
+              { icon: Lightbulb, title: 'Visión', desc: 'Que cada restaurante independiente decida con cifras, no con intuición.' },
               { icon: Users, title: 'Equipo', desc: 'Profesionales de tecnología, gastronomía y consultoría unidos por la innovación.' },
-              { icon: Building2, title: 'Presencia', desc: 'Operando en Colombia, México, Chile, Argentina y expandiéndonos por toda la región.' },
+              { icon: Building2, title: 'Presencia', desc: 'Operando en Colombia, en piloto privado con restaurantes y bares.' },
             ].map((item) => (
               <div key={item.title} className="text-center">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">

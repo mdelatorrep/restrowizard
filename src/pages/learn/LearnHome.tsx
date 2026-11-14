@@ -44,7 +44,7 @@ const LearnHome = () => {
       <SEOHead
         title="RestroLearn - Formación y Certificaciones para Restaurantes | RestroWizard"
         description="Cursos y rutas de aprendizaje diseñadas para cada rol de la industria gastronómica. Certificaciones profesionales, contenido generado con IA y formación continua."
-        canonical="https://restrowizard.lovable.app/learn"
+        canonical="https://restrowizard.co/learn"
       />
       <Header />
 

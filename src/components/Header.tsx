@@ -9,6 +9,7 @@ import restrogrowthLogo from '@/assets/logos/restrogrowth.png';
 import restrolearnLogo from '@/assets/logos/restrolearn.png';
 import restroservicesLogo from '@/assets/logos/restroservices.png';
 import { ArrowRight, ChevronDown, Menu, Star, X } from 'lucide-react';
+import { FEATURES } from '@/config/features';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -62,12 +63,16 @@ const Header = () => {
     { logo: restrogrowthLogo, name: 'RestroGrowth', desc: 'Inversión y emprendimiento', action: () => navigate('/growth') },
   ];
 
-  const navLinks = [
-    { label: 'Soluciones', action: () => scrollToSection('soluciones'), isSolutions: true },
-    { label: 'Producto', action: () => scrollToSection('ecosistema') },
-    { label: 'Consultores', action: () => scrollToSection('consultores') },
-    { label: 'Testimonios', action: () => scrollToSection('testimonios') },
-    { label: 'Eventos', action: () => navigate('/events') },
+  // C-01/C-02: solo enlaces a lo que existe. El ecosistema y los eventos vuelven
+  // con FEATURES.ecosystem; el enlace "Consultores" apuntaba a una sección inexistente.
+  type NavLink = { label: string; action: () => void; isSolutions?: boolean };
+  const navLinks: NavLink[] = [
+    ...(FEATURES.ecosystem ? [{ label: 'Soluciones', action: () => scrollToSection('soluciones'), isSolutions: true }] : []),
+    { label: 'Producto', action: () => scrollToSection('producto') },
+    { label: 'Qué medimos', action: () => scrollToSection('resultados') },
+    { label: 'Demo', action: () => navigate('/demo') },
+    { label: 'Diagnóstico gratis', action: () => navigate('/diagnosis') },
+    ...(FEATURES.ecosystem ? [{ label: 'Eventos', action: () => navigate('/events') }] : []),
   ];
 
   return (
@@ -94,7 +99,7 @@ const Header = () => {
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center space-x-6">
           {navLinks.map((link, index) => (
-            'isSolutions' in link && link.isSolutions ? (
+            link.isSolutions ? (
               <div
                 key={index}
                 className="relative"

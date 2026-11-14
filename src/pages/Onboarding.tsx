@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Building2, Briefcase, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUserType } from '@/hooks/useUserType';
 import { useAuth } from '@/hooks/useAuth';
+import { FEATURES } from '@/config/features';
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +28,19 @@ const Onboarding: React.FC = () => {
     }
   }, [authLoading, typeLoading, user, userType, hasCompletedOnboarding, navigate]);
 
-  if (authLoading || typeLoading) {
+  // Sin portal de consultores (C-02), todo usuario nuevo es dueño de restaurante:
+  // se salta la elección de tipo y va directo al alta del negocio (C-07).
+  const autoTypeStarted = useRef(false);
+  useEffect(() => {
+    if (FEATURES.ecosystem || authLoading || typeLoading || !user || userType || autoTypeStarted.current) return;
+    autoTypeStarted.current = true;
+    updateUserType('restaurant_owner')
+      .then(() => navigate('/r/onboarding', { replace: true }))
+      .catch((error) => console.error('Error updating user type:', error));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, typeLoading, user, userType]);
+
+  if (authLoading || typeLoading || (!FEATURES.ecosystem && user && !userType)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />

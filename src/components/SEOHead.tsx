@@ -8,7 +8,20 @@ interface SEOHeadProps {
   jsonLd?: Record<string, unknown>;
 }
 
-const BASE_URL = 'https://restrowizard.lovable.app';
+/** Dominio público del sitio (B-18). Se puede cambiar por entorno con VITE_SITE_URL. */
+export const SITE_URL: string = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || 'https://restrowizard.co';
+
+/** Normaliza cualquier canonical (ruta o URL de otro host) al dominio público. */
+const toCanonical = (value?: string): string => {
+  if (!value) return `${SITE_URL}/`;
+  try {
+    const u = new URL(value, SITE_URL);
+    return `${SITE_URL}${u.pathname}${u.search}`;
+  } catch {
+    return `${SITE_URL}/`;
+  }
+};
+
 
 const SEOHead: React.FC<SEOHeadProps> = ({ title, description, canonical, ogImage, jsonLd }) => {
   useEffect(() => {
@@ -27,7 +40,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({ title, description, canonical, ogImag
     setMeta('name', 'description', description);
     setMeta('property', 'og:title', title);
     setMeta('property', 'og:description', description);
-    setMeta('property', 'og:url', canonical || BASE_URL);
+    const canonicalUrl = toCanonical(canonical);
+    setMeta('property', 'og:url', canonicalUrl);
     setMeta('name', 'twitter:title', title);
     setMeta('name', 'twitter:description', description);
 
@@ -43,7 +57,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({ title, description, canonical, ogImag
       link.setAttribute('rel', 'canonical');
       document.head.appendChild(link);
     }
-    link.setAttribute('href', canonical || BASE_URL);
+    link.setAttribute('href', canonicalUrl);
 
     // JSON-LD
     let script = document.getElementById('seo-jsonld') as HTMLScriptElement | null;

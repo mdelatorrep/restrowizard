@@ -4,7 +4,7 @@ import SEOHead from '@/components/SEOHead';
 
 const Terms = () => (
   <div className="min-h-screen bg-background">
-    <SEOHead title="Términos y Condiciones | RestroWizard" description="Términos y condiciones de uso de la plataforma RestroWizard." canonical="https://restrowizard.lovable.app/terms" />
+    <SEOHead title="Términos y Condiciones | RestroWizard" description="Términos y condiciones de uso de la plataforma RestroWizard." canonical="https://restrowizard.co/terms" />
     <Header />
     <section className="pt-28 pb-16">
       <div className="container mx-auto px-6 max-w-3xl prose prose-gray">

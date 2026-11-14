@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { FEATURES } from '@/config/features';
 import { Navigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, Users, Utensils, Clock, Leaf, Store } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -86,7 +87,7 @@ const RestaurantDashboard: React.FC = () => {
     fetchBusiness();
   }, [user]);
 
-  if (!lifecycle.isLoading) {
+  if (!lifecycle.isLoading && FEATURES.orphanModules) {
     if (lifecycle.stage === 'pre_opening') return <Navigate to="/r/pre-opening" replace />;
     if (lifecycle.stage === 'first_90_days') return <Navigate to="/r/first-90-days" replace />;
     if (lifecycle.stage === 'conception' || lifecycle.stage === 'enablement')
@@ -164,7 +165,7 @@ const RestaurantDashboard: React.FC = () => {
     { label: 'Operaciones', path: '/r/operations', icon: Clock },
     { label: 'Talento', path: '/r/talent', icon: Users },
     { label: 'Menú', path: '/r/menu-engineering', icon: Utensils },
-    { label: 'Ghost Kitchen', path: '/r/ghost-kitchen', icon: Store },
+    { label: 'Inventario', path: '/r/inventory', icon: Store },
     { label: 'Sostenibilidad', path: '/r/sustainability', icon: Leaf },
   ];
 

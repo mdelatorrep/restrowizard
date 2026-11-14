@@ -17,7 +17,7 @@ const FinalCTA = () => {
           <span className="text-lavender-light">Es gratis.</span>
         </h2>
         <p className="text-lg font-lato-light text-white/50 mb-10 max-w-lg mx-auto">
-          Crea tu sitio web, activa reservas y conecta la IA a tu restaurante en menos de 10 minutos.
+          Crea tu sitio web, activa reservas y conecta la IA a tu restaurante el mismo día.
         </p>
         <button
           onClick={() => navigate(user ? '/r/dashboard' : '/auth')}

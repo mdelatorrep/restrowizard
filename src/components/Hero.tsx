@@ -32,7 +32,7 @@ const Hero = () => {
 
           {/* Subtitle */}
           <p className="text-xl md:text-2xl font-lato-light text-white/60 max-w-2xl mx-auto leading-relaxed">
-            Sitio web, reservas, delivery e inteligencia artificial.
+            Finanzas, POS, sitio web, reservas e inteligencia artificial.
             <br className="hidden md:block" />
             Todo en una sola plataforma.
           </p>
@@ -58,7 +58,7 @@ const Hero = () => {
 
           {/* Minimal trust line — no unverifiable counts. */}
           <p className="text-sm font-lato-light text-white/40 pt-2">
-            Sin tarjeta de crédito · Activo en 10 minutos
+            Sin tarjeta de crédito · Prueba la demo sin registrarte
           </p>
         </div>
       </div>

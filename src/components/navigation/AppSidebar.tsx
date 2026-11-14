@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { FEATURES, type FeatureKey } from '@/config/features';
 import { getRoutePermission } from '@/config/routePermissions';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
@@ -80,6 +81,7 @@ interface MenuItem {
   stages?: RestaurantStage[];
   moduleKey?: string; // Key to check prerequisites
   permissionModule?: keyof ModulePermissions; // Key to check team permissions
+  feature?: FeatureKey; // Interruptor de producto (config/features)
 }
 
 // ====== SIDEBAR REORGANIZADO POR GRUPOS LÓGICOS ======
@@ -90,19 +92,19 @@ const mainNavigationItems: MenuItem[] = [
   { 
     title: 'Nuevo Negocio', 
     icon: Lightbulb, 
-    path: '/r/new-business',
+    path: '/r/new-business', feature: 'orphanModules',
     stages: ['conception', 'enablement', 'no_project']
   },
   { 
     title: 'Pre-Apertura', 
     icon: Timer, 
-    path: '/r/pre-opening',
+    path: '/r/pre-opening', feature: 'orphanModules',
     stages: ['pre_opening']
   },
   { 
     title: 'Primeros 90 Días', 
     icon: TrendingUp, 
-    path: '/r/first-90-days',
+    path: '/r/first-90-days', feature: 'orphanModules',
     stages: ['first_90_days']
   },
 ];
@@ -180,7 +182,7 @@ const salesItems: MenuItem[] = [
   { 
     title: 'Rappi', 
     icon: Truck, 
-    path: '/r/integrations/rappi',
+    path: '/r/integrations/rappi', feature: 'rappi',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'delivery',
     permissionModule: 'rappi'
@@ -230,7 +232,7 @@ const peopleItems: MenuItem[] = [
   { 
     title: 'Mi Desarrollo', 
     icon: GraduationCap, 
-    path: '/r/my-development',
+    path: '/r/my-development', feature: 'orphanModules',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     permissionModule: 'my_development'
   },
@@ -253,7 +255,7 @@ const peopleItems: MenuItem[] = [
   { 
     title: 'Soporte PQRS', 
     icon: HeadphonesIcon, 
-    path: '/r/support',
+    path: '/r/support', feature: 'orphanModules',
     stages: ['first_90_days', 'normal_operation'],
     moduleKey: 'support',
     permissionModule: 'support'
@@ -313,7 +315,7 @@ const expansionItems: MenuItem[] = [
   { 
     title: 'Ghost Kitchen', 
     icon: Store, 
-    path: '/r/ghost-kitchen',
+    path: '/r/ghost-kitchen', feature: 'orphanModules',
     stages: ['normal_operation'],
     moduleKey: 'ghost-kitchen',
     permissionModule: 'ghost_kitchen'
@@ -321,7 +323,7 @@ const expansionItems: MenuItem[] = [
   { 
     title: 'Gestión de Cadenas', 
     icon: Building2, 
-    path: '/r/chain-management',
+    path: '/r/chain-management', feature: 'orphanModules',
     stages: ['normal_operation'],
     moduleKey: 'chain-management',
     permissionModule: 'chain_management'
@@ -329,7 +331,7 @@ const expansionItems: MenuItem[] = [
   { 
     title: 'Admin Ecosistema', 
     icon: Wrench, 
-    path: '/r/ecosystem-admin',
+    path: '/r/ecosystem-admin', feature: 'ecosystem',
     stages: ['enablement', 'pre_opening', 'first_90_days', 'normal_operation'],
     permissionModule: 'ecosystem_admin'
   },
@@ -400,7 +402,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ userType }) => {
 
   // Filter menu items based on lifecycle stage and permissions
   const filterByStageAndPermissions = (items: MenuItem[]) => {
-    let filtered = items;
+    // Módulos apagados por producto (C-02, C-03, C-04): no se muestran a nadie.
+    let filtered = items.filter(item => !item.feature || FEATURES[item.feature]);
     
     // Filter by stage unless showing all
     if (!showAllModules) {

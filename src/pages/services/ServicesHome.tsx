@@ -43,7 +43,7 @@ const ServicesHome = () => {
       <SEOHead
         title="RestroServices - Proveedores y Servicios Gastronómicos | RestroWizard"
         description="Marketplace de proveedores verificados para restaurantes. Equipamiento, tecnología, ingredientes, consultoría y diseño. Cotizaciones comparables y contrataciones seguras."
-        canonical="https://restrowizard.lovable.app/services"
+        canonical="https://restrowizard.co/services"
       />
       <Header />
 
