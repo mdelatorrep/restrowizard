@@ -145,7 +145,15 @@ export function usePublicCart(restaurantUserId: string) {
 
       if (error) {
         console.error('Order error:', error);
-        return { success: false, error: 'Error al procesar el pedido. Intenta de nuevo.' };
+        // 400/404/429 traen el motivo en el cuerpo (pedido mínimo, límite de pedidos...).
+        let message = 'Error al procesar el pedido. Intenta de nuevo.';
+        try {
+          const body = await (error as { context?: Response }).context?.json();
+          if (body?.error) message = body.error;
+        } catch {
+          /* cuerpo no legible */
+        }
+        return { success: false, error: message };
       }
 
       if (data.error) {

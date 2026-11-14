@@ -8,6 +8,7 @@ import { ResumeOrNewSelector } from '@/components/onboarding/ResumeOrNewSelector
 import { NewBusinessOnboarding } from '@/components/onboarding/NewBusinessOnboarding';
 import { ExistingBusinessOnboarding } from '@/components/onboarding/ExistingBusinessOnboarding';
 import { supabase } from '@/integrations/supabase/client';
+import { FEATURES } from '@/config/features';
 
 type OnboardingFlow = 'select' | 'resume-or-new' | 'new' | 'existing' | 'resume';
 
@@ -40,6 +41,12 @@ const RestaurantOnboarding: React.FC = () => {
   // Determine initial flow based on URL + existing data
   useEffect(() => {
     if (loadingProject || !user) return;
+
+    // C-03/C-07: sin el módulo de apertura, todo restaurante entra por el alta guiada.
+    if (!FEATURES.orphanModules) {
+      if (flow === null) setFlow('existing');
+      return;
+    }
 
     // If a projectId is in the URL, always resume that specific project
     if (projectIdFromUrl) {
@@ -135,7 +142,11 @@ const RestaurantOnboarding: React.FC = () => {
   }
 
   // Existing business flow
-  return <ExistingBusinessOnboarding onBack={() => setFlow('select')} />;
+  return (
+    <ExistingBusinessOnboarding
+      onBack={() => (FEATURES.orphanModules ? setFlow('select') : window.history.back())}
+    />
+  );
 };
 
 export default RestaurantOnboarding;

@@ -35,7 +35,13 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
 done
 
 echo "→ seed.sql (demo)"
-psql "$VERIFY_URL" -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/seed.sql" >/dev/null 2>&1
+psql "$VERIFY_URL" -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/seed.sql" 2>&1 >/dev/null | grep -v "^psql:.*NOTICE" || true
+psql "$VERIFY_URL" -qAt -c "SELECT 1 FROM public.restaurant_websites WHERE slug = 'clutch-sports-bar'" | grep -q 1
+
+echo "→ Pruebas SQL"
+for t in "$ROOT"/supabase/tests/sql/*.test.sql; do
+  psql "$VERIFY_URL" -qAt -v ON_ERROR_STOP=1 -f "$t"
+done
 
 psql "$VERIFY_URL" -qAt -F ' ' -c "
   SELECT 'tablas', count(*) FROM pg_tables WHERE schemaname = 'public'

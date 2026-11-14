@@ -16,11 +16,12 @@
  }
  
  interface PublicErrorStateProps {
-   type: 'not_found' | 'not_published' | 'error';
+   type: 'not_found' | 'not_published' | 'error' | 'unavailable';
    message?: string;
+   title?: string;
  }
  
- export function PublicErrorState({ type, message }: PublicErrorStateProps) {
+ export function PublicErrorState({ type, message, title: customTitle }: PublicErrorStateProps) {
    const config = {
      not_found: {
        title: 'Restaurante no encontrado',
@@ -30,13 +31,18 @@
        title: 'Sitio no disponible',
        description: 'Este restaurante aún no ha publicado su sitio web.',
      },
+     unavailable: {
+       title: 'Servicio no disponible',
+       description: message || 'Este restaurante no ofrece este servicio por ahora.',
+     },
      error: {
        title: 'Error al cargar',
        description: message || 'Ocurrió un error al cargar la información. Intenta de nuevo.',
      },
    };
  
-   const { title, description } = config[type];
+   const { title: defaultTitle, description } = config[type];
+   const title = customTitle || defaultTitle;
  
    return (
      <div className="min-h-screen flex items-center justify-center bg-background p-6">

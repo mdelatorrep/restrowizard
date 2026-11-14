@@ -1,4 +1,5 @@
 // POS PIN Login — validates a 4-6 digit PIN against staff_members for a given restaurant slug
+// C-05: si el empleado no tiene cuenta, se crea una cuenta técnica la primera vez que entra.
 // Returns a magic-link token_hash that the client exchanges via verifyOtp to establish a session.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -67,21 +68,19 @@ Deno.serve(async (req) => {
 
     const staff = matches[0];
 
-    // 3) Require a linked auth user. If not linked, owner must link it from admin.
-    if (!staff.linked_user_id) {
-      return json(
-        {
-          error:
-            "Este empleado no tiene cuenta vinculada. El administrador debe vincular una cuenta de usuario para habilitar el PIN.",
-        },
-        409,
-      );
+    // 4) C-05: el cajero no necesita correo propio. Si el empleado aún no tiene
+    //    cuenta, se le crea una cuenta técnica (sin correo real ni contraseña
+    //    usable) y se le da acceso al POS del restaurante con su rol.
+    let linkedUserId: string | null = staff.linked_user_id ?? null;
+    if (!linkedUserId) {
+      linkedUserId = await provisionPosAccount(admin, site.user_id, staff);
+      if (!linkedUserId) {
+        return json({ error: "No se pudo habilitar el acceso de este empleado. Intenta de nuevo." }, 500);
+      }
     }
 
     // 4) Fetch the linked auth user's email
-    const { data: authUser, error: userErr } = await admin.auth.admin.getUserById(
-      staff.linked_user_id,
-    );
+    const { data: authUser, error: userErr } = await admin.auth.admin.getUserById(linkedUserId);
     if (userErr || !authUser?.user?.email) {
       return json({ error: "Cuenta vinculada inválida" }, 500);
     }
@@ -112,6 +111,88 @@ Deno.serve(async (req) => {
     return json({ error: "Error interno" }, 500);
   }
 });
+
+type Admin = ReturnType<typeof createClient>;
+type StaffMatch = { staff_id: string; staff_name: string; pos_role: string | null; linked_user_id: string | null };
+
+// Rol de equipo que corresponde a cada rol del POS.
+const TEAM_ROLE_BY_POS_ROLE: Record<string, string> = {
+  cashier: "cashier",
+  waiter: "staff",
+  supervisor: "manager",
+  admin: "manager",
+};
+
+async function provisionPosAccount(admin: Admin, ownerId: string, staff: StaffMatch): Promise<string | null> {
+  const email = `pos-${staff.staff_id}@pos.restrowizard.app`;
+  let userId: string | null = null;
+
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    password: crypto.randomUUID() + crypto.randomUUID(),
+    user_metadata: { full_name: staff.staff_name, user_type: "restaurant_owner", is_pos_staff: true },
+  });
+  if (created?.user?.id) {
+    userId = created.user.id;
+  } else {
+    // Reintento tras un fallo a mitad de camino: la cuenta ya existe.
+    console.warn("pos-pin-login: createUser", createErr?.message);
+    for (let page = 1; page <= 20 && !userId; page++) {
+      const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      const hit = list?.users?.find((u) => u.email === email);
+      if (hit) userId = hit.id;
+      if (!list?.users?.length) break;
+    }
+  }
+  if (!userId) return null;
+
+  const { error: linkErr } = await admin
+    .from("staff_members")
+    .update({ linked_user_id: userId })
+    .eq("id", staff.staff_id)
+    .eq("user_id", ownerId);
+  if (linkErr) {
+    console.error("pos-pin-login: vincular empleado", linkErr);
+    return null;
+  }
+
+  const { data: biz } = await admin
+    .from("restaurant_businesses")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (biz?.id) {
+    const role = TEAM_ROLE_BY_POS_ROLE[staff.pos_role ?? "cashier"] ?? "cashier";
+    const { data: customRole } = await admin
+      .from("restaurant_custom_roles")
+      .select("id")
+      .eq("business_id", biz.id)
+      .eq("key", role)
+      .maybeSingle();
+    const { data: existing } = await admin
+      .from("restaurant_team_members")
+      .select("id")
+      .eq("business_id", biz.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!existing) {
+      const { error: tmErr } = await admin.from("restaurant_team_members").insert({
+        business_id: biz.id,
+        user_id: userId,
+        staff_member_id: staff.staff_id,
+        role,
+        status: "active",
+        claimed_at: new Date().toISOString(),
+        custom_role_id: customRole?.id ?? null,
+      });
+      if (tmErr) console.error("pos-pin-login: alta en el equipo", tmErr);
+    }
+  }
+  return userId;
+}
 
 // IP del cliente: Cloudflare pone cf-connecting-ip y el cliente no la puede falsificar.
 function clientIp(req: Request): string | null {

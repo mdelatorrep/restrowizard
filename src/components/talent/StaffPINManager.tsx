@@ -154,8 +154,8 @@ export function StaffPINManager({ staffId, staffName, hasPin, posRole, onChanged
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Para que el PIN inicie sesión en el POS, este empleado debe tener una cuenta de
-              usuario vinculada en este restaurante.
+              No necesita correo: con este PIN entra al POS de este restaurante. La primera vez
+              que lo use, RestroWizard le crea un acceso con el rol elegido.
             </p>
           </div>
           <DialogFooter>

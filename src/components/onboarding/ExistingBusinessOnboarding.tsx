@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { ArrowRight, ArrowLeft, CheckCircle, ExternalLink, PartyPopper } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCountryInfo } from '@/data/constants';
 import { OnboardingProgressBar } from './OnboardingProgressBar';
 import { StepBusinessInfo } from './existing-steps/StepBusinessInfo';
 import { StepLocation } from './existing-steps/StepLocation';
-import { StepOpeningDate } from './existing-steps/StepOpeningDate';
-import { StepOperations } from './existing-steps/StepOperations';
-import { getRevenueRangesByCurrency, getLifecycleStage } from './existingBusinessHelpers';
+import { StepWebsite, type WebsiteValues } from './existing-steps/StepWebsite';
+import { StepQuickMenu } from './existing-steps/StepQuickMenu';
+import {
+  isValidSlug,
+  publishQuickSite,
+  readOnboardingMinutes,
+  slugify,
+  startOnboardingTimer,
+  validDishes,
+  type QuickDish,
+} from './quickSetup';
 
 interface ExistingBusinessOnboardingProps {
   onBack: () => void;
 }
 
+/**
+ * C-07: alta guiada. Cuatro pasos y el restaurante queda con sitio, carta y
+ * reservas publicados. Lo demás (equipo, finanzas, inventario) se configura
+ * después desde el panel.
+ */
 export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -26,6 +38,7 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [published, setPublished] = useState<{ slug: string; minutes: number | null } | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -35,22 +48,36 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
     city: '',
     state: '',
     country: 'Colombia',
-    employee_count: '',
-    monthly_revenue_range: '',
-    opening_date: '',
   });
+  const [site, setSite] = useState<WebsiteValues>({
+    slug: '',
+    whatsapp: '',
+    openTime: '12:00',
+    closeTime: '22:00',
+    closedDays: [],
+    reservations: true,
+  });
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [dishes, setDishes] = useState<QuickDish[]>([
+    { name: '', category: 'Entradas', price: '' },
+    { name: '', category: 'Platos fuertes', price: '' },
+    { name: '', category: 'Bebidas', price: '' },
+  ]);
+
+  useEffect(() => {
+    startOnboardingTimer();
+  }, []);
+
+  // El slug sigue al nombre hasta que el dueño lo edite.
+  useEffect(() => {
+    if (!slugTouched) setSite((s) => ({ ...s, slug: slugify(formData.name) }));
+  }, [formData.name, slugTouched]);
 
   const totalSteps = 4;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  const lifecycleInfo = getLifecycleStage(formData.opening_date);
-  const countryInfo = getCountryInfo(formData.country);
-  const currencyCode = countryInfo?.currency || 'USD';
-  const currencySymbol = countryInfo?.currencySymbol || '$';
-  const revenueRanges = getRevenueRangesByCurrency(currencyCode, currencySymbol);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -65,33 +92,73 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
         city: formData.city,
         state: formData.state,
         country: formData.country,
-        employee_count: formData.employee_count ? parseInt(formData.employee_count) : null,
-        monthly_revenue_range: formData.monthly_revenue_range,
-        opening_date: formData.opening_date || null,
+        opening_date: null,
       });
-
       if (error) throw error;
 
-      toast({
-        title: '¡Perfecto!',
-        description: 'Tu restaurante ha sido configurado. Bienvenido a tu dashboard.',
+      const slug = await publishQuickSite({
+        userId: user.id,
+        restaurantName: formData.name,
+        city: formData.city,
+        slug: site.slug,
+        whatsapp: site.whatsapp,
+        openTime: site.openTime,
+        closeTime: site.closeTime,
+        closedDays: site.closedDays,
+        reservations: site.reservations,
+        dishes,
       });
 
       markOnboardingComplete('restaurant_owner');
-      navigate('/r/dashboard', { replace: true });
+      setPublished({ slug, minutes: readOnboardingMinutes() });
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'No se pudo publicar', description: error.message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const canProceed = () => {
-    if (step === 1) return formData.name && formData.business_type;
-    if (step === 2) return formData.city;
-    if (step === 3) return formData.opening_date;
+    if (step === 1) return !!(formData.name && formData.business_type);
+    if (step === 2) return !!formData.city;
+    if (step === 3) return isValidSlug(site.slug) && site.openTime && site.closeTime;
+    if (step === 4) return validDishes(dishes).length > 0;
     return true;
   };
+
+  if (published) {
+    const url = `/p/${published.slug}`;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-xl border-none shadow-elegant text-center">
+          <CardHeader>
+            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+              <PartyPopper className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-headline">{formData.name} ya está en línea</CardTitle>
+            <CardDescription className="font-lato-light">
+              Tu sitio tiene carta{site.reservations ? ' y recibe reservas' : ''}.
+              {published.minutes ? ` Lo dejaste listo en ${published.minutes} min.` : ''}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="font-mono text-sm bg-muted rounded-md py-2 px-3 break-all">restrowizard.co{url}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button variant="outline" className="gap-2" onClick={() => window.open(url, '_blank', 'noopener')}>
+                Ver mi sitio <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button className="gap-2" onClick={() => navigate('/r/dashboard', { replace: true })}>
+                Ir a mi panel <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Siguiente paso sugerido: conecta tu punto de venta para ver tu prime cost con datos reales.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -102,19 +169,15 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
           {step === 1 && <StepBusinessInfo values={formData} onChange={handleInputChange} />}
           {step === 2 && <StepLocation values={formData} onChange={handleInputChange} />}
           {step === 3 && (
-            <StepOpeningDate
-              openingDate={formData.opening_date}
-              lifecycleInfo={lifecycleInfo}
-              onChange={handleInputChange}
+            <StepWebsite
+              values={site}
+              onChange={(patch) => {
+                if (patch.slug !== undefined) setSlugTouched(true);
+                setSite((s) => ({ ...s, ...patch }));
+              }}
             />
           )}
-          {step === 4 && (
-            <StepOperations
-              values={formData}
-              revenueRanges={revenueRanges}
-              onChange={handleInputChange}
-            />
-          )}
+          {step === 4 && <StepQuickMenu dishes={dishes} onChange={setDishes} />}
 
           <div className="flex justify-between p-6 pt-0">
             <Button
@@ -131,8 +194,8 @@ export const ExistingBusinessOnboarding: React.FC<ExistingBusinessOnboardingProp
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-                {isSubmitting ? 'Guardando...' : 'Comenzar'}
+              <Button onClick={handleSubmit} disabled={isSubmitting || !canProceed()} className="gap-2">
+                {isSubmitting ? 'Publicando...' : 'Publicar mi restaurante'}
                 <CheckCircle className="h-4 w-4" />
               </Button>
             )}

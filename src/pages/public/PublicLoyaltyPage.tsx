@@ -7,6 +7,7 @@
  import { Button } from '@/components/ui/button';
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
  import { Gift, Star, Award, Sparkles } from 'lucide-react';
+ import { LoyaltyEnrollForm } from '@/components/public/LoyaltyEnrollForm';
  
  export default function PublicLoyaltyPage() {
    const { slug } = useParams<{ slug: string }>();
@@ -18,7 +19,7 @@
    const { website, brand, profile, restaurantName } = data;
  
    if (!website?.show_loyalty) {
-     return <PublicErrorState type="not_found" message="El programa de fidelidad no está habilitado para este restaurante." />;
+     return <PublicErrorState type="unavailable" title="Este restaurante no tiene programa de fidelidad" message="Puedes ver su carta o hacer una reserva desde su sitio." />;
    }
  
    return (
@@ -63,7 +64,7 @@
                  </div>
                  <h3 className="font-semibold text-lg mb-2">1. Registrate</h3>
                  <p className="text-muted-foreground text-sm">
-                   Únete al programa en tu próxima visita al restaurante
+                   Inscríbete aquí abajo y recibe tu código al instante
                  </p>
                </CardContent>
              </Card>
@@ -93,6 +94,11 @@
              </Card>
            </div>
  
+           {/* C-14: inscripción desde el sitio */}
+           <div className="mb-12">
+             <LoyaltyEnrollForm slug={slug || ''} restaurantName={restaurantName} />
+           </div>
+
            {/* CTA */}
            <Card className="bg-gradient-to-r from-primary/5 to-accent/5">
              <CardHeader className="text-center">

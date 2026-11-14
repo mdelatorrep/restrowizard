@@ -191,6 +191,26 @@ serve(async (req) => {
 
     const total = subtotal + deliveryFee;
 
+    // B-14: límites contra pedidos falsos. Más de 3 pedidos del mismo teléfono en
+    // 10 minutos o más de 30 pedidos web por restaurante en una hora → 429.
+    const phone = body.customer_phone.trim().slice(0, 20);
+    const since10 = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const since60 = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const [{ count: byPhone }, { count: byRestaurant }] = await Promise.all([
+      supabase.from("restaurant_orders").select("id", { count: "exact", head: true })
+        .eq("user_id", body.restaurant_user_id).eq("source", "website")
+        .eq("customer_phone", phone).gte("created_at", since10),
+      supabase.from("restaurant_orders").select("id", { count: "exact", head: true })
+        .eq("user_id", body.restaurant_user_id).eq("source", "website")
+        .gte("created_at", since60),
+    ]);
+    if ((byPhone ?? 0) >= 3 || (byRestaurant ?? 0) >= 30) {
+      return new Response(
+        JSON.stringify({ error: "Recibimos muchos pedidos en poco tiempo. Espera unos minutos o llama al restaurante." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Create the order
     const { data: order, error: orderError } = await supabase
       .from("restaurant_orders")
