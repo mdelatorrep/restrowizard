@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { BusinessTypeSelector } from '@/components/onboarding/BusinessTypeSelector';
 import { ResumeOrNewSelector } from '@/components/onboarding/ResumeOrNewSelector';
-import { NewBusinessOnboarding } from '@/components/onboarding/NewBusinessOnboarding';
+// B-22: el flujo de apertura (PDF, gráficos) solo se descarga si se usa.
+const NewBusinessOnboarding = lazy(() =>
+  import('@/components/onboarding/NewBusinessOnboarding').then((m) => ({ default: m.NewBusinessOnboarding })),
+);
 import { ExistingBusinessOnboarding } from '@/components/onboarding/ExistingBusinessOnboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { FEATURES } from '@/config/features';
@@ -131,6 +134,7 @@ const RestaurantOnboarding: React.FC = () => {
   // New business flow OR resuming an existing project
   if (flow === 'new' || flow === 'resume') {
     return (
+      <Suspense fallback={null}>
       <NewBusinessOnboarding 
         onBack={() => {
           setSearchParams({});
@@ -138,6 +142,7 @@ const RestaurantOnboarding: React.FC = () => {
         }} 
         resumeProjectId={flow === 'resume' ? (projectIdFromUrl || existingProject?.id) : undefined}
       />
+      </Suspense>
     );
   }
 

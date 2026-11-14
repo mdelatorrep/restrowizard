@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/navigation/AppSidebar';
 import { AppHeader } from '@/components/navigation/AppHeader';
 import { WorkingAsBar } from '@/components/consultant/WorkingAsBar';
 import { useUserType } from '@/hooks/useUserType';
-import CopilotChat from '@/components/CopilotChat';
+// B-22: el copiloto (markdown, resaltador y Mermaid) se carga aparte, no en el paquete inicial.
+const CopilotChat = lazy(() => import('@/components/CopilotChat'));
 import { BrandThemeProvider } from '@/components/brand/BrandThemeProvider';
 import { RouteErrorBoundary } from '@/components/errors/RouteErrorBoundary';
 import { DemoBar } from '@/components/demo/DemoBar';
@@ -40,7 +41,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ requiredUserType }) => {
               </RouteErrorBoundary>
             </div>
           </main>
-          <CopilotChat />
+          <Suspense fallback={null}>
+            <CopilotChat />
+          </Suspense>
         </div>
       </SidebarProvider>
     </BrandThemeProvider>
