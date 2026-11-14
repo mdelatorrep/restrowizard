@@ -5191,6 +5191,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_pin_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          ip: string | null
+          kind: string
+          restaurant_user_id: string
+          succeeded: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          ip?: string | null
+          kind: string
+          restaurant_user_id: string
+          succeeded: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          ip?: string | null
+          kind?: string
+          restaurant_user_id?: string
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
       pos_session_closures: {
         Row: {
           actual_cash: number | null
@@ -10454,6 +10481,9 @@ export type Database = {
         Args: { _email: string; _id: string; _name: string; _type: string }
         Returns: undefined
       }
+      _mask_email: { Args: { p: string }; Returns: string }
+      _mask_phone: { Args: { p: string }; Returns: string }
+      _pos_request_ip: { Args: never; Returns: string }
       award_loyalty_points: {
         Args: {
           p_customer_id: string
@@ -10676,6 +10706,14 @@ export type Database = {
         }
         Returns: string
       }
+      pos_pin_guard: {
+        Args: { p_ip: string; p_kind: string; p_owner: string }
+        Returns: string
+      }
+      pos_pin_record: {
+        Args: { p_ip: string; p_kind: string; p_ok: boolean; p_owner: string }
+        Returns: undefined
+      }
       pos_verify_supervisor_pin: {
         Args: {
           p_amount?: number
@@ -10706,6 +10744,19 @@ export type Database = {
           p_slug: string
           p_special_requests?: string
         }
+        Returns: Json
+      }
+      public_feedback_after_submit: {
+        Args: { p_feedback_id: string }
+        Returns: Json
+      }
+      public_loyalty_find: {
+        Args: { p_type: string; p_value: string }
+        Returns: Json
+      }
+      public_loyalty_profile: { Args: { p_code: string }; Returns: Json }
+      public_loyalty_redeem: {
+        Args: { p_catalog_item_id: string; p_code: string }
         Returns: Json
       }
       recalculate_recipe_cost: {
