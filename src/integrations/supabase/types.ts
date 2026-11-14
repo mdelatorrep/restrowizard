@@ -243,6 +243,30 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_settings: {
+        Row: {
+          email_enabled: boolean
+          low_stock: boolean
+          sales_drop_pct: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_enabled?: boolean
+          low_stock?: boolean
+          sales_drop_pct?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_enabled?: boolean
+          low_stock?: boolean
+          sales_drop_pct?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       allergens: {
         Row: {
           created_at: string | null
@@ -4873,6 +4897,7 @@ export type Database = {
           is_active: boolean
           is_sandbox: boolean
           private_key: string | null
+          private_key_secret_id: string | null
           public_key: string | null
           updated_at: string
           user_id: string
@@ -4884,6 +4909,7 @@ export type Database = {
           is_active?: boolean
           is_sandbox?: boolean
           private_key?: string | null
+          private_key_secret_id?: string | null
           public_key?: string | null
           updated_at?: string
           user_id?: string
@@ -4895,6 +4921,7 @@ export type Database = {
           is_active?: boolean
           is_sandbox?: boolean
           private_key?: string | null
+          private_key_secret_id?: string | null
           public_key?: string | null
           updated_at?: string
           user_id?: string
@@ -10525,6 +10552,7 @@ export type Database = {
         }
         Returns: Json
       }
+      business_day_of: { Args: { ts: string }; Returns: string }
       calculate_menu_item_scores: {
         Args: { p_days?: number; p_user_id: string }
         Returns: undefined
@@ -10567,6 +10595,7 @@ export type Database = {
         Args: { p_from: string; p_owner: string; p_to: string }
         Returns: Json
       }
+      generate_daily_alerts: { Args: { p_day?: string }; Returns: number }
       generate_menu_slug: { Args: { menu_name: string }; Returns: string }
       generate_redemption_code: { Args: never; Returns: string }
       generate_schedule_proposal: {
@@ -10686,6 +10715,8 @@ export type Database = {
         }[]
       }
       menu_out_of_stock_ids: { Args: { p_owner: string }; Returns: string[] }
+      ops_health: { Args: never; Returns: Json }
+      payment_gateway_private_key: { Args: { p_id: string }; Returns: string }
       pos_close_session: {
         Args: { p_actual_cash: number; p_notes?: string; p_session_id: string }
         Returns: {
