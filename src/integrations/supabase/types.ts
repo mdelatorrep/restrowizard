@@ -219,6 +219,30 @@ export type Database = {
           },
         ]
       }
+      ai_usage_daily: {
+        Row: {
+          calls: number
+          day: string
+          fn: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls?: number
+          day?: string
+          fn: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls?: number
+          day?: string
+          fn?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       allergens: {
         Row: {
           created_at: string | null
@@ -3733,6 +3757,8 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string | null
+          data_consent_at: string | null
+          enrolled_via: string | null
           first_order_at: string | null
           id: string
           is_active: boolean
@@ -3760,6 +3786,8 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone?: string | null
+          data_consent_at?: string | null
+          enrolled_via?: string | null
           first_order_at?: string | null
           id?: string
           is_active?: boolean
@@ -3787,6 +3815,8 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string | null
+          data_consent_at?: string | null
+          enrolled_via?: string | null
           first_order_at?: string | null
           id?: string
           is_active?: boolean
@@ -10484,6 +10514,7 @@ export type Database = {
       _mask_email: { Args: { p: string }; Returns: string }
       _mask_phone: { Args: { p: string }; Returns: string }
       _pos_request_ip: { Args: never; Returns: string }
+      ai_usage_bump: { Args: { p_fn: string; p_user: string }; Returns: number }
       award_loyalty_points: {
         Args: {
           p_customer_id: string
@@ -10750,6 +10781,16 @@ export type Database = {
         Args: { p_feedback_id: string }
         Returns: Json
       }
+      public_loyalty_enroll: {
+        Args: {
+          p_consent?: boolean
+          p_email?: string
+          p_name: string
+          p_phone: string
+          p_slug: string
+        }
+        Returns: Json
+      }
       public_loyalty_find: {
         Args: { p_type: string; p_value: string }
         Returns: Json
@@ -10775,6 +10816,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      seed_demo_extras: { Args: never; Returns: Json }
       seed_demo_restaurant: { Args: never; Returns: Json }
       seed_platform_admin: { Args: { p_email: string }; Returns: Json }
       seed_system_roles_for_business: {
