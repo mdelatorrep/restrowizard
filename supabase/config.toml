@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.website-public-reservation]
 verify_jwt = false
+
+[functions.send-daily-alerts]
+verify_jwt = false

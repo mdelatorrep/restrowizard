@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AlertSettingsCard } from '@/components/settings/AlertSettingsCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Bell, Shield, Building2, Users, Loader2, Info } from 'lucide-react';
-import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
+// D4: pasarelas ocultas hasta el primer cliente que las pida (B-26).
+// import PaymentGatewaySettings from '@/components/pos/PaymentGatewaySettings';
 import POSTaxSettings from '@/components/pos/POSTaxSettings';
 import TeamManagementTab from '@/components/team/TeamManagementTab';
 import { useAuth } from '@/hooks/useAuth';
@@ -175,7 +177,6 @@ const Settings: React.FC = () => {
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="business">Negocio</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" />Equipo</TabsTrigger>
-          <TabsTrigger value="payments">Pasarelas de Pago</TabsTrigger>
           <TabsTrigger value="tax">Impuestos POS</TabsTrigger>
           <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
           <TabsTrigger value="security">Seguridad</TabsTrigger>
@@ -345,57 +346,12 @@ const Settings: React.FC = () => {
           <TeamManagementTab />
         </TabsContent>
 
-        <TabsContent value="payments">
-          <PaymentGatewaySettings />
-        </TabsContent>
-
         <TabsContent value="tax">
           <POSTaxSettings />
         </TabsContent>
 
         <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-headline">
-                <Bell className="h-5 w-5" />
-                Notificaciones
-              </CardTitle>
-              <CardDescription>Configura cómo quieres recibir alertas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Alertas del Co-Piloto IA</p>
-                  <p className="text-sm text-muted-foreground">Recibe alertas proactivas en tiempo real</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Resumen diario por email</p>
-                  <p className="text-sm text-muted-foreground">Recibe un resumen cada mañana</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Notificaciones push</p>
-                  <p className="text-sm text-muted-foreground">Alertas en tu dispositivo móvil</p>
-                </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Alertas de stock bajo</p>
-                  <p className="text-sm text-muted-foreground">Notificación cuando el inventario esté bajo</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
+          <AlertSettingsCard />
         </TabsContent>
 
         <TabsContent value="security">
