@@ -111,7 +111,7 @@ BEGIN
       'error', 'Demasiados intentos fallidos. Espera 15 minutos.');
   END IF;
 
-  SELECT id, full_name, pos_role, pin_locked_until INTO v_staff
+  SELECT id, name AS full_name, pos_role, pin_locked_until INTO v_staff
     FROM public.staff_members
    WHERE user_id = p_user_id AND pin_hash IS NOT NULL
      AND pin_hash = crypt(p_pin, pin_hash)
@@ -139,6 +139,13 @@ BEGIN
     'expires_in_seconds', 300);
 END
 $fn$;
+
+-- crypt() y gen_salt() viven en el esquema extensions: con search_path = public
+-- el PIN nunca se podía fijar ni verificar (hoy hay 0 empleados con PIN).
+ALTER FUNCTION public.verify_staff_pin(uuid, text) SET search_path = public, extensions;
+ALTER FUNCTION public.set_staff_pin(uuid, text) SET search_path = public, extensions;
+ALTER FUNCTION public.pos_verify_supervisor_pin(uuid, text, text, text, numeric, text, uuid, text, uuid, text)
+  SET search_path = public, extensions;
 
 -- ───────────────────── B-01 · funciones que verifican poco ─────────────────────
 
