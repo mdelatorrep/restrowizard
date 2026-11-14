@@ -78,8 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // /demo navega por su cuenta a la pantalla de cada rol; no competir con esa navegación.
     const protectedPrefixes = ['/r/', '/c/', '/diagnosis', '/onboarding', '/demo'];
+    // El POS (/:slug/pos y /:slug/pos/login) maneja su propia navegación tras el PIN:
+    // sin esta excepción el cajero terminaba en /r/dashboard en lugar de la caja.
+    const isPOSRoute = /^\/[^/]+\/pos(\/login)?\/?$/.test(currentPath);
     const isInProtectedRoute =
-      currentPath === '/r' || currentPath === '/c' ||
+      currentPath === '/r' || currentPath === '/c' || isPOSRoute ||
       protectedPrefixes.some((prefix) => currentPath.startsWith(prefix));
     if (!session?.user || isInProtectedRoute) {
       logger.debug('❌ Navigation skipped:', { currentPath, hasUser: !!session?.user, isInProtectedRoute });
