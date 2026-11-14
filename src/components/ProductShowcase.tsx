@@ -22,7 +22,7 @@ const painPoints = [
     icon: Globe,
     title: 'Presencia Digital',
     stat: 'El 60% no tiene sitio web',
-    solution: 'Sitio web, menú digital y reservas sin comisiones, listo el mismo día.',
+    solution: 'Sitio web, menú digital, reservas y domicilios sin comisiones, listo el mismo día.',
   },
   {
     icon: Bot,

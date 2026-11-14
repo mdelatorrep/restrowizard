@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# RestroWizard
 
-## Project info
+Software con IA para dueños de restaurantes y bares independientes: prime cost y P&L en tiempo real, punto de venta, inventario con recetas, turnos y propinas, sitio web con carta, reservas y domicilios, fidelización y un copiloto que responde con las cifras del restaurante.
 
-**URL**: https://lovable.dev/projects/58966662-139e-45f6-b047-0714ac4d5ed9
+Producción: <https://restrowizard.co> · Demo sin registro: <https://restrowizard.co/demo> (Clutch Sports Bar & Grill).
 
-## How can I edit this code?
+## Arranque en cinco minutos
 
-There are several ways of editing your application.
+Requisitos: Node 22 (`.nvmrc`), npm, y para la base local Postgres 17 con pgvector (o Docker).
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/58966662-139e-45f6-b047-0714ac4d5ed9) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm ci
+cp .env.example .env          # completar con la URL y la llave pública del proyecto Supabase
+npm run dev                   # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+Base de datos local reconstruida desde el repositorio, con la demo y las pruebas SQL:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+docker run -d --name rw-db -e POSTGRES_PASSWORD=postgres -p 5432:5432 pgvector/pgvector:pg17
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres scripts/db-verify.sh
+```
 
-**Use GitHub Codespaces**
+## Scripts
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo (Vite) |
+| `npm run build` | Build de producción en `dist/` |
+| `npm test` | Pruebas unitarias (Vitest) |
+| `npm run typecheck` | Verificación de tipos |
+| `npm run lint` | ESLint |
+| `scripts/db-verify.sh` | Reconstruye la base desde `supabase/migrations`, siembra la demo y corre `supabase/tests/sql` |
+| `python3 scripts/gen-reference-docs.py` | Regenera los catálogos de `docs/referencia/` |
 
-## What technologies are used for this project?
+## Estructura
 
-This project is built with:
+```
+src/
+  pages/            rutas: público (/p/:slug), dueño (/r/*), POS (/:slug/pos), admin (/admin)
+  components/       UI por módulo (shadcn/ui + Tailwind)
+  hooks/ services/  acceso a datos con el cliente de Supabase
+  config/           features.ts (interruptores de módulos), routePermissions.ts
+supabase/
+  migrations/       línea base + migraciones nuevas (las históricas están en migrations_archive/)
+  functions/        35 edge functions (Deno); _shared/ con auth, CORS, IA y cron
+  tests/            stubs de Supabase y pruebas SQL
+docs/               arquitectura, operación, referencia, ADR
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Documentación
 
-## How can I deploy this project?
+- [Arquitectura](docs/arquitectura.md)
+- [Despliegue y operación](docs/operacion/despliegue.md) · [Base reproducible](docs/operacion/base-reproducible.md) · [Runbooks](docs/operacion/runbooks.md) · [Cuentas y secretos](docs/operacion/inventario-cuentas-y-secretos.md)
+- Referencia: [módulos y cómo agregar uno](docs/referencia/modulos.md) · [funciones edge](docs/referencia/edge-functions.md) · [lógica en la base](docs/referencia/logica-en-base.md) · [glosario](docs/referencia/glosario.md) · [estándares](docs/referencia/estandares.md) · [deuda conocida](docs/referencia/deuda.md)
+- [Cómo contribuir](CONTRIBUTING.md) · [Cambios](CHANGELOG.md)
 
-Simply open [Lovable](https://lovable.dev/projects/58966662-139e-45f6-b047-0714ac4d5ed9) and click on Share -> Publish.
+## Licencia
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Código propietario. Todos los derechos reservados. Ver `LICENSE` (pendiente del nombre legal del titular, ítem B-03).
