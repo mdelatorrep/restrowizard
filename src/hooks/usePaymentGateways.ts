@@ -58,20 +58,27 @@ export const usePaymentGateways = () => {
     if (!user) return null;
 
     try {
-      const { data, error } = await supabase
+      // B-07: insert o update explícitos (no upsert) para que el trigger guarde
+      // la llave en Vault una sola vez y la rote sobre el mismo secreto.
+      const fields = {
+        public_key: publicKey,
+        private_key: privateKey,
+        is_sandbox: isSandbox,
+        is_active: true,
+      };
+      const { data: existing } = await supabase
         .from('payment_gateway_credentials')
-        .upsert({
-          user_id: user.id,
-          gateway,
-          public_key: publicKey,
-          private_key: privateKey,
-          is_sandbox: isSandbox,
-          is_active: true
-        }, {
-          onConflict: 'user_id,gateway'
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('gateway', gateway)
+        .maybeSingle();
+      const { data, error } = existing
+        ? await supabase.from('payment_gateway_credentials').update(fields).eq('id', existing.id).select().single()
+        : await supabase
+            .from('payment_gateway_credentials')
+            .insert({ user_id: user.id, gateway, ...fields })
+            .select()
+            .single();
 
       if (error) throw error;
 

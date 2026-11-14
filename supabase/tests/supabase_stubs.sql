@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS vault.secrets (id uuid PRIMARY KEY DEFAULT gen_random
 CREATE OR REPLACE VIEW vault.decrypted_secrets AS SELECT id, name, secret AS decrypted_secret FROM vault.secrets;
 CREATE OR REPLACE FUNCTION vault.create_secret(new_secret text, new_name text DEFAULT NULL, new_description text DEFAULT '') RETURNS uuid
 LANGUAGE sql AS $$ INSERT INTO vault.secrets(name, secret) VALUES (new_name, new_secret) RETURNING id $$;
+CREATE OR REPLACE FUNCTION vault.update_secret(secret_id uuid, new_secret text DEFAULT NULL, new_name text DEFAULT NULL, new_description text DEFAULT NULL) RETURNS void
+LANGUAGE sql AS $$ UPDATE vault.secrets SET secret = coalesce(new_secret, secret), name = coalesce(new_name, name) WHERE id = secret_id $$;
 
 -- pg_net (simulado: registra las llamadas)
 CREATE TABLE IF NOT EXISTS net.http_request_log (id bigserial PRIMARY KEY, method text, url text, headers jsonb, body jsonb, created_at timestamptz DEFAULT now());

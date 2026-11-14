@@ -76,6 +76,17 @@ serve(async (req) => {
       );
     }
 
+    // B-07: la llave privada vive cifrada en Vault; solo el servidor la descifra.
+    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: privateKey, error: keyError } = await admin.rpc('payment_gateway_private_key', { p_id: credentials.id });
+    if (keyError || !privateKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Falta la llave privada de ${gateway}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    credentials.private_key = privateKey as string;
+
     let result;
 
     switch (gateway) {
