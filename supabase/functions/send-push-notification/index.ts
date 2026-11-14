@@ -38,6 +38,36 @@ const handler = async (req: Request): Promise<Response> => {
       data = {}
     }: PushNotificationRequest = await req.json();
 
+    // B-08: verify_jwt deja pasar la llave pública, así que la identidad se
+    // comprueba aquí. Sin userId (envío a todos) solo el service role.
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const isService = token.length > 0 && token === supabaseServiceKey;
+    if (!isService) {
+      const { data: auth } = await supabase.auth.getUser(token);
+      const callerId = auth?.user?.id;
+      if (!callerId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+      let allowed = !!userId && userId === callerId;
+      if (userId && !allowed) {
+        // Un miembro del equipo puede avisarle al dueño de su restaurante.
+        const asCaller = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+        });
+        const { data: owners } = await asCaller.rpc('team_owner_ids', { _modules: ['dashboard', 'pos'], _level: 'read' });
+        allowed = ((owners ?? []) as unknown[])
+          .map((o) => (typeof o === 'string' ? o : (o as any)?.team_owner_ids))
+          .includes(userId);
+      }
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+    }
+
     console.log('🔔 Sending push notification:', { userId, title, notificationType });
 
     // Get push subscriptions for user or all active users

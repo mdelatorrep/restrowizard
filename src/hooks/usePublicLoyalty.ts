@@ -34,65 +34,56 @@ export const usePublicLoyalty = (codigo?: string) => {
     queryKey: qk.loyalty.public(codigo),
     enabled: !!codigo,
     queryFn: async (): Promise<PublicLoyaltyData> => {
-      const { data: customerData, error: customerError } = await supabase
-        .from('loyalty_customers')
-        .select(`*, tier:loyalty_tiers(*)`)
-        .eq('loyalty_code', codigo!)
-        .single();
+      // Todo pasa por la RPC public_loyalty_profile: el código de lealtad es la
+      // llave, y el navegador ya no lee ni escribe las tablas de lealtad.
+      const { data: raw, error: rpcError } = await (supabase as any).rpc('public_loyalty_profile', {
+        p_code: codigo!,
+      });
+      if (rpcError) throw rpcError;
+      if (!raw?.customer) throw new Error(NOT_FOUND);
 
-      if (customerError || !customerData) {
-        throw new Error(NOT_FOUND);
-      }
-
+      const c = raw.customer;
+      const toTier = (t: any): LoyaltyTier => ({ ...t, benefits: (t?.benefits as string[]) || [] });
       const mapped: LoyaltyCustomer = {
-        id: customerData.id,
-        customer_name: customerData.customer_name,
-        customer_email: customerData.customer_email,
-        customer_phone: customerData.customer_phone,
-        current_points: customerData.current_points,
-        lifetime_points: customerData.lifetime_points,
-        total_spent: Number(customerData.total_spent),
-        total_orders: customerData.total_orders,
-        tier_id: customerData.tier_id,
-        loyalty_code: customerData.loyalty_code || '',
-        restaurant_name: customerData.restaurant_name || 'Restaurante',
-        user_id: customerData.user_id,
-        tier: customerData.tier
-          ? { ...customerData.tier, benefits: (customerData.tier.benefits as string[]) || [] }
-          : null,
+        id: c.id,
+        customer_name: c.customer_name,
+        customer_email: c.customer_email,
+        customer_phone: c.customer_phone,
+        current_points: Number(c.current_points) || 0,
+        lifetime_points: Number(c.lifetime_points) || 0,
+        total_spent: Number(c.total_spent) || 0,
+        total_orders: Number(c.total_orders) || 0,
+        tier_id: c.tier_id,
+        loyalty_code: c.loyalty_code || '',
+        restaurant_name: c.restaurant_name || 'Restaurante',
+        user_id: c.user_id,
+        tier: c.tier ? toTier(c.tier) : null,
       };
 
-      const [tiersRes, txRes, rewardsRes, redeemedRes, achRes, unlockedRes] = await Promise.all([
-        supabase.from('loyalty_tiers').select('*').eq('user_id', customerData.user_id).order('min_points', { ascending: true }),
-        supabase.from('loyalty_points_transactions').select('*').eq('customer_id', customerData.id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('loyalty_rewards_catalog').select('*').eq('user_id', customerData.user_id).eq('is_active', true),
-        supabase.from('loyalty_rewards').select(`*, reward:loyalty_rewards_catalog(name, reward_type, reward_value)`).eq('customer_id', customerData.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('loyalty_achievements').select('*').eq('user_id', customerData.user_id).eq('is_active', true).order('threshold', { ascending: true }),
-        supabase.from('loyalty_customer_achievements').select('*').eq('customer_id', customerData.id),
-      ]);
+      const availableRewards = ((raw.catalog || []) as any[]).map(r => ({
+        id: r.id, name: r.name, description: r.description,
+        points_required: r.points_required, reward_type: r.reward_type,
+        reward_value: Number(r.reward_value), is_active: r.is_active,
+        min_tier_id: r.min_tier_id,
+      })) as RewardItem[];
 
-      const allTiers = (tiersRes.data || []).map(t => ({ ...t, benefits: (t.benefits as string[]) || [] })) as LoyaltyTier[];
-      const transactions = (txRes.data || []) as PointsTransaction[];
-
-      const availableRewards = (rewardsRes.data || [])
-        .filter(r => !r.min_tier_id || r.min_tier_id === customerData.tier_id)
-        .map(r => ({
-          id: r.id, name: r.name, description: r.description,
-          points_required: r.points_required, reward_type: r.reward_type,
-          reward_value: Number(r.reward_value), is_active: r.is_active,
-          min_tier_id: r.min_tier_id,
-        })) as RewardItem[];
-
-      const redeemedRewards = (redeemedRes.data || []).map((r: any) => ({
+      const redeemedRewards = ((raw.redeemed || []) as any[]).map(r => ({
         id: r.id, status: r.status, redeemed_at: r.redeemed_at,
         expires_at: r.expires_at, redemption_code: r.redemption_code,
-        reward: r.reward ? { name: r.reward.name, reward_type: r.reward.reward_type, reward_value: Number(r.reward.reward_value) } : null,
+        reward: r.reward
+          ? { name: r.reward.name, reward_type: r.reward.reward_type, reward_value: Number(r.reward.reward_value) }
+          : null,
       })) as RedeemedReward[];
 
-      const achievements = (achRes.data || []) as Achievement[];
-      const unlockedAchievements = (unlockedRes.data || []) as CustomerAchievement[];
-
-      return { customer: mapped, transactions, availableRewards, redeemedRewards, achievements, unlockedAchievements, allTiers };
+      return {
+        customer: mapped,
+        transactions: (raw.transactions || []) as PointsTransaction[],
+        availableRewards,
+        redeemedRewards,
+        achievements: (raw.achievements || []) as Achievement[],
+        unlockedAchievements: (raw.unlocked || []) as CustomerAchievement[],
+        allTiers: ((raw.allTiers || []) as any[]).map(toTier),
+      };
     },
   });
 
@@ -109,42 +100,19 @@ export const usePublicLoyalty = (codigo?: string) => {
   const redeemReward = async (reward: RewardItem) => {
     const customer = data?.customer;
     if (!customer) return null;
-    const redemptionCode = `RW${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-
     try {
-      const { data: rewardData, error: rewardError } = await supabase
-        .from('loyalty_rewards')
-        .insert({
-          user_id: customer.user_id,
-          customer_id: customer.id,
-          catalog_item_id: reward.id,
-          points_spent: reward.points_required,
-          redemption_code: redemptionCode,
-          status: 'pending',
-          expires_at: expiresAt.toISOString(),
-        }).select().single();
-      if (rewardError) throw rewardError;
-
-      const newPoints = customer.current_points - reward.points_required;
-      const { error: updateError } = await supabase
-        .from('loyalty_customers').update({ current_points: newPoints }).eq('id', customer.id);
-      if (updateError) throw updateError;
-
-      await supabase.from('loyalty_points_transactions').insert({
-        user_id: customer.user_id,
-        customer_id: customer.id,
-        points: -reward.points_required,
-        transaction_type: 'redeem',
-        source: 'reward_redemption',
-        source_id: rewardData.id,
-        description: `Canje: ${reward.name}`,
-        balance_after: newPoints,
+      // Canje atómico en la base: valida puntos, nivel, vigencia y existencias.
+      const { data: res, error } = await (supabase as any).rpc('public_loyalty_redeem', {
+        p_code: customer.loyalty_code,
+        p_catalog_item_id: reward.id,
       });
-
+      if (error) throw error;
+      if (!res?.ok) {
+        toast({ title: 'No se pudo canjear', description: res?.message ?? 'Intenta de nuevo.', variant: 'destructive' });
+        return null;
+      }
       await refresh();
-      return { code: redemptionCode, expiresAt: expiresAt.toISOString() };
+      return { code: res.redemption_code as string, expiresAt: res.expires_at as string };
     } catch (err) {
       console.error('Error redeeming reward:', err);
       toast({ title: 'Error', description: 'No se pudo canjear la recompensa.', variant: 'destructive' });

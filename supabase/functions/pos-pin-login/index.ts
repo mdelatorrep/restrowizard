@@ -39,14 +39,29 @@ Deno.serve(async (req) => {
     if (siteErr) throw siteErr;
     if (!site) return json({ error: "Restaurante no encontrado" }, 404);
 
-    // 2) Verify PIN via SECURITY DEFINER function
+    // 2) Límite de intentos (B-02): 5 fallos por restaurante e IP en 15 min
+    //    bloquean esa IP; 100 fallos en una hora bloquean el PIN del restaurante.
+    const ip = clientIp(req);
+    const { data: gate, error: gateErr } = await admin.rpc("pos_pin_guard", {
+      p_owner: site.user_id,
+      p_kind: "login",
+      p_ip: ip,
+    });
+    if (gateErr) throw gateErr;
+    if (gate !== "ok") {
+      return json({ error: "Demasiados intentos fallidos. Espera 15 minutos o pide ayuda al administrador." }, 429);
+    }
+
+    // 3) Verify PIN via SECURITY DEFINER function
     const { data: matches, error: verifyErr } = await admin.rpc("verify_staff_pin", {
       _restaurant_user_id: site.user_id,
       _pin: pin,
     });
 
     if (verifyErr) throw verifyErr;
-    if (!matches || matches.length === 0) {
+    const ok = !!matches && matches.length > 0;
+    await admin.rpc("pos_pin_record", { p_owner: site.user_id, p_kind: "login", p_ip: ip, p_ok: ok });
+    if (!ok) {
       return json({ error: "PIN inválido" }, 401);
     }
 
@@ -97,6 +112,14 @@ Deno.serve(async (req) => {
     return json({ error: "Error interno" }, 500);
   }
 });
+
+// IP del cliente: Cloudflare pone cf-connecting-ip y el cliente no la puede falsificar.
+function clientIp(req: Request): string | null {
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
+  const xff = req.headers.get("x-forwarded-for");
+  return xff ? xff.split(",")[0].trim() || null : null;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

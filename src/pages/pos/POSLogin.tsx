@@ -69,7 +69,17 @@ export default function POSLogin() {
       const { data, error } = await supabase.functions.invoke("pos-pin-login", {
         body: { slug, pin },
       });
-      if (error) throw error;
+      if (error) {
+        // 401 (PIN inválido) y 429 (demasiados intentos) traen su mensaje en el cuerpo.
+        let message = "PIN inválido";
+        try {
+          const body = await (error as any).context?.json();
+          if (body?.error) message = body.error;
+        } catch {
+          /* cuerpo no legible: queda el mensaje por defecto */
+        }
+        throw new Error(message);
+      }
       if (!data?.token_hash || !data?.email) {
         throw new Error(data?.error || "PIN inválido");
       }

@@ -60,36 +60,19 @@ const LoyaltyPortal = () => {
     setSearched(true);
 
     try {
-      const column = searchType === 'email' ? 'customer_email' : 'customer_phone';
-      
-      const { data, error: queryError } = await supabase
-        .from('loyalty_customers')
-        .select(`
-          id,
-          customer_name,
-          customer_email,
-          customer_phone,
-          current_points,
-          lifetime_points,
-          total_spent,
-          total_orders,
-          loyalty_code,
-          restaurant_name,
-          user_id,
-          tier:loyalty_tiers(id, name, color, min_points)
-        `)
-        .eq(column, searchValue.trim().toLowerCase())
-        .eq('is_active', true);
+      // Búsqueda exacta por correo o teléfono, resuelta en la base (RPC).
+      const { data, error: queryError } = await (supabase as any).rpc('public_loyalty_find', {
+        p_value: searchValue.trim(),
+        p_type: searchType === 'email' ? 'email' : 'phone',
+      });
 
       if (queryError) throw queryError;
 
-      if (data) {
-        setPrograms(data.map(p => ({
-          ...p,
-          total_spent: Number(p.total_spent),
-          tier: p.tier as LoyaltyProgram['tier']
-        })));
-      }
+      setPrograms(((data || []) as any[]).map(p => ({
+        ...p,
+        total_spent: Number(p.total_spent),
+        tier: p.tier as LoyaltyProgram['tier']
+      })));
     } catch (err) {
       console.error('Error searching loyalty programs:', err);
       setError('Error al buscar. Intenta de nuevo.');
