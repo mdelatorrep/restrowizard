@@ -11,7 +11,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white font-body">
       <SEOHead
-        title="RestroWizard - Software con IA para restaurantes | Finanzas, POS, inventario y sitio web"
+        title="RestroWizard – Software con IA para restaurantes"
         description="Prime cost y P&L en tiempo real, POS, inventario con recetas, turnos, sitio web con menú y reservas, y un copiloto con IA para dueños de restaurantes y bares."
         canonical="https://restrowizard.co/"
       />

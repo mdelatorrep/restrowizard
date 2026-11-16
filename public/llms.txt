@@ -1,0 +1,21 @@
+# RestroWizard
+
+> Software con inteligencia artificial para restaurantes y bares en Latinoamérica: finanzas (prime cost y P&L), POS, inventario con recetas, turnos, sitio web con menú y reservas, y un copiloto de IA.
+
+RestroWizard ayuda a dueños y gerentes de restaurantes a controlar costos, operar el día a día y vender más desde una sola plataforma.
+
+## Pages
+
+- [Inicio](https://restrowizard.co/): Qué es RestroWizard y sus módulos principales.
+- [Diagnóstico gratuito](https://restrowizard.co/diagnosis): Diagnóstico de madurez del restaurante con IA.
+- [Demo](https://restrowizard.co/demo): Recorrido por la plataforma.
+- [Nosotros](https://restrowizard.co/about): Quiénes somos.
+- [Contacto](https://restrowizard.co/contact): Cómo contactarnos.
+- [RestroJobs](https://restrowizard.co/jobs): Bolsa de empleo gastronómico.
+- [RestroServices](https://restrowizard.co/services): Marketplace de proveedores y servicios gastronómicos.
+- [RestroLearn](https://restrowizard.co/learn): Cursos y formación para la industria gastronómica.
+
+## Optional
+
+- [Privacidad](https://restrowizard.co/privacy): Política de privacidad.
+- [Términos](https://restrowizard.co/terms): Términos y condiciones.
