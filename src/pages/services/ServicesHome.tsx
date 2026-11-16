@@ -41,7 +41,7 @@ const ServicesHome = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="RestroServices - Proveedores y Servicios Gastronómicos | RestroWizard"
+        title="RestroServices – Proveedores gastronómicos"
         description="Marketplace de proveedores verificados para restaurantes. Equipamiento, tecnología, ingredientes, consultoría y diseño. Cotizaciones comparables y contrataciones seguras."
         canonical="https://restrowizard.co/services"
       />
@@ -53,6 +53,7 @@ const ServicesHome = () => {
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <img src={restroservicesLogo} alt="RestroServices" className="h-16 md:h-20 w-auto mx-auto mb-6 brightness-0 invert" />
+            <h1 className="sr-only">Marketplace de Servicios Gastronómicos</h1>
             <p className="text-xl md:text-2xl text-white/90 font-lato-regular mb-4">
               El marketplace donde tu restaurante encuentra todo lo que necesita
             </p>

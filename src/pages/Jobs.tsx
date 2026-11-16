@@ -83,7 +83,8 @@ const Jobs = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="RestroJobs - Bolsa de Empleo Gastronómico | RestroWizard"
-        description="Encuentra empleo en gastronomía o contrata talento para tu restaurante. Ofertas de cocina, servicio, gestión, bartender y más en la bolsa de trabajo especializada."
+        description="Empleo en gastronomía: ofertas de cocina, servicio, bar y gestión. Encuentra trabajo o contrata talento para tu restaurante."
+        jsonLd={{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'RestroJobs – Bolsa de Empleo Gastronómico', url: 'https://restrowizard.co/jobs', about: 'Ofertas de empleo en restaurantes y bares' }}
         canonical="https://restrowizard.co/jobs"
       />
       <Header />
@@ -94,6 +95,7 @@ const Jobs = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <img src={restrojobsLogo} alt="RestroJobs" className="h-14 md:h-20 w-auto mx-auto mb-4 brightness-0 invert" />
+            <h1 className="sr-only">Bolsa de Empleo Gastronómico</h1>
             <p className="text-lg md:text-xl mb-6 text-primary-foreground/90">
               La bolsa de empleo especializada en gastronomía. Encuentra tu próximo rol o el talento ideal.
             </p>
@@ -212,7 +214,7 @@ const Jobs = () => {
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-4 space-y-3">
-                  <h3 className="font-semibold text-sm">Estadísticas</h3>
+                  <h2 className="font-semibold text-sm">Estadísticas</h2>
                   {jobs.length > 0 ? (
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-muted-foreground">Ofertas activas</span><span className="font-semibold">{jobs.length}</span></div>
@@ -226,7 +228,7 @@ const Jobs = () => {
 
               <Card>
                 <CardContent className="p-4 space-y-3">
-                  <h3 className="font-semibold text-sm">Categorías populares</h3>
+                  <h2 className="font-semibold text-sm">Categorías populares</h2>
                   <div className="flex flex-wrap gap-1.5">
                     {categoryOptions.filter(c => c.value !== 'all').slice(0, 6).map(c => (
                       <Badge key={c.value} variant="outline" className="cursor-pointer text-xs"
