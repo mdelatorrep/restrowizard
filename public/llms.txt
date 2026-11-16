@@ -11,9 +11,6 @@ RestroWizard ayuda a dueños y gerentes de restaurantes a controlar costos, oper
 - [Demo](https://restrowizard.co/demo): Recorrido por la plataforma.
 - [Nosotros](https://restrowizard.co/about): Quiénes somos.
 - [Contacto](https://restrowizard.co/contact): Cómo contactarnos.
-- [RestroJobs](https://restrowizard.co/jobs): Bolsa de empleo gastronómico.
-- [RestroServices](https://restrowizard.co/services): Marketplace de proveedores y servicios gastronómicos.
-- [RestroLearn](https://restrowizard.co/learn): Cursos y formación para la industria gastronómica.
 
 ## Optional
 

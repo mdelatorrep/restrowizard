@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
  import { useState, useEffect } from 'react';
  import { useParams } from 'react-router-dom';
  import { usePublicRestaurantData } from '@/hooks/usePublicRestaurantData';
@@ -147,6 +148,7 @@
  
    return (
      <div className="min-h-screen flex flex-col bg-background" style={brandStyles}>
+      <SEOHead title={`Califica tu experiencia en ${restaurantName}`} description={`Cuéntanos cómo fue tu visita a ${restaurantName} y ayúdanos a mejorar.`.slice(0, 160)} canonical={`/p/${slug}/experiencia`} ogImage={brand?.logo_url || undefined} />
        <PublicHeader
          restaurantName={restaurantName}
          logoUrl={brand.logo_url}
