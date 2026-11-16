@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
  import { useParams } from 'react-router-dom';
  import { usePublicRestaurantData } from '@/hooks/usePublicRestaurantData';
  import { usePublicReservation } from '@/hooks/useReservations';
@@ -36,6 +37,7 @@
  
    return (
      <div className="min-h-screen flex flex-col bg-background" style={brandStyles}>
+      <SEOHead title={`Reservas en ${restaurantName}`} description={`Reserva tu mesa en ${restaurantName} en línea: elige fecha, hora y número de personas.`.slice(0, 160)} canonical={`/p/${slug}/reservas`} ogImage={brand?.logo_url || undefined} />
        <PublicHeader
          restaurantName={restaurantName}
          logoUrl={brand.logo_url}

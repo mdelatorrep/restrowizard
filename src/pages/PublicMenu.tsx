@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,7 @@ const PublicMenu = () => {
       className="min-h-screen"
       style={{ backgroundColor: secondaryColor, fontFamily: brand?.font_secondary || 'system-ui, sans-serif' }}
     >
+      <SEOHead title={`Menú de ${brand?.brand_name || menu.name}`} description={`Consulta el menú de ${brand?.brand_name || menu.name}: platos, precios, categorías y recomendados de la casa.`.slice(0,160)} canonical={`/menu/${slug}`} />
       <PublicMenuHero
         menu={menu}
         brand={brand}

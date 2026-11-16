@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
  import { useState } from 'react';
  import { useParams, Link } from 'react-router-dom';
  import { usePublicRestaurantData } from '@/hooks/usePublicRestaurantData';
@@ -24,6 +25,7 @@
  
    return (
      <div className="min-h-screen flex flex-col bg-background" style={brandStyles}>
+      <SEOHead title={`Programa de fidelidad de ${restaurantName}`} description={`Únete al programa de fidelidad de ${restaurantName}: acumula puntos y canjea premios exclusivos.`.slice(0, 160)} canonical={`/p/${slug}/fidelidad`} ogImage={brand?.logo_url || undefined} />
        <PublicHeader
          restaurantName={restaurantName}
          logoUrl={brand.logo_url}

@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
  import { useState, useEffect, useMemo } from 'react';
  import { useParams, Link } from 'react-router-dom';
  import { usePublicRestaurantData } from '@/hooks/usePublicRestaurantData';
@@ -120,6 +121,7 @@
  
    return (
      <div className="min-h-screen flex flex-col" style={{ ...brandStyles, backgroundColor: secondaryColor }}>
+      <SEOHead title={`Menú de ${restaurantName}`} description={`Consulta el menú de ${restaurantName}: platos, precios y recomendados de la casa.`.slice(0, 160)} canonical={`/p/${slug}/menu`} ogImage={brand?.logo_url || undefined} />
        <PublicHeader
          restaurantName={restaurantName}
          logoUrl={brand.logo_url}

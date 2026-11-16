@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -253,6 +254,7 @@ const PublicFeedback = () => {
         fontFamily: brand?.font_secondary || 'Lato, sans-serif',
       }}
     >
+      <SEOHead title={`Cuéntanos tu experiencia${campaign?.name ? ' – ' + campaign.name : ''}`} description="Califica tu visita y ayúdanos a mejorar. Solo te tomará un minuto responder esta breve encuesta." canonical={`/feedback/${campaignId}`} />
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="text-center mb-6">

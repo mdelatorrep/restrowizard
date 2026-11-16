@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -203,6 +204,7 @@ export default function PublicQuotation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-8 px-4">
+      <SEOHead title={quotation ? `Cotización ${(quotation as any).title || ''} | RestroWizard`.replace('  ',' ') : 'Cotización | RestroWizard'} description="Revisa el detalle de tu cotización de servicios gastronómicos: ítems, precios, condiciones y vigencia." canonical={`/cotizacion/${slug}`} />
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center">

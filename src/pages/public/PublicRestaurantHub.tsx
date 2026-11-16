@@ -1,3 +1,4 @@
+import SEOHead from '@/components/SEOHead';
  import { useParams, Link } from 'react-router-dom';
  import { usePublicRestaurantData } from '@/hooks/usePublicRestaurantData';
  import { PublicHeader } from '@/components/public/PublicHeader';
@@ -51,6 +52,23 @@
  
    return (
      <div className="min-h-screen flex flex-col bg-background" style={brandStyles}>
+      <SEOHead
+        title={`${restaurantName} – Menú, reservas y domicilios`}
+        description={`Conoce ${restaurantName}: menú, reservas, domicilios, horarios y ubicación. Reserva tu mesa o pide en línea.`.slice(0, 160)}
+        canonical={basePath}
+        ogImage={brand?.logo_url || undefined}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Restaurant',
+          name: restaurantName,
+          url: `https://restrowizard.co${basePath}`,
+          ...(brand?.logo_url ? { image: brand.logo_url } : {}),
+          ...(profile?.phone ? { telephone: profile.phone } : {}),
+          ...(profile?.address ? { address: profile.address } : {}),
+          ...(website?.show_menu ? { hasMenu: `https://restrowizard.co${basePath}/menu` } : {}),
+          ...(website?.show_reservations ? { acceptsReservations: true } : {}),
+        }}
+      />
        {/* Promo Banner */}
        {promoBannerEnabled && promoBannerText && (
          <div 
