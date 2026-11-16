@@ -28,10 +28,9 @@ const Growth = () => {
 
   useEffect(() => {
     // F-02: muestra el conteo REAL de pre-registros; nunca cifras inventadas.
-    supabase
-      .from('growth_preregistrations')
-      .select('id', { count: 'exact', head: true })
-      .then(({ count }) => setPreregCount(count ?? 0));
+    (supabase as any)
+      .rpc('get_growth_preregistration_count')
+      .then(({ data }: { data: number | null }) => setPreregCount(data ?? 0));
   }, []);
 
 

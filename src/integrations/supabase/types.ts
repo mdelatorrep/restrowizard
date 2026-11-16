@@ -10634,6 +10634,7 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["team_member_role"] }
         Returns: Json
       }
+      get_growth_preregistration_count: { Args: never; Returns: number }
       get_platform_stats: { Args: never; Returns: Json }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       has_module_access: {
